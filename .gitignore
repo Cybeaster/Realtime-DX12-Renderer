@@ -2,3 +2,6 @@
 /.idea
 /cmake-build-debug.zip
 /cmake-build-release
+/cmake-build-debug-visual-studio
+/.vs
+/out

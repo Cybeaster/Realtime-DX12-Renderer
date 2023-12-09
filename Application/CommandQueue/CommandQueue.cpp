@@ -1,11 +1,13 @@
 #include "CommandQueue.h"
+
 #include <Exception.h>
 
 OCommandQueue::OCommandQueue(Microsoft::WRL::ComPtr<ID3D12Device2> Device, D3D12_COMMAND_LIST_TYPE Type)
-	: FenceValue(0)
-	, CommandListType(Type)
-	, Device(Device)
+    : FenceValue(0)
+    , CommandListType(Type)
+    , Device(Device)
 {
+
 	D3D12_COMMAND_QUEUE_DESC desc = {};
 	desc.Type = Type;
 	desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
@@ -82,21 +84,22 @@ uint64_t OCommandQueue::ExecuteCommandList(Microsoft::WRL::ComPtr<ID3D12Graphics
 *    you ensure that the GPU updates the fence's value only after all preceding commands have been completed.
 *    This is crucial for synchronization.
 *
-	If the fence update were done outside the command queue, there would be no guarantee about when it happens relative to other GPU operations.
-	It might signal completion before the actual work is done, leading to incorrect program behavior.
+    If the fence update were done outside the command queue, there would be no guarantee about when it happens relative to other GPU operations.
+    It might signal completion before the actual work is done, leading to incorrect program behavior.
  */
 
 uint64_t OCommandQueue::Signal()
 {
 	uint64_t fenceValueForSignal = ++FenceValue;
-	//Put the fence in the command queue, exlicitly telling up to what point we consider those command to get done.
+	// Put the fence in the command queue, exlicitly telling up to what point we consider those command to get done.
 	ThrowIfFailed(CommandQueue->Signal(Fence.Get(), fenceValueForSignal));
 
 	return fenceValueForSignal;
 }
 
-bool OCommandQueue::IsFenceComplete(uint64_t FenceValue)
+bool OCommandQueue::IsFenceComplete(uint64_t FenceValue) const
 {
+	return Fence->GetCompletedValue() >= FenceValue;
 }
 
 /*
@@ -107,7 +110,7 @@ void OCommandQueue::WaitForFenceValue(uint64_t FenceValue)
 	if (Fence->GetCompletedValue() < FenceValue)
 	{
 		ThrowIfFailed(Fence->SetEventOnCompletion(FenceValue, FenceEvent));
-		::WaitForSingleObject(FenceEvent, static_cast<DWORD>(Duration.count()));
+		::WaitForSingleObject(FenceEvent, DWORD_MAX);
 	}
 }
 
@@ -122,6 +125,7 @@ void OCommandQueue::Flush()
 
 Microsoft::WRL::ComPtr<ID3D12CommandQueue> OCommandQueue::GetCommandQueue()
 {
+	return CommandQueue;
 }
 
 Microsoft::WRL::ComPtr<ID3D12CommandAllocator> OCommandQueue::CreateCommandAllocator()

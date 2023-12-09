@@ -1,4 +1,5 @@
 #pragma once
+#include "Events.h"
 
 class OInputHandler
 {
@@ -36,40 +37,4 @@ protected:
 	 * Invoked when the mouse wheel is scrolled while the registered window has focus.
 	 */
 	virtual void OnMouseWheel(MouseWheelEventArgs& e);
-	/**
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

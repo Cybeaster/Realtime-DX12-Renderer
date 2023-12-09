@@ -1,6 +1,7 @@
 #pragma once
 #include "../InputHandler/InputHandler.h"
 #include "Events.h"
+#include "HighResolutionClock.h"
 
 #include <Types.h>
 #include <d3d12.h>
@@ -20,10 +21,7 @@ public:
 
 	OWindow() = default;
 
-	OWindow(const wstring& _Name, uint32_t _Width, uint32_t _Height, bool _VSync)
-	    : Name(_Name), Width(_Width), Height(_Height), VSync(_VSync)
-	{
-	}
+	OWindow(shared_ptr<OEngine> _Engine, HWND hWnd, const std::wstring& WindowName, int clientWidth, int Height, bool vSync);
 
 	const wstring& GetName() const;
 	uint32_t GetWidth() const;
@@ -59,7 +57,7 @@ public:
 	bool IsFullScreen() const;
 
 	// Set the fullscreen state of the window.
-	void SetFullscreen(bool fullscreen);
+	void SetFullscreen(bool _Fullscreen);
 	void ToggleFullscreen();
 
 	/**
@@ -71,6 +69,10 @@ public:
 	 * Hide the window.
 	 */
 	void Hide();
+	void RegsterWindow(shared_ptr<OEngine> Engine);
+	void Destroy();
+
+	HWND GetHWND() const;
 
 protected:
 	// The Window procedure needs to call protected methods of this class.
@@ -100,10 +102,17 @@ protected:
 	// Create the swapchian.
 	Microsoft::WRL::ComPtr<IDXGISwapChain4> CreateSwapChain();
 
-private:
-	shared_ptr<OInputHandler> InputHandler;
+	void UpdateRenderTargetViews();
 
-	HWND Hwnd;
+private:
+	OHighResolutionClock UpdateClock;
+	OHighResolutionClock RenderClock;
+
+	shared_ptr<OInputHandler> InputHandler;
+	weak_ptr<OEngine> Engine;
+	HWND Hwnd = nullptr;
+
+	bool IsTearingSupported = false;
 
 	UINT CurrentBackBufferIndex;
 	UINT RTVDescriptorSize;
@@ -115,9 +124,9 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> RTVDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> BackBuffers[BuffersCount];
 
-	bool IsFullscreen;
+	bool Fullscreen;
 	wstring Name;
-	uint32_t Width;
-	uint32_t Height;
+	uint32_t ClientWidth;
+	uint32_t ClientHeight;
 	bool VSync;
 };

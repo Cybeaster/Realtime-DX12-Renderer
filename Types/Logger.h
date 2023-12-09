@@ -1,16 +1,21 @@
 #pragma once
+#include <Types.h>
+
 #include <format>
 #include <iostream>
 #include <memory>
 #include <ostream>
-#include <Types.h>
 
 #ifndef DEBUG
 #define DEBUG 0
 #endif
 
+#if defined(TEXT)
+#undef TEXT
+#endif
+
 #define TEXT(Arg) \
-L##Arg
+	L##Arg
 
 enum class ELogType
 {
@@ -21,11 +26,10 @@ enum class ELogType
 };
 
 #define LOG(LogType, String, ...) \
-SLogUtils::Log(SLogUtils::Format(String, ##__VA_ARGS__), ELogType::LogType, false);
+	SLogUtils::Log(SLogUtils::Format(String, ##__VA_ARGS__), ELogType::LogType, false);
 
 #define DLOG(LogType, String, ...) \
-SLogUtils::Log(SLogUtils::Format(String, ##__VA_ARGS__), ELogType::LogType, true);
-
+	SLogUtils::Log(SLogUtils::Format(String, ##__VA_ARGS__), ELogType::LogType, true);
 
 #define TO_STRING(Argument) \
 	SLogUtils::ToString(Argument)
@@ -44,22 +48,22 @@ struct SLogUtils
 		{
 		case ELogType::Log:
 			std::cout << "\n"
-				<< "Log: " << String << std::endl;
+			          << "Log: " << String << std::endl;
 			break;
 
 		case ELogType::Warning:
 			std::clog << "\n"
-				<< "Warning: " << String << std::endl;
+			          << "Warning: " << String << std::endl;
 			break;
 
 		case ELogType::Error:
 			std::clog << "\n \t \t"
-				<< "Error: " << String << std::endl;
+			          << "Error: " << String << std::endl;
 			break;
 
 		case ELogType::Critical:
 			std::clog << "\n \t \t"
-				<< "Critical: " << String << std::endl;
+			          << "Critical: " << String << std::endl;
 			break;
 		}
 	}
@@ -90,14 +94,17 @@ struct SLogUtils
 		}
 	}
 
-
 	template<typename... ArgTypes>
 	static void Printf(const string& Str, ArgTypes&&... Args) noexcept
 	{
 		std::printf(Str.c_str(), ToCString(Args)...);
 	}
-};
 
+	static string ToString(int Argument) noexcept
+	{
+		return std::to_string(Argument);
+	}
+};
 
 template<typename T>
 struct SLogger
@@ -105,14 +112,15 @@ struct SLogger
 	SLogger() = default;
 
 	explicit SLogger(std::shared_ptr<T> S)
-		: Stream(S)
+	    : Stream(S)
 	{
 	}
 
 	void Log(const std::string& Message) const
 	{
 		auto stream = Stream.get();
-		*stream << Message << "\n" << std::flush;
+		*stream << Message << "\n"
+		        << std::flush;
 	}
 
 	void SetStream(std::shared_ptr<T> S)

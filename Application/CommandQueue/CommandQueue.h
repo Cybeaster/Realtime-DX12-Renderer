@@ -7,31 +7,24 @@
 // DirectX 12 specific headers.
 #include <d3d12.h>
 
-
 class OCommandQueue
 {
 public:
 	OCommandQueue(Microsoft::WRL::ComPtr<ID3D12Device2> Device, D3D12_COMMAND_LIST_TYPE Type);
-
 	virtual ~OCommandQueue();
 
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> GetCommandList();
+	Microsoft::WRL::ComPtr<ID3D12CommandQueue> GetCommandQueue();
 
 	uint64_t ExecuteCommandList(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> CommandList);
-
 	uint64_t Signal();
 
-	bool IsFenceComplete(uint64_t FenceValue);
-
+	bool IsFenceComplete(uint64_t FenceValue) const;
 	void WaitForFenceValue(uint64_t FenceValue);
-
 	void Flush();
-
-	Microsoft::WRL::ComPtr<ID3D12CommandQueue> GetCommandQueue();
 
 protected:
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CreateCommandAllocator();
-
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> CreateCommandList(Microsoft::WRL::ComPtr<ID3D12CommandAllocator> Allocator);
 
 private:
@@ -54,6 +47,3 @@ private:
 	TCommandAllocatorQueue CommandAllocatorQueue;
 	TCommandListQueue CommandListQueue;
 };
-
-
-

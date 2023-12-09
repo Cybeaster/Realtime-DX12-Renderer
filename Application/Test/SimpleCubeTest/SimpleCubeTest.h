@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../Window/Window.h"
 #include "../Test.h"
 #include "Events.h"
 
@@ -18,14 +19,12 @@ public:
 	void LoadContent() override;
 	void UnloadContent() override;
 
-	void Destroy() override;
-	void Update() override;
-
 	void OnUpdate(UpdateEventArgs& Event) override;
 	void OnRender() override;
 	void OnResize(ResizeEventArgs& Event) override;
 
-	void OnMouseWheel(MouseMotionEventArgs& Event) override;
+	void OnMouseWheel(MouseWheelEventArgs& Event) override;
+	void OnKeyPressed(KeyEventArgs& Event) override;
 
 private:
 	void TransitionResource(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> CommandList,
@@ -45,7 +44,10 @@ private:
 
 	void ResizeDepthBuffer(int Width, int Height);
 
-	uint64_t FenceValue[];
+	void CompileShader(const WCHAR* FileName, const char* EntryPoint, const char* Target,
+	                   ID3DBlob** Blob) const;
+
+	uint64_t FenceValues[OWindow::BuffersCount];
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> VertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView;
