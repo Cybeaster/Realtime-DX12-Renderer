@@ -1,7 +1,7 @@
 #pragma once
 #include "../CommandQueue/CommandQueue.h"
+#include "../Types/Types.h"
 #include "../Window/Window.h"
-#include "..\Types\Types.h"
 
 #include <dxgi1_6.h>
 
@@ -13,23 +13,21 @@ public:
 	using TWindowPtr = std::shared_ptr<OWindow>;
 	using TWindowMap = std::map<HWND, TWindowPtr>;
 	using WindowNameMap = std::map<std::wstring, TWindowPtr>;
+
+	static constexpr D3D_DRIVER_TYPE DriverType = D3D_DRIVER_TYPE_HARDWARE;
+	static constexpr DXGI_FORMAT BackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+	static constexpr DXGI_FORMAT DepthBufferFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	inline static std::map<HWND, TWindowPtr> WindowsMap = {};
+
 	static void RemoveWindow(HWND Hwnd);
 
-	virtual ~OEngine() = default;
+	virtual ~OEngine();
 
-	OEngine(const wstring& _Name, uint32_t _Width, uint32_t _Height, bool _VSync)
-	    : Name(_Name), Width(_Width), Height(_Height), bVSync(_VSync)
-	{
-	}
+	OEngine() = default;
 
 	virtual bool Initialize();
 
 	shared_ptr<OWindow> GetWindow() const;
-	const wstring& GetName() const;
-	uint32_t GetWidth() const;
-	uint32_t GetHeight() const;
-	bool IsVSync() const;
 	Microsoft::WRL::ComPtr<ID3D12Device2> GetDevice() const;
 
 	void FlushGPU() const;
@@ -46,28 +44,28 @@ public:
 	void OnWindowDestroyed();
 	bool IsTearingSupported() const;
 
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(UINT NumDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE Type);
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(UINT NumDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE Type) const;
 	shared_ptr<OCommandQueue> GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type = D3D12_COMMAND_LIST_TYPE_DIRECT);
 	UINT GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE Type) const;
-
-	void Update();
 	void OnEnd(shared_ptr<OTest> Test) const;
-	void OnUpdate(UpdateEventArgs& e);
-	void OnRender(RenderEventArgs& e);
-	void OnResize(ResizeEventArgs& e);
 
+	void OnRender(const UpdateEventArgs& Args) const;
 	void OnKeyPressed(KeyEventArgs& Args);
 	void OnKeyReleased(KeyEventArgs& Args);
 	void OnMouseMoved(class MouseMotionEventArgs& Args);
 	void OnMouseButtonPressed(MouseButtonEventArgs& Args);
 	void OnMouseButtonReleased(MouseButtonEventArgs& Args);
 	void OnMouseWheel(MouseWheelEventArgs& Args);
+	void OnResize(ResizeEventArgs& Args);
 
 	bool CheckTearingSupport();
 	void CreateWindow();
-	void InitWindowClass();
+	void CheckMSAAQualitySupport();
+	bool GetMSAAState(UINT& Quality) const;
 
 protected:
+	shared_ptr<OTest> GetTestByHWND(HWND Handler);
+	shared_ptr<OWindow> GetWindowByHWND(HWND Handler);
 	void LoadContent();
 	void UnloadContent();
 
@@ -79,13 +77,6 @@ protected:
 	Microsoft::WRL::ComPtr<ID3D12Device2> CreateDevice(Microsoft::WRL::ComPtr<IDXGIAdapter4> Adapter);
 
 private:
-	wstring Name;
-	uint32_t Width;
-	uint32_t Height;
-	bool bVSync;
-
-	HINSTANCE HInstance = nullptr;
-
 	Microsoft::WRL::ComPtr<IDXGIAdapter4> Adapter;
 	Microsoft::WRL::ComPtr<ID3D12Device2> Device;
 
@@ -94,4 +85,9 @@ private:
 	shared_ptr<OCommandQueue> CopyCommandQueue;
 
 	bool bIsTearingSupported = false;
+
+	bool Msaa4xState = false;
+	UINT Msaa4xQuality = 0;
+
+	map<HWND, shared_ptr<OTest>> Tests;
 };

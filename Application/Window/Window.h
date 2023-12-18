@@ -3,6 +3,7 @@
 #include "Events.h"
 #include "HighResolutionClock.h"
 
+#include <DirectXMath.h>
 #include <Types.h>
 #include <d3d12.h>
 #include <dxgi1_5.h>
@@ -12,16 +13,28 @@
 #undef CreateWindow
 #endif
 
+class OCamera;
+struct SWindowInfo
+{
+	bool Fullscreen = false;
+	wstring Name = L"NONE";
+	uint32_t ClientWidth = 0;
+	uint32_t ClientHeight = 0;
+	bool VSync = false;
+	float FoV = 45.0f;
+};
+
 class OEngine;
 
 class OWindow
 {
 public:
+	virtual ~OWindow() = default;
 	static constexpr uint32_t BuffersCount = 3;
 
 	OWindow() = default;
 
-	OWindow(shared_ptr<OEngine> _Engine, HWND hWnd, const std::wstring& WindowName, int clientWidth, int Height, bool vSync);
+	OWindow(shared_ptr<OEngine> _Engine, HWND hWnd, const SWindowInfo& _WindowInfo);
 
 	const wstring& GetName() const;
 	uint32_t GetWidth() const;
@@ -50,7 +63,10 @@ public:
 	bool IsVSync() const;
 	void SetVSync(bool vSync);
 	void ToggleVSync();
+	float GetFoV();
+	void SetFoV(float _FoV);
 
+	float GetAspectRatio() const;
 	/**
 	 * Is this a windowed window or full-screen?
 	 */
@@ -73,14 +89,24 @@ public:
 	void Destroy();
 
 	HWND GetHWND() const;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> GetDSVDescriptorHeap() const;
+	D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStensilView() const;
 
-protected:
-	// The Window procedure needs to call protected methods of this class.
-	friend LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+	D3D12_VIEWPORT Viewport;
+	D3D12_RECT ScissorRect;
+	uint64_t FenceValues[BuffersCount];
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> DepthBuffer;
+
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DSVDescriptorHeap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> RTVDescriptorHeap;
+
+	void TransitionResource(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> CommandList, Microsoft::WRL::ComPtr<ID3D12Resource> Resource, D3D12_RESOURCE_STATES BeforeState, D3D12_RESOURCE_STATES AfterState);
+	void ClearRTV(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> CommandList, D3D12_CPU_DESCRIPTOR_HANDLE RTV, FLOAT* ClearColor);
+	void ClearDepth(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> CommandList, D3D12_CPU_DESCRIPTOR_HANDLE DSV, FLOAT Depth = 1.0f);
 
 	// Update and Draw can only be called by the application.
-	virtual void OnUpdate(UpdateEventArgs& Event);
-	virtual void OnRender(RenderEventArgs& Event);
+	virtual void OnRender(const UpdateEventArgs& Event);
 
 	// A keyboard key was pressed
 	virtual void OnKeyPressed(KeyEventArgs& Event);
@@ -99,17 +125,28 @@ protected:
 	// The window was resized.
 	virtual void OnResize(ResizeEventArgs& Event);
 
+	float GetLastXMousePos() const;
+	float GetLastYMousePos() const;
+	shared_ptr<OCamera> GetCamera();
+
+protected:
+	// The Window procedure needs to call protected methods of this class.
+	friend LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+
 	// Create the swapchian.
 	Microsoft::WRL::ComPtr<IDXGISwapChain4> CreateSwapChain();
 
 	void UpdateRenderTargetViews();
+	void ResizeDepthBuffer();
 
 private:
 	OHighResolutionClock UpdateClock;
 	OHighResolutionClock RenderClock;
-
 	shared_ptr<OInputHandler> InputHandler;
+
 	weak_ptr<OEngine> Engine;
+	shared_ptr<OCamera> Camera;
+
 	HWND Hwnd = nullptr;
 
 	bool IsTearingSupported = false;
@@ -118,15 +155,13 @@ private:
 	UINT RTVDescriptorSize;
 	RECT WindowRect;
 
-	uint64_t FrameCounter;
+	uint64_t FrameCounter = 0;
 
 	Microsoft::WRL::ComPtr<IDXGISwapChain4> SwapChain;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> RTVDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> BackBuffers[BuffersCount];
 
-	bool Fullscreen;
-	wstring Name;
-	uint32_t ClientWidth;
-	uint32_t ClientHeight;
-	bool VSync;
+	SWindowInfo WindowInfo;
+
+	float LastMouseXPos = 0;
+	float LastMouseYPos = 0;
 };

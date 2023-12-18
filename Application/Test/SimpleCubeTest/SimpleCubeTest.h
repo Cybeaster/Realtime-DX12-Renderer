@@ -1,7 +1,10 @@
 #pragma once
 
+#include "../../../Utils/DXUtils.h"
+#include "../../../Utils/MathUtils.h"
 #include "../../Window/Window.h"
 #include "../Test.h"
+#include "Engine/UploadBuffer/UploadBuffer.h"
 #include "Events.h"
 
 #include <DirectXMath.h>
@@ -9,34 +12,36 @@
 #include <windows.h>
 #include <wrl/client.h>
 
+struct SVertexPosColor
+{
+	DirectX::XMFLOAT3 Position;
+	DirectX::XMFLOAT3 Color;
+};
+
+struct SObjectConstants
+{
+	DirectX::XMFLOAT4X4 ModelViewProj = Utils::Identity4x4();
+};
+
 class OSimpleCubeTest : public OTest
 {
 	using Super = OTest;
 
 public:
-	OSimpleCubeTest(const shared_ptr<class OEngine>& _Engine);
+	OSimpleCubeTest(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window);
 
 	void LoadContent() override;
 	void UnloadContent() override;
 
-	void OnUpdate(UpdateEventArgs& Event) override;
-	void OnRender() override;
-	void OnResize(ResizeEventArgs& Event) override;
+	void OnUpdate(const UpdateEventArgs& Event) override;
+	void OnRender(const UpdateEventArgs& Event) override;
+	void OnResize(const ResizeEventArgs& Event) override;
 
-	void OnMouseWheel(MouseWheelEventArgs& Event) override;
-	void OnKeyPressed(KeyEventArgs& Event) override;
+	void OnMouseWheel(const MouseWheelEventArgs& Event) override;
+	void OnKeyPressed(const KeyEventArgs& Event) override;
+	void OnMouseMoved(const MouseMotionEventArgs& Args) override;
 
 private:
-	void TransitionResource(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> CommandList,
-	                        Microsoft::WRL::ComPtr<ID3D12Resource> Resource,
-	                        D3D12_RESOURCE_STATES BeforeState, D3D12_RESOURCE_STATES AfterState);
-
-	void ClearRTV(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> CommandList,
-	              D3D12_CPU_DESCRIPTOR_HANDLE RTV, FLOAT* ClearColor);
-
-	void ClearDepth(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> CommandList,
-	                D3D12_CPU_DESCRIPTOR_HANDLE DSV, FLOAT Depth = 1.0f);
-
 	void UpdateBufferResource(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> CommandList,
 	                          ID3D12Resource** pDestinationResource, ID3D12Resource** IntermediateResource,
 	                          size_t NumElements, size_t ElementSize, const void* BufferData,
@@ -47,7 +52,7 @@ private:
 	void CompileShader(const WCHAR* FileName, const char* EntryPoint, const char* Target,
 	                   ID3DBlob** Blob) const;
 
-	uint64_t FenceValues[OWindow::BuffersCount];
+	unique_ptr<OUploadBuffer<SObjectConstants>> ObjectCB = nullptr;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> VertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView;
@@ -55,26 +60,17 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> IndexBuffer;
 	D3D12_INDEX_BUFFER_VIEW IndexBufferView;
 
-	// Depth buffer
-	Microsoft::WRL::ComPtr<ID3D12Resource> DepthBuffer;
-
-	// Descriptor heap for depth buffer
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DSVHeap;
-
 	// Root signature
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> RootSignature;
 
 	// Pipeline state object
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> PipelineState;
 
-	D3D12_VIEWPORT Viewport;
-	D3D12_RECT ScissorRect;
+	DirectX::XMFLOAT4X4 ModelMatix = Utils::Identity4x4();
 
-	float FoV;
+	bool ContentLoaded = false;
 
-	DirectX::XMMATRIX ModelMatix;
-	DirectX::XMMATRIX ViewMatrix;
-	DirectX::XMMATRIX ProjectionMatrix;
-
-	bool ContentLoaded;
+	float Theta = 1.5f * DirectX::XM_PI;
+	float Phi = DirectX::XM_PIDIV4;
+	float Radius = 5.0f;
 };

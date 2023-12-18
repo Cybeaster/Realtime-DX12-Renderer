@@ -10,25 +10,32 @@ class OTest
 public:
 	virtual ~OTest() = default;
 	OTest() = default;
-	explicit OTest(const shared_ptr<OEngine>& _Engine)
-	    : Engine(_Engine), Name(_Engine->GetName()), ClientWidth(_Engine->GetWidth()), ClientHeight(_Engine->GetHeight()), VSync(_Engine->IsVSync())
+	explicit OTest(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window)
+	    : Engine(_Engine), Window(_Window)
 	{
 	}
-	virtual void LoadContent() = 0;
-	virtual void UnloadContent() = 0;
+	virtual void LoadContent() {}
+	virtual void UnloadContent() {}
 	virtual void Destroy();
-	virtual void Update();
-	virtual void OnUpdate(UpdateEventArgs& e);
-	virtual void OnRender() = 0;
-	virtual void OnResize(ResizeEventArgs& Args);
+
+	virtual void OnUpdate(const UpdateEventArgs& Args) {}
+	virtual void OnRender(const UpdateEventArgs& Arg) = 0;
+
 	virtual void OnWindowDestroyed();
-	virtual void OnKeyPressed(KeyEventArgs& e);
-	virtual void OnMouseWheel(MouseWheelEventArgs& e) = 0;
+
+	virtual void OnResize(const ResizeEventArgs& Args) {}
+	virtual void OnKeyPressed(const KeyEventArgs& Args) {}
+	virtual void OnMouseWheel(const MouseWheelEventArgs& Args) {}
+	virtual void OnMouseMoved(const MouseMotionEventArgs& Args) {}
+	virtual void OnMouseButtonPressed(const MouseButtonEventArgs& Args) {}
+	virtual void OnMouseButtonReleased(const MouseButtonEventArgs& Args) {}
+
+	auto GetWindow() const
+	{
+		return Window.lock();
+	}
 
 protected:
 	weak_ptr<OEngine> Engine;
-	wstring Name;
-	uint32_t ClientWidth;
-	uint32_t ClientHeight;
-	bool VSync;
+	weak_ptr<OWindow> Window;
 };

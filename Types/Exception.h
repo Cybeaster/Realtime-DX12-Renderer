@@ -1,30 +1,46 @@
 #pragma once
 #define WIN32_LEAN_AND_MEAN
 #include "Logger.h"
+#include "comdef.h"
 
 #include <windows.h>
 
 #include <exception>
 
-#define THROW_IF_FAILED(hr) ThrowIfFailed(hr, string(__FILE__) + TO_STRING(__LINE__));
-
-inline void ThrowIfFailed(HRESULT Hr, string Message)
+struct SDXException
 {
-	if (FAILED(Hr))
+public:
+	SDXException() = default;
+	SDXException(HRESULT Hr, const wstring& FuncName, const wstring& FileName, int LineNumber)
+	    : ErrorCode(Hr), FunctionName(FuncName), FileName(FileName), LineNumber(LineNumber)
 	{
-		LOG(Error, "ThrowIfFailed: {}" + Message, TO_STRING(Hr));
-		throw std::exception();
 	}
-}
 
-inline void ThrowIfFailed(HRESULT Hr)
-{
-	if (FAILED(Hr))
+	wstring ToString() const
 	{
-		LOG(Error, "ThrowIfFailed: %d", Hr);
-		throw std::exception();
+		_com_error err(ErrorCode);
+		wstring msg = err.ErrorMessage();
+
+		return FunctionName + L" failed in " + FileName + L"; line " + std::to_wstring(LineNumber) + L"; error: " + msg;
 	}
-}
+
+	HRESULT ErrorCode = S_OK;
+	wstring FunctionName;
+	wstring FileName;
+	int LineNumber = -1;
+};
+
+#ifndef THROW_IF_FAILED
+#define THROW_IF_FAILED(hr)                                                           \
+	{                                                                                 \
+		if (FAILED(hr))                                                               \
+		{                                                                             \
+			auto __exception = SDXException(hr, L#hr, __FILEW__, __LINE__);           \
+			MessageBox(nullptr, __exception.ToString().c_str(), L"HR Failed", MB_OK); \
+			throw __exception;                                                        \
+		}                                                                             \
+	}
+#endif
 
 #define CHECK(condition, Message)          \
 	if (!(condition))                      \

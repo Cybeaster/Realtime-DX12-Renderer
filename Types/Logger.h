@@ -1,6 +1,7 @@
 #pragma once
 #include <Types.h>
 
+#include <codecvt>
 #include <format>
 #include <iostream>
 #include <memory>
@@ -69,15 +70,19 @@ struct SLogUtils
 	}
 
 	template<typename... ArgTypes>
-	static string Format(std::wstring_view Str, ArgTypes&&... Args)
+	static std::wstring Format(std::wstring_view Str, ArgTypes&&... Args)
 	{
 		try
 		{
-			return std::vformat(Str, std::make_format_args(Args...));
+			return std::vformat(Str, std::make_wformat_args(std::forward<ArgTypes>(Args)...));
 		}
 		catch (const std::format_error& error)
 		{
-			return error.what() + string(Str.begin(), Str.end());
+			const int length = MultiByteToWideChar(CP_UTF8, 0, error.what(), -1, nullptr, 0);
+			std::wstring wideErrorMessage(length, L'\0');
+			MultiByteToWideChar(CP_UTF8, 0, error.what(), -1, &wideErrorMessage[0], length);
+
+			return wideErrorMessage + std::wstring(Str.begin(), Str.end());
 		}
 	}
 

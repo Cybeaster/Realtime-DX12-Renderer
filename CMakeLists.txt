@@ -14,6 +14,8 @@ set(SHADER_FILES
 
 source_group("Resources\\Shaders" FILES ${SHADER_FILES})
 
+add_definitions(-D_UNICODE -DUNICODE)
+
 set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/Shaders/OneSimpleCube/VertexShader.hlsl PROPERTIES
         VS_SHADER_TYPE Vertex
         VS_SHADER_MODEL 5.1
@@ -52,6 +54,14 @@ set(SRC_FILES
         Application/Test/Test.cpp
         main.cpp
         Types/Timer/Timer.h
+        Application/Test/WindowTest/WindowTest.cpp
+        Application/Test/WindowTest/WindowTest.h
+        Application/Camera/Camera.cpp
+        Application/Camera/Camera.h
+        Application/Engine/UploadBuffer/UploadBuffer.cpp
+        Application/Engine/UploadBuffer/UploadBuffer.h
+        Utils/DXUtils.h
+        Utils/MathUtils.h
 )
 
 # Add sources to the project

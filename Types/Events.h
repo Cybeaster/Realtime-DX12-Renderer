@@ -1,13 +1,21 @@
 #pragma once
 #include "KeyCodes.h"
+#include "Timer/Timer.h"
 
-// Base class for all event args
+#include <Types.h>
+#include <d3d12.h>
+#include <dxgi1_5.h>
+#include <wrl.h>
+// Super class for all event args
 class EventArgs
 {
 public:
-	EventArgs()
+	EventArgs(HWND Handle)
+	    : WindowHandle(Handle)
 	{
 	}
+
+	HWND WindowHandle;
 };
 
 class KeyEventArgs : public EventArgs
@@ -19,14 +27,9 @@ public:
 		Pressed = 1
 	};
 
-	typedef EventArgs base;
-	KeyEventArgs(KeyCode::Key key, unsigned int c, KeyState state, bool control, bool shift, bool alt)
-	    : Key(key)
-	    , Char(c)
-	    , State(state)
-	    , Control(control)
-	    , Shift(shift)
-	    , Alt(alt)
+	typedef EventArgs Super;
+	KeyEventArgs(KeyCode::Key key, unsigned int c, KeyState state, bool control, bool shift, bool alt, HWND Handle)
+	    : Super(Handle), Key(key), Char(c), State(state), Control(control), Shift(shift), Alt(alt)
 	{
 	}
 
@@ -41,15 +44,9 @@ public:
 class MouseMotionEventArgs : public EventArgs
 {
 public:
-	typedef EventArgs base;
-	MouseMotionEventArgs(bool leftButton, bool middleButton, bool rightButton, bool control, bool shift, int x, int y)
-	    : LeftButton(leftButton)
-	    , MiddleButton(middleButton)
-	    , RightButton(rightButton)
-	    , Control(control)
-	    , Shift(shift)
-	    , X(x)
-	    , Y(y)
+	typedef EventArgs Super;
+	MouseMotionEventArgs(bool leftButton, bool middleButton, bool rightButton, bool control, bool shift, int x, int y, HWND Handle)
+	    : Super(Handle), LeftButton(leftButton), MiddleButton(middleButton), RightButton(rightButton), Control(control), Shift(shift), X(x), Y(y)
 	{
 	}
 
@@ -61,8 +58,6 @@ public:
 
 	int X; // The X-position of the cursor relative to the upper-left corner of the client area.
 	int Y; // The Y-position of the cursor relative to the upper-left corner of the client area.
-	int RelX; // How far the mouse moved since the last event.
-	int RelY; // How far the mouse moved since the last event.
 };
 
 class MouseButtonEventArgs : public EventArgs
@@ -81,17 +76,9 @@ public:
 		Pressed = 1
 	};
 
-	typedef EventArgs base;
-	MouseButtonEventArgs(MouseButton buttonID, ButtonState state, bool leftButton, bool middleButton, bool rightButton, bool control, bool shift, int x, int y)
-	    : Button(buttonID)
-	    , State(state)
-	    , LeftButton(leftButton)
-	    , MiddleButton(middleButton)
-	    , RightButton(rightButton)
-	    , Control(control)
-	    , Shift(shift)
-	    , X(x)
-	    , Y(y)
+	typedef EventArgs Super;
+	MouseButtonEventArgs(MouseButton buttonID, ButtonState state, bool leftButton, bool middleButton, bool rightButton, bool control, bool shift, int x, int y, HWND Handle)
+	    : Super(Handle), Button(buttonID), State(state), LeftButton(leftButton), MiddleButton(middleButton), RightButton(rightButton), Control(control), Shift(shift), X(x), Y(y)
 	{
 	}
 
@@ -110,16 +97,9 @@ public:
 class MouseWheelEventArgs : public EventArgs
 {
 public:
-	typedef EventArgs base;
-	MouseWheelEventArgs(float wheelDelta, bool leftButton, bool middleButton, bool rightButton, bool control, bool shift, int x, int y)
-	    : WheelDelta(wheelDelta)
-	    , LeftButton(leftButton)
-	    , MiddleButton(middleButton)
-	    , RightButton(rightButton)
-	    , Control(control)
-	    , Shift(shift)
-	    , X(x)
-	    , Y(y)
+	typedef EventArgs Super;
+	MouseWheelEventArgs(float wheelDelta, bool leftButton, bool middleButton, bool rightButton, bool control, bool shift, int x, int y, HWND Handle)
+	    : Super(Handle), WheelDelta(wheelDelta), LeftButton(leftButton), MiddleButton(middleButton), RightButton(rightButton), Control(control), Shift(shift), X(x), Y(y)
 	{
 	}
 
@@ -137,10 +117,9 @@ public:
 class ResizeEventArgs : public EventArgs
 {
 public:
-	typedef EventArgs base;
-	ResizeEventArgs(int width, int height)
-	    : Width(width)
-	    , Height(height)
+	typedef EventArgs Super;
+	ResizeEventArgs(int width, int height, HWND Handle)
+	    : Super(Handle), Width(width), Height(height)
 	{
 	}
 
@@ -153,39 +132,20 @@ public:
 class UpdateEventArgs : public EventArgs
 {
 public:
-	typedef EventArgs base;
-	UpdateEventArgs(double fDeltaTime, double fTotalTime)
-	    : ElapsedTime(fDeltaTime)
-	    , TotalTime(fTotalTime)
+	typedef EventArgs Super;
+	UpdateEventArgs(const STimer& Other, HWND Handle)
+	    : Super(Handle), Timer(Other)
 	{
 	}
-
-	double ElapsedTime;
-	double TotalTime;
-};
-
-class RenderEventArgs : public EventArgs
-{
-public:
-	typedef EventArgs base;
-	RenderEventArgs(double fDeltaTime, double fTotalTime)
-	    : ElapsedTime(fDeltaTime)
-	    , TotalTime(fTotalTime)
-	{
-	}
-
-	double ElapsedTime;
-	double TotalTime;
+	const STimer& Timer;
 };
 
 class UserEventArgs : public EventArgs
 {
 public:
-	typedef EventArgs base;
-	UserEventArgs(int code, void* data1, void* data2)
-	    : Code(code)
-	    , Data1(data1)
-	    , Data2(data2)
+	typedef EventArgs Super;
+	UserEventArgs(int code, void* data1, void* data2, HWND Handle)
+	    : Super(Handle), Code(code), Data1(data1), Data2(data2)
 	{
 	}
 

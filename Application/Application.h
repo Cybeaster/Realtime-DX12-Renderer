@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Engine/Engine.h"
-#include "Window/Window.h"
+#include "Timer/Timer.h"
 
 #include <Types.h>
 
@@ -11,7 +11,8 @@ class OApplication
 public:
 	static OApplication* Get();
 	void Destory();
-	shared_ptr<OWindow> CreateWindow(wstring Name, uint32_t Width, uint32_t Height, bool VSync);
+
+	shared_ptr<OWindow> CreateWindow();
 
 	void DestroyWindow(shared_ptr<OWindow> Window)
 	{
@@ -22,26 +23,37 @@ public:
 	void InitApplication(HINSTANCE hInstance);
 
 	template<typename TestType = OTest>
-	int Run() const;
+	int Run();
 
 	inline static wchar_t WindowClassName[] = L"DXRendererClass";
 
 	HINSTANCE GetAppInstance() const;
+	static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+	void SetAppPaused(bool bPaused);
 
 private:
 	OApplication();
+	void InitWindowClass() const;
+	void CalculateFrameStats();
 
 	inline static OApplication* Application = nullptr;
 	HINSTANCE AppInstance = nullptr;
 
-	shared_ptr<OEngine> Engine;
+	inline static shared_ptr<OEngine> Engine = nullptr;
 	vector<shared_ptr<OTest>> Tests;
+
+	STimer Timer;
+	bool bIsAppPaused = false;
+	bool bIsResizing = false;
+
+	SWindowInfo DefaultWindowInfo = { false, L"Window", 800, 600, false, 45.f };
 };
 
 template<typename TestType>
-int OApplication::Run() const
+int OApplication::Run()
 {
-	auto test = make_shared<TestType>(Engine);
+	auto test = make_shared<TestType>(Engine, Engine->GetWindow());
 	Engine->Run(test);
 	MSG msg = { 0 };
 	while (msg.message != WM_QUIT)
@@ -50,6 +62,19 @@ int OApplication::Run() const
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
+		}
+		else
+		{
+			Timer.Tick();
+			if (bIsAppPaused)
+			{
+				Sleep(100);
+			}
+			else
+			{
+				UpdateEventArgs args(Timer, Engine->GetWindow()->GetHWND());
+				Engine->OnRender(args);
+			}
 		}
 	}
 	Engine->OnEnd(test);
