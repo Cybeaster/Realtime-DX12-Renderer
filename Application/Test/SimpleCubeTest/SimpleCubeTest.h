@@ -12,7 +12,7 @@
 #include <windows.h>
 #include <wrl/client.h>
 
-struct SVertexPosColor
+struct SVertex
 {
 	DirectX::XMFLOAT3 Pos;
 	DirectX::XMFLOAT4 Color;
@@ -39,6 +39,7 @@ public:
 	void OnMouseMoved(const MouseMotionEventArgs& Args) override;
 
 private:
+	void SetupProjection();
 	void BuildDescriptorHeaps();
 	void BuildConstantBuffers();
 	void BuildRootSignature();

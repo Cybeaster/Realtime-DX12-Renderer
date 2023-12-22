@@ -30,6 +30,12 @@ OEngine::~OEngine()
 
 bool OEngine::Initialize()
 {
+	UINT createFactoryFlags = 0;
+#if defined(_DEBUG)
+	createFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
+#endif
+	THROW_IF_FAILED(CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&Factory)));
+
 	if (!DirectX::XMVerifyCPUSupport())
 	{
 		MessageBox(nullptr, TEXT("Failed to verify DirectX Math library support."), TEXT("Error"), MB_OK | MB_ICONERROR);
@@ -202,21 +208,12 @@ void OEngine::OnResize(ResizeEventArgs& Args)
 bool OEngine::CheckTearingSupport()
 {
 	BOOL allowTearing = FALSE;
-
-	// Rather than create the DXGI 1.5 factory interface directly, we create the
-	// DXGI 1.4 interface and query for the 1.5 interface. This is to enable the
-	// graphics debugging tools which will not support the 1.5 factory interface
-	// until a future update.
-	ComPtr<IDXGIFactory4> factory4;
-	if (SUCCEEDED(CreateDXGIFactory1(IID_PPV_ARGS(&factory4))))
+	ComPtr<IDXGIFactory5> factory5;
+	if (SUCCEEDED(GetFactory().As(&factory5)))
 	{
-		ComPtr<IDXGIFactory5> factory5;
-		if (SUCCEEDED(factory4.As(&factory5)))
-		{
-			factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING,
-			                              &allowTearing,
-			                              sizeof(allowTearing));
-		}
+		factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING,
+		                              &allowTearing,
+		                              sizeof(allowTearing));
 	}
 
 	return allowTearing == TRUE;
@@ -250,6 +247,11 @@ bool OEngine::GetMSAAState(UINT& Quality) const
 {
 	Quality = Msaa4xQuality;
 	return Msaa4xState;
+}
+
+ComPtr<IDXGIFactory2> OEngine::GetFactory() const
+{
+	return Factory;
 }
 
 shared_ptr<OTest> OEngine::GetTestByHWND(HWND Handler)
@@ -299,28 +301,20 @@ UINT OEngine::GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE Type) 
 	return Device->GetDescriptorHandleIncrementSize(Type);
 }
 
-Microsoft::WRL::ComPtr<IDXGIAdapter4> OEngine::GetAdapter(bool UseWarp)
+ComPtr<IDXGIAdapter4> OEngine::GetAdapter(bool UseWarp)
 {
-	Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory;
-	UINT createFactoryFlags = 0;
-#if defined(_DEBUG)
-	createFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
-#endif
-
-	THROW_IF_FAILED(CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&dxgiFactory)));
-
-	Microsoft::WRL::ComPtr<IDXGIAdapter1> dxgiAdapter1;
-	Microsoft::WRL::ComPtr<IDXGIAdapter4> dxgiAdapter4;
+	ComPtr<IDXGIAdapter1> dxgiAdapter1;
+	ComPtr<IDXGIAdapter4> dxgiAdapter4;
 
 	if (UseWarp)
 	{
-		THROW_IF_FAILED(dxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&dxgiAdapter1)));
+		THROW_IF_FAILED(Factory->EnumWarpAdapter(IID_PPV_ARGS(&dxgiAdapter1)));
 		THROW_IF_FAILED(dxgiAdapter1.As(&dxgiAdapter4));
 	}
 	else
 	{
 		SIZE_T maxDedicatedVideoMemory = 0;
-		for (UINT i = 0; dxgiFactory->EnumAdapters1(i, &dxgiAdapter1) != DXGI_ERROR_NOT_FOUND; ++i)
+		for (UINT i = 0; Factory->EnumAdapters1(i, &dxgiAdapter1) != DXGI_ERROR_NOT_FOUND; ++i)
 		{
 			DXGI_ADAPTER_DESC1 dxgiAdapterDesc1;
 			dxgiAdapter1->GetDesc1(&dxgiAdapterDesc1);
@@ -339,7 +333,7 @@ Microsoft::WRL::ComPtr<IDXGIAdapter4> OEngine::GetAdapter(bool UseWarp)
 	return dxgiAdapter4;
 }
 
-Microsoft::WRL::ComPtr<ID3D12Device2> OEngine::CreateDevice(Microsoft::WRL::ComPtr<IDXGIAdapter4> Adapter)
+ComPtr<ID3D12Device2> OEngine::CreateDevice(Microsoft::WRL::ComPtr<IDXGIAdapter4> Adapter)
 {
 	ComPtr<ID3D12Device2> d3d12Device2;
 	THROW_IF_FAILED(D3D12CreateDevice(Adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d12Device2)));

@@ -22,6 +22,7 @@ OSimpleCubeTest::OSimpleCubeTest(const shared_ptr<OEngine>& _Engine, const share
 
 bool OSimpleCubeTest::Initialize()
 {
+	SetupProjection();
 	const auto engine = Engine.lock();
 	assert(engine->GetCommandQueue()->GetCommandQueue());
 	const auto queue = engine->GetCommandQueue();
@@ -39,6 +40,7 @@ bool OSimpleCubeTest::Initialize()
 	engine->GetCommandQueue()->GetCommandQueue()->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 	engine->FlushGPU();
 	ContentLoaded = true;
+
 	return true;
 }
 
@@ -151,6 +153,11 @@ void OSimpleCubeTest::OnRender(const UpdateEventArgs& Event)
 void OSimpleCubeTest::OnResize(const ResizeEventArgs& Event)
 {
 	OTest::OnResize(Event);
+	SetupProjection();
+}
+
+void OSimpleCubeTest::SetupProjection()
+{
 	XMStoreFloat4x4(&ProjectionMatrix, XMMatrixPerspectiveFovLH(0.25f * XM_PI, Window.lock()->GetAspectRatio(), 1.0f, 1000.0f));
 }
 
@@ -277,10 +284,6 @@ void OSimpleCubeTest::BuildRootSignature()
 
 void OSimpleCubeTest::BuildShadersAndInputLayout()
 {
-	HRESULT hr = S_OK;
-
-	auto path = std::filesystem::current_path();
-	LOG(Log, "Current path: {}", path.string());
 	MvsByteCode = Utils::CompileShader(L"Shaders/SimpleCubeShader.hlsl", nullptr, "VS", "vs_5_0");
 	MpsByteCode = Utils::CompileShader(L"Shaders/SimpleCubeShader.hlsl", nullptr, "PS", "ps_5_0");
 
@@ -293,18 +296,18 @@ void OSimpleCubeTest::BuildShadersAndInputLayout()
 void OSimpleCubeTest::BuildBoxGeometry()
 {
 	const array vertices = {
-		SVertexPosColor{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::White) },
-		SVertexPosColor{ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Black) },
-		SVertexPosColor{ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Red) },
-		SVertexPosColor{ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::Green) },
-		SVertexPosColor{ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Blue) },
-		SVertexPosColor{ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Yellow) },
-		SVertexPosColor{ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Cyan) },
-		SVertexPosColor{ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Magenta) }
+		SVertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::White) }),
+		SVertex({ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Black) }),
+		SVertex({ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Red) }),
+		SVertex({ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::Green) }),
+		SVertex({ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Blue) }),
+		SVertex({ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Yellow) }),
+		SVertex({ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Cyan) }),
+		SVertex({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Magenta) })
 	};
 
 	//clang-format off
-	const array indices = {
+	std::array<uint16_t, 36> indices = {
 		// front face
 		0,
 		1,
@@ -356,7 +359,7 @@ void OSimpleCubeTest::BuildBoxGeometry()
 	//clang-format on
 
 	auto commandList = Engine.lock()->GetCommandQueue()->GetCommandList();
-	constexpr auto vbByteSize = vertices.size() * sizeof(SVertexPosColor);
+	constexpr auto vbByteSize = vertices.size() * sizeof(SVertex);
 	constexpr auto ibByteSize = indices.size() * sizeof(uint16_t);
 
 	BoxGeometry = make_unique<SMeshGeometry>();
@@ -380,7 +383,7 @@ void OSimpleCubeTest::BuildBoxGeometry()
 	                                                         ibByteSize,
 	                                                         BoxGeometry->IndexBufferUploader);
 
-	BoxGeometry->VertexByteStride = sizeof(SVertexPosColor);
+	BoxGeometry->VertexByteStride = sizeof(SVertex);
 	BoxGeometry->VertexBufferByteSize = vbByteSize;
 	BoxGeometry->IndexFormat = DXGI_FORMAT_R16_UINT;
 	BoxGeometry->IndexBufferByteSize = ibByteSize;
@@ -450,24 +453,11 @@ void OSimpleCubeTest::BuildPSO()
 
 	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 
-	D3D12_RASTERIZER_DESC rasterizerDesc = {};
-	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE; // Disable culling
-	rasterizerDesc.FrontCounterClockwise = FALSE;
-	rasterizerDesc.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
-	rasterizerDesc.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
-	rasterizerDesc.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
-	rasterizerDesc.DepthClipEnable = TRUE;
-	rasterizerDesc.MultisampleEnable = FALSE;
-	rasterizerDesc.AntialiasedLineEnable = FALSE;
-	rasterizerDesc.ForcedSampleCount = 0;
-	rasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
-
 	psoDesc.InputLayout = { InputLayout.data(), static_cast<UINT>(InputLayout.size()) };
 	psoDesc.pRootSignature = RootSignature.Get();
 	psoDesc.VS = { reinterpret_cast<BYTE*>(MvsByteCode->GetBufferPointer()), MvsByteCode->GetBufferSize() };
 	psoDesc.PS = { reinterpret_cast<BYTE*>(MpsByteCode->GetBufferPointer()), MpsByteCode->GetBufferSize() };
-	psoDesc.RasterizerState = rasterizerDesc;
+	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	psoDesc.SampleMask = UINT_MAX;

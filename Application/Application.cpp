@@ -293,7 +293,52 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 		case WM_SIZE:
 		{
 			ResizeEventArgs resizeEventArgs(width, height, hwnd);
-			Engine->OnResize(resizeEventArgs);
+			if (wParam == SIZE_MINIMIZED)
+			{
+				Application->bIsAppPaused = true;
+				Application->bIsAppMinimized = true;
+				Application->bIsAppMaximized = false;
+			}
+			else if (wParam == SIZE_MAXIMIZED)
+			{
+				Application->bIsAppPaused = false;
+				Application->bIsAppMinimized = false;
+				Application->bIsAppMaximized = true;
+				Engine->OnResize(resizeEventArgs);
+			}
+			else if (wParam == SIZE_RESTORED)
+			{
+				// Restoring from minimized state?
+				if (Application->bIsAppMinimized)
+				{
+					Application->SetAppPaused(false);
+					Application->bIsAppMinimized = false;
+					Engine->OnResize(resizeEventArgs);
+				}
+
+				// Restoring from maximized state?
+				else if (Application->bIsAppMaximized)
+				{
+					Application->bIsAppPaused = false;
+					Application->bIsAppMaximized = false;
+					Engine->OnResize(resizeEventArgs);
+				}
+				else if (Application->bIsResizing)
+				{
+					// If user is dragging the resize bars, we do not resize
+					// the buffers here because as the user continuously
+					// drags the resize bars, a stream of WM_SIZE messages are
+					// sent to the window, and it would be pointless (and slow)
+					// to resize for each WM_SIZE message received from dragging
+					// the resize bars.  So instead, we reset after the user is
+					// done resizing the window and releases the resize bars, which
+					// sends a WM_EXITSIZEMOVE message.
+				}
+				else // API call such as SetWindowPos or mSwapChain->SetFullscreenState.
+				{
+					Engine->OnResize(resizeEventArgs);
+				}
+			}
 		}
 		break;
 		case WM_DESTROY:

@@ -9,20 +9,18 @@ OCommandQueue::OCommandQueue(Microsoft::WRL::ComPtr<ID3D12Device2> Device, D3D12
 {
 	D3D12_COMMAND_QUEUE_DESC desc = {};
 	desc.Type = Type;
-	desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
 	desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	desc.NodeMask = 0;
 
 	THROW_IF_FAILED(Device->CreateCommandQueue(&desc, IID_PPV_ARGS(&CommandQueue)));
-	THROW_IF_FAILED(Device->CreateFence(FenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&Fence)));
-
-	FenceEvent = ::CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
-	CHECK(FenceEvent, "Failed to create fence event handle.");
-
 	THROW_IF_FAILED(Device->CreateCommandAllocator(Type, IID_PPV_ARGS(CommandAllocator.GetAddressOf())));
 	THROW_IF_FAILED(Device->CreateCommandList(0, Type, CommandAllocator.Get(), nullptr, IID_PPV_ARGS(CommandList.GetAddressOf())));
+
+	FenceEvent = ::CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	CHECK(FenceEvent, "Failed to create fence event handle.");
+
 	CommandList->Close();
+	THROW_IF_FAILED(Device->CreateFence(FenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&Fence)));
+
 }
 
 OCommandQueue::~OCommandQueue()

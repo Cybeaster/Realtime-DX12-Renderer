@@ -45,6 +45,8 @@ private:
 
 	STimer Timer;
 	bool bIsAppPaused = false;
+	bool bIsAppMinimized = false;
+	bool bIsAppMaximized = false;
 	bool bIsResizing = false;
 
 	SWindowInfo DefaultWindowInfo = { false, L"Window", 800, 600, false, 45.f };
@@ -56,6 +58,7 @@ int OApplication::Run()
 	auto test = make_shared<TestType>(Engine, Engine->GetWindow());
 	Engine->Run(test);
 	MSG msg = { 0 };
+	Timer.Reset();
 	while (msg.message != WM_QUIT)
 	{
 		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
@@ -66,6 +69,7 @@ int OApplication::Run()
 		else
 		{
 			Timer.Tick();
+			CalculateFrameStats();
 			if (bIsAppPaused)
 			{
 				Sleep(100);

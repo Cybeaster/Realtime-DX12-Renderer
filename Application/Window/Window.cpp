@@ -17,8 +17,6 @@ using namespace Microsoft::WRL;
 OWindow::OWindow(shared_ptr<OEngine> _Engine, HWND hWnd, const SWindowInfo& _WindowInfo, const shared_ptr<OCamera>& _Camera)
     : Hwnd(hWnd), Engine(_Engine), WindowInfo{ _WindowInfo }, Camera(_Camera)
 {
-	IsTearingSupported = _Engine->IsTearingSupported();
-
 	SwapChain = CreateSwapChain();
 	RTVDescriptorHeap = _Engine->CreateDescriptorHeap(BuffersCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	RTVDescriptorSize = _Engine->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -48,10 +46,7 @@ UINT OWindow::GetCurrentBackBufferIndex() const
 
 UINT OWindow::Present()
 {
-	UINT syncInterval = WindowInfo.VSync ? 1 : 0;
-	UINT presentFlags = IsTearingSupported && !WindowInfo.VSync ? DXGI_PRESENT_ALLOW_TEARING : 0;
-
-	THROW_IF_FAILED(SwapChain->Present(syncInterval, presentFlags));
+	THROW_IF_FAILED(SwapChain->Present(0, 0));
 	CurrentBackBufferIndex = SwapChain->GetCurrentBackBufferIndex();
 	return CurrentBackBufferIndex;
 }
@@ -254,9 +249,7 @@ void OWindow::OnResize(ResizeEventArgs& Event)
 	}
 	DepthBuffer.Reset();
 
-	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-	THROW_IF_FAILED(SwapChain->GetDesc(&swapChainDesc));
-	THROW_IF_FAILED(SwapChain->ResizeBuffers(BuffersCount, WindowInfo.ClientWidth, WindowInfo.ClientHeight, swapChainDesc.BufferDesc.Format, swapChainDesc.Flags));
+	THROW_IF_FAILED(SwapChain->ResizeBuffers(BuffersCount, WindowInfo.ClientWidth, WindowInfo.ClientHeight, engine->BackBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 	CurrentBackBufferIndex = 0;
 
 	UpdateRenderTargetViews();
@@ -291,14 +284,8 @@ ComPtr<IDXGISwapChain4> OWindow::CreateSwapChain()
 {
 	const auto engine = Engine.lock();
 	ComPtr<IDXGISwapChain4> swapChain4;
-	ComPtr<IDXGIFactory4> factory4;
-	UINT createFactoryFlags = 0;
-#if defined(_DEBUG)
-	createFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
-#endif
-	THROW_IF_FAILED(CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&factory4)));
 	UINT msaaQuality;
-	bool msaaState = engine->GetMSAAState(msaaQuality);
+	const bool msaaState = engine->GetMSAAState(msaaQuality);
 
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
 	swapChainDesc.Width = WindowInfo.ClientWidth;
@@ -313,12 +300,10 @@ ComPtr<IDXGISwapChain4> OWindow::CreateSwapChain()
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 
-	// It is recommended to always allow tearing if tearing support is available.
-	swapChainDesc.Flags = IsTearingSupported ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
 	const auto commandQueue = engine->GetCommandQueue()->GetCommandQueue();
 
 	ComPtr<IDXGISwapChain1> swapChain1;
-	THROW_IF_FAILED(factory4->CreateSwapChainForHwnd(
+	THROW_IF_FAILED(engine->GetFactory()->CreateSwapChainForHwnd(
 	    commandQueue.Get(),
 	    Hwnd,
 	    &swapChainDesc,
@@ -328,7 +313,7 @@ ComPtr<IDXGISwapChain4> OWindow::CreateSwapChain()
 
 	// Disable the Alt+Enter fullscreen toggle feature. Switching to fullscreen
 	// will be handled manually.
-	THROW_IF_FAILED(factory4->MakeWindowAssociation(Hwnd, DXGI_MWA_NO_ALT_ENTER));
+	THROW_IF_FAILED(engine->GetFactory()->MakeWindowAssociation(Hwnd, DXGI_MWA_NO_ALT_ENTER));
 	THROW_IF_FAILED(swapChain1.As(&swapChain4));
 
 	CurrentBackBufferIndex = swapChain4->GetCurrentBackBufferIndex();

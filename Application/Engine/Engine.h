@@ -63,6 +63,7 @@ public:
 	void CreateWindow();
 	void CheckMSAAQualitySupport();
 	bool GetMSAAState(UINT& Quality) const;
+	Microsoft::WRL::ComPtr<IDXGIFactory2> GetFactory() const;
 
 protected:
 	shared_ptr<OTest> GetTestByHWND(HWND Handler);
@@ -91,4 +92,5 @@ private:
 	UINT Msaa4xQuality = 0;
 
 	map<HWND, shared_ptr<OTest>> Tests;
+	Microsoft::WRL::ComPtr<IDXGIFactory4> Factory;
 };

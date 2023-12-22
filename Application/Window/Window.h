@@ -151,8 +151,6 @@ private:
 
 	HWND Hwnd = nullptr;
 
-	bool IsTearingSupported = false;
-
 	UINT CurrentBackBufferIndex;
 	UINT RTVDescriptorSize;
 	RECT WindowRect;
