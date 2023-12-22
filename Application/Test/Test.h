@@ -14,7 +14,7 @@ public:
 	    : Engine(_Engine), Window(_Window)
 	{
 	}
-	virtual void LoadContent() {}
+	virtual bool Initialize() { return true; }
 	virtual void UnloadContent() {}
 	virtual void Destroy();
 

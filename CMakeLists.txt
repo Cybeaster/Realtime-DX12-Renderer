@@ -8,24 +8,25 @@ set(CMAKE_CXX_STANDARD 20)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(SHADER_FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/OneSimpleCube/VertexShader.hlsl
-        ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/OneSimpleCube/PixelShader.hlsl
+        Shaders/SimpleCubeShader.hlsl
 )
 
 source_group("Resources\\Shaders" FILES ${SHADER_FILES})
 
 add_definitions(-D_UNICODE -DUNICODE)
 
-set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/Shaders/OneSimpleCube/VertexShader.hlsl PROPERTIES
-        VS_SHADER_TYPE Vertex
-        VS_SHADER_MODEL 5.1
-        VS_SHADER_ENTRYPOINT main)
-
-set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/Shaders/OneSimpleCube/PixelShader.hlsl PROPERTIES
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/Shaders/SimpleCubeShader.hlsl PROPERTIES
         VS_SHADER_TYPE Pixel
-        VS_SHADER_MODEL 5.1
-        VS_SHADER_ENTRYPOINT main
+        VS_SHADER_MODEL 5.0
+        VS_SHADER_ENTRYPOINT PS
 )
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/Shaders/SimpleCubeShader.hlsl PROPERTIES
+        VS_SHADER_TYPE Vertex
+        VS_SHADER_MODEL 5.0
+        VS_SHADER_ENTRYPOINT VS
+)
+
+
 set(SRC_FILES
         main.cpp
         Types/Types.h
@@ -76,6 +77,10 @@ if (MSVC)
             LINK_FLAGS "/SUBSYSTEM:WINDOWS"
     )
 endif ()
+
+add_custom_command(TARGET DXRenderer POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/Shaders $<TARGET_FILE_DIR:DXRenderer>/Shaders)
 
 target_include_directories(DXRenderer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Externals/directx ${CMAKE_CURRENT_SOURCE_DIR}/Types ${CMAKE_CURRENT_SOURCE_DIR}/Application)
 

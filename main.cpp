@@ -26,7 +26,7 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	const auto application = OApplication::Get();
 	application->InitApplication(hInstance);
 
-	returnCode = application->Run<OWindowTest>();
+	returnCode = application->Run<OSimpleCubeTest>();
 	application->Destory();
 
 	atexit(&ReportLiveObjects);

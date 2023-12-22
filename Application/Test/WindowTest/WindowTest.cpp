@@ -14,7 +14,7 @@ void OWindowTest::OnRender(const UpdateEventArgs& Arg)
 
 	FLOAT color[] = { 0.4f, 0.6f, 0.9f, 1.0f };
 
-	auto rtv = window->GetCurrentRenderTargetView();
+	auto rtv = window->CurrentBackBufferView();
 	auto dsv = window->GetDepthStensilView();
 
 	list->ClearRenderTargetView(rtv, color, 0, nullptr);

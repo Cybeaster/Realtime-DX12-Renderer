@@ -1,5 +1,6 @@
 #include "Application.h"
 
+#include "Camera/Camera.h"
 #include "Engine/Engine.h"
 #include "Exception.h"
 #include "Test/SimpleCubeTest/SimpleCubeTest.h"
@@ -7,6 +8,7 @@
 #include <DirectXMath.h>
 #include <Windowsx.h>
 #pragma optimize("", off)
+
 using namespace Microsoft::WRL;
 OApplication* OApplication::Get()
 {
@@ -25,7 +27,12 @@ void OApplication::Destory()
 
 shared_ptr<OWindow> OApplication::CreateWindow()
 {
-	RECT windowRect = { 0, 0, static_cast<LONG>(DefaultWindowInfo.ClientWidth), static_cast<LONG>(DefaultWindowInfo.ClientHeight) };
+	RECT windowRect = {
+		0,
+		0,
+		static_cast<LONG>(DefaultWindowInfo.ClientWidth),
+		static_cast<LONG>(DefaultWindowInfo.ClientHeight)
+	};
 	AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, FALSE);
 	HWND hWnd = CreateWindowW(WindowClassName,
 	                          DefaultWindowInfo.Name.c_str(),
@@ -43,7 +50,10 @@ shared_ptr<OWindow> OApplication::CreateWindow()
 		MessageBoxA(NULL, "Failed to create window.", "Error", MB_OK | MB_ICONERROR);
 		return nullptr;
 	}
-	return make_shared<OWindow>(Engine, hWnd, DefaultWindowInfo);
+	auto camera = make_shared<OCamera>();
+	auto window = make_shared<OWindow>(Engine, hWnd, DefaultWindowInfo, camera);
+	camera->Init(window);
+	return window;
 }
 
 void OApplication::Quit(int ExitCode)
@@ -86,20 +96,21 @@ void OApplication::InitWindowClass() const
 	debugInterface->EnableDebugLayer();
 #endif
 
-	WNDCLASSEXW wndClass = { 0 };
+	WNDCLASS wc;
+	wc.style = CS_HREDRAW | CS_VREDRAW;
+	wc.lpfnWndProc = WndProc;
+	wc.cbClsExtra = 0;
+	wc.cbWndExtra = 0;
+	wc.hInstance = AppInstance;
+	wc.hIcon = LoadIcon(0, IDI_APPLICATION);
+	wc.hCursor = LoadCursor(0, IDC_ARROW);
+	wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
+	wc.lpszMenuName = 0;
+	wc.lpszClassName = OApplication::WindowClassName;
 
-	wndClass.cbSize = sizeof(WNDCLASSEX);
-	wndClass.style = CS_HREDRAW | CS_VREDRAW;
-	wndClass.lpfnWndProc = &WndProc;
-	wndClass.hInstance = GetAppInstance();
-	wndClass.hCursor = LoadCursor(nullptr, IDC_ARROW);
-	wndClass.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	wndClass.lpszMenuName = nullptr;
-	wndClass.lpszClassName = OApplication::WindowClassName;
-
-	if (!RegisterClassExW(&wndClass))
+	if (!RegisterClass(&wc))
 	{
-		MessageBoxA(NULL, "Unable to register the window class.", "Error", MB_OK | MB_ICONERROR);
+		MessageBox(0, L"Unable to register the window class.", L"Error", MB_OK | MB_ICONERROR);
 	}
 }
 

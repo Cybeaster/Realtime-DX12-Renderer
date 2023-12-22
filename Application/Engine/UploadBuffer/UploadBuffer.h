@@ -57,13 +57,14 @@ OUploadBuffer<Type>::OUploadBuffer(ID3D12Device* Device, UINT ElementCount, bool
 
 	if (IsConstantBuffer)
 	{
-		ElementByteSize = Utils::CalcBufferByteSize(ElementByteSize);
+		ElementByteSize = Utils::CalcBufferByteSize(sizeof(Type));
 	}
-
+	const auto uploadHeap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+	const auto uploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(ElementByteSize * ElementCount);
 	THROW_IF_FAILED(Device->CreateCommittedResource(
-	    &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), // Upload heap
+	    &uploadHeap, // Upload heap
 	    D3D12_HEAP_FLAG_NONE,
-	    &CD3DX12_RESOURCE_DESC::Buffer(ElementByteSize * ElementCount), // Resource description for a buffer
+	    &uploadBufferDesc, // Resource description for a buffer
 	    D3D12_RESOURCE_STATE_GENERIC_READ, // GPU will read from this buffer and copy its contents to the default heap
 	    nullptr,
 	    IID_PPV_ARGS(&UploadBuffer)));

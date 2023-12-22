@@ -13,19 +13,21 @@ public:
 	OCommandQueue(Microsoft::WRL::ComPtr<ID3D12Device2> Device, D3D12_COMMAND_LIST_TYPE Type);
 	virtual ~OCommandQueue();
 
-	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> GetCommandList();
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> GetCommandList();
+	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> GetCommandAllocator();
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> GetCommandQueue();
 
-	uint64_t ExecuteCommandList(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> CommandList);
+	uint64_t ExecuteCommandList(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> CommandList);
 	uint64_t Signal();
 
 	bool IsFenceComplete(uint64_t FenceValue) const;
 	void WaitForFenceValue(uint64_t FenceValue);
 	void Flush();
+	void ResetCommandList();
 
 protected:
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CreateCommandAllocator();
-	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> CreateCommandList(Microsoft::WRL::ComPtr<ID3D12CommandAllocator> Allocator);
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> CreateCommandList(Microsoft::WRL::ComPtr<ID3D12CommandAllocator> Allocator);
 
 private:
 	struct CommandAllocatorEntry
@@ -35,12 +37,15 @@ private:
 	};
 
 	using TCommandAllocatorQueue = queue<CommandAllocatorEntry>;
-	using TCommandListQueue = queue<Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2>>;
+	using TCommandListQueue = queue<Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>>;
 
 	D3D12_COMMAND_LIST_TYPE CommandListType;
-	Microsoft::WRL::ComPtr<ID3D12Device2> Device;
-	Microsoft::WRL::ComPtr<ID3D12CommandQueue> CommandQueue;
-	Microsoft::WRL::ComPtr<ID3D12Fence> Fence;
+	Microsoft::WRL::ComPtr<ID3D12Device2> Device = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12CommandQueue> CommandQueue = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12Fence> Fence = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CommandAllocator;
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> CommandList;
+
 	HANDLE FenceEvent;
 	uint64_t FenceValue;
 

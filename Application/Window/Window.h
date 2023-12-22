@@ -18,23 +18,23 @@ struct SWindowInfo
 {
 	bool Fullscreen = false;
 	wstring Name = L"NONE";
-	uint32_t ClientWidth = 0;
-	uint32_t ClientHeight = 0;
+	uint32_t ClientWidth = 800;
+	uint32_t ClientHeight = 600;
 	bool VSync = false;
 	float FoV = 45.0f;
 };
 
 class OEngine;
 
-class OWindow
+class OWindow : public std::enable_shared_from_this<OWindow>
 {
 public:
 	virtual ~OWindow() = default;
-	static constexpr uint32_t BuffersCount = 3;
+	static constexpr uint32_t BuffersCount = 2;
 
 	OWindow() = default;
 
-	OWindow(shared_ptr<OEngine> _Engine, HWND hWnd, const SWindowInfo& _WindowInfo);
+	OWindow(shared_ptr<OEngine> _Engine, HWND hWnd, const SWindowInfo& _WindowInfo, const shared_ptr<OCamera>& _Camera);
 
 	const wstring& GetName() const;
 	uint32_t GetWidth() const;
@@ -50,7 +50,7 @@ public:
 	/**
 	 * Get the render target view for the current back buffer.
 	 */
-	D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentRenderTargetView() const;
+	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView() const;
 
 	/**
 	 * Get the back buffer resource for the current back buffer.
@@ -97,13 +97,14 @@ public:
 	uint64_t FenceValues[BuffersCount];
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> DepthBuffer;
-
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DSVDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> RTVDescriptorHeap;
+	void MoveToNextFrame();
+	const Microsoft::WRL::ComPtr<IDXGISwapChain4>& GetSwapChain();
 
-	void TransitionResource(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> CommandList, Microsoft::WRL::ComPtr<ID3D12Resource> Resource, D3D12_RESOURCE_STATES BeforeState, D3D12_RESOURCE_STATES AfterState);
-	void ClearRTV(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> CommandList, D3D12_CPU_DESCRIPTOR_HANDLE RTV, FLOAT* ClearColor);
-	void ClearDepth(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> CommandList, D3D12_CPU_DESCRIPTOR_HANDLE DSV, FLOAT Depth = 1.0f);
+	void TransitionResource(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> CommandList, Microsoft::WRL::ComPtr<ID3D12Resource> Resource, D3D12_RESOURCE_STATES BeforeState, D3D12_RESOURCE_STATES AfterState);
+	void ClearRTV(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> CommandList, D3D12_CPU_DESCRIPTOR_HANDLE RTV, FLOAT* ClearColor);
+	void ClearDepth(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> CommandList, D3D12_CPU_DESCRIPTOR_HANDLE DSV, FLOAT Depth = 1.0f);
 
 	// Update and Draw can only be called by the application.
 	virtual void OnRender(const UpdateEventArgs& Event);
@@ -131,7 +132,8 @@ public:
 
 protected:
 	// The Window procedure needs to call protected methods of this class.
-	friend LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+	friend LRESULT CALLBACK
+	WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 	// Create the swapchian.
 	Microsoft::WRL::ComPtr<IDXGISwapChain4> CreateSwapChain();

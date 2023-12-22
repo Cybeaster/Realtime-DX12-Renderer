@@ -15,6 +15,7 @@
 #endif
 using std::array;
 using std::make_shared;
+using std::make_unique;
 using std::map;
 using std::pair;
 using std::queue;

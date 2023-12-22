@@ -25,10 +25,7 @@ void OEngine::RemoveWindow(HWND Hwnd)
 
 OEngine::~OEngine()
 {
-	if (Device != nullptr)
-	{
-		FlushGPU();
-	}
+	FlushGPU();
 }
 
 bool OEngine::Initialize()
@@ -78,8 +75,10 @@ void OEngine::FlushGPU() const
 
 int OEngine::Run(shared_ptr<OTest> Test)
 {
+	LOG(Log, "Engine::Run")
+
 	Tests[Test->GetWindow()->GetHWND()] = Test;
-	Test->LoadContent();
+	Test->Initialize();
 	return 0;
 }
 
@@ -110,6 +109,8 @@ void OEngine::OnEnd(shared_ptr<OTest> Test) const
 
 void OEngine::OnRender(const UpdateEventArgs& Args) const
 {
+	LOG(Log, "Engine::OnRender")
+
 	for (const auto val : Tests | std::views::values)
 	{
 		val->OnUpdate(Args);
@@ -143,6 +144,8 @@ void OEngine::OnKeyReleased(KeyEventArgs& Args)
 
 void OEngine::OnMouseMoved(MouseMotionEventArgs& Args)
 {
+	LOG(Log, "Engine::OnMouseMoved")
+
 	if (const auto window = GetWindowByHWND(Args.WindowHandle))
 	{
 		if (const auto test = GetTestByHWND(Args.WindowHandle))
@@ -155,6 +158,7 @@ void OEngine::OnMouseMoved(MouseMotionEventArgs& Args)
 
 void OEngine::OnMouseButtonPressed(MouseButtonEventArgs& Args)
 {
+	LOG(Log, "Engine::OnMouseButtonPressed")
 	if (const auto window = GetWindowByHWND(Args.WindowHandle))
 	{
 		if (const auto test = GetTestByHWND(Args.WindowHandle))
@@ -167,6 +171,7 @@ void OEngine::OnMouseButtonPressed(MouseButtonEventArgs& Args)
 
 void OEngine::OnMouseButtonReleased(MouseButtonEventArgs& Args)
 {
+	LOG(Log, "Engine::OnMouseButtonReleased")
 	if (const auto window = GetWindowByHWND(Args.WindowHandle))
 	{
 		if (const auto test = GetTestByHWND(Args.WindowHandle))
@@ -183,7 +188,15 @@ void OEngine::OnMouseWheel(MouseWheelEventArgs& Args)
 }
 void OEngine::OnResize(ResizeEventArgs& Args)
 {
-	Window->OnResize(Args);
+	LOG(Log, "Engine::OnResize")
+
+	const auto window = GetWindowByHWND(Args.WindowHandle);
+	window->OnResize(Args);
+
+	if (const auto test = GetTestByHWND(Args.WindowHandle))
+	{
+		test->OnResize(Args);
+	}
 }
 
 bool OEngine::CheckTearingSupport()
@@ -212,10 +225,9 @@ bool OEngine::CheckTearingSupport()
 void OEngine::CreateWindow()
 {
 	Window = OApplication::Get()->CreateWindow();
-	Window->RegsterWindow(shared_from_this());
-	Window->Show();
-
 	WindowsMap[Window->GetHWND()] = Window;
+
+	Window->RegsterWindow(shared_from_this());
 }
 
 void OEngine::CheckMSAAQualitySupport()
