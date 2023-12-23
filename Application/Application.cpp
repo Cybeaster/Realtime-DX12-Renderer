@@ -293,6 +293,7 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 		case WM_SIZE:
 		{
 			ResizeEventArgs resizeEventArgs(width, height, hwnd);
+			Engine->OnUpdateWindowSize(resizeEventArgs);
 			if (wParam == SIZE_MINIMIZED)
 			{
 				Application->bIsAppPaused = true;
@@ -357,15 +358,15 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 		case WM_ENTERSIZEMOVE:
 		{
 			app->bIsAppPaused = true;
-			app->Timer.Stop();
 			app->bIsResizing = true;
+			app->Timer.Stop();
 			break;
 		}
 		case WM_EXITSIZEMOVE:
 		{
 			app->bIsAppPaused = false;
-			app->Timer.Start();
 			app->bIsResizing = false;
+			app->Timer.Start();
 
 			ResizeEventArgs resizeEventArgs(width, height, hwnd);
 			Engine->OnResize(resizeEventArgs);

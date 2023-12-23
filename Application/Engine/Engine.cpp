@@ -198,11 +198,16 @@ void OEngine::OnResize(ResizeEventArgs& Args)
 
 	const auto window = GetWindowByHWND(Args.WindowHandle);
 	window->OnResize(Args);
-
 	if (const auto test = GetTestByHWND(Args.WindowHandle))
 	{
 		test->OnResize(Args);
 	}
+}
+
+void OEngine::OnUpdateWindowSize(ResizeEventArgs& Args)
+{
+	const auto window = GetWindowByHWND(Args.WindowHandle);
+	window->OnUpdateWindowSize(Args);
 }
 
 bool OEngine::CheckTearingSupport()

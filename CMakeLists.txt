@@ -63,6 +63,8 @@ set(SRC_FILES
         Application/Engine/UploadBuffer/UploadBuffer.h
         Utils/DXUtils.h
         Utils/MathUtils.h
+        Types/FrameResource.h
+        Types/ObjectConstants.h
 )
 
 # Add sources to the project

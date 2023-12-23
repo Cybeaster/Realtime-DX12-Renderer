@@ -233,11 +233,14 @@ void OWindow::ClearDepth(ComPtr<ID3D12GraphicsCommandList> CommandList, D3D12_CP
 	CommandList->ClearDepthStencilView(DSV, D3D12_CLEAR_FLAG_DEPTH, Depth, 0, 0, nullptr);
 }
 
+void OWindow::OnUpdateWindowSize(ResizeEventArgs& Event)
+{
+	WindowInfo.ClientHeight = Event.Height;
+	WindowInfo.ClientWidth = Event.Width;
+}
+
 void OWindow::OnResize(ResizeEventArgs& Event)
 {
-	WindowInfo.ClientHeight = std::max(1, Event.Height);
-	WindowInfo.ClientWidth = std::max(1, Event.Width);
-
 	const auto engine = Engine.lock();
 	engine->FlushGPU();
 	engine->GetCommandQueue()->ResetCommandList();

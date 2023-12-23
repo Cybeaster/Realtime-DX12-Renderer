@@ -7,8 +7,8 @@ class STimer
 public:
 	STimer();
 
-	float GetTime();
-	float GetDeltaTime();
+	float GetTime() const;
+	float GetDeltaTime() const;
 
 	void Reset();
 	void Start();
@@ -35,7 +35,7 @@ inline STimer::STimer()
 	SecondsPerCount = 1.0 / (double)countsPerSec;
 }
 
-inline float STimer::GetTime()
+inline float STimer::GetTime() const
 {
 	if (bIsStopped)
 	{
@@ -47,7 +47,7 @@ inline float STimer::GetTime()
 	}
 }
 
-inline float STimer::GetDeltaTime()
+inline float STimer::GetDeltaTime() const
 {
 	return (float)DeltaTime;
 }

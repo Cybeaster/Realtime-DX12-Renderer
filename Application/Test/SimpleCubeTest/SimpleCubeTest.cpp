@@ -7,6 +7,7 @@
 #include "Camera/Camera.h"
 
 #include <DXHelper.h>
+#include <Timer/Timer.h>
 
 #include <array>
 #include <filesystem>
@@ -74,6 +75,9 @@ void OSimpleCubeTest::OnUpdate(const UpdateEventArgs& Event)
 	SObjectConstants objConstants;
 	XMStoreFloat4x4(&objConstants.WorldViewProj, XMMatrixTranspose(worldViewProj));
 	ObjectCB->CopyData(0, objConstants);
+
+	LOG(Log, "Time: {}", Event.Timer.GetTime());
+	ObjectCBTime->CopyData(0, STimerConstants{ Event.Timer.GetTime() });
 }
 
 void OSimpleCubeTest::OnRender(const UpdateEventArgs& Event)
@@ -123,6 +127,13 @@ void OSimpleCubeTest::OnRender(const UpdateEventArgs& Event)
 	commandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	commandList->SetGraphicsRootDescriptorTable(0, CBVHeap->GetGPUDescriptorHandleForHeapStart());
+
+	auto handleIncrementSize = Engine.lock()->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	D3D12_GPU_DESCRIPTOR_HANDLE cbvHeapHandleSecond = CBVHeap->GetGPUDescriptorHandleForHeapStart();
+	cbvHeapHandleSecond.ptr += handleIncrementSize; // Move to the second descriptor
+
+	// Set the second constant buffer (cbTimeObject at b1)
+	commandList->SetGraphicsRootDescriptorTable(1, cbvHeapHandleSecond);
 
 	commandList->DrawIndexedInstanced(
 	    BoxGeometry->GetGeomentry("Box").IndexCount,
@@ -225,7 +236,7 @@ void OSimpleCubeTest::OnMouseMoved(const MouseMotionEventArgs& Args)
 void OSimpleCubeTest::BuildDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc = {};
-	cbvHeapDesc.NumDescriptors = 1;
+	cbvHeapDesc.NumDescriptors = 2;
 	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbvHeapDesc.NodeMask = 0;
@@ -234,19 +245,36 @@ void OSimpleCubeTest::BuildDescriptorHeaps()
 
 void OSimpleCubeTest::BuildConstantBuffers()
 {
+	// Create the first constant buffer
 	ObjectCB = make_unique<OUploadBuffer<SObjectConstants>>(Engine.lock()->GetDevice().Get(), 1, true);
+	const auto objCBByteSize = Utils::CalcBufferByteSize(sizeof(SObjectConstants)); // Ensure this is 256-byte aligned
 
-	const auto objCBByteSize = Utils::CalcBufferByteSize(sizeof(SObjectConstants));
 	D3D12_GPU_VIRTUAL_ADDRESS cbAddress = ObjectCB->GetResource()->GetGPUVirtualAddress();
-
-	constexpr int boxCBuffIndex = 0;
-	cbAddress += boxCBuffIndex * objCBByteSize;
 
 	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
 	cbvDesc.BufferLocation = cbAddress;
 	cbvDesc.SizeInBytes = objCBByteSize;
 
-	Engine.lock()->GetDevice()->CreateConstantBufferView(&cbvDesc, CBVHeap->GetCPUDescriptorHandleForHeapStart());
+	D3D12_CPU_DESCRIPTOR_HANDLE cbvHeapHandle = CBVHeap->GetCPUDescriptorHandleForHeapStart();
+
+	Engine.lock()->GetDevice()->CreateConstantBufferView(&cbvDesc, cbvHeapHandle);
+
+	// Create the second constant buffer
+	ObjectCBTime = make_unique<OUploadBuffer<STimerConstants>>(Engine.lock()->GetDevice().Get(), 1, true);
+	const auto objCBfloatsize = Utils::CalcBufferByteSize(sizeof(STimerConstants)); // Ensure this is 256-byte aligned
+
+	const D3D12_GPU_VIRTUAL_ADDRESS cbAddressTime = ObjectCBTime->GetResource()->GetGPUVirtualAddress();
+
+	// Configure the second CBV descriptor
+	cbvDesc.BufferLocation = cbAddressTime;
+	cbvDesc.SizeInBytes = objCBfloatsize;
+
+	// Increment the descriptor handle for the second CBV
+	const auto handleIncrementSize = Engine.lock()->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	cbvHeapHandle.ptr += handleIncrementSize;
+
+	// Create the second CBV
+	Engine.lock()->GetDevice()->CreateConstantBufferView(&cbvDesc, cbvHeapHandle);
 }
 
 void OSimpleCubeTest::BuildRootSignature()
@@ -258,13 +286,18 @@ void OSimpleCubeTest::BuildRootSignature()
 	// thought of as defining the function signature.
 
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[1];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
 
 	CD3DX12_DESCRIPTOR_RANGE cbvTable;
 	cbvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
-	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable);
 
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(1, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	CD3DX12_DESCRIPTOR_RANGE cbvTimeTable;
+	cbvTimeTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
+
+	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable);
+	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTimeTable);
+
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(2, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	ComPtr<ID3DBlob> serializedRootSig = nullptr;
 	ComPtr<ID3DBlob> errorBlob = nullptr;

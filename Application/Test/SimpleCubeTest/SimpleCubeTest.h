@@ -18,11 +18,6 @@ struct SVertex
 	DirectX::XMFLOAT4 Color;
 };
 
-struct SObjectConstants
-{
-	DirectX::XMFLOAT4X4 WorldViewProj = Utils::Identity4x4();
-};
-
 class OSimpleCubeTest : public OTest
 {
 	using Super = OTest;
@@ -63,6 +58,7 @@ private:
 
 	unique_ptr<SMeshGeometry> BoxGeometry;
 	unique_ptr<OUploadBuffer<SObjectConstants>> ObjectCB = nullptr;
+	unique_ptr<OUploadBuffer<STimerConstants>> ObjectCBTime = nullptr;
 
 	ComPtr<ID3D12DescriptorHeap> CBVHeap = nullptr;
 

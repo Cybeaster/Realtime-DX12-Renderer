@@ -125,7 +125,7 @@ public:
 
 	// The window was resized.
 	virtual void OnResize(ResizeEventArgs& Event);
-
+	void OnUpdateWindowSize(ResizeEventArgs& Event);
 	float GetLastXMousePos() const;
 	float GetLastYMousePos() const;
 	shared_ptr<OCamera> GetCamera();

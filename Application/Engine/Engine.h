@@ -58,7 +58,7 @@ public:
 	void OnMouseButtonReleased(MouseButtonEventArgs& Args);
 	void OnMouseWheel(MouseWheelEventArgs& Args);
 	void OnResize(ResizeEventArgs& Args);
-
+	void OnUpdateWindowSize(ResizeEventArgs& Args);
 	bool CheckTearingSupport();
 	void CreateWindow();
 	void CheckMSAAQualitySupport();
