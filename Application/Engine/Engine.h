@@ -2,6 +2,8 @@
 #include "../CommandQueue/CommandQueue.h"
 #include "../Types/Types.h"
 #include "../Window/Window.h"
+#include "DXTypes/FrameResource.h"
+#include "RenderItem.h"
 
 #include <dxgi1_6.h>
 
@@ -14,9 +16,9 @@ public:
 	using TWindowMap = std::map<HWND, TWindowPtr>;
 	using WindowNameMap = std::map<std::wstring, TWindowPtr>;
 
-	static constexpr D3D_DRIVER_TYPE DriverType = D3D_DRIVER_TYPE_HARDWARE;
-	static constexpr DXGI_FORMAT BackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-	static constexpr DXGI_FORMAT DepthBufferFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	vector<unique_ptr<SFrameResource>> FrameResources;
+	SFrameResource* CurrentFrameResources = nullptr;
+	UINT CurrentFrameResourceIndex = 0;
 
 	inline static std::map<HWND, TWindowPtr> WindowsMap = {};
 
@@ -29,7 +31,7 @@ public:
 	virtual bool Initialize();
 
 	shared_ptr<OWindow> GetWindow() const;
-	Microsoft::WRL::ComPtr<ID3D12Device2> GetDevice() const;
+	ComPtr<ID3D12Device2> GetDevice() const;
 
 	void FlushGPU() const;
 	int Run(shared_ptr<class OTest> Test);
@@ -45,10 +47,12 @@ public:
 	void OnWindowDestroyed();
 	bool IsTearingSupported() const;
 
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(UINT NumDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE Type) const;
+	ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(UINT NumDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE Type) const;
 	shared_ptr<OCommandQueue> GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type = D3D12_COMMAND_LIST_TYPE_DIRECT);
 	UINT GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE Type) const;
 	void OnEnd(shared_ptr<OTest> Test) const;
+
+	void BuildFrameResource();
 
 	void OnRender(const UpdateEventArgs& Args) const;
 	void OnKeyPressed(KeyEventArgs& Args);
@@ -63,7 +67,12 @@ public:
 	void CreateWindow();
 	void CheckMSAAQualitySupport();
 	bool GetMSAAState(UINT& Quality) const;
-	Microsoft::WRL::ComPtr<IDXGIFactory2> GetFactory() const;
+
+	const vector<unique_ptr<SRenderItem>>& GetRenderItems();
+	const vector<unique_ptr<SRenderItem>>& GetOpaqueRenderItems();
+	const vector<unique_ptr<SRenderItem>>& GetTransparentRenderItems();
+
+	ComPtr<IDXGIFactory2> GetFactory() const;
 
 protected:
 	shared_ptr<OTest> GetTestByHWND(HWND Handler);
@@ -75,12 +84,12 @@ protected:
 
 	shared_ptr<OWindow> Window;
 
-	Microsoft::WRL::ComPtr<IDXGIAdapter4> GetAdapter(bool UseWarp);
-	Microsoft::WRL::ComPtr<ID3D12Device2> CreateDevice(Microsoft::WRL::ComPtr<IDXGIAdapter4> Adapter);
+	ComPtr<IDXGIAdapter4> GetAdapter(bool UseWarp);
+	ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> Adapter);
 
 private:
-	Microsoft::WRL::ComPtr<IDXGIAdapter4> Adapter;
-	Microsoft::WRL::ComPtr<ID3D12Device2> Device;
+	ComPtr<IDXGIAdapter4> Adapter;
+	ComPtr<ID3D12Device2> Device;
 
 	shared_ptr<OCommandQueue> DirectCommandQueue;
 	shared_ptr<OCommandQueue> ComputeCommandQueue;
@@ -92,5 +101,9 @@ private:
 	UINT Msaa4xQuality = 0;
 
 	map<HWND, shared_ptr<OTest>> Tests;
-	Microsoft::WRL::ComPtr<IDXGIFactory4> Factory;
+	ComPtr<IDXGIFactory4> Factory;
+
+	vector<unique_ptr<SRenderItem>> AllRenderItems;
+	vector<unique_ptr<SRenderItem>> OpaqueRenderItems;
+	vector<unique_ptr<SRenderItem>> TransparentRenderItems;
 };

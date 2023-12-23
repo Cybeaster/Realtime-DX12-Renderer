@@ -1,7 +1,6 @@
 #pragma once
 #include "../InputHandler/InputHandler.h"
 #include "Events.h"
-#include "HighResolutionClock.h"
 
 #include <DirectXMath.h>
 #include <Types.h>
@@ -142,8 +141,6 @@ protected:
 	void ResizeDepthBuffer();
 
 private:
-	OHighResolutionClock UpdateClock;
-	OHighResolutionClock RenderClock;
 	shared_ptr<OInputHandler> InputHandler;
 
 	weak_ptr<OEngine> Engine;

@@ -1,10 +1,12 @@
 
-#include "SimpleCubeTest.h"
+#include "ShapesTest.h"
 
 #include "../../Engine/Engine.h"
 #include "../../Window/Window.h"
 #include "Application.h"
 #include "Camera/Camera.h"
+#include "RenderConstants.h"
+#include "RenderItem.h"
 
 #include <DXHelper.h>
 #include <Timer/Timer.h>
@@ -16,12 +18,12 @@ using namespace Microsoft::WRL;
 
 using namespace DirectX;
 
-OSimpleCubeTest::OSimpleCubeTest(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window)
+OShapesTest::OShapesTest(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window)
     : OTest(_Engine, _Window)
 {
 }
 
-bool OSimpleCubeTest::Initialize()
+bool OShapesTest::Initialize()
 {
 	SetupProjection();
 	const auto engine = Engine.lock();
@@ -45,42 +47,89 @@ bool OSimpleCubeTest::Initialize()
 	return true;
 }
 
-void OSimpleCubeTest::UnloadContent()
+void OShapesTest::UnloadContent()
 {
 	ContentLoaded = false;
 }
 
-void OSimpleCubeTest::OnUpdate(const UpdateEventArgs& Event)
+void OShapesTest::OnUpdate(const UpdateEventArgs& Event)
 {
 	Super::OnUpdate(Event);
 
-	// Convert Spherical to Cartesian coordinates.
-	const float x = Radius * sinf(Phi) * cosf(Theta);
-	const float z = Radius * sinf(Phi) * sinf(Theta);
-	const float y = Radius * cosf(Phi);
+	auto engine = Engine.lock();
+	engine->CurrentFrameResourceIndex = (engine->CurrentFrameResourceIndex + 1) % SRenderConstants::NumFrameResources;
+	engine->CurrentFrameResources = engine->FrameResources[engine->CurrentFrameResourceIndex].get();
 
-	// Build the view matrix.
-	const XMVECTOR pos = XMVectorSet(x, y, z, 1.0f);
-	const XMVECTOR target = XMVectorZero();
-	const XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	// Has the GPU finished processing the commands of the current frame
+	// resource. If not, wait until the GPU has completed commands up to
+	// this fence point.
 
-	const XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
-	XMStoreFloat4x4(&ViewMatrix, view);
-
-	const XMMATRIX world = XMLoadFloat4x4(&WorldMatrix);
-	const XMMATRIX proj = XMLoadFloat4x4(&ProjectionMatrix);
-	const XMMATRIX worldViewProj = world * view * proj;
-
-	// Update the constant buffer with the latest worldViewProj matrix.
-	SObjectConstants objConstants;
-	XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(worldViewProj));
-	ObjectCB->CopyData(0, objConstants);
-
-	LOG(Log, "Time: {}", Event.Timer.GetTime());
-	ObjectCBTime->CopyData(0, STimerConstants{ Event.Timer.GetTime() });
+	if (engine->CurrentFrameResources->Fence != 0 && engine->GetCommandQueue()->GetFence()->GetCompletedValue() < engine->CurrentFrameResources->Fence)
+	{
+		engine->GetCommandQueue()->WaitForFenceValue(engine->CurrentFrameResources->Fence);
+	}
 }
 
-void OSimpleCubeTest::OnRender(const UpdateEventArgs& Event)
+void OShapesTest::UpdateMainPass(STimer& Timer)
+{
+	auto engine = Engine.lock();
+	auto window = Window.lock();
+
+	XMMATRIX view = XMLoadFloat4x4(&ViewMatrix);
+	XMMATRIX proj = XMLoadFloat4x4(&ProjectionMatrix);
+	XMMATRIX viewProj = XMMatrixMultiply(view, proj);
+
+	auto detView = XMMatrixDeterminant(view);
+	auto detProj = XMMatrixDeterminant(proj);
+	auto detViewProj = XMMatrixDeterminant(viewProj);
+
+	const XMMATRIX invView = XMMatrixInverse(&detView, view);
+	const XMMATRIX invProj = XMMatrixInverse(&detProj, proj);
+	const XMMATRIX invViewProj = XMMatrixInverse(&detViewProj, viewProj);
+
+	XMStoreFloat4x4(&MainPassCB.View, XMMatrixTranspose(view));
+	XMStoreFloat4x4(&MainPassCB.InvView, XMMatrixTranspose(invView));
+	XMStoreFloat4x4(&MainPassCB.Proj, XMMatrixTranspose(proj));
+	XMStoreFloat4x4(&MainPassCB.InvProj, XMMatrixTranspose(invProj));
+	XMStoreFloat4x4(&MainPassCB.ViewProj, XMMatrixTranspose(viewProj));
+	XMStoreFloat4x4(&MainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
+
+	MainPassCB.EyePosW = EyePos;
+	MainPassCB.RenderTargetSize = XMFLOAT2(static_cast<float>(window->GetWidth()), static_cast<float>(window->GetHeight()));
+	MainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / window->GetWidth(), 1.0f / window->GetHeight());
+	MainPassCB.NearZ = 1.0f;
+	MainPassCB.FarZ = 1000.0f;
+	MainPassCB.TotalTime = Timer.GetTime();
+	MainPassCB.DeltaTime = Timer.GetDeltaTime();
+
+	const auto currPassCB = engine->CurrentFrameResources->PassCB.get();
+	currPassCB->CopyData(0, MainPassCB);
+}
+
+void OShapesTest::UpdateObjectCBs(STimer& Timer)
+{
+	const auto engine = Engine.lock();
+	const auto currentObjectCB = engine->CurrentFrameResources->ObjectCB.get();
+
+	for (const auto& item : engine->GetRenderItems())
+	{
+		// Only update the cbuffer data if the constants have changed.
+		// This needs to be tracked per frame resource.
+
+		if (item->NumFramesDirty > 0)
+		{
+			auto world = XMLoadFloat4x4(&item->World);
+			SObjectConstants objConstants;
+			XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
+			currentObjectCB->CopyData(item->ObjectCBIndex, objConstants);
+
+			// Next FrameResource need to ber updated too
+			item->NumFramesDirty--;
+		}
+	}
+}
+
+void OShapesTest::OnRender(const UpdateEventArgs& Event)
 {
 	auto engine = Engine.lock();
 	auto commandList = engine->GetCommandQueue()->GetCommandList();
@@ -155,24 +204,31 @@ void OSimpleCubeTest::OnRender(const UpdateEventArgs& Event)
 
 	THROW_IF_FAILED(window->GetSwapChain()->Present(0, 0));
 	window->MoveToNextFrame();
+
+	// Add an instruction to the command queue to set a new fence point.
+	// Because we are on the GPU timeline, the new fence point won’t be
+	// set until the GPU finishes processing all the commands prior to
+	// this Signal().
+	engine->CurrentFrameResources->Fence = commandQueue->Signal();
+
 	// Wait until frame commands are complete.  This waiting is inefficient and is
 	// done for simplicity.  Later we will show how to organize our rendering code
 	// so we do not have to wait per frame.
 	engine->FlushGPU();
 }
 
-void OSimpleCubeTest::OnResize(const ResizeEventArgs& Event)
+void OShapesTest::OnResize(const ResizeEventArgs& Event)
 {
 	OTest::OnResize(Event);
 	SetupProjection();
 }
 
-void OSimpleCubeTest::SetupProjection()
+void OShapesTest::SetupProjection()
 {
 	XMStoreFloat4x4(&ProjectionMatrix, XMMatrixPerspectiveFovLH(0.25f * XM_PI, Window.lock()->GetAspectRatio(), 1.0f, 1000.0f));
 }
 
-void OSimpleCubeTest::OnMouseWheel(const MouseWheelEventArgs& Event)
+void OShapesTest::OnMouseWheel(const MouseWheelEventArgs& Event)
 {
 	const auto window = Window.lock();
 	auto fov = window->GetFoV();
@@ -184,7 +240,7 @@ void OSimpleCubeTest::OnMouseWheel(const MouseWheelEventArgs& Event)
 	OutputDebugStringA(buffer);
 }
 
-void OSimpleCubeTest::OnKeyPressed(const KeyEventArgs& Event)
+void OShapesTest::OnKeyPressed(const KeyEventArgs& Event)
 {
 	OTest::OnKeyPressed(Event);
 
@@ -206,7 +262,7 @@ void OSimpleCubeTest::OnKeyPressed(const KeyEventArgs& Event)
 	}
 }
 
-void OSimpleCubeTest::OnMouseMoved(const MouseMotionEventArgs& Args)
+void OShapesTest::OnMouseMoved(const MouseMotionEventArgs& Args)
 {
 	OTest::OnMouseMoved(Args);
 	auto window = Window.lock();
@@ -233,7 +289,7 @@ void OSimpleCubeTest::OnMouseMoved(const MouseMotionEventArgs& Args)
 	LOG(Log, "Theta: {} Phi: {} Radius: {}", Theta, Phi, Radius);
 }
 
-void OSimpleCubeTest::BuildDescriptorHeaps()
+void OShapesTest::BuildDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc = {};
 	cbvHeapDesc.NumDescriptors = 2;
@@ -243,7 +299,7 @@ void OSimpleCubeTest::BuildDescriptorHeaps()
 	THROW_IF_FAILED(Engine.lock()->GetDevice()->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&CBVHeap)));
 }
 
-void OSimpleCubeTest::BuildConstantBuffers()
+void OShapesTest::BuildConstantBuffers()
 {
 	// Create the first constant buffer
 	ObjectCB = make_unique<OUploadBuffer<SObjectConstants>>(Engine.lock()->GetDevice().Get(), 1, true);
@@ -277,7 +333,7 @@ void OSimpleCubeTest::BuildConstantBuffers()
 	Engine.lock()->GetDevice()->CreateConstantBufferView(&cbvDesc, cbvHeapHandle);
 }
 
-void OSimpleCubeTest::BuildRootSignature()
+void OShapesTest::BuildRootSignature()
 {
 	// Shader programs typically require resources as input (constant buffers,
 	// textures, samplers).  The root signature defines the resources the shader
@@ -288,14 +344,14 @@ void OSimpleCubeTest::BuildRootSignature()
 	// Root parameter can be a table, root descriptor or root constants.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
 
-	CD3DX12_DESCRIPTOR_RANGE cbvTable;
-	cbvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
+	CD3DX12_DESCRIPTOR_RANGE cbvTable0;
+	cbvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
 
-	CD3DX12_DESCRIPTOR_RANGE cbvTimeTable;
-	cbvTimeTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
+	CD3DX12_DESCRIPTOR_RANGE cbvTimeTable1;
+	cbvTimeTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
 
-	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable);
-	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTimeTable);
+	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable0);
+	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTimeTable1);
 
 	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(2, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
@@ -315,7 +371,7 @@ void OSimpleCubeTest::BuildRootSignature()
 	                                                                IID_PPV_ARGS(&RootSignature)));
 }
 
-void OSimpleCubeTest::BuildShadersAndInputLayout()
+void OShapesTest::BuildShadersAndInputLayout()
 {
 	MvsByteCode = Utils::CompileShader(L"Shaders/SimpleCubeShader.hlsl", nullptr, "VS", "vs_5_0");
 	MpsByteCode = Utils::CompileShader(L"Shaders/SimpleCubeShader.hlsl", nullptr, "PS", "ps_5_0");
@@ -326,7 +382,7 @@ void OSimpleCubeTest::BuildShadersAndInputLayout()
 	};
 }
 
-void OSimpleCubeTest::BuildBoxGeometry()
+void OShapesTest::BuildBoxGeometry()
 {
 	const array vertices = {
 		SVertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::White) }),
@@ -429,13 +485,13 @@ void OSimpleCubeTest::BuildBoxGeometry()
 	BoxGeometry->DrawArgs["Box"] = submesh;
 }
 
-void OSimpleCubeTest::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> CommandList,
-                                           ID3D12Resource** DestinationResource,
-                                           ID3D12Resource** IntermediateResource,
-                                           size_t NumElements,
-                                           size_t ElementSize,
-                                           const void* BufferData,
-                                           D3D12_RESOURCE_FLAGS Flags) const
+void OShapesTest::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> CommandList,
+                                       ID3D12Resource** DestinationResource,
+                                       ID3D12Resource** IntermediateResource,
+                                       size_t NumElements,
+                                       size_t ElementSize,
+                                       const void* BufferData,
+                                       D3D12_RESOURCE_FLAGS Flags) const
 {
 	auto device = Engine.lock()->GetDevice();
 	size_t bufferSize = NumElements * ElementSize;
@@ -477,7 +533,7 @@ void OSimpleCubeTest::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> Co
 	}
 }
 
-void OSimpleCubeTest::BuildPSO()
+void OShapesTest::BuildPSO()
 {
 	auto engine = Engine.lock();
 	UINT quality = 0;

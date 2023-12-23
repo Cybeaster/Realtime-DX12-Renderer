@@ -20,7 +20,6 @@ OCommandQueue::OCommandQueue(Microsoft::WRL::ComPtr<ID3D12Device2> Device, D3D12
 
 	CommandList->Close();
 	THROW_IF_FAILED(Device->CreateFence(FenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&Fence)));
-
 }
 
 OCommandQueue::~OCommandQueue()
@@ -110,6 +109,11 @@ void OCommandQueue::Flush()
 void OCommandQueue::ResetCommandList()
 {
 	CommandList->Reset(CommandAllocator.Get(), nullptr);
+}
+
+Microsoft::WRL::ComPtr<ID3D12Fence> OCommandQueue::GetFence() const
+{
+	return Fence;
 }
 
 Microsoft::WRL::ComPtr<ID3D12CommandQueue> OCommandQueue::GetCommandQueue()

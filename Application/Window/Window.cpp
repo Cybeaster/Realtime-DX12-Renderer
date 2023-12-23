@@ -9,6 +9,7 @@
 #include "Camera/Camera.h"
 #include "Exception.h"
 #include "Logger.h"
+#include "RenderConstants.h"
 
 #include <DXHelper.h>
 #include <Types.h>
@@ -252,7 +253,7 @@ void OWindow::OnResize(ResizeEventArgs& Event)
 	}
 	DepthBuffer.Reset();
 
-	THROW_IF_FAILED(SwapChain->ResizeBuffers(BuffersCount, WindowInfo.ClientWidth, WindowInfo.ClientHeight, engine->BackBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
+	THROW_IF_FAILED(SwapChain->ResizeBuffers(BuffersCount, WindowInfo.ClientWidth, WindowInfo.ClientHeight, SRenderConstants::BackBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 	CurrentBackBufferIndex = 0;
 
 	UpdateRenderTargetViews();
@@ -293,7 +294,7 @@ ComPtr<IDXGISwapChain4> OWindow::CreateSwapChain()
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
 	swapChainDesc.Width = WindowInfo.ClientWidth;
 	swapChainDesc.Height = WindowInfo.ClientHeight;
-	swapChainDesc.Format = Engine.lock()->BackBufferFormat;
+	swapChainDesc.Format = SRenderConstants::BackBufferFormat;
 	swapChainDesc.Stereo = FALSE;
 	swapChainDesc.SampleDesc.Count = msaaState ? 4 : 1;
 	swapChainDesc.SampleDesc.Quality = msaaState ? msaaQuality - 1 : 0;
@@ -346,12 +347,12 @@ void OWindow::ResizeDepthBuffer()
 	const auto device = engine->GetDevice();
 
 	D3D12_CLEAR_VALUE optimizedClearValue = {};
-	optimizedClearValue.Format = engine->DepthBufferFormat;
+	optimizedClearValue.Format = SRenderConstants::DepthBufferFormat;
 	optimizedClearValue.DepthStencil = { 1.0f, 0 };
 
 	// Create named instances for heap properties and resource description
 	const CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
-	CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(engine->DepthBufferFormat, WindowInfo.ClientWidth, WindowInfo.ClientHeight, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+	CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(SRenderConstants::DepthBufferFormat, WindowInfo.ClientWidth, WindowInfo.ClientHeight, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 
 	THROW_IF_FAILED(device->CreateCommittedResource(
 	    &heapProperties,
@@ -370,7 +371,7 @@ void OWindow::ResizeDepthBuffer()
 	// Depth stencil view description
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
 
-	dsvDesc.Format = engine->DepthBufferFormat;
+	dsvDesc.Format = SRenderConstants::DepthBufferFormat;
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 	dsvDesc.Texture2D.MipSlice = 0;
 	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;

@@ -24,6 +24,7 @@ public:
 	void WaitForFenceValue(uint64_t FenceValue);
 	void Flush();
 	void ResetCommandList();
+	Microsoft::WRL::ComPtr<ID3D12Fence> GetFence() const;
 
 protected:
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CreateCommandAllocator();

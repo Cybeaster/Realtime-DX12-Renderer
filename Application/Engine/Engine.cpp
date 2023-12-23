@@ -113,6 +113,14 @@ void OEngine::OnEnd(shared_ptr<OTest> Test) const
 	Test->Destroy();
 }
 
+void OEngine::BuildFrameResource()
+{
+	for (int i = 0; i < SRenderConstants::NumFrameResources; ++i)
+	{
+		FrameResources.push_back(make_unique<SFrameResource>(Device.Get(), 1, 1));
+	}
+}
+
 void OEngine::OnRender(const UpdateEventArgs& Args) const
 {
 	LOG(Log, "Engine::OnRender")
@@ -235,7 +243,7 @@ void OEngine::CreateWindow()
 void OEngine::CheckMSAAQualitySupport()
 {
 	D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels;
-	msQualityLevels.Format = BackBufferFormat;
+	msQualityLevels.Format = SRenderConstants::BackBufferFormat;
 	msQualityLevels.SampleCount = 4;
 	msQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
 	msQualityLevels.NumQualityLevels = 0;
@@ -252,6 +260,21 @@ bool OEngine::GetMSAAState(UINT& Quality) const
 {
 	Quality = Msaa4xQuality;
 	return Msaa4xState;
+}
+
+const vector<unique_ptr<SRenderItem>>& OEngine::GetRenderItems()
+{
+	return AllRenderItems;
+}
+
+const vector<unique_ptr<SRenderItem>>& OEngine::GetOpaqueRenderItems()
+{
+	return OpaqueRenderItems;
+}
+
+const vector<unique_ptr<SRenderItem>>& OEngine::GetTransparentRenderItems()
+{
+	return TransparentRenderItems;
 }
 
 ComPtr<IDXGIFactory2> OEngine::GetFactory() const

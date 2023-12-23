@@ -49,9 +49,7 @@ set(SRC_FILES
         Application/Test/SimpleCubeTest/SimpleCubeTest.h
         Application/Test/SimpleCubeTest/SimpleCubeTest.cpp
         Types/Events.h
-        Types/DXHelper.h
-        Types/HighResolutionClock.h
-        Types/HighResolutionClock.cpp
+        Types/DXTypes/DXHelper.h
         Application/Test/Test.cpp
         main.cpp
         Types/Timer/Timer.h
@@ -63,8 +61,13 @@ set(SRC_FILES
         Application/Engine/UploadBuffer/UploadBuffer.h
         Utils/DXUtils.h
         Utils/MathUtils.h
-        Types/FrameResource.h
-        Types/ObjectConstants.h
+        Types/DXTypes/FrameResource.h
+        Types/DXTypes/ObjectConstants.h
+        Types/DXTypes/RenderItem.h
+        Types/DXTypes/RenderConstants.h
+        Types/DXTypes/RenderConstants.h
+        Application/Test/ShapesTest/ShapesTest.cpp
+        Application/Test/ShapesTest/ShapesTest.h
 )
 
 # Add sources to the project
@@ -84,7 +87,11 @@ add_custom_command(TARGET DXRenderer POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/Shaders $<TARGET_FILE_DIR:DXRenderer>/Shaders)
 
-target_include_directories(DXRenderer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Externals/directx ${CMAKE_CURRENT_SOURCE_DIR}/Types ${CMAKE_CURRENT_SOURCE_DIR}/Application)
+target_include_directories(DXRenderer PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/Externals/directx
+        ${CMAKE_CURRENT_SOURCE_DIR}/Types
+        ${CMAKE_CURRENT_SOURCE_DIR}/Application
+        ${CMAKE_CURRENT_SOURCE_DIR}/Types/DXTypes)
 
 # Link necessary libraries
 target_link_libraries(DXRenderer d3d12.lib dxgi.lib dxguid.lib d3dcompiler.lib Shlwapi.lib)
