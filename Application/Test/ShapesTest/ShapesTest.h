@@ -24,25 +24,40 @@ class OShapesTest : public OTest
 
 public:
 	OShapesTest(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window);
+
 	bool Initialize() override;
+
 	void UnloadContent() override;
+
 	void OnUpdate(const UpdateEventArgs& Event) override;
+
 	void OnRender(const UpdateEventArgs& Event) override;
+
 	void OnResize(const ResizeEventArgs& Event) override;
+
 	void OnMouseWheel(const MouseWheelEventArgs& Event) override;
+
 	void OnKeyPressed(const KeyEventArgs& Event) override;
+
 	void OnMouseMoved(const MouseMotionEventArgs& Args) override;
 
 	void UpdateMainPass(STimer& Timer);
+
 	void UpdateObjectCBs(STimer& Timer);
 
 private:
 	void SetupProjection();
+
 	void BuildDescriptorHeaps();
+
 	void BuildConstantBuffers();
+
 	void BuildRootSignature();
+
 	void BuildShadersAndInputLayout();
-	void BuildBoxGeometry();
+
+	void BuildShapeGeometry();
+
 	void UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> CommandList,
 	                          ID3D12Resource** pDestinationResource, ID3D12Resource** IntermediateResource,
 	                          size_t NumElements, size_t ElementSize, const void* BufferData,
@@ -81,4 +96,6 @@ private:
 	float Theta = 1.5f * DirectX::XM_PI;
 	float Phi = DirectX::XM_PIDIV4;
 	float Radius = 5;
+
+	std::unordered_map<string, unique_ptr<SMeshGeometry>> SceneGeometry;
 };

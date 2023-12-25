@@ -4,6 +4,7 @@ using namespace DirectX;
 
 OGeometryGenerator::SMeshData OGeometryGenerator::CreateBox(float Width, float Height, float Depth, uint32_t NumSubdivisions)
 {
+	return SMeshData();
 }
 
 OGeometryGenerator::SMeshData OGeometryGenerator::CreateSphere(float Radius, uint32_t SliceCount, uint32_t StackCount)
@@ -428,8 +429,103 @@ OGeometryGenerator::SVertex OGeometryGenerator::MidPoint(const SVertex& V0, cons
 
 OGeometryGenerator::SMeshData OGeometryGenerator::CreateGrid(float Width, float Depth, uint32_t M, uint32_t N)
 {
+	SMeshData meshData;
+
+	uint32_t vertexCount = M * N;
+	uint32_t faceCount = (M - 1) * (N - 1) * 2;
+
+	float halfWidth = 0.5f * Width;
+	float halfDepth = 0.5f * Depth;
+
+	float dx = Width / (N - 1);
+	float dz = Depth / (M - 1);
+
+	float du = 1.0f / (N - 1);
+	float dv = 1.0f / (M - 1);
+
+	meshData.Vertices.resize(vertexCount);
+
+	for (uint32_t i = 0; i < M; ++i)
+	{
+		float z = halfDepth - i * dz;
+		for (uint32_t j = 0; j < N; j++)
+		{
+			float x = -halfWidth + j * dx;
+
+			meshData.Vertices[i * N + j].Position = XMFLOAT3(x, 0.0f, z);
+			meshData.Vertices[i * N + j].Normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
+			meshData.Vertices[i * N + j].TangentU = XMFLOAT3(1.0f, 0.0f, 0.0f);
+
+			// Stretch texture over grid.
+			meshData.Vertices[i * N + j].TexC.x = j * du;
+			meshData.Vertices[i * N + j].TexC.y = i * dv;
+		}
+	}
+
+	// Create the indices.
+	meshData.Indices32.resize(faceCount * 3); // 3 indices per face
+
+	uint32_t k = 0;
+	for (uint32_t i = 0; i < M - 1; i++)
+	{
+		for (uint32_t j = 0; j < N - 1; j++)
+		{
+			meshData.Indices32[k] = i * N + j;
+			meshData.Indices32[k + 1] = i * N + j + 1;
+			meshData.Indices32[k + 2] = (i + 1) * N + j;
+
+			meshData.Indices32[k + 3] = (i + 1) * N + j;
+			meshData.Indices32[k + 4] = i * N + j + 1;
+			meshData.Indices32[k + 5] = (i + 1) * N + j + 1;
+			k += 6;
+		}
+	}
+
+	return meshData;
 }
 
 OGeometryGenerator::SMeshData OGeometryGenerator::CreateQuad(float X, float Y, float Width, float Height, float Depth)
 {
+	SMeshData meshData;
+
+	meshData.Vertices.resize(4);
+	meshData.Indices32.resize(6);
+
+	// clang-format off
+
+	// Position coordinates specified in NDC space.
+	meshData.Vertices[0] = SVertex(
+		X, Y - Height, Depth,
+		0.0f, 0.0f, -1.0f,
+		1.0f, 0.0f, 0.0f,
+		0.0f, 1.0f);
+
+	meshData.Vertices[1] = SVertex(
+		X, Y, Depth,
+		0.0f, 0.0f, -1.0f,
+		1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f);
+
+	meshData.Vertices[2] = SVertex(
+		X+Width, Y, Depth,
+		0.0f, 0.0f, -1.0f,
+		1.0f, 0.0f, 0.0f,
+		1.0f, 0.0f);
+
+	meshData.Vertices[3] = SVertex(
+		X+Width, Y-Height, Depth,
+		0.0f, 0.0f, -1.0f,
+		1.0f, 0.0f, 0.0f,
+		1.0f, 1.0f);
+
+	// clang-format on
+
+	meshData.Indices32[0] = 0;
+	meshData.Indices32[1] = 1;
+	meshData.Indices32[2] = 2;
+	meshData.Indices32[3] = 0;
+	meshData.Indices32[4] = 2;
+	meshData.Indices32[5] = 3;
+
+	return meshData;
 }

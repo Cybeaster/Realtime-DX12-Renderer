@@ -70,6 +70,7 @@ set(SRC_FILES
         Application/Test/ShapesTest/ShapesTest.h
         GeomertryGenerator/GeometryGenerator.h
         GeomertryGenerator/GeometryGenerator.cpp
+        GeomertryGenerator/GeometryGenerator.cpp
 )
 
 # Add sources to the project

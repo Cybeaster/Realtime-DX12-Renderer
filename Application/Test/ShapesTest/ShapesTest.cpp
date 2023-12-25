@@ -7,6 +7,7 @@
 #include "Camera/Camera.h"
 #include "RenderConstants.h"
 #include "RenderItem.h"
+#include "../../../GeomertryGenerator/GeometryGenerator.h"
 
 #include <DXHelper.h>
 #include <Timer/Timer.h>
@@ -19,7 +20,7 @@ using namespace Microsoft::WRL;
 using namespace DirectX;
 
 OShapesTest::OShapesTest(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window)
-    : OTest(_Engine, _Window)
+	: OTest(_Engine, _Window)
 {
 }
 
@@ -35,7 +36,7 @@ bool OShapesTest::Initialize()
 	BuildConstantBuffers();
 	BuildRootSignature();
 	BuildShadersAndInputLayout();
-	BuildBoxGeometry();
+	BuildShapeGeometry();
 	BuildPSO();
 
 	THROW_IF_FAILED(queue->GetCommandList()->Close());
@@ -185,11 +186,11 @@ void OShapesTest::OnRender(const UpdateEventArgs& Event)
 	commandList->SetGraphicsRootDescriptorTable(1, cbvHeapHandleSecond);
 
 	commandList->DrawIndexedInstanced(
-	    BoxGeometry->GetGeomentry("Box").IndexCount,
-	    1,
-	    0,
-	    0,
-	    0);
+		BoxGeometry->GetGeomentry("Box").IndexCount,
+		1,
+		0,
+		0,
+		0);
 
 	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(currentBackBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	// Indicate a state transition on the resource usage.
@@ -366,9 +367,9 @@ void OShapesTest::BuildRootSignature()
 	}
 	THROW_IF_FAILED(hr);
 	THROW_IF_FAILED(Engine.lock()->GetDevice()->CreateRootSignature(0,
-	                                                                serializedRootSig->GetBufferPointer(),
-	                                                                serializedRootSig->GetBufferSize(),
-	                                                                IID_PPV_ARGS(&RootSignature)));
+		serializedRootSig->GetBufferPointer(),
+		serializedRootSig->GetBufferSize(),
+		IID_PPV_ARGS(&RootSignature)));
 }
 
 void OShapesTest::BuildShadersAndInputLayout()
@@ -382,107 +383,136 @@ void OShapesTest::BuildShadersAndInputLayout()
 	};
 }
 
-void OShapesTest::BuildBoxGeometry()
+void OShapesTest::BuildShapeGeometry()
 {
-	const array vertices = {
-		SVertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::White) }),
-		SVertex({ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Black) }),
-		SVertex({ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Red) }),
-		SVertex({ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::Green) }),
-		SVertex({ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Blue) }),
-		SVertex({ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Yellow) }),
-		SVertex({ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Cyan) }),
-		SVertex({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Magenta) })
-	};
+	OGeometryGenerator generator;
+	auto box = generator.CreateBox(1.5f, 0.5f, 1.5f, 3);
+	auto grid = generator.CreateGrid(20.0f, 30.0f, 60, 40);
+	auto sphere = generator.CreateSphere(0.5f, 20, 20);
+	auto cylinder = generator.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
 
-	//clang-format off
-	std::array<uint16_t, 36> indices = {
-		// front face
-		0,
-		1,
-		2,
-		0,
-		2,
-		3,
+	//
+	// We are concatenating all the geometry into one big vertex/index
+	// buffer. So define the regions in the buffer each submesh covers.
+	//
 
-		// back face
-		4,
-		6,
-		5,
-		4,
-		7,
-		6,
+	// Cache the vertex offsets to each object in the concatenated vertex
+	// buffer.
 
-		// left face
-		4,
-		5,
-		1,
-		4,
-		1,
-		0,
+	UINT boxVertexOffset = 0;
+	UINT gridVertexOffset = static_cast<UINT>(box.Vertices.size());
+	UINT sphereVertexOffset = gridVertexOffset + static_cast<UINT>(grid.Vertices.size());
+	UINT cylinderVertexOffset = sphereVertexOffset + static_cast<UINT>(sphere.Vertices.size());
 
-		// right face
-		3,
-		2,
-		6,
-		3,
-		6,
-		7,
+	// Cache the starting index for each object in the concatenated index
+	// buffer.
 
-		// top face
-		1,
-		5,
-		6,
-		1,
-		6,
-		2,
+	UINT boxIndexOffset = 0;
+	UINT gridIndexOffset = static_cast<UINT>(box.Indices32.size());
+	UINT sphereIndexOffset = gridIndexOffset + static_cast<UINT>(grid.Indices32.size());
+	UINT cylinderIndexOffset = sphereIndexOffset + static_cast<UINT>(sphere.Indices32.size());
 
-		// bottom face
-		4,
-		0,
-		3,
-		4,
-		3,
-		7
-	};
-	//clang-format on
+	// Define the SubmeshGeometry that cover different
+	// regions of the vertex/index buffers.
 
-	auto commandList = Engine.lock()->GetCommandQueue()->GetCommandList();
-	constexpr auto vbByteSize = vertices.size() * sizeof(SVertex);
-	constexpr auto ibByteSize = indices.size() * sizeof(uint16_t);
+	SSubmeshGeometry boxSubmesh;
+	boxSubmesh.IndexCount = static_cast<UINT>(box.Indices32.size());
+	boxSubmesh.StartIndexLocation = boxIndexOffset;
+	boxSubmesh.BaseVertexLocation = boxVertexOffset;
 
-	BoxGeometry = make_unique<SMeshGeometry>();
-	BoxGeometry->Name = "BoxGeo";
+	SSubmeshGeometry gridSubmesh;
+	gridSubmesh.IndexCount = static_cast<UINT>(grid.Indices32.size());
+	gridSubmesh.StartIndexLocation = gridIndexOffset;
+	gridSubmesh.BaseVertexLocation = gridVertexOffset;
 
-	THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &BoxGeometry->VertexBufferCPU));
-	CopyMemory(BoxGeometry->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+	SSubmeshGeometry sphereSubmesh;
+	sphereSubmesh.IndexCount = static_cast<UINT>(sphere.Indices32.size());
+	sphereSubmesh.StartIndexLocation = sphereIndexOffset;
+	sphereSubmesh.BaseVertexLocation = sphereVertexOffset;
 
-	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &BoxGeometry->IndexBufferCPU));
-	CopyMemory(BoxGeometry->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+	SSubmeshGeometry cylinderSubmesh;
+	cylinderSubmesh.IndexCount = static_cast<UINT>(cylinder.Indices32.size());
+	cylinderSubmesh.StartIndexLocation = cylinderIndexOffset;
+	cylinderSubmesh.BaseVertexLocation = cylinderVertexOffset;
 
-	BoxGeometry->VertexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
-	                                                          Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
-	                                                          vertices.data(),
-	                                                          vbByteSize,
-	                                                          BoxGeometry->VertexBufferUploader);
+	//
+	// Extract the vertex elements we are interested in and pack the
+	// vertices of all the meshes into one vertex buffer.
+	//
 
-	BoxGeometry->IndexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
-	                                                         Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
-	                                                         indices.data(),
-	                                                         ibByteSize,
-	                                                         BoxGeometry->IndexBufferUploader);
+	auto totalVertexCount = box.Vertices.size() + grid.Vertices.size() + sphere.Vertices.size() + cylinder.Vertices.size();
 
-	BoxGeometry->VertexByteStride = sizeof(SVertex);
-	BoxGeometry->VertexBufferByteSize = vbByteSize;
-	BoxGeometry->IndexFormat = DXGI_FORMAT_R16_UINT;
-	BoxGeometry->IndexBufferByteSize = ibByteSize;
+	vector<SVertex> vertices(totalVertexCount);
 
-	SSubmeshGeometry submesh;
-	submesh.IndexCount = indices.size();
-	submesh.StartIndexLocation = 0;
-	submesh.BaseVertexLocation = 0;
+	UINT k = 0;
+	for (size_t i = 0; i < box.Vertices.size(); ++i, ++k)
+	{
+		vertices[k].Pos = box.Vertices[i].Position;
+		vertices[k].Color = XMFLOAT4(DirectX::Colors::DarkGreen);
+	}
 
-	BoxGeometry->DrawArgs["Box"] = submesh;
+	for (size_t i = 0; i < grid.Vertices.size(); ++i, ++k)
+	{
+		vertices[k].Pos = grid.Vertices[i].Position;
+		vertices[k].Color = XMFLOAT4(DirectX::Colors::ForestGreen);
+	}
+
+	for (size_t i = 0; i < sphere.Vertices.size(); ++i, ++k)
+	{
+		vertices[k].Pos = sphere.Vertices[i].Position;
+		vertices[k].Color = XMFLOAT4(DirectX::Colors::Crimson);
+	}
+
+	for (size_t i = 0; i < cylinder.Vertices.size(); ++i, ++k)
+	{
+		vertices[k].Pos = cylinder.Vertices[i].Position;
+		vertices[k].Color = XMFLOAT4(DirectX::Colors::SteelBlue);
+	}
+
+	vector<uint16_t> indices;
+	indices.insert(indices.end(), begin(box.GetIndices16()), end(box.GetIndices16()));
+	indices.insert(indices.end(), begin(grid.GetIndices16()), end(grid.GetIndices16()));
+	indices.insert(indices.end(), begin(sphere.GetIndices16()), end(sphere.GetIndices16()));
+	indices.insert(indices.end(), begin(cylinder.GetIndices16()), end(cylinder.GetIndices16()));
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(SVertex);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto geo = make_unique<SMeshGeometry>();
+	geo->Name = "shapeGeo";
+
+	THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	auto engine = Engine.lock();
+	auto cmList = engine->GetCommandQueue()->GetCommandList();
+
+	geo->VertexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
+	                                                  cmList.Get(),
+	                                                  vertices.data(),
+	                                                  vbByteSize,
+	                                                  geo->VertexBufferUploader);
+
+	geo->IndexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
+	                                                 cmList.Get(),
+	                                                 indices.data(),
+	                                                 ibByteSize,
+	                                                 geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(SVertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	geo->DrawArgs["Box"] = boxSubmesh;
+	geo->DrawArgs["Grid"] = gridSubmesh;
+	geo->DrawArgs["Sphere"] = sphereSubmesh;
+	geo->DrawArgs["Cylinder"] = cylinderSubmesh;
+
+	SceneGeometry[geo->Name] = std::move(geo);
 }
 
 void OShapesTest::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> CommandList,
@@ -502,12 +532,12 @@ void OShapesTest::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> Comman
 
 	// Create a committed resource for the GPU resource in a default heap.
 	THROW_IF_FAILED(device->CreateCommittedResource(
-	    &defaultHeapProperties,
-	    D3D12_HEAP_FLAG_NONE,
-	    &bufferResourceDesc,
-	    D3D12_RESOURCE_STATE_COMMON,
-	    nullptr,
-	    IID_PPV_ARGS(DestinationResource)));
+		&defaultHeapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&bufferResourceDesc,
+		D3D12_RESOURCE_STATE_COMMON,
+		nullptr,
+		IID_PPV_ARGS(DestinationResource)));
 
 	if (BufferData)
 	{
@@ -517,12 +547,12 @@ void OShapesTest::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> Comman
 
 		// Create a committed resource for the upload.
 		THROW_IF_FAILED(device->CreateCommittedResource(
-		    &uploadHeapProperties,
-		    D3D12_HEAP_FLAG_NONE,
-		    &uploadBufferResourceDesc,
-		    D3D12_RESOURCE_STATE_GENERIC_READ,
-		    nullptr,
-		    IID_PPV_ARGS(IntermediateResource)));
+			&uploadHeapProperties,
+			D3D12_HEAP_FLAG_NONE,
+			&uploadBufferResourceDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(IntermediateResource)));
 
 		D3D12_SUBRESOURCE_DATA subresourceData = {};
 		subresourceData.pData = BufferData;
