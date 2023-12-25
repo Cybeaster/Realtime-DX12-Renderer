@@ -68,6 +68,8 @@ set(SRC_FILES
         Types/DXTypes/RenderConstants.h
         Application/Test/ShapesTest/ShapesTest.cpp
         Application/Test/ShapesTest/ShapesTest.h
+        GeomertryGenerator/GeometryGenerator.h
+        GeomertryGenerator/GeometryGenerator.cpp
 )
 
 # Add sources to the project
