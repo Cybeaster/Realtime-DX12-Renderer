@@ -32,8 +32,6 @@ public:
 
 	void OnResize(const ResizeEventArgs& Event) override;
 
-	void OnMouseWheel(const MouseWheelEventArgs& Event) override;
-
 	void OnKeyPressed(const KeyEventArgs& Event) override;
 
 	void OnMouseMoved(const MouseMotionEventArgs& Args) override;
@@ -103,7 +101,7 @@ private:
 
 	float Theta = 1.5f * DirectX::XM_PI;
 	float Phi = DirectX::XM_PIDIV4;
-	float Radius = 5;
+	float Radius = 35;
 
 	UINT PassConstantCBVOffset = 0;
 	bool bIsWireFrame = false;

@@ -33,7 +33,7 @@ bool OLandTest::Initialize()
 	const auto queue = engine->GetCommandQueue();
 	queue->ResetCommandList();
 
-	engine->CreateWaves(128, 128, 1.0f, 0.03f, 4.0f, 0.2f);
+	engine->CreateWaves(256, 256, 0.5f, 0.01f, 4.0f, 0.2f);
 
 	WavesVB = make_unique<OUploadBuffer<SVertex>>(engine->GetDevice().Get(), 256, false);
 
@@ -306,18 +306,6 @@ void OLandTest::SetupProjection()
 	XMStoreFloat4x4(&ProjectionMatrix, XMMatrixPerspectiveFovLH(0.25f * XM_PI, Window.lock()->GetAspectRatio(), 1.0f, 1000.0f));
 }
 
-void OLandTest::OnMouseWheel(const MouseWheelEventArgs& Event)
-{
-	const auto window = Window.lock();
-	auto fov = window->GetFoV();
-	fov -= Event.WheelDelta;
-	fov = std::clamp(fov, 12.0f, 90.0f);
-	window->SetFoV(fov);
-	char buffer[256];
-	sprintf_s(buffer, "FoV: %f\n", fov);
-	OutputDebugStringA(buffer);
-}
-
 void OLandTest::OnKeyPressed(const KeyEventArgs& Event)
 {
 	OTest::OnKeyPressed(Event);
@@ -362,71 +350,9 @@ void OLandTest::OnMouseMoved(const MouseMotionEventArgs& Args)
 		float dy = 0.005f * (Args.Y - window->GetLastYMousePos());
 		Radius += dx - dy;
 
-		Radius = std::clamp(Radius, 3.0f, 15.0f);
+		Radius = std::clamp(Radius, 3.0f, 35.f);
 	}
 	LOG(Log, "Theta: {} Phi: {} Radius: {}", Theta, Phi, Radius);
-}
-
-void OLandTest::BuildDescriptorHeaps()
-{
-	auto engine = Engine.lock();
-	const UINT objectCount = engine->GetOpaqueRenderItems().size();
-	const UINT numDescriptors = (objectCount + 1) * SRenderConstants::NumFrameResources;
-
-	PassConstantCBVOffset = objectCount * SRenderConstants::NumFrameResources;
-	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc = {};
-	cbvHeapDesc.NumDescriptors = numDescriptors;
-	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	cbvHeapDesc.NodeMask = 0;
-	THROW_IF_FAILED(Engine.lock()->GetDevice()->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&CBVHeap)));
-}
-
-void OLandTest::BuildConstantBuffersViews()
-{
-	const auto engine = Engine.lock();
-	const UINT objectCBByteSize = Utils::CalcBufferByteSize(sizeof(SObjectConstants));
-	const UINT objectCount = engine->GetOpaqueRenderItems().size();
-
-	auto cmdList = engine->GetCommandQueue()->GetCommandList();
-	for (uint32_t frameIndex = 0; frameIndex < SRenderConstants::NumFrameResources; ++frameIndex)
-	{
-		const auto objectCB = engine->FrameResources[frameIndex]->ObjectCB->GetResource();
-		for (UINT i = 0; i < objectCount; ++i)
-		{
-			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = objectCB->GetGPUVirtualAddress();
-
-			// Offset to the ith object constant buffer in the buffer.
-			cbAddress += i * objectCBByteSize;
-
-			//offset to the object cbv in the descriptor heap
-			const int heapIndex = frameIndex * objectCount + i;
-			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(CBVHeap->GetCPUDescriptorHandleForHeapStart());
-			handle.Offset(heapIndex, engine->CBVSRVUAVDescriptorSize);
-
-			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-			cbvDesc.BufferLocation = cbAddress;
-			cbvDesc.SizeInBytes = objectCBByteSize;
-			engine->GetDevice()->CreateConstantBufferView(&cbvDesc, handle);
-		}
-	}
-
-	const UINT passCBByteSize = Utils::CalcBufferByteSize(sizeof(SPassConstants));
-	for (UINT frameIndex = 0; frameIndex < SRenderConstants::NumFrameResources; ++frameIndex)
-	{
-		const auto passCB = engine->FrameResources[frameIndex]->PassCB->GetResource();
-		const D3D12_GPU_VIRTUAL_ADDRESS cbAddress = passCB->GetGPUVirtualAddress();
-
-		// Offset to the pass cbv in the descriptor heap
-		const int heapIndex = PassConstantCBVOffset + frameIndex;
-		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(CBVHeap->GetCPUDescriptorHandleForHeapStart());
-		handle.Offset(heapIndex, engine->CBVSRVUAVDescriptorSize);
-
-		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-		cbvDesc.BufferLocation = cbAddress;
-		cbvDesc.SizeInBytes = passCBByteSize;
-		engine->GetDevice()->CreateConstantBufferView(&cbvDesc, handle);
-	}
 }
 
 void OLandTest::BuildRootSignature()
@@ -558,7 +484,6 @@ void OLandTest::BuildLandGeometry()
 void OLandTest::BuildWavesGeometryBuffers()
 {
 	vector<uint16_t> indices(3 * GetEngine()->GetWaves()->GetTriangleCount());
-	CHECK(GetEngine()->GetWaves()->GetTriangleCount() < 0x0000ffff, "Too many indices");
 
 	//iterate over each quad
 	int m = GetEngine()->GetWaves()->GetRowCount();
@@ -730,7 +655,7 @@ float OLandTest::GetHillsHeight(float X, float Z) const
 	return 0.3 * (Z * sinf(0.1f * X) + X * cosf(0.1f * Z));
 }
 
-DirectX::XMFLOAT3 OLandTest::GetHillsNormal(float X, float Z) const
+XMFLOAT3 OLandTest::GetHillsNormal(float X, float Z) const
 {
 	XMFLOAT3 n(
 		-0.03f * Z * cosf(0.1f * X) - 0.3f * cosf(0.1f * Z),
