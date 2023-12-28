@@ -3,6 +3,8 @@
 #define _DEBUG
 
 #include "DXHelper.h"
+#include "Test/LandTest/LandTest.h"
+#include "Test/ShapesTest/ShapesTest.h"
 #include "Test/WindowTest/WindowTest.h"
 
 #include <Application.h>
@@ -26,7 +28,7 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	const auto application = OApplication::Get();
 	application->InitApplication(hInstance);
 
-	returnCode = application->Run<OSimpleCubeTest>();
+	returnCode = application->Run<OLandTest>();
 	application->Destory();
 
 	atexit(&ReportLiveObjects);

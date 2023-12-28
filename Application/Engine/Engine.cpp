@@ -6,6 +6,7 @@
 #include "../Window/Window.h"
 #include "Exception.h"
 #include "Logger.h"
+#include "../../Objects/Geometry/Wave/Waves.h"
 
 #include <DirectXMath.h>
 
@@ -13,6 +14,7 @@
 
 using namespace Microsoft::WRL;
 using namespace DirectX;
+
 void OEngine::RemoveWindow(HWND Hwnd)
 {
 	const auto windowIter = WindowsMap.find(Hwnd);
@@ -50,6 +52,10 @@ bool OEngine::Initialize()
 		DirectCommandQueue = make_shared<OCommandQueue>(Device, D3D12_COMMAND_LIST_TYPE_DIRECT);
 		ComputeCommandQueue = make_shared<OCommandQueue>(Device, D3D12_COMMAND_LIST_TYPE_COMPUTE);
 		CopyCommandQueue = make_shared<OCommandQueue>(Device, D3D12_COMMAND_LIST_TYPE_COPY);
+
+		RTVDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		DSVDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+		CBVSRVUAVDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	}
 	else
 	{
@@ -106,6 +112,7 @@ shared_ptr<OCommandQueue> OEngine::GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type)
 	}
 	return queue;
 }
+
 void OEngine::OnEnd(shared_ptr<OTest> Test) const
 {
 	FlushGPU();
@@ -117,7 +124,7 @@ void OEngine::BuildFrameResource()
 {
 	for (int i = 0; i < SRenderConstants::NumFrameResources; ++i)
 	{
-		FrameResources.push_back(make_unique<SFrameResource>(Device.Get(), 1, 1));
+		FrameResources.push_back(make_unique<SFrameResource>(Device.Get(), 1, AllRenderItems.size(), Waves->GetVertexCount()));
 	}
 }
 
@@ -200,6 +207,7 @@ void OEngine::OnMouseWheel(MouseWheelEventArgs& Args)
 {
 	// By default, do nothing.
 }
+
 void OEngine::OnResize(ResizeEventArgs& Args)
 {
 	LOG(Log, "Engine::OnResize")
@@ -248,9 +256,9 @@ void OEngine::CheckMSAAQualitySupport()
 	msQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
 	msQualityLevels.NumQualityLevels = 0;
 	THROW_IF_FAILED(Device->CheckFeatureSupport(
-	    D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS,
-	    &msQualityLevels,
-	    sizeof(msQualityLevels)));
+		D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS,
+		&msQualityLevels,
+		sizeof(msQualityLevels)));
 
 	Msaa4xQuality = msQualityLevels.NumQualityLevels;
 	assert(Msaa4xQuality > 0 && "Unexpected MSAA quality level.");
@@ -262,17 +270,17 @@ bool OEngine::GetMSAAState(UINT& Quality) const
 	return Msaa4xState;
 }
 
-const vector<unique_ptr<SRenderItem>>& OEngine::GetRenderItems()
+vector<unique_ptr<SRenderItem>>& OEngine::GetRenderItems()
 {
 	return AllRenderItems;
 }
 
-const vector<unique_ptr<SRenderItem>>& OEngine::GetOpaqueRenderItems()
+vector<SRenderItem*>& OEngine::GetOpaqueRenderItems()
 {
 	return OpaqueRenderItems;
 }
 
-const vector<unique_ptr<SRenderItem>>& OEngine::GetTransparentRenderItems()
+vector<unique_ptr<SRenderItem>>& OEngine::GetTransparentRenderItems()
 {
 	return TransparentRenderItems;
 }
@@ -405,3 +413,49 @@ ComPtr<ID3D12Device2> OEngine::CreateDevice(Microsoft::WRL::ComPtr<IDXGIAdapter4
 
 	return d3d12Device2;
 }
+
+std::unordered_map<string, unique_ptr<SMeshGeometry>>& OEngine::GetSceneGeometry()
+{
+	return SceneGeometry;
+}
+
+void OEngine::SetSceneGeometry(const string& Name, unique_ptr<SMeshGeometry> Geometry)
+{
+	SceneGeometry[Name] = move(Geometry);
+}
+
+void OEngine::BuildShader(const wstring& ShaderName, const string& VSShaderName, const string& PSShaderName, const D3D_SHADER_MACRO* Defines)
+{
+	Shaders[VSShaderName] = Utils::CompileShader(ShaderName, Defines, "VS", "vs_5_1");
+	Shaders[PSShaderName] = Utils::CompileShader(ShaderName, Defines, "PS", "ps_5_1");
+}
+
+ComPtr<ID3DBlob> OEngine::GetShader(const string& ShaderName)
+{
+	if (!Shaders.contains(ShaderName))
+	{
+		LOG(Error, "Shader not found!");
+	}
+	return Shaders.at(ShaderName);
+}
+
+ComPtr<ID3D12PipelineState> OEngine::GetPSO(const string& PSOName)
+{
+	if (!PSOs.contains(PSOName))
+	{
+		LOG(Error, "Shader not found!");
+	}
+	return PSOs.at(PSOName);
+}
+
+OWaves* OEngine::GetWaves() const
+{
+	return Waves.get();
+}
+
+void OEngine::BuildPSO(const string& PSOName, const D3D12_GRAPHICS_PIPELINE_STATE_DESC& PSODesc)
+{
+	THROW_IF_FAILED(Device->CreateGraphicsPipelineState(&PSODesc, IID_PPV_ARGS(&PSOs[PSOName])));
+}
+
+

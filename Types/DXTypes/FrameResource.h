@@ -5,11 +5,21 @@
 #include <Types.h>
 #include <d3d12.h>
 #include <wrl/client.h>
+
+struct SVertex
+{
+	DirectX::XMFLOAT3 Pos;
+	DirectX::XMFLOAT4 Color;
+};
+
 struct SFrameResource
 {
-	SFrameResource(ID3D12Device* Device, UINT PassCount, UINT ObjectCount);
+	SFrameResource(ID3D12Device* Device, UINT PassCount, UINT ObjectCount, UINT WaveVertexCount);
+
 	SFrameResource(const SFrameResource&) = delete;
+
 	SFrameResource& operator=(const SFrameResource&) = delete;
+
 	~SFrameResource();
 
 	// We cannot reset the allocator until the GPU is done processing the commands.
@@ -22,17 +32,23 @@ struct SFrameResource
 	unique_ptr<OUploadBuffer<SPassConstants>> PassCB = nullptr;
 	unique_ptr<OUploadBuffer<SObjectConstants>> ObjectCB = nullptr;
 
+
+	// We cannot update a dynamic vertex buffer until the GPU is done processing
+	// the commands that reference it.  So each frame needs their own.
+	unique_ptr<OUploadBuffer<SVertex>> WavesVB = nullptr;
+
 	// Fence value to mark commands up to this fence point. This lets us
 	// check if these frame resources are still in use by the GPU.
 	UINT64 Fence = 0;
 };
 
-inline SFrameResource::SFrameResource(ID3D12Device* Device, UINT PassCount, UINT ObjectCount)
+inline SFrameResource::SFrameResource(ID3D12Device* Device, UINT PassCount, UINT ObjectCount, UINT WaveVertexCount)
 {
 	THROW_IF_FAILED(Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&CmdListAlloc)));
 
 	PassCB = make_unique<OUploadBuffer<SPassConstants>>(Device, PassCount, true);
 	ObjectCB = make_unique<OUploadBuffer<SObjectConstants>>(Device, ObjectCount, true);
+	WavesVB = make_unique<OUploadBuffer<SVertex>>(Device, WaveVertexCount, false);
 }
 
 inline SFrameResource::~SFrameResource()

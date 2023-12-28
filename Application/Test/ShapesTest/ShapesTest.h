@@ -12,12 +12,6 @@
 #include <windows.h>
 #include <wrl/client.h>
 
-struct SVertex
-{
-	DirectX::XMFLOAT3 Pos;
-	DirectX::XMFLOAT4 Color;
-};
-
 class OShapesTest : public OTest
 {
 	using Super = OTest;
@@ -41,16 +35,23 @@ public:
 
 	void OnMouseMoved(const MouseMotionEventArgs& Args) override;
 
-	void UpdateMainPass(STimer& Timer);
+	void UpdateMainPass(const STimer& Timer);
 
-	void UpdateObjectCBs(STimer& Timer);
+	void UpdateObjectCBs(const STimer& Timer);
+
+	void DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList,
+	                     const vector<SRenderItem*>& RenderItems) const;
+
+	void UpdateCamera();
+
+	void OnKeyboardInput();
 
 private:
 	void SetupProjection();
 
 	void BuildDescriptorHeaps();
 
-	void BuildConstantBuffers();
+	void BuildConstantBuffersViews();
 
 	void BuildRootSignature();
 
@@ -65,6 +66,8 @@ private:
 
 	void BuildPSO();
 
+	void BuildRenderItems();
+
 	ComPtr<ID3D12Resource> VertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView;
 
@@ -72,7 +75,6 @@ private:
 	D3D12_INDEX_BUFFER_VIEW IndexBufferView;
 
 	ComPtr<ID3D12RootSignature> RootSignature;
-	ComPtr<ID3D12PipelineState> PipelineStateObject;
 
 	unique_ptr<SMeshGeometry> BoxGeometry;
 	unique_ptr<OUploadBuffer<SObjectConstants>> ObjectCB = nullptr;
@@ -83,19 +85,17 @@ private:
 	ComPtr<ID3D12DescriptorHeap> CBVHeap = nullptr;
 
 	DirectX::XMFLOAT3 EyePos = { 0, 0, 0 };
-	DirectX::XMFLOAT4X4 ViewMatrix = Utils::Identity4x4();
-	DirectX::XMFLOAT4X4 ProjectionMatrix = Utils::Identity4x4();
+	DirectX::XMFLOAT4X4 ViewMatrix = Utils::Math::Identity4x4();
+	DirectX::XMFLOAT4X4 ProjectionMatrix = Utils::Math::Identity4x4();
 
 	bool ContentLoaded = false;
 
 	vector<D3D12_INPUT_ELEMENT_DESC> InputLayout;
 
-	ComPtr<ID3DBlob> MvsByteCode = nullptr;
-	ComPtr<ID3DBlob> MpsByteCode = nullptr;
-
 	float Theta = 1.5f * DirectX::XM_PI;
 	float Phi = DirectX::XM_PIDIV4;
 	float Radius = 5;
 
-	std::unordered_map<string, unique_ptr<SMeshGeometry>> SceneGeometry;
+	UINT PassConstantCBVOffset = 0;
+	bool bIsWireFrame = false;
 };

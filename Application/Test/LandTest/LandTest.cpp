@@ -1,5 +1,5 @@
 
-#include "ShapesTest.h"
+#include "LandTest.h"
 
 #include "../../Engine/Engine.h"
 #include "../../Window/Window.h"
@@ -19,13 +19,12 @@ using namespace Microsoft::WRL;
 
 using namespace DirectX;
 
-
-OShapesTest::OShapesTest(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window)
+OLandTest::OLandTest(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window)
 	: OTest(_Engine, _Window)
 {
 }
 
-bool OShapesTest::Initialize()
+bool OLandTest::Initialize()
 {
 	SetupProjection();
 
@@ -34,14 +33,16 @@ bool OShapesTest::Initialize()
 	const auto queue = engine->GetCommandQueue();
 	queue->ResetCommandList();
 
+	engine->CreateWaves(128, 128, 1.0f, 0.03f, 4.0f, 0.2f);
+
+	WavesVB = make_unique<OUploadBuffer<SVertex>>(engine->GetDevice().Get(), 256, false);
+
 	BuildRootSignature();
 	BuildShadersAndInputLayout();
-	BuildShapeGeometry();
+	BuildLandGeometry();
+	BuildWavesGeometryBuffers();
 	BuildRenderItems();
 	engine->BuildFrameResource();
-
-	BuildDescriptorHeaps();
-	BuildConstantBuffersViews();
 	BuildPSO();
 
 	THROW_IF_FAILED(queue->GetCommandList()->Close());
@@ -53,12 +54,36 @@ bool OShapesTest::Initialize()
 	return true;
 }
 
-void OShapesTest::UnloadContent()
+void OLandTest::UnloadContent()
 {
 	ContentLoaded = false;
 }
 
-void OShapesTest::OnUpdate(const UpdateEventArgs& Event)
+void OLandTest::UpdateWave(const STimer& Timer)
+{
+	static float tBase = 0.0f;
+	if (Timer.GetTime() - tBase >= 0.25)
+	{
+		tBase += 0.25;
+		int i = Utils::Math::Random(4, GetEngine()->GetWaves()->GetRowCount() - 5);
+		int j = Utils::Math::Random(4, GetEngine()->GetWaves()->GetColumnCount() - 5);
+		float r = Utils::Math::Random(0.2f, 0.5f);
+		GetEngine()->GetWaves()->Disturb(i, j, r);
+	}
+
+	GetEngine()->GetWaves()->Update(Timer.GetDeltaTime());
+	auto currWavesVB = Engine.lock()->CurrentFrameResources->WavesVB.get();
+	for (int32_t i = 0; i < GetEngine()->GetWaves()->GetVertexCount(); ++i)
+	{
+		SVertex v;
+		v.Pos = GetEngine()->GetWaves()->GetPosition(i);
+		v.Color = XMFLOAT4(Colors::Blue);
+		currWavesVB->CopyData(i, v);
+	}
+	WavesRenderItem->Geometry->VertexBufferGPU = currWavesVB->GetResource();
+}
+
+void OLandTest::OnUpdate(const UpdateEventArgs& Event)
 {
 	Super::OnUpdate(Event);
 
@@ -79,9 +104,10 @@ void OShapesTest::OnUpdate(const UpdateEventArgs& Event)
 
 	UpdateMainPass(Event.Timer);
 	UpdateObjectCBs(Event.Timer);
+	UpdateWave(Event.Timer);
 }
 
-void OShapesTest::UpdateMainPass(const STimer& Timer)
+void OLandTest::UpdateMainPass(const STimer& Timer)
 {
 	auto engine = Engine.lock();
 	auto window = Window.lock();
@@ -117,7 +143,7 @@ void OShapesTest::UpdateMainPass(const STimer& Timer)
 	currPassCB->CopyData(0, MainPassCB);
 }
 
-void OShapesTest::UpdateObjectCBs(const STimer& Timer)
+void OLandTest::UpdateObjectCBs(const STimer& Timer)
 {
 	const auto engine = Engine.lock();
 	const auto currentObjectCB = engine->CurrentFrameResources->ObjectCB.get();
@@ -140,9 +166,13 @@ void OShapesTest::UpdateObjectCBs(const STimer& Timer)
 	}
 }
 
-void OShapesTest::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList, const vector<SRenderItem*>& RenderItems) const
+void OLandTest::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList, const vector<SRenderItem*>& RenderItems) const
 {
 	const auto engine = Engine.lock();
+
+	auto objectCBByteSize = Utils::CalcBufferByteSize(sizeof(SObjectConstants));
+	auto objectCB = engine->CurrentFrameResources->ObjectCB->GetResource();
+
 	for (size_t i = 0; i < RenderItems.size(); i++)
 	{
 		const auto renderItem = RenderItems[i];
@@ -157,16 +187,15 @@ void OShapesTest::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList,
 		// Offset to the CBV in the descriptor heap for this object and
 		// for this frame resource.
 
-		const UINT cbvIndex = engine->CurrentFrameResourceIndex * engine->GetOpaqueRenderItems().size() + renderItem->ObjectCBIndex;
-		auto cbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
-		cbvHandle.Offset(cbvIndex, engine->CBVSRVUAVDescriptorSize);
+		D3D12_GPU_VIRTUAL_ADDRESS cbAddress = objectCB->GetGPUVirtualAddress();
+		cbAddress += renderItem->ObjectCBIndex * objectCBByteSize;
 
-		CommandList->SetGraphicsRootDescriptorTable(0, cbvHandle);
+		CommandList->SetGraphicsRootConstantBufferView(0, cbAddress);
 		CommandList->DrawIndexedInstanced(renderItem->IndexCount, 1, renderItem->StartIndexLocation, renderItem->BaseVertexLocation, 0);
 	}
 }
 
-void OShapesTest::UpdateCamera()
+void OLandTest::UpdateCamera()
 {
 	// Convert Spherical to Cartesian coordinates.
 	EyePos.x = Radius * sinf(Phi) * cosf(Theta);
@@ -182,7 +211,7 @@ void OShapesTest::UpdateCamera()
 	XMStoreFloat4x4(&ViewMatrix, view);
 }
 
-void OShapesTest::OnKeyboardInput()
+void OLandTest::OnKeyboardInput()
 {
 	if (GetAsyncKeyState('1') & 0x8000)
 		bIsWireFrame = true;
@@ -190,7 +219,7 @@ void OShapesTest::OnKeyboardInput()
 		bIsWireFrame = false;
 }
 
-void OShapesTest::OnRender(const UpdateEventArgs& Event)
+void OLandTest::OnRender(const UpdateEventArgs& Event)
 {
 	auto engine = Engine.lock();
 	auto commandList = engine->GetCommandQueue()->GetCommandList();
@@ -233,14 +262,11 @@ void OShapesTest::OnRender(const UpdateEventArgs& Event)
 	// Specify the buffers we are going to render to.
 	commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = { CBVHeap.Get() };
-	commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 	commandList->SetGraphicsRootSignature(RootSignature.Get());
 
-	auto passCBVIndex = PassConstantCBVOffset + engine->CurrentFrameResourceIndex;
-	auto passCBVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
-	passCBVHandle.Offset(passCBVIndex, engine->CBVSRVUAVDescriptorSize);
-	commandList->SetGraphicsRootDescriptorTable(1, passCBVHandle);
+	auto passCB = engine->CurrentFrameResources->PassCB->GetResource();
+	commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+
 	DrawRenderItems(commandList.Get(), engine->GetOpaqueRenderItems());
 
 	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(currentBackBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
@@ -269,18 +295,18 @@ void OShapesTest::OnRender(const UpdateEventArgs& Event)
 	engine->FlushGPU();
 }
 
-void OShapesTest::OnResize(const ResizeEventArgs& Event)
+void OLandTest::OnResize(const ResizeEventArgs& Event)
 {
 	OTest::OnResize(Event);
 	SetupProjection();
 }
 
-void OShapesTest::SetupProjection()
+void OLandTest::SetupProjection()
 {
 	XMStoreFloat4x4(&ProjectionMatrix, XMMatrixPerspectiveFovLH(0.25f * XM_PI, Window.lock()->GetAspectRatio(), 1.0f, 1000.0f));
 }
 
-void OShapesTest::OnMouseWheel(const MouseWheelEventArgs& Event)
+void OLandTest::OnMouseWheel(const MouseWheelEventArgs& Event)
 {
 	const auto window = Window.lock();
 	auto fov = window->GetFoV();
@@ -292,7 +318,7 @@ void OShapesTest::OnMouseWheel(const MouseWheelEventArgs& Event)
 	OutputDebugStringA(buffer);
 }
 
-void OShapesTest::OnKeyPressed(const KeyEventArgs& Event)
+void OLandTest::OnKeyPressed(const KeyEventArgs& Event)
 {
 	OTest::OnKeyPressed(Event);
 
@@ -314,7 +340,7 @@ void OShapesTest::OnKeyPressed(const KeyEventArgs& Event)
 	}
 }
 
-void OShapesTest::OnMouseMoved(const MouseMotionEventArgs& Args)
+void OLandTest::OnMouseMoved(const MouseMotionEventArgs& Args)
 {
 	OTest::OnMouseMoved(Args);
 	auto window = Window.lock();
@@ -341,7 +367,7 @@ void OShapesTest::OnMouseMoved(const MouseMotionEventArgs& Args)
 	LOG(Log, "Theta: {} Phi: {} Radius: {}", Theta, Phi, Radius);
 }
 
-void OShapesTest::BuildDescriptorHeaps()
+void OLandTest::BuildDescriptorHeaps()
 {
 	auto engine = Engine.lock();
 	const UINT objectCount = engine->GetOpaqueRenderItems().size();
@@ -356,7 +382,7 @@ void OShapesTest::BuildDescriptorHeaps()
 	THROW_IF_FAILED(Engine.lock()->GetDevice()->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&CBVHeap)));
 }
 
-void OShapesTest::BuildConstantBuffersViews()
+void OLandTest::BuildConstantBuffersViews()
 {
 	const auto engine = Engine.lock();
 	const UINT objectCBByteSize = Utils::CalcBufferByteSize(sizeof(SObjectConstants));
@@ -403,7 +429,7 @@ void OShapesTest::BuildConstantBuffersViews()
 	}
 }
 
-void OShapesTest::BuildRootSignature()
+void OLandTest::BuildRootSignature()
 {
 	// Shader programs typically require resources as input (constant buffers,
 	// textures, samplers).  The root signature defines the resources the shader
@@ -414,14 +440,8 @@ void OShapesTest::BuildRootSignature()
 	// Root parameter can be a table, root descriptor or root constants.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
 
-	CD3DX12_DESCRIPTOR_RANGE cbvTable0;
-	cbvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
-
-	CD3DX12_DESCRIPTOR_RANGE cbvTable1;
-	cbvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
-
-	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable0);
-	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable1);
+	slotRootParameter[0].InitAsConstantBufferView(0);
+	slotRootParameter[1].InitAsConstantBufferView(1);
 
 	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(2, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
@@ -441,7 +461,7 @@ void OShapesTest::BuildRootSignature()
 		IID_PPV_ARGS(&RootSignature)));
 }
 
-void OShapesTest::BuildShadersAndInputLayout()
+void OLandTest::BuildShadersAndInputLayout()
 {
 	GetEngine()->BuildShader(L"Shaders/BaseShader.hlsl", "StandardVS", "OpaquePS");
 
@@ -451,103 +471,57 @@ void OShapesTest::BuildShadersAndInputLayout()
 	};
 }
 
-void OShapesTest::BuildShapeGeometry()
+void OLandTest::BuildLandGeometry()
 {
 	OGeometryGenerator generator;
-	auto box = generator.CreateBox(1.5f, 0.5f, 1.5f, 3);
-	auto grid = generator.CreateGrid(20.0f, 30.0f, 60, 40);
-	auto sphere = generator.CreateSphere(0.5f, 20, 20);
-	auto cylinder = generator.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
+	auto grid = generator.CreateGrid(160.0f, 160.0f, 50, 50);
 
 	//
-	// We are concatenating all the geometry into one big vertex/index
-	// buffer. So define the regions in the buffer each submesh covers.
+	// Extract the vertex elements we are interested and apply the height
+	// function to each vertex. In addition, color the vertices based on
+	// their height so we have sandy looking beaches, grassy low hills,
+	// and snow mountain peaks.
 	//
-
-	// Cache the vertex offsets to each object in the concatenated vertex
-	// buffer.
-
-	UINT boxVertexOffset = 0;
-	UINT gridVertexOffset = static_cast<UINT>(box.Vertices.size());
-	UINT sphereVertexOffset = gridVertexOffset + static_cast<UINT>(grid.Vertices.size());
-	UINT cylinderVertexOffset = sphereVertexOffset + static_cast<UINT>(sphere.Vertices.size());
-
-	// Cache the starting index for each object in the concatenated index
-	// buffer.
-
-	UINT boxIndexOffset = 0;
-	UINT gridIndexOffset = static_cast<UINT>(box.Indices32.size());
-	UINT sphereIndexOffset = gridIndexOffset + static_cast<UINT>(grid.Indices32.size());
-	UINT cylinderIndexOffset = sphereIndexOffset + static_cast<UINT>(sphere.Indices32.size());
-
-	// Define the SubmeshGeometry that cover different
-	// regions of the vertex/index buffers.
-
-	SSubmeshGeometry boxSubmesh;
-	boxSubmesh.IndexCount = static_cast<UINT>(box.Indices32.size());
-	boxSubmesh.StartIndexLocation = boxIndexOffset;
-	boxSubmesh.BaseVertexLocation = boxVertexOffset;
-
-	SSubmeshGeometry gridSubmesh;
-	gridSubmesh.IndexCount = static_cast<UINT>(grid.Indices32.size());
-	gridSubmesh.StartIndexLocation = gridIndexOffset;
-	gridSubmesh.BaseVertexLocation = gridVertexOffset;
-
-	SSubmeshGeometry sphereSubmesh;
-	sphereSubmesh.IndexCount = static_cast<UINT>(sphere.Indices32.size());
-	sphereSubmesh.StartIndexLocation = sphereIndexOffset;
-	sphereSubmesh.BaseVertexLocation = sphereVertexOffset;
-
-	SSubmeshGeometry cylinderSubmesh;
-	cylinderSubmesh.IndexCount = static_cast<UINT>(cylinder.Indices32.size());
-	cylinderSubmesh.StartIndexLocation = cylinderIndexOffset;
-	cylinderSubmesh.BaseVertexLocation = cylinderVertexOffset;
-
-	//
-	// Extract the vertex elements we are interested in and pack the
-	// vertices of all the meshes into one vertex buffer.
-	//
-
-	auto totalVertexCount = box.Vertices.size() + grid.Vertices.size() + sphere.Vertices.size() + cylinder.Vertices.size();
-
-	vector<SVertex> vertices(totalVertexCount);
-
-	UINT k = 0;
-	for (size_t i = 0; i < box.Vertices.size(); ++i, ++k)
+	std::vector<SVertex> vertices(grid.Vertices.size());
+	for (size_t i = 0; i < grid.Vertices.size(); ++i)
 	{
-		vertices[k].Pos = box.Vertices[i].Position;
-		vertices[k].Color = XMFLOAT4(DirectX::Colors::DarkGreen);
+		auto& p = grid.Vertices[i].Position;
+		vertices[i].Pos = p;
+		vertices[i].Pos.y = GetHillsHeight(p.x, p.z);
+		// Color the vertex based on its height.
+		if (vertices[i].Pos.y < -10.0f)
+		{
+			// Sandy beach color.
+			vertices[i].Color = XMFLOAT4(1.0f, 0.96f, 0.62f, 1.0f);
+		}
+		else if (vertices[i].Pos.y < 5.0f)
+		{
+			// Light yellow-green.
+			vertices[i].Color = XMFLOAT4(0.48f, 0.77f, 0.46f, 1.0f);
+		}
+		else if (vertices[i].Pos.y < 12.0f)
+		{
+			// Dark yellow-green.
+			vertices[i].Color = XMFLOAT4(0.1f, 0.48f, 0.19f, 1.0f);
+		}
+		else if (vertices[i].Pos.y < 20.0f)
+		{
+			// Dark brown.
+			vertices[i].Color = XMFLOAT4(0.45f, 0.39f, 0.34f, 1.0f);
+		}
+		else
+		{
+			// White snow.
+			vertices[i].Color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+		}
 	}
 
-	for (size_t i = 0; i < grid.Vertices.size(); ++i, ++k)
-	{
-		vertices[k].Pos = grid.Vertices[i].Position;
-		vertices[k].Color = XMFLOAT4(DirectX::Colors::ForestGreen);
-	}
-
-	for (size_t i = 0; i < sphere.Vertices.size(); ++i, ++k)
-	{
-		vertices[k].Pos = sphere.Vertices[i].Position;
-		vertices[k].Color = XMFLOAT4(DirectX::Colors::Crimson);
-	}
-
-	for (size_t i = 0; i < cylinder.Vertices.size(); ++i, ++k)
-	{
-		vertices[k].Pos = cylinder.Vertices[i].Position;
-		vertices[k].Color = XMFLOAT4(DirectX::Colors::SteelBlue);
-	}
-
-	vector<uint16_t> indices;
-	indices.insert(indices.end(), begin(box.GetIndices16()), end(box.GetIndices16()));
-	indices.insert(indices.end(), begin(grid.GetIndices16()), end(grid.GetIndices16()));
-	indices.insert(indices.end(), begin(sphere.GetIndices16()), end(sphere.GetIndices16()));
-	indices.insert(indices.end(), begin(cylinder.GetIndices16()), end(cylinder.GetIndices16()));
-
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(SVertex);
-	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+	const UINT vbByteSize = static_cast<UINT>(vertices.size() * sizeof(SVertex));
+	const std::vector<std::uint16_t> indices = grid.GetIndices16();
+	const UINT ibByteSize = static_cast<UINT>(indices.size() * sizeof(std::uint16_t));
 
 	auto geo = make_unique<SMeshGeometry>();
-	geo->Name = "shapeGeo";
+	geo->Name = "landGeo";
 
 	THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
 	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
@@ -555,17 +529,14 @@ void OShapesTest::BuildShapeGeometry()
 	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
 	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
-	auto engine = Engine.lock();
-	auto cmList = engine->GetCommandQueue()->GetCommandList();
-
 	geo->VertexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
-	                                                  cmList.Get(),
+	                                                  Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
 	                                                  vertices.data(),
 	                                                  vbByteSize,
 	                                                  geo->VertexBufferUploader);
 
 	geo->IndexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
-	                                                 cmList.Get(),
+	                                                 Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
 	                                                 indices.data(),
 	                                                 ibByteSize,
 	                                                 geo->IndexBufferUploader);
@@ -575,21 +546,79 @@ void OShapesTest::BuildShapeGeometry()
 	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
 
-	geo->SetGeometry("Box", boxSubmesh);
-	geo->SetGeometry("Grid", gridSubmesh);
-	geo->SetGeometry("Sphere", sphereSubmesh);
-	geo->SetGeometry("Cylinder", cylinderSubmesh);
+	SSubmeshGeometry geometry;
+	geometry.IndexCount = static_cast<UINT>(indices.size());
+	geometry.StartIndexLocation = 0;
+	geometry.BaseVertexLocation = 0;
+	geo->SetGeometry("grid", geometry);
 
-	GetEngine()->GetSceneGeometry()[geo->Name] = std::move(geo);
+	GetEngine()->SetSceneGeometry("LandGeo", std::move(geo));
 }
 
-void OShapesTest::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> CommandList,
-                                       ID3D12Resource** DestinationResource,
-                                       ID3D12Resource** IntermediateResource,
-                                       size_t NumElements,
-                                       size_t ElementSize,
-                                       const void* BufferData,
-                                       D3D12_RESOURCE_FLAGS Flags) const
+void OLandTest::BuildWavesGeometryBuffers()
+{
+	vector<uint16_t> indices(3 * GetEngine()->GetWaves()->GetTriangleCount());
+	CHECK(GetEngine()->GetWaves()->GetTriangleCount() < 0x0000ffff, "Too many indices");
+
+	//iterate over each quad
+	int m = GetEngine()->GetWaves()->GetRowCount();
+	int n = GetEngine()->GetWaves()->GetColumnCount();
+	int k = 0;
+
+	for (int i = 0; i < m - 1; ++i)
+	{
+		for (int j = 0; j < n - 1; ++j)
+		{
+			indices[k] = i * n + j;
+			indices[k + 1] = i * n + j + 1;
+			indices[k + 2] = (i + 1) * n + j;
+
+			indices[k + 3] = (i + 1) * n + j;
+			indices[k + 4] = i * n + j + 1;
+			indices[k + 5] = (i + 1) * n + j + 1;
+
+			k += 6; // next quad
+		}
+	}
+
+	UINT vbByteSize = GetEngine()->GetWaves()->GetVertexCount() * sizeof(SVertex);
+	UINT ibByteSize = static_cast<UINT>(indices.size() * sizeof(uint16_t));
+
+	auto geometry = make_unique<SMeshGeometry>();
+	geometry->Name = "WaterGeometry";
+	geometry->VertexBufferCPU = nullptr;
+	geometry->VertexBufferGPU = nullptr;
+
+	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geometry->IndexBufferCPU));
+	CopyMemory(geometry->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geometry->IndexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
+	                                                      Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
+	                                                      indices.data(),
+	                                                      ibByteSize,
+	                                                      geometry->IndexBufferUploader);
+
+	geometry->VertexByteStride = sizeof(SVertex);
+	geometry->VertexBufferByteSize = vbByteSize;
+	geometry->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geometry->IndexBufferByteSize = ibByteSize;
+
+	SSubmeshGeometry submesh;
+	submesh.IndexCount = static_cast<UINT>(indices.size());
+	submesh.StartIndexLocation = 0;
+	submesh.BaseVertexLocation = 0;
+
+	geometry->SetGeometry("grid", submesh);
+	GetEngine()->SetSceneGeometry("WaterGeometry", std::move(geometry));
+}
+
+void OLandTest::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> CommandList,
+                                     ID3D12Resource** DestinationResource,
+                                     ID3D12Resource** IntermediateResource,
+                                     size_t NumElements,
+                                     size_t ElementSize,
+                                     const void* BufferData,
+                                     D3D12_RESOURCE_FLAGS Flags) const
 {
 	auto device = Engine.lock()->GetDevice();
 	size_t bufferSize = NumElements * ElementSize;
@@ -631,7 +660,7 @@ void OShapesTest::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> Comman
 	}
 }
 
-void OShapesTest::BuildPSO()
+void OLandTest::BuildPSO()
 {
 	auto engine = Engine.lock();
 	UINT quality = 0;
@@ -666,87 +695,51 @@ void OShapesTest::BuildPSO()
 	engine->BuildPSO("OpaqueWireframe", opaqueWireframePsoDesc);
 }
 
-void OShapesTest::BuildRenderItems()
+void OLandTest::BuildRenderItems()
 {
-	auto boxRenderItem = make_unique<SRenderItem>();
-	const auto engine = Engine.lock();
+	auto wavesRenderItem = make_unique<SRenderItem>();
+	wavesRenderItem->World = Utils::Math::Identity4x4();
+	wavesRenderItem->ObjectCBIndex = 0;
+	wavesRenderItem->Geometry = GetEngine()->GetSceneGeometry()["WaterGeometry"].get();
+	wavesRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	wavesRenderItem->IndexCount = wavesRenderItem->Geometry->GetGeomentry("grid").IndexCount;
+	wavesRenderItem->StartIndexLocation = wavesRenderItem->Geometry->GetGeomentry("grid").StartIndexLocation;
+	wavesRenderItem->BaseVertexLocation = wavesRenderItem->Geometry->GetGeomentry("grid").BaseVertexLocation;
+	wavesRenderItem->NumFramesDirty = SRenderConstants::NumFrameResources;
 
-	XMStoreFloat4x4(&boxRenderItem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 0.5f, 0.0f));
-
-	boxRenderItem->ObjectCBIndex = 0;
-	boxRenderItem->Geometry = GetEngine()->GetSceneGeometry()["shapeGeo"].get();
-	boxRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	boxRenderItem->IndexCount = boxRenderItem->Geometry->GetGeomentry("Box").IndexCount;
-	boxRenderItem->StartIndexLocation = boxRenderItem->Geometry->GetGeomentry("Box").StartIndexLocation;
-	boxRenderItem->BaseVertexLocation = boxRenderItem->Geometry->GetGeomentry("Box").BaseVertexLocation;
-	engine->GetRenderItems().push_back(std::move(boxRenderItem));
+	WavesRenderItem = wavesRenderItem.get();
+	GetEngine()->GetOpaqueRenderItems().push_back(wavesRenderItem.get());
 
 	auto gridRenderItem = make_unique<SRenderItem>();
 	gridRenderItem->World = Utils::Math::Identity4x4();
 	gridRenderItem->ObjectCBIndex = 1;
-	gridRenderItem->Geometry = GetEngine()->GetSceneGeometry()["shapeGeo"].get();
+	gridRenderItem->Geometry = GetEngine()->GetSceneGeometry()["LandGeo"].get();
 	gridRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	gridRenderItem->IndexCount = gridRenderItem->Geometry->GetGeomentry("Grid").IndexCount;
-	gridRenderItem->StartIndexLocation = gridRenderItem->Geometry->GetGeomentry("Grid").StartIndexLocation;
-	gridRenderItem->BaseVertexLocation = gridRenderItem->Geometry->GetGeomentry("Grid").BaseVertexLocation;
-	engine->GetRenderItems().push_back(std::move(gridRenderItem));
+	gridRenderItem->IndexCount = gridRenderItem->Geometry->GetGeomentry("grid").IndexCount;
+	gridRenderItem->StartIndexLocation = gridRenderItem->Geometry->GetGeomentry("grid").StartIndexLocation;
+	gridRenderItem->BaseVertexLocation = gridRenderItem->Geometry->GetGeomentry("grid").BaseVertexLocation;
 
-	// Build the columns and spheres in rows as in Figure 7.6.
-	UINT objCBIndex = 2;
-	for (uint32_t i = 0; i < 5; ++i)
-	{
-		auto leftCylinderRenderItem = make_unique<SRenderItem>();
-		auto rightCylinderRenderItem = make_unique<SRenderItem>();
-		auto leftSphereRenderItem = make_unique<SRenderItem>();
-		auto rightSphereRenderItem = make_unique<SRenderItem>();
+	GetEngine()->GetOpaqueRenderItems().push_back(gridRenderItem.get());
 
-		const XMMATRIX leftCylinderWorld = XMMatrixTranslation(-5.0f, 1.5f, -10.0f + i * 5.0f);
-		const XMMATRIX rightCylinderWorld = XMMatrixTranslation(+5.0f, 1.5f, -10.0f + i * 5.0f);
-		const XMMATRIX leftSphereWorld = XMMatrixTranslation(-5.0f, 3.5f, -10.0f + i * 5.0f);
-		const XMMATRIX rightSphereWorld = XMMatrixTranslation(+5.0f, 3.5f, -10.0f + i * 5.0f);
+	GetEngine()->GetRenderItems().push_back(std::move(wavesRenderItem));
+	GetEngine()->GetRenderItems().push_back(std::move(gridRenderItem));
+}
 
-		XMStoreFloat4x4(&leftCylinderRenderItem->World, rightCylinderWorld);
-		leftCylinderRenderItem->ObjectCBIndex = objCBIndex++;
-		leftCylinderRenderItem->Geometry = GetEngine()->GetSceneGeometry()["shapeGeo"].get();
-		leftCylinderRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		leftCylinderRenderItem->IndexCount = leftCylinderRenderItem->Geometry->GetGeomentry("Cylinder").IndexCount;
-		leftCylinderRenderItem->StartIndexLocation = leftCylinderRenderItem->Geometry->GetGeomentry("Cylinder").StartIndexLocation;
-		leftCylinderRenderItem->BaseVertexLocation = leftCylinderRenderItem->Geometry->GetGeomentry("Cylinder").BaseVertexLocation;
+float OLandTest::GetHillsHeight(float X, float Z) const
+{
+	return 0.3 * (Z * sinf(0.1f * X) + X * cosf(0.1f * Z));
+}
 
-		XMStoreFloat4x4(&rightCylinderRenderItem->World, leftCylinderWorld);
-		rightCylinderRenderItem->ObjectCBIndex = objCBIndex++;
-		rightCylinderRenderItem->Geometry = GetEngine()->GetSceneGeometry()["shapeGeo"].get();
-		rightCylinderRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		rightCylinderRenderItem->IndexCount = rightCylinderRenderItem->Geometry->GetGeomentry("Cylinder").IndexCount;
-		rightCylinderRenderItem->StartIndexLocation = rightCylinderRenderItem->Geometry->GetGeomentry("Cylinder").StartIndexLocation;
-		rightCylinderRenderItem->BaseVertexLocation = rightCylinderRenderItem->Geometry->GetGeomentry("Cylinder").BaseVertexLocation;
+DirectX::XMFLOAT3 OLandTest::GetHillsNormal(float X, float Z) const
+{
+	XMFLOAT3 n(
+		-0.03f * Z * cosf(0.1f * X) - 0.3f * cosf(0.1f * Z),
+		1.0f,
+		-0.3f * sinf(0.1f * X) + 0.03f * X * sinf(0.1f * Z));
 
-		XMStoreFloat4x4(&leftSphereRenderItem->World, leftSphereWorld);
-		leftSphereRenderItem->ObjectCBIndex = objCBIndex++;
-		leftSphereRenderItem->Geometry = GetEngine()->GetSceneGeometry()["shapeGeo"].get();
-		leftSphereRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		leftSphereRenderItem->IndexCount = leftSphereRenderItem->Geometry->GetGeomentry("Sphere").IndexCount;
-		leftSphereRenderItem->StartIndexLocation = leftSphereRenderItem->Geometry->GetGeomentry("Sphere").StartIndexLocation;
-		leftSphereRenderItem->BaseVertexLocation = leftSphereRenderItem->Geometry->GetGeomentry("Sphere").BaseVertexLocation;
-
-		XMStoreFloat4x4(&rightSphereRenderItem->World, rightSphereWorld);
-		rightSphereRenderItem->ObjectCBIndex = objCBIndex++;
-		rightSphereRenderItem->Geometry = GetEngine()->GetSceneGeometry()["shapeGeo"].get();
-		rightSphereRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		rightSphereRenderItem->IndexCount = rightSphereRenderItem->Geometry->GetGeomentry("Sphere").IndexCount;
-		rightSphereRenderItem->StartIndexLocation = rightSphereRenderItem->Geometry->GetGeomentry("Sphere").StartIndexLocation;
-		rightSphereRenderItem->BaseVertexLocation = rightSphereRenderItem->Geometry->GetGeomentry("Sphere").BaseVertexLocation;
-
-		engine->GetRenderItems().push_back(std::move(leftCylinderRenderItem));
-		engine->GetRenderItems().push_back(std::move(rightCylinderRenderItem));
-		engine->GetRenderItems().push_back(std::move(leftSphereRenderItem));
-		engine->GetRenderItems().push_back(std::move(rightSphereRenderItem));
-	}
-
-	for (auto& item : engine->GetRenderItems())
-	{
-		engine->GetOpaqueRenderItems().push_back(item.get());
-	}
+	const XMVECTOR unitNormal = XMVector3Normalize(XMLoadFloat3(&n));
+	XMStoreFloat3(&n, unitNormal);
+	return n;
 }
 
 #pragma optimize("", on)

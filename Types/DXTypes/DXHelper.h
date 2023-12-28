@@ -51,6 +51,7 @@ using namespace Microsoft::WRL;
 #include "Exception.h"
 
 #include <directxcollision.h>
+
 inline void ReportLiveObjects()
 {
 	IDXGIDebug1* dxgiDebug;
@@ -85,14 +86,23 @@ struct SMeshGeometry
 	DXGI_FORMAT IndexFormat = DXGI_FORMAT_R16_UINT;
 	UINT IndexBufferByteSize = 0;
 
-	std::unordered_map<string, SSubmeshGeometry> DrawArgs;
 
-	const SSubmeshGeometry& GetGeomentry(const string& SubmeshName) const
+	SSubmeshGeometry& GetGeomentry(const string& SubmeshName)
 	{
 		if (!DrawArgs.contains(SubmeshName))
 		{
 			throw std::runtime_error("Submesh not found!");
 		}
+		return DrawArgs.at(SubmeshName);
+	}
+
+	SSubmeshGeometry& SetGeometry(const string& SubmeshName, const SSubmeshGeometry& Geometry)
+	{
+		if (DrawArgs.contains(SubmeshName))
+		{
+			throw std::runtime_error("Submesh is already exists!");
+		}
+		DrawArgs[SubmeshName] = Geometry;
 		return DrawArgs.at(SubmeshName);
 	}
 
@@ -119,4 +129,7 @@ struct SMeshGeometry
 		VertexBufferUploader = nullptr;
 		IndexBufferUploader = nullptr;
 	}
+
+private:
+	std::unordered_map<string, SSubmeshGeometry> DrawArgs;
 };

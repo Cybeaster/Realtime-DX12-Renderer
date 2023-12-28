@@ -6,7 +6,7 @@
 #include <iostream>
 #include <memory>
 #include <ostream>
-
+#include <Windows.h>
 #ifndef DEBUG
 #define DEBUG 0
 #endif
@@ -49,22 +49,22 @@ struct SLogUtils
 		{
 		case ELogType::Log:
 			std::cout << "\n"
-			          << "Log: " << String << std::endl;
+				<< "Log: " << String << std::endl;
 			break;
 
 		case ELogType::Warning:
 			std::clog << "\n"
-			          << "Warning: " << String << std::endl;
+				<< "Warning: " << String << std::endl;
 			break;
 
 		case ELogType::Error:
 			std::clog << "\n \t \t"
-			          << "Error: " << String << std::endl;
+				<< "Error: " << String << std::endl;
 			break;
 
 		case ELogType::Critical:
 			std::clog << "\n \t \t"
-			          << "Critical: " << String << std::endl;
+				<< "Critical: " << String << std::endl;
 			break;
 		}
 	}
@@ -117,7 +117,7 @@ struct SLogger
 	SLogger() = default;
 
 	explicit SLogger(std::shared_ptr<T> S)
-	    : Stream(S)
+		: Stream(S)
 	{
 	}
 
@@ -125,7 +125,7 @@ struct SLogger
 	{
 		auto stream = Stream.get();
 		*stream << Message << "\n"
-		        << std::flush;
+			<< std::flush;
 	}
 
 	void SetStream(std::shared_ptr<T> S)
