@@ -1,5 +1,6 @@
 // Defaults for number of lights.
 
+
 #ifndef NUM_DIR_LIGHTS
 #define NUM_DIR_LIGHTS 1
 #endif
@@ -11,6 +12,8 @@
 #ifndef NUM_SPOT_LIGHTS
 #define NUM_SPOT_LIGHTS 0
 #endif
+
+
 
 #include "LightingUtils.hlsl"
 
@@ -101,6 +104,7 @@ float4 PS(VertexOut pin)
 	float4 directLight = ComputeLighting(Lights,mat,pin.PosW,pin.NormalW,toEyeW,shadowFactor);
 	float4 litColor = ambient + directLight;
 	litColor.a = DiffuseAlbedo.a;
+
 	return litColor;
 }
 

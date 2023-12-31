@@ -144,7 +144,7 @@ void OLitWaves::UpdateMainPass(const STimer& Timer)
 	const XMVECTOR lightDir = -Utils::Math::SphericalToCartesian(1.0f, SunTheta, SunPhi);
 
 	XMStoreFloat3(&MainPassCB.Lights[0].Direction, lightDir);
-	MainPassCB.Lights[0].Strength = XMFLOAT3(1.0f, 1.0f, 0.9f);
+	MainPassCB.Lights[0].Strength = XMFLOAT3(sinf(Timer.GetTime() * 5), 1.0f, 1.0f);
 
 	const auto currPassCB = engine->CurrentFrameResources->PassCB.get();
 	currPassCB->CopyData(0, MainPassCB);
@@ -234,6 +234,20 @@ void OLitWaves::OnKeyboardInput(const STimer& Timer)
 	else
 	{
 		bIsWireFrame = false;
+	}
+
+	if (GetAsyncKeyState('A') & 0x8000)
+	{
+		auto material = GetEngine()->FindMaterial("Water");
+		material->MaterialConsatnts.Roughness = 1.f;
+		material->NumFramesDirty = SRenderConstants::NumFrameResources;
+	}
+
+	if (GetAsyncKeyState('D') & 0x8000)
+	{
+		auto material = GetEngine()->FindMaterial("Water");
+		material->MaterialConsatnts.Roughness = 0.f;
+		material->NumFramesDirty = SRenderConstants::NumFrameResources;
 	}
 
 	if (GetAsyncKeyState(VK_LEFT) & 0x8000)
@@ -349,7 +363,7 @@ void OLitWaves::BuildMaterials()
 	grass->MaterialCBIndex = 0;
 	grass->MaterialConsatnts.DiffuseAlbedo = XMFLOAT4(0.2f, 0.6f, 0.2f, 1.0f);
 	grass->MaterialConsatnts.FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
-	grass->MaterialConsatnts.Roughness = 0.125f;
+	grass->MaterialConsatnts.Roughness = 1.f;
 
 	auto water = make_unique<SMaterial>();
 	water->Name = "Water";

@@ -39,19 +39,51 @@ float3 SchlickFresnel(float3 R0, float3 Normal, float3 LightDir)
 	return reflectedPercent;
 }
 
+float CartoonDiffuse(float Diffuse)
+{
+	float specularResult = 0.0f;
+
+	if (Diffuse > 0.5) {
+		Diffuse = 1.0;
+	} else if (Diffuse > 0.0) {
+		Diffuse = 0.6;
+	} else {
+		Diffuse = 0.4;
+	}
+
+	return Diffuse;
+}
+
+float CartoonSpecular(float Specular)
+{
+	if (Specular > 0.8f) {
+		Specular = 0.8f;
+	} else if (Specular > 0.1f) {
+		Specular = 0.5f;
+	}
+	return Specular;
+}
 
 float3 BlinnPhong(float3 LightStrength,float3 LightDir, float3 Normal, float3 EyeDir, Material Mat)
 {
 	// Derive m from the shininess, which is derived from the roughness.
 	const float m = Mat.Shininess * 256.0f;
 	float3 halfVec = normalize(LightDir + EyeDir);
+
 	float roughnessFactor = (m+8.0f)*pow(max(dot(halfVec, Normal), 0.0f), m) / 8.0f;
+
+#ifdef CARTOON
+	roughnessFactor = CartoonSpecular(roughnessFactor);
+#endif
+
 	float3 fresnelFactor = SchlickFresnel(Mat.FresnelR0, Normal, EyeDir);
 
 	// Our spec formula goes outside [0,1] range, but we are doing
 	// LDR rendering. So scale it down a bit.
 	float3 specAlbedo = fresnelFactor * roughnessFactor;
 	specAlbedo /= (specAlbedo + 1.0f);
+
+
 	return Mat.DiffuseAlbedo.rgb + specAlbedo * LightStrength;
 }
 
@@ -60,6 +92,10 @@ float3 ComputeDirectionalLight(Light L, Material Mat, float3 Normal, float3 EyeD
 	float3 LightVec = -L.Direction;
 	// Scale light down by Lambert’s cosine law
 	float nDotL = max(dot(Normal, LightVec), 0.0f);
+#ifdef CARTOON
+	nDotL = CartoonDiffuse(nDotL);
+#endif
+
 	float3 lightStrength = nDotL * L.Strength;
 	return BlinnPhong(lightStrength, LightVec, Normal, EyeDir, Mat);
 }
