@@ -4,7 +4,7 @@
 
 #include "Window.h"
 
-#include "../../Utils/MathUtils.h"
+#include "..\..\Utils\Math.h"
 #include "Application.h"
 #include "Camera/Camera.h"
 #include "Exception.h"

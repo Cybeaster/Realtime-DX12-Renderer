@@ -1,5 +1,5 @@
 
-#include "LandTest.h"
+#include "LitWaves.h"
 
 #include "../../Engine/Engine.h"
 #include "../../Window/Window.h"
@@ -7,6 +7,7 @@
 #include "Camera/Camera.h"
 #include "RenderConstants.h"
 #include "RenderItem.h"
+#include "../../../Materials/Material.h"
 #include "../../../Objects/GeomertryGenerator/GeometryGenerator.h"
 
 #include <DXHelper.h>
@@ -15,16 +16,17 @@
 #include <array>
 #include <filesystem>
 #include <iostream>
+
 using namespace Microsoft::WRL;
 
 using namespace DirectX;
 
-OLandTest::OLandTest(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window)
+OLitWaves::OLitWaves(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window)
 	: OTest(_Engine, _Window)
 {
 }
 
-bool OLandTest::Initialize()
+bool OLitWaves::Initialize()
 {
 	SetupProjection();
 
@@ -35,12 +37,11 @@ bool OLandTest::Initialize()
 
 	engine->CreateWaves(256, 256, 0.5f, 0.01f, 4.0f, 0.2f);
 
-	WavesVB = make_unique<OUploadBuffer<SVertex>>(engine->GetDevice().Get(), 256, false);
-
 	BuildRootSignature();
 	BuildShadersAndInputLayout();
 	BuildLandGeometry();
 	BuildWavesGeometryBuffers();
+	BuildMaterials();
 	BuildRenderItems();
 	engine->BuildFrameResource();
 	BuildPSO();
@@ -54,12 +55,12 @@ bool OLandTest::Initialize()
 	return true;
 }
 
-void OLandTest::UnloadContent()
+void OLitWaves::UnloadContent()
 {
 	ContentLoaded = false;
 }
 
-void OLandTest::UpdateWave(const STimer& Timer)
+void OLitWaves::UpdateWave(const STimer& Timer)
 {
 	static float tBase = 0.0f;
 	if (Timer.GetTime() - tBase >= 0.25)
@@ -77,13 +78,13 @@ void OLandTest::UpdateWave(const STimer& Timer)
 	{
 		SVertex v;
 		v.Pos = GetEngine()->GetWaves()->GetPosition(i);
-		//v.Color = XMFLOAT4(Colors::Blue); /TODO fix color filling
+		v.Normal = GetEngine()->GetWaves()->GetNormal(i);
 		currWavesVB->CopyData(i, v);
 	}
 	WavesRenderItem->Geometry->VertexBufferGPU = currWavesVB->GetResource();
 }
 
-void OLandTest::OnUpdate(const UpdateEventArgs& Event)
+void OLitWaves::OnUpdate(const UpdateEventArgs& Event)
 {
 	Super::OnUpdate(Event);
 
@@ -96,18 +97,18 @@ void OLandTest::OnUpdate(const UpdateEventArgs& Event)
 	// this fence point.
 
 	UpdateCamera();
-	OnKeyboardInput();
+	OnKeyboardInput(Event.Timer);
 	if (engine->CurrentFrameResources->Fence != 0 && engine->GetCommandQueue()->GetFence()->GetCompletedValue() < engine->CurrentFrameResources->Fence)
 	{
 		engine->GetCommandQueue()->WaitForFenceValue(engine->CurrentFrameResources->Fence);
 	}
-
-	UpdateMainPass(Event.Timer);
 	UpdateObjectCBs(Event.Timer);
+	UpdateMaterialCB();
+	UpdateMainPass(Event.Timer);
 	UpdateWave(Event.Timer);
 }
 
-void OLandTest::UpdateMainPass(const STimer& Timer)
+void OLitWaves::UpdateMainPass(const STimer& Timer)
 {
 	auto engine = Engine.lock();
 	auto window = Window.lock();
@@ -138,12 +139,18 @@ void OLandTest::UpdateMainPass(const STimer& Timer)
 	MainPassCB.FarZ = 1000.0f;
 	MainPassCB.TotalTime = Timer.GetTime();
 	MainPassCB.DeltaTime = Timer.GetDeltaTime();
+	MainPassCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
+
+	const XMVECTOR lightDir = -Utils::Math::SphericalToCartesian(1.0f, SunTheta, SunPhi);
+
+	XMStoreFloat3(&MainPassCB.Lights[0].Direction, lightDir);
+	MainPassCB.Lights[0].Strength = XMFLOAT3(1.0f, 1.0f, 0.9f);
 
 	const auto currPassCB = engine->CurrentFrameResources->PassCB.get();
 	currPassCB->CopyData(0, MainPassCB);
 }
 
-void OLandTest::UpdateObjectCBs(const STimer& Timer)
+void OLitWaves::UpdateObjectCBs(const STimer& Timer)
 {
 	const auto engine = Engine.lock();
 	const auto currentObjectCB = engine->CurrentFrameResources->ObjectCB.get();
@@ -166,12 +173,15 @@ void OLandTest::UpdateObjectCBs(const STimer& Timer)
 	}
 }
 
-void OLandTest::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList, const vector<SRenderItem*>& RenderItems) const
+void OLitWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList, const vector<SRenderItem*>& RenderItems) const
 {
 	const auto engine = Engine.lock();
 
-	auto objectCBByteSize = Utils::CalcBufferByteSize(sizeof(SObjectConstants));
-	auto objectCB = engine->CurrentFrameResources->ObjectCB->GetResource();
+	auto matCBByteSize = Utils::CalcBufferByteSize(sizeof(SMaterialConstants));
+	const auto objectCBByteSize = Utils::CalcBufferByteSize(sizeof(SObjectConstants));
+
+	const auto objectCB = engine->CurrentFrameResources->ObjectCB->GetResource();
+	const auto materialCB = engine->CurrentFrameResources->MaterialCB->GetResource();
 
 	for (size_t i = 0; i < RenderItems.size(); i++)
 	{
@@ -187,15 +197,17 @@ void OLandTest::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList, c
 		// Offset to the CBV in the descriptor heap for this object and
 		// for this frame resource.
 
-		D3D12_GPU_VIRTUAL_ADDRESS cbAddress = objectCB->GetGPUVirtualAddress();
-		cbAddress += renderItem->ObjectCBIndex * objectCBByteSize;
+		const auto cbAddress = objectCB->GetGPUVirtualAddress() + renderItem->ObjectCBIndex * objectCBByteSize;
+		const auto matCBAddress = materialCB->GetGPUVirtualAddress() + renderItem->Material->MaterialCBIndex * matCBByteSize;
 
 		CommandList->SetGraphicsRootConstantBufferView(0, cbAddress);
+		CommandList->SetGraphicsRootConstantBufferView(1, matCBAddress);
+
 		CommandList->DrawIndexedInstanced(renderItem->IndexCount, 1, renderItem->StartIndexLocation, renderItem->BaseVertexLocation, 0);
 	}
 }
 
-void OLandTest::UpdateCamera()
+void OLitWaves::UpdateCamera()
 {
 	// Convert Spherical to Cartesian coordinates.
 	EyePos.x = Radius * sinf(Phi) * cosf(Theta);
@@ -211,15 +223,39 @@ void OLandTest::UpdateCamera()
 	XMStoreFloat4x4(&ViewMatrix, view);
 }
 
-void OLandTest::OnKeyboardInput()
+void OLitWaves::OnKeyboardInput(const STimer& Timer)
 {
+	const float deltaTime = Timer.GetDeltaTime();
+
 	if (GetAsyncKeyState('1') & 0x8000)
+	{
 		bIsWireFrame = true;
+	}
 	else
+	{
 		bIsWireFrame = false;
+	}
+
+	if (GetAsyncKeyState(VK_LEFT) & 0x8000)
+	{
+		SunTheta -= 1.0f * deltaTime;
+	}
+	if (GetAsyncKeyState(VK_RIGHT) & 0x8000)
+	{
+		SunTheta += 1.0f * deltaTime;
+	}
+	if (GetAsyncKeyState(VK_UP) & 0x8000)
+	{
+		SunPhi -= 1.0f * deltaTime;
+	}
+	if (GetAsyncKeyState(VK_DOWN) & 0x8000)
+	{
+		SunPhi += 1.0f * deltaTime;
+	}
+	SunPhi = Utils::Math::Clamp(SunPhi, 0.1f, XM_PIDIV2);
 }
 
-void OLandTest::OnRender(const UpdateEventArgs& Event)
+void OLitWaves::OnRender(const UpdateEventArgs& Event)
 {
 	auto engine = Engine.lock();
 	auto commandList = engine->GetCommandQueue()->GetCommandList();
@@ -265,7 +301,7 @@ void OLandTest::OnRender(const UpdateEventArgs& Event)
 	commandList->SetGraphicsRootSignature(RootSignature.Get());
 
 	auto passCB = engine->CurrentFrameResources->PassCB->GetResource();
-	commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
 	DrawRenderItems(commandList.Get(), engine->GetOpaqueRenderItems());
 
@@ -295,18 +331,60 @@ void OLandTest::OnRender(const UpdateEventArgs& Event)
 	engine->FlushGPU();
 }
 
-void OLandTest::OnResize(const ResizeEventArgs& Event)
+void OLitWaves::OnResize(const ResizeEventArgs& Event)
 {
 	OTest::OnResize(Event);
 	SetupProjection();
 }
 
-void OLandTest::SetupProjection()
+void OLitWaves::SetupProjection()
 {
 	XMStoreFloat4x4(&ProjectionMatrix, XMMatrixPerspectiveFovLH(0.25f * XM_PI, Window.lock()->GetAspectRatio(), 1.0f, 1000.0f));
 }
 
-void OLandTest::OnKeyPressed(const KeyEventArgs& Event)
+void OLitWaves::BuildMaterials()
+{
+	auto grass = make_unique<SMaterial>();
+	grass->Name = "Grass";
+	grass->MaterialCBIndex = 0;
+	grass->MaterialConsatnts.DiffuseAlbedo = XMFLOAT4(0.2f, 0.6f, 0.2f, 1.0f);
+	grass->MaterialConsatnts.FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+	grass->MaterialConsatnts.Roughness = 0.125f;
+
+	auto water = make_unique<SMaterial>();
+	water->Name = "Water";
+	water->MaterialCBIndex = 1;
+	water->MaterialConsatnts.DiffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
+	water->MaterialConsatnts.FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+	water->MaterialConsatnts.Roughness = 0.0f;
+
+	GetEngine()->AddMaterial("Grass", grass);
+	GetEngine()->AddMaterial("Water", water);
+}
+
+void OLitWaves::UpdateMaterialCB()
+{
+	const auto currentMaterialCB = Engine.lock()->CurrentFrameResources->MaterialCB.get();
+	for (auto& materials = Engine.lock()->GetMaterials(); auto& elem : materials)
+	{
+		if (const auto material = elem.second.get())
+		{
+			if (material->NumFramesDirty > 0)
+			{
+				XMLoadFloat4x4(&material->MaterialConsatnts.MatTransform);
+
+				SMaterialConstants matConstants;
+				matConstants.DiffuseAlbedo = material->MaterialConsatnts.DiffuseAlbedo;
+				matConstants.FresnelR0 = material->MaterialConsatnts.FresnelR0;
+				matConstants.Roughness = material->MaterialConsatnts.Roughness;
+				currentMaterialCB->CopyData(material->MaterialCBIndex, matConstants);
+				material->NumFramesDirty--;
+			}
+		}
+	}
+}
+
+void OLitWaves::OnKeyPressed(const KeyEventArgs& Event)
 {
 	OTest::OnKeyPressed(Event);
 
@@ -328,7 +406,7 @@ void OLandTest::OnKeyPressed(const KeyEventArgs& Event)
 	}
 }
 
-void OLandTest::OnMouseMoved(const MouseMotionEventArgs& Args)
+void OLitWaves::OnMouseMoved(const MouseMotionEventArgs& Args)
 {
 	OTest::OnMouseMoved(Args);
 	auto window = Window.lock();
@@ -350,12 +428,12 @@ void OLandTest::OnMouseMoved(const MouseMotionEventArgs& Args)
 		float dy = 0.005f * (Args.Y - window->GetLastYMousePos());
 		Radius += dx - dy;
 
-		Radius = std::clamp(Radius, 3.0f, 35.f);
+		Radius = std::clamp(Radius, 5.0f, 150.f);
 	}
 	LOG(Log, "Theta: {} Phi: {} Radius: {}", Theta, Phi, Radius);
 }
 
-void OLandTest::BuildRootSignature()
+void OLitWaves::BuildRootSignature()
 {
 	// Shader programs typically require resources as input (constant buffers,
 	// textures, samplers).  The root signature defines the resources the shader
@@ -364,12 +442,13 @@ void OLandTest::BuildRootSignature()
 	// thought of as defining the function signature.
 
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
 
 	slotRootParameter[0].InitAsConstantBufferView(0);
 	slotRootParameter[1].InitAsConstantBufferView(1);
+	slotRootParameter[2].InitAsConstantBufferView(2);
 
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(2, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	ComPtr<ID3DBlob> serializedRootSig = nullptr;
 	ComPtr<ID3DBlob> errorBlob = nullptr;
@@ -387,7 +466,7 @@ void OLandTest::BuildRootSignature()
 		IID_PPV_ARGS(&RootSignature)));
 }
 
-void OLandTest::BuildShadersAndInputLayout()
+void OLitWaves::BuildShadersAndInputLayout()
 {
 	GetEngine()->BuildShader(L"Shaders/BaseShader.hlsl", "StandardVS", "OpaquePS");
 
@@ -397,7 +476,7 @@ void OLandTest::BuildShadersAndInputLayout()
 	};
 }
 
-void OLandTest::BuildLandGeometry()
+void OLitWaves::BuildLandGeometry()
 {
 	OGeometryGenerator generator;
 	auto grid = generator.CreateGrid(160.0f, 160.0f, 50, 50);
@@ -414,33 +493,7 @@ void OLandTest::BuildLandGeometry()
 		auto& p = grid.Vertices[i].Position;
 		vertices[i].Pos = p;
 		vertices[i].Pos.y = GetHillsHeight(p.x, p.z);
-		// Color the vertex based on its height.
-		// if (vertices[i].Pos.y < -10.0f)
-		//TODO Fix color filling
-		// {
-		// 	// Sandy beach color.
-		// 	vertices[i].Color = XMFLOAT4(1.0f, 0.96f, 0.62f, 1.0f);
-		// }
-		// else if (vertices[i].Pos.y < 5.0f)
-		// {
-		// 	// Light yellow-green.
-		// 	vertices[i].Color = XMFLOAT4(0.48f, 0.77f, 0.46f, 1.0f);
-		// }
-		// else if (vertices[i].Pos.y < 12.0f)
-		// {
-		// 	// Dark yellow-green.
-		// 	vertices[i].Color = XMFLOAT4(0.1f, 0.48f, 0.19f, 1.0f);
-		// }
-		// else if (vertices[i].Pos.y < 20.0f)
-		// {
-		// 	// Dark brown.
-		// 	vertices[i].Color = XMFLOAT4(0.45f, 0.39f, 0.34f, 1.0f);
-		// }
-		// else
-		// {
-		// 	// White snow.
-		// 	vertices[i].Color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		// }
+		vertices[i].Normal = GetHillsNormal(p.x, p.z);
 	}
 
 	const UINT vbByteSize = static_cast<UINT>(vertices.size() * sizeof(SVertex));
@@ -482,7 +535,7 @@ void OLandTest::BuildLandGeometry()
 	GetEngine()->SetSceneGeometry("LandGeo", std::move(geo));
 }
 
-void OLandTest::BuildWavesGeometryBuffers()
+void OLitWaves::BuildWavesGeometryBuffers()
 {
 	vector<uint16_t> indices(3 * GetEngine()->GetWaves()->GetTriangleCount());
 
@@ -538,7 +591,7 @@ void OLandTest::BuildWavesGeometryBuffers()
 	GetEngine()->SetSceneGeometry("WaterGeometry", std::move(geometry));
 }
 
-void OLandTest::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> CommandList,
+void OLitWaves::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> CommandList,
                                      ID3D12Resource** DestinationResource,
                                      ID3D12Resource** IntermediateResource,
                                      size_t NumElements,
@@ -586,7 +639,7 @@ void OLandTest::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> CommandL
 	}
 }
 
-void OLandTest::BuildPSO()
+void OLitWaves::BuildPSO()
 {
 	auto engine = Engine.lock();
 	UINT quality = 0;
@@ -621,12 +674,14 @@ void OLandTest::BuildPSO()
 	engine->BuildPSO("OpaqueWireframe", opaqueWireframePsoDesc);
 }
 
-void OLandTest::BuildRenderItems()
+void OLitWaves::BuildRenderItems()
 {
 	auto wavesRenderItem = make_unique<SRenderItem>();
 	wavesRenderItem->World = Utils::Math::Identity4x4();
 	wavesRenderItem->ObjectCBIndex = 0;
 	wavesRenderItem->Geometry = GetEngine()->GetSceneGeometry()["WaterGeometry"].get();
+	wavesRenderItem->Material = GetEngine()->FindMaterial("Water");
+
 	wavesRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	wavesRenderItem->IndexCount = wavesRenderItem->Geometry->GetGeomentry("grid").IndexCount;
 	wavesRenderItem->StartIndexLocation = wavesRenderItem->Geometry->GetGeomentry("grid").StartIndexLocation;
@@ -640,6 +695,7 @@ void OLandTest::BuildRenderItems()
 	gridRenderItem->World = Utils::Math::Identity4x4();
 	gridRenderItem->ObjectCBIndex = 1;
 	gridRenderItem->Geometry = GetEngine()->GetSceneGeometry()["LandGeo"].get();
+	gridRenderItem->Material = GetEngine()->FindMaterial("Grass");
 	gridRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	gridRenderItem->IndexCount = gridRenderItem->Geometry->GetGeomentry("grid").IndexCount;
 	gridRenderItem->StartIndexLocation = gridRenderItem->Geometry->GetGeomentry("grid").StartIndexLocation;
@@ -651,12 +707,12 @@ void OLandTest::BuildRenderItems()
 	GetEngine()->GetRenderItems().push_back(std::move(gridRenderItem));
 }
 
-float OLandTest::GetHillsHeight(float X, float Z) const
+float OLitWaves::GetHillsHeight(float X, float Z) const
 {
 	return 0.3 * (Z * sinf(0.1f * X) + X * cosf(0.1f * Z));
 }
 
-XMFLOAT3 OLandTest::GetHillsNormal(float X, float Z) const
+XMFLOAT3 OLitWaves::GetHillsNormal(float X, float Z) const
 {
 	XMFLOAT3 n(
 		-0.03f * Z * cosf(0.1f * X) - 0.3f * cosf(0.1f * Z),

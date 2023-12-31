@@ -15,12 +15,12 @@ T Clamp(const T& x, const T& Low, const T& High)
 inline DirectX::XMFLOAT4X4 Identity4x4()
 {
 	static DirectX::XMFLOAT4X4 I(
-	    1.0f, 0.0f, 0.0f,
-	    0.0f, 0.0f, 1.0f,
-	    0.0f, 0.0f, 0.0f,
-	    0.0f, 1.0f, 0.0f,
-	    0.0f, 0.0f, 0.0f,
-	    1.0f);
+		1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+		0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 0.0f,
+		1.0f);
 
 	return I;
 }
@@ -67,5 +67,22 @@ inline auto Random(T Min, T Max)
 inline int32_t Random(int32_t Min, int32_t Max)
 {
 	return Random<double>(Min, Max + 1);
+}
+
+inline DirectX::XMMATRIX InverseTranspose(DirectX::CXMMATRIX Matrix)
+{
+	DirectX::XMMATRIX A = Matrix;
+	A.r[3] = DirectX::XMVectorSet(0.f, 0.0f, 0.0f, 1.0f);
+	DirectX::XMVECTOR Determinant = DirectX::XMMatrixDeterminant(A);
+	return DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(&Determinant, A));
+}
+
+inline DirectX::XMVECTOR SphericalToCartesian(float Radius, float Theta, float Phi)
+{
+	return DirectX::XMVectorSet(
+		Radius * cosf(Theta) * sinf(Phi),
+		Radius * cosf(Phi),
+		Radius * sinf(Theta) * sinf(Phi),
+		1.0f);
 }
 }

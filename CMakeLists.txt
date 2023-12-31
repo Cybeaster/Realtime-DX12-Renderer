@@ -49,7 +49,7 @@ set(SRC_FILES
         Application/Test/SimpleCubeTest/SimpleCubeTest.h
         Application/Test/SimpleCubeTest/SimpleCubeTest.cpp
         Types/Events.h
-        Types/DXTypes/DXHelper.h
+        Types/DirectX/DXHelper.h
         Application/Test/Test.cpp
         main.cpp
         Types/Timer/Timer.h
@@ -59,13 +59,13 @@ set(SRC_FILES
         Application/Camera/Camera.h
         Application/Engine/UploadBuffer/UploadBuffer.cpp
         Application/Engine/UploadBuffer/UploadBuffer.h
-        Utils/DXUtils.h
-        Utils/MathUtils.h
-        Types/DXTypes/FrameResource.h
-        Types/DXTypes/ObjectConstants.h
-        Types/DXTypes/RenderItem.h
-        Types/DXTypes/RenderConstants.h
-        Types/DXTypes/RenderConstants.h
+        Utils/DirectX.h
+        Utils/Math.h
+        Types/DirectX/FrameResource.h
+        Types/DirectX/ObjectConstants.h
+        Types/DirectX/RenderItem.h
+        Types/DirectX/RenderConstants.h
+        Types/DirectX/RenderConstants.h
         Application/Test/ShapesTest/ShapesTest.cpp
         Application/Test/ShapesTest/ShapesTest.h
         Objects/GeomertryGenerator/GeometryGenerator.h
@@ -75,6 +75,12 @@ set(SRC_FILES
         Application/Test/LandTest/LandTest.cpp
         Objects/Geometry/Wave/Waves.cpp
         Objects/Geometry/Wave/Waves.h
+        Materials/Material.h
+        Application/Test/LitWaves/LitWaves.h
+        Application/Test/LitWaves/LitWaves.cpp
+        Types/DirectX/MaterialConstants.h
+        Types/DirectX/MaterialConstants.h
+        Types/DirectX/Light/Light.h
 )
 
 # Add sources to the project
@@ -98,7 +104,7 @@ target_include_directories(DXRenderer PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Externals/directx
         ${CMAKE_CURRENT_SOURCE_DIR}/Types
         ${CMAKE_CURRENT_SOURCE_DIR}/Application
-        ${CMAKE_CURRENT_SOURCE_DIR}/Types/DXTypes)
+        ${CMAKE_CURRENT_SOURCE_DIR}/Types/DirectX)
 
 # Link necessary libraries
 target_link_libraries(DXRenderer d3d12.lib dxgi.lib dxguid.lib d3dcompiler.lib Shlwapi.lib)

@@ -2,16 +2,13 @@
 
 #define _DEBUG
 
-#include "DXHelper.h"
 #include "Test/LandTest/LandTest.h"
-#include "Test/ShapesTest/ShapesTest.h"
-#include "Test/WindowTest/WindowTest.h"
+#include "Test/LitWaves/LitWaves.h"
+
 
 #include <Application.h>
 #include <Shlwapi.h>
-#include <Test/SimpleCubeTest/SimpleCubeTest.h>
 #include <Windows.h>
-#include <dxgidebug.h>
 
 int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLine, int nCmdShow)
 {
@@ -28,9 +25,8 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	const auto application = OApplication::Get();
 	application->InitApplication(hInstance);
 
-	returnCode = application->Run<OLandTest>();
+	returnCode = application->Run<OLitWaves>();
 	application->Destory();
 
-	atexit(&ReportLiveObjects);
 	return returnCode;
 }

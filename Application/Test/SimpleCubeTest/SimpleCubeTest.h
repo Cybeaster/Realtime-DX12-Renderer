@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../../Utils/DXUtils.h"
-#include "../../../Utils/MathUtils.h"
+#include "..\..\..\Utils\DirectX.h"
+#include "..\..\..\Utils\Math.h"
 #include "../../Window/Window.h"
 #include "../Test.h"
 #include "Engine/UploadBuffer/UploadBuffer.h"

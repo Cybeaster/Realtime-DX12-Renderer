@@ -1,5 +1,7 @@
 #pragma once
-#include "../Utils/MathUtils.h"
+#include "RenderConstants.h"
+#include "..\..\Utils\Math.h"
+#include "Light/Light.h"
 
 #include <DirectXMath.h>
 
@@ -16,6 +18,7 @@ struct SPassConstants
 	DirectX::XMFLOAT4X4 InvProj = Utils::Math::Identity4x4();
 	DirectX::XMFLOAT4X4 ViewProj = Utils::Math::Identity4x4();
 	DirectX::XMFLOAT4X4 InvViewProj = Utils::Math::Identity4x4();
+
 	DirectX::XMFLOAT3 EyePosW = { 0.0f, 0.0f, 0.0f };
 	float CBPerObjectPad1 = 0.0f;
 	DirectX::XMFLOAT2 RenderTargetSize = { 0.0f, 0.0f };
@@ -24,6 +27,8 @@ struct SPassConstants
 	float FarZ = 0.0f;
 	float TotalTime = 0.0f;
 	float DeltaTime = 0.0f;
+	DirectX::XMFLOAT4 AmbientLight = { 0.0f, 0.0f, 0.0f, 1.0f };
+	SLight Lights[SRenderConstants::MaxLights];
 };
 
 struct STimerConstants

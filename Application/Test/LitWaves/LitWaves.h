@@ -13,12 +13,12 @@
 #include <windows.h>
 #include <wrl/client.h>
 
-class OLandTest : public OTest
+class OLitWaves : public OTest
 {
 	using Super = OTest;
 
 public:
-	OLandTest(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window);
+	OLitWaves(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window);
 
 	bool Initialize() override;
 
@@ -45,10 +45,14 @@ public:
 
 	void UpdateCamera();
 
-	void OnKeyboardInput();
+	void OnKeyboardInput(const STimer& Timer);
 
 private:
 	void SetupProjection();
+
+	void BuildMaterials();
+
+	void UpdateMaterialCB();
 
 	void BuildRootSignature();
 
@@ -73,7 +77,10 @@ private:
 
 
 	ComPtr<ID3D12RootSignature> RootSignature;
+
+
 	SPassConstants MainPassCB;
+
 	unique_ptr<OUploadBuffer<SVertex>> WavesVB = nullptr;
 	DirectX::XMFLOAT3 EyePos = { 0, 0, 0 };
 	DirectX::XMFLOAT4X4 ViewMatrix = Utils::Math::Identity4x4();
@@ -85,9 +92,12 @@ private:
 
 	float Theta = 1.5f * DirectX::XM_PI;
 	float Phi = DirectX::XM_PIDIV4;
-	float Radius = 35;
+	float Radius = 50.f;
 
 	bool bIsWireFrame = false;
+
+	float SunTheta = 1.25f * DirectX::XM_PI;
+	float SunPhi = DirectX::XM_PIDIV4;
 
 	SRenderItem* WavesRenderItem = nullptr;
 };

@@ -16,7 +16,6 @@ using namespace Microsoft::WRL;
 
 using namespace DirectX;
 
-
 OSimpleCubeTest::OSimpleCubeTest(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window)
 	: OTest(_Engine, _Window)
 {
@@ -329,105 +328,106 @@ void OSimpleCubeTest::BuildShadersAndInputLayout()
 
 void OSimpleCubeTest::BuildBoxGeometry()
 {
-	const array vertices = {
-		SVertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::White) }),
-		SVertex({ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Black) }),
-		SVertex({ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Red) }),
-		SVertex({ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::Green) }),
-		SVertex({ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Blue) }),
-		SVertex({ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Yellow) }),
-		SVertex({ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Cyan) }),
-		SVertex({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Magenta) })
-	};
-
-	//clang-format off
-	std::array<uint16_t, 36> indices = {
-		// front face
-		0,
-		1,
-		2,
-		0,
-		2,
-		3,
-
-		// back face
-		4,
-		6,
-		5,
-		4,
-		7,
-		6,
-
-		// left face
-		4,
-		5,
-		1,
-		4,
-		1,
-		0,
-
-		// right face
-		3,
-		2,
-		6,
-		3,
-		6,
-		7,
-
-		// top face
-		1,
-		5,
-		6,
-		1,
-		6,
-		2,
-
-		// bottom face
-		4,
-		0,
-		3,
-		4,
-		3,
-		7
-	};
-	//clang-format on
-
-	auto commandList = Engine.lock()->GetCommandQueue()->GetCommandList();
-	constexpr auto vbByteSize = vertices.size() * sizeof(SVertex);
-	constexpr auto ibByteSize = indices.size() * sizeof(uint16_t);
-
-	BoxGeometry = make_unique<SMeshGeometry>();
-	BoxGeometry->Name = "BoxGeo";
-
-	THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &BoxGeometry->VertexBufferCPU));
-	CopyMemory(BoxGeometry->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-
-	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &BoxGeometry->IndexBufferCPU));
-	CopyMemory(BoxGeometry->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-	BoxGeometry->VertexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
-	                                                          Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
-	                                                          vertices.data(),
-	                                                          vbByteSize,
-	                                                          BoxGeometry->VertexBufferUploader);
-
-	BoxGeometry->IndexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
-	                                                         Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
-	                                                         indices.data(),
-	                                                         ibByteSize,
-	                                                         BoxGeometry->IndexBufferUploader);
-
-	BoxGeometry->VertexByteStride = sizeof(SVertex);
-	BoxGeometry->VertexBufferByteSize = vbByteSize;
-	BoxGeometry->IndexFormat = DXGI_FORMAT_R16_UINT;
-	BoxGeometry->IndexBufferByteSize = ibByteSize;
-
-	SSubmeshGeometry submesh;
-	submesh.IndexCount = indices.size();
-	submesh.StartIndexLocation = 0;
-	submesh.BaseVertexLocation = 0;
-
-	BoxGeometry->GetGeomentry("Box") = submesh;
+	//TODO - FIX filling vertex buffer
+	// const array vertices = {
+	// 	SVertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::White) }),
+	// 	SVertex({ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Black) }),
+	// 	SVertex({ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Red) }),
+	// 	SVertex({ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::Green) }),
+	// 	SVertex({ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Blue) }),
+	// 	SVertex({ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Yellow) }),
+	// 	SVertex({ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Cyan) }),
+	// 	SVertex({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Magenta) })
+	// };
+	//
+	// //clang-format off
+	// std::array<uint16_t, 36> indices = {
+	// 	// front face
+	// 	0,
+	// 	1,
+	// 	2,
+	// 	0,
+	// 	2,
+	// 	3,
+	//
+	// 	// back face
+	// 	4,
+	// 	6,
+	// 	5,
+	// 	4,
+	// 	7,
+	// 	6,
+	//
+	// 	// left face
+	// 	4,
+	// 	5,
+	// 	1,
+	// 	4,
+	// 	1,
+	// 	0,
+	//
+	// 	// right face
+	// 	3,
+	// 	2,
+	// 	6,
+	// 	3,
+	// 	6,
+	// 	7,
+	//
+	// 	// top face
+	// 	1,
+	// 	5,
+	// 	6,
+	// 	1,
+	// 	6,
+	// 	2,
+	//
+	// 	// bottom face
+	// 	4,
+	// 	0,
+	// 	3,
+	// 	4,
+	// 	3,
+	// 	7
+	// };
+	// //clang-format on
+	//
+	// auto commandList = Engine.lock()->GetCommandQueue()->GetCommandList();
+	// constexpr auto vbByteSize = vertices.size() * sizeof(SVertex);
+	// constexpr auto ibByteSize = indices.size() * sizeof(uint16_t);
+	//
+	// BoxGeometry = make_unique<SMeshGeometry>();
+	// BoxGeometry->Name = "BoxGeo";
+	//
+	// THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &BoxGeometry->VertexBufferCPU));
+	// CopyMemory(BoxGeometry->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+	//
+	// THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &BoxGeometry->IndexBufferCPU));
+	// CopyMemory(BoxGeometry->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+	//
+	// BoxGeometry->VertexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
+	//                                                           Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
+	//                                                           vertices.data(),
+	//                                                           vbByteSize,
+	//                                                           BoxGeometry->VertexBufferUploader);
+	//
+	// BoxGeometry->IndexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
+	//                                                          Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
+	//                                                          indices.data(),
+	//                                                          ibByteSize,
+	//                                                          BoxGeometry->IndexBufferUploader);
+	//
+	// BoxGeometry->VertexByteStride = sizeof(SVertex);
+	// BoxGeometry->VertexBufferByteSize = vbByteSize;
+	// BoxGeometry->IndexFormat = DXGI_FORMAT_R16_UINT;
+	// BoxGeometry->IndexBufferByteSize = ibByteSize;
+	//
+	// SSubmeshGeometry submesh;
+	// submesh.IndexCount = indices.size();
+	// submesh.StartIndexLocation = 0;
+	// submesh.BaseVertexLocation = 0;
+	//
+	// BoxGeometry->GetGeomentry("Box") = submesh;
 }
 
 void OSimpleCubeTest::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> CommandList,

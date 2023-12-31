@@ -1,7 +1,8 @@
 #pragma once
-#include "../../Utils/MathUtils.h"
+#include "..\..\Utils\Math.h"
 #include "DXHelper.h"
 #include "RenderConstants.h"
+#include "../../Materials/Material.h"
 
 struct SRenderItem
 {
@@ -25,7 +26,9 @@ struct SRenderItem
 	// Index into GPU constant buffer corresponding to the ObjectCB for this render item.
 	UINT ObjectCBIndex = -1;
 
+	SMaterial* Material = nullptr;
 	SMeshGeometry* Geometry = nullptr;
+
 	D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
 	// DrawIndexedInstanced parameters.

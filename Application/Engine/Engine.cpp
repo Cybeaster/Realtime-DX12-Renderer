@@ -124,7 +124,7 @@ void OEngine::BuildFrameResource()
 {
 	for (int i = 0; i < SRenderConstants::NumFrameResources; ++i)
 	{
-		FrameResources.push_back(make_unique<SFrameResource>(Device.Get(), 1, AllRenderItems.size(), Waves->GetVertexCount()));
+		FrameResources.push_back(make_unique<SFrameResource>(Device.Get(), 1, AllRenderItems.size(), Waves->GetVertexCount(), Materials.size()));
 	}
 }
 
@@ -288,6 +288,31 @@ vector<unique_ptr<SRenderItem>>& OEngine::GetTransparentRenderItems()
 ComPtr<IDXGIFactory2> OEngine::GetFactory() const
 {
 	return Factory;
+}
+
+void OEngine::AddMaterial(string Name, unique_ptr<SMaterial>& Material)
+{
+	if (Materials.contains(Name))
+	{
+		LOG(Error, "Material with this name already exists!");
+		return;
+	}
+	Materials[Name] = move(Material);
+}
+
+const OEngine::TMaterialsMap& OEngine::GetMaterials() const
+{
+	return Materials;
+}
+
+SMaterial* OEngine::FindMaterial(const string& Name) const
+{
+	if (!Materials.contains(Name))
+	{
+		LOG(Error, "Material not found!");
+		return nullptr;
+	}
+	return Materials.at(Name).get();
 }
 
 shared_ptr<OTest> OEngine::GetTestByHWND(HWND Handler)

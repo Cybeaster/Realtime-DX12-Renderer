@@ -1,5 +1,5 @@
 #pragma once
-#include <DXTypes/DXHelper.h>
+#include <DirectX/DXHelper.h>
 #include <Types.h>
 
 class OGeometryGenerator
