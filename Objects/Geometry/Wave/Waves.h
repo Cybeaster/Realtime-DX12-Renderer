@@ -38,7 +38,7 @@ public:
 
 	void Update(float dt);
 
-	void Disturb(int32_t I, int32_t J, float Magnitude);
+	void Disturb(int32_t I, int32_t J, float Magnitude, float Radius = 50);
 
 private:
 	int32_t NumRows;

@@ -15,16 +15,29 @@
 #include <Types.h>
 #pragma optimize("", off)
 using namespace Microsoft::WRL;
+
 OWindow::OWindow(shared_ptr<OEngine> _Engine, HWND hWnd, const SWindowInfo& _WindowInfo, const shared_ptr<OCamera>& _Camera)
-    : Hwnd(hWnd), Engine(_Engine), WindowInfo{ _WindowInfo }, Camera(_Camera)
+	: Hwnd(hWnd)
+	, Engine(_Engine)
+	, WindowInfo{ _WindowInfo }
+	, Camera(_Camera)
 {
 	SwapChain = CreateSwapChain();
 	RTVDescriptorHeap = _Engine->CreateDescriptorHeap(BuffersCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	RTVDescriptorSize = _Engine->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
+	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
+	dsvHeapDesc.NumDescriptors = 1;
+	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	dsvHeapDesc.NodeMask = 0;
+	THROW_IF_FAILED(Engine.lock()->GetDevice()->CreateDescriptorHeap(
+		&dsvHeapDesc, IID_PPV_ARGS(DSVDescriptorHeap.GetAddressOf())));
+
 	UpdateRenderTargetViews();
-	ResizeDepthBuffer();
+	//ResizeDepthBuffer();
 }
+
 const wstring& OWindow::GetName() const
 {
 	return WindowInfo.Name;
@@ -78,6 +91,7 @@ void OWindow::ToggleVSync()
 {
 	SetVSync(!WindowInfo.VSync);
 }
+
 float OWindow::GetFoV()
 {
 	return WindowInfo.FoV;
@@ -265,7 +279,7 @@ void OWindow::OnResize(ResizeEventArgs& Event)
 	engine->GetCommandQueue()->GetCommandQueue()->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 	engine->FlushGPU();
 
-	Viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(WindowInfo.ClientWidth), static_cast<float>(WindowInfo.ClientHeight));
+	Viewport = D3D12_VIEWPORT(0.0f, 0.0f, static_cast<float>(WindowInfo.ClientWidth), static_cast<float>(WindowInfo.ClientHeight), 0.0f, 1.0f);
 	ScissorRect = CD3DX12_RECT(0, 0, WindowInfo.ClientWidth, WindowInfo.ClientHeight);
 }
 
@@ -308,12 +322,12 @@ ComPtr<IDXGISwapChain4> OWindow::CreateSwapChain()
 
 	ComPtr<IDXGISwapChain1> swapChain1;
 	THROW_IF_FAILED(engine->GetFactory()->CreateSwapChainForHwnd(
-	    commandQueue.Get(),
-	    Hwnd,
-	    &swapChainDesc,
-	    nullptr,
-	    nullptr,
-	    &swapChain1));
+		commandQueue.Get(),
+		Hwnd,
+		&swapChainDesc,
+		nullptr,
+		nullptr,
+		&swapChain1));
 
 	// Disable the Alt+Enter fullscreen toggle feature. Switching to fullscreen
 	// will be handled manually.
@@ -344,39 +358,53 @@ void OWindow::ResizeDepthBuffer()
 	const auto engine = Engine.lock();
 	engine->FlushGPU();
 
+	auto list = engine->GetCommandQueue()->GetCommandList();
+	UINT quality;
+	auto mxaaEnabled = engine->GetMSAAState(quality);
+	DepthBuffer.Reset();
 	const auto device = engine->GetDevice();
+	// Create the depth/stencil buffer and view.
+	D3D12_RESOURCE_DESC depthStencilDesc;
+	depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	depthStencilDesc.Alignment = 0;
+	depthStencilDesc.Width = GetWidth();
+	depthStencilDesc.Height = GetHeight();
+	depthStencilDesc.DepthOrArraySize = 1;
+	depthStencilDesc.MipLevels = 1;
 
-	D3D12_CLEAR_VALUE optimizedClearValue = {};
-	optimizedClearValue.Format = SRenderConstants::DepthBufferFormat;
-	optimizedClearValue.DepthStencil = { 1.0f, 0 };
+	// Correction 11/12/2016: SSAO chapter requires an SRV to the depth buffer to read from
+	// the depth buffer.  Therefore, because we need to create two views to the same resource:
+	//   1. SRV format: DXGI_FORMAT_R24_UNORM_X8_TYPELESS
+	//   2. DSV Format: DXGI_FORMAT_D24_UNORM_S8_UINT
+	// we need to create the depth buffer resource with a typeless format.
+	depthStencilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+	depthStencilDesc.SampleDesc.Count = mxaaEnabled ? 4 : 1;
+	depthStencilDesc.SampleDesc.Quality = mxaaEnabled ? (quality - 1) : 0;
+	depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
-	// Create named instances for heap properties and resource description
-	const CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
-	CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(SRenderConstants::DepthBufferFormat, WindowInfo.ClientWidth, WindowInfo.ClientHeight, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
-
+	auto defaultHeap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	D3D12_CLEAR_VALUE optClear;
+	optClear.Format = SRenderConstants::DepthBufferFormat;
+	optClear.DepthStencil.Depth = 1.0f;
+	optClear.DepthStencil.Stencil = 0;
 	THROW_IF_FAILED(device->CreateCommittedResource(
-	    &heapProperties,
-	    D3D12_HEAP_FLAG_NONE,
-	    &resourceDesc,
-	    D3D12_RESOURCE_STATE_DEPTH_WRITE,
-	    &optimizedClearValue,
-	    IID_PPV_ARGS(&DepthBuffer)));
+		&defaultHeap,
+		D3D12_HEAP_FLAG_NONE,
+		&depthStencilDesc,
+		D3D12_RESOURCE_STATE_COMMON,
+		&optClear,
+		IID_PPV_ARGS(DepthBuffer.GetAddressOf())));
 
-	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
-	dsvHeapDesc.NumDescriptors = 1;
-	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	THROW_IF_FAILED(device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&DSVDescriptorHeap)));
-
-	// Depth stencil view description
-	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-
-	dsvDesc.Format = SRenderConstants::DepthBufferFormat;
-	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-	dsvDesc.Texture2D.MipSlice = 0;
+	// Create descriptor to mip level 0 of entire resource using the format of the resource.
+	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
 	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	dsvDesc.Format = SRenderConstants::DepthBufferFormat;
+	dsvDesc.Texture2D.MipSlice = 0;
+	device->CreateDepthStencilView(DepthBuffer.Get(), &dsvDesc, GetDepthStensilView());
 
-	device->CreateDepthStencilView(DepthBuffer.Get(), &dsvDesc, DSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	TransitionResource(engine->GetCommandQueue()->GetCommandList(), DepthBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 }
 
 HWND OWindow::GetHWND() const

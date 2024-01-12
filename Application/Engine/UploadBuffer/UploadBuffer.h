@@ -3,7 +3,6 @@
 #include "Exception.h"
 
 #include <d3d12.h>
-#include <d3dx12_core.h>
 #include <wrl/client.h>
 #include <wrl/wrappers/corewrappers.h>
 
@@ -14,7 +13,9 @@ public:
 	OUploadBuffer(ID3D12Device* Device, UINT ElementCount, bool IsConstantBuffer);
 
 	OUploadBuffer(const OUploadBuffer&) = delete;
+
 	OUploadBuffer& operator=(const OUploadBuffer&) = delete;
+
 	~OUploadBuffer()
 	{
 		if (UploadBuffer != nullptr)
@@ -43,7 +44,7 @@ public:
 
 template<typename Type>
 OUploadBuffer<Type>::OUploadBuffer(ID3D12Device* Device, UINT ElementCount, bool IsConstantBuffer)
-    : bIsConstantBuffer(IsConstantBuffer)
+	: bIsConstantBuffer(IsConstantBuffer)
 {
 	ElementByteSize = sizeof(Type);
 
@@ -62,12 +63,12 @@ OUploadBuffer<Type>::OUploadBuffer(ID3D12Device* Device, UINT ElementCount, bool
 	const auto uploadHeap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 	const auto uploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(ElementByteSize * ElementCount);
 	THROW_IF_FAILED(Device->CreateCommittedResource(
-	    &uploadHeap, // Upload heap
-	    D3D12_HEAP_FLAG_NONE,
-	    &uploadBufferDesc, // Resource description for a buffer
-	    D3D12_RESOURCE_STATE_GENERIC_READ, // GPU will read from this buffer and copy its contents to the default heap
-	    nullptr,
-	    IID_PPV_ARGS(&UploadBuffer)));
+		&uploadHeap, // Upload heap
+		D3D12_HEAP_FLAG_NONE,
+		&uploadBufferDesc, // Resource description for a buffer
+		D3D12_RESOURCE_STATE_GENERIC_READ, // GPU will read from this buffer and copy its contents to the default heap
+		nullptr,
+		IID_PPV_ARGS(&UploadBuffer)));
 
 	THROW_IF_FAILED(UploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&MappedData)));
 }

@@ -166,16 +166,31 @@ void OWaves::Update(float dt)
 	}
 }
 
-void OWaves::Disturb(int32_t I, int32_t J, float Magnitude)
+void OWaves::Disturb(int32_t I, int32_t J, float Magnitude, float Radius)
 {
 	CHECK(I > 1 && I < NumRows - 2, "I is out of bounds");
 	CHECK(J > 1 && J < NumCols - 2, "J is out of bounds");
-
-	float HalfMag = 0.5f * Magnitude;
-
 	CurrentSolution[I * NumCols + J].y += Magnitude;
-	CurrentSolution[I * NumCols + J + 1].y += HalfMag;
-	CurrentSolution[I * NumCols + J - 1].y += HalfMag;
-	CurrentSolution[(I + 1) * NumCols + J].y += HalfMag;
-	CurrentSolution[(I - 1) * NumCols + J].y += HalfMag;
+
+	float HalfMag = Magnitude;
+	for (int i = 1; i < Radius; ++i)
+	{
+		HalfMag *= 0.7;
+		const auto right = I * NumCols + J + i;
+		const auto left = I * NumCols + J - i;
+		const auto up = (I + i) * NumCols + J;
+		const auto down = (I - i) * NumCols + J;
+
+		if (right > 0 && right < CurrentSolution.size())
+			CurrentSolution[right].y += HalfMag;
+
+		if (left > 0 && left < CurrentSolution.size())
+			CurrentSolution[left].y += HalfMag;
+
+		if (up > 0 && up < CurrentSolution.size())
+			CurrentSolution[up].y += HalfMag;
+
+		if (down > 0 && down < CurrentSolution.size())
+			CurrentSolution[down].y += HalfMag;
+	}
 }

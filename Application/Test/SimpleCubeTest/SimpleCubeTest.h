@@ -66,7 +66,6 @@ private:
 
 	unique_ptr<SMeshGeometry> BoxGeometry;
 	unique_ptr<OUploadBuffer<SObjectConstants>> ObjectCB = nullptr;
-	unique_ptr<OUploadBuffer<STimerConstants>> ObjectCBTime = nullptr;
 
 	ComPtr<ID3D12DescriptorHeap> CBVHeap = nullptr;
 

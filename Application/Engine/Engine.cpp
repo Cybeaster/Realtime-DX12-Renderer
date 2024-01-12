@@ -7,6 +7,7 @@
 #include "Exception.h"
 #include "Logger.h"
 #include "../../Objects/Geometry/Wave/Waves.h"
+#include "Textures/DDSTextureLoader/DDSTextureLoader.h"
 
 #include <DirectXMath.h>
 
@@ -124,7 +125,12 @@ void OEngine::BuildFrameResource()
 {
 	for (int i = 0; i < SRenderConstants::NumFrameResources; ++i)
 	{
-		FrameResources.push_back(make_unique<SFrameResource>(Device.Get(), 1, AllRenderItems.size(), Waves->GetVertexCount(), Materials.size()));
+		FrameResources.push_back(make_unique<SFrameResource>(
+			Device.Get(),
+			1,
+			AllRenderItems.size(),
+			Waves->GetVertexCount(),
+			Materials.size()));
 	}
 }
 
@@ -315,14 +321,48 @@ SMaterial* OEngine::FindMaterial(const string& Name) const
 	return Materials.at(Name).get();
 }
 
+STexture* OEngine::CreateTexture(string Name, wstring FileName)
+{
+	if (Textures.contains(Name))
+	{
+		LOG(Error, "Texture with this name already exists!");
+		return nullptr;
+	}
+	auto texture = make_unique<STexture>(Name, FileName);
+	texture->Name = Name;
+	texture->FileName = FileName;
+
+	THROW_IF_FAILED(DirectX::CreateDDSTextureFromFile12(GetDevice().Get(),
+		GetCommandQueue()->GetCommandList().Get(),
+		texture->FileName.c_str(),
+		texture->Resource,
+		texture->UploadHeap));
+	Textures[Name] = move(texture);
+	return Textures[Name].get();
+}
+
+STexture* OEngine::FindTexture(string Name) const
+{
+	if (!Textures.contains(Name))
+	{
+		LOG(Error, "Texture not found!");
+		return nullptr;
+	}
+	return Textures.at(Name).get();
+}
+
 shared_ptr<OTest> OEngine::GetTestByHWND(HWND Handler)
 {
-	const auto test = Tests.find(Handler);
-	if (test != Tests.end())
+	if (Tests.size() > 0)
 	{
-		return test->second;
+		const auto test = Tests.find(Handler);
+		if (test != Tests.end())
+		{
+			return test->second;
+		}
+		LOG(Error, "Test not found!");
+		return nullptr;
 	}
-	LOG(Error, "Test not found!");
 	return nullptr;
 }
 

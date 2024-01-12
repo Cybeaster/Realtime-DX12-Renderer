@@ -78,7 +78,6 @@ private:
 
 	unique_ptr<SMeshGeometry> BoxGeometry;
 	unique_ptr<OUploadBuffer<SObjectConstants>> ObjectCB = nullptr;
-	unique_ptr<OUploadBuffer<STimerConstants>> ObjectCBTime = nullptr;
 
 	SPassConstants MainPassCB;
 

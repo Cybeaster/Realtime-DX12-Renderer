@@ -7,30 +7,13 @@ set(CMAKE_CXX_STANDARD 20)
 # Use solution folders to organize projects
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-set(SHADER_FILES
-        Shaders/SimpleCubeShader.hlsl
-)
-
 source_group("Resources\\Shaders" FILES ${SHADER_FILES})
 
 add_definitions(-D_UNICODE -DUNICODE)
 
-set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/Shaders/SimpleCubeShader.hlsl PROPERTIES
-        VS_SHADER_TYPE Pixel
-        VS_SHADER_MODEL 5.0
-        VS_SHADER_ENTRYPOINT PS
-)
-set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/Shaders/SimpleCubeShader.hlsl PROPERTIES
-        VS_SHADER_TYPE Vertex
-        VS_SHADER_MODEL 5.0
-        VS_SHADER_ENTRYPOINT VS
-)
-
-
 set(SRC_FILES
         main.cpp
         Types/Types.h
-        Externals/directx/d3dx12.h
         main.cpp
         Application/Application.h
         Application/Window/Window.h
@@ -81,8 +64,12 @@ set(SRC_FILES
         Types/DirectX/MaterialConstants.h
         Types/DirectX/MaterialConstants.h
         Types/DirectX/Light/Light.h
+        Application/Textures/DDSTextureLoader/DDSTextureLoader.cpp
+        Application/Textures/DDSTextureLoader/DDSTextureLoader.h
+        Application/Textures/Texture.h
+        Application/Test/TextureTest/TextureWaves.cpp
+        Application/Test/TextureTest/TextureWaves.h
 )
-
 # Add sources to the project
 add_executable(DXRenderer
         ${SRC_FILES}
@@ -94,11 +81,16 @@ if (MSVC)
     set_target_properties(DXRenderer PROPERTIES
             LINK_FLAGS "/SUBSYSTEM:WINDOWS"
     )
+    add_compile_options(/wd4996)
 endif ()
 
 add_custom_command(TARGET DXRenderer POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/Shaders $<TARGET_FILE_DIR:DXRenderer>/Shaders)
+
+add_custom_command(TARGET DXRenderer POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/Resources $<TARGET_FILE_DIR:DXRenderer>/Resources/)
 
 target_include_directories(DXRenderer PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Externals/directx

@@ -8,6 +8,7 @@
 struct SObjectConstants
 {
 	DirectX::XMFLOAT4X4 World = Utils::Math::Identity4x4();
+	DirectX::XMFLOAT4X4 TexTransform = Utils::Math::Identity4x4();
 };
 
 struct SPassConstants
@@ -28,10 +29,12 @@ struct SPassConstants
 	float TotalTime = 0.0f;
 	float DeltaTime = 0.0f;
 	DirectX::XMFLOAT4 AmbientLight = { 0.0f, 0.0f, 0.0f, 1.0f };
-	SLight Lights[SRenderConstants::MaxLights];
-};
 
-struct STimerConstants
-{
-	float Time = 0.0f;
+	// Allow application to change fog parameters once per frame.
+	// For example, we may only use fog for certain times of day.
+	DirectX::XMFLOAT4 gFogColor;
+	float gFogStart;
+	float gFogRange;
+	DirectX::XMFLOAT2 cbPerPassPad2;
+	SLight Lights[SRenderConstants::MaxLights];
 };

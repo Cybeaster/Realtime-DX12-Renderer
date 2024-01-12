@@ -12,6 +12,8 @@ struct SRenderItem
 	// relative to the world space, which defines the position,
 	// orientation, and scale of the object in the world.
 	DirectX::XMFLOAT4X4 World = Utils::Math::Identity4x4();
+	DirectX::XMFLOAT4X4 TexTransform = Utils::Math::Identity4x4();
+
 
 	// Dirty flag indicating the object data has changed and we need
 	// to update the constant buffer. Because we have an object

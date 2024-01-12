@@ -1,4 +1,6 @@
 #pragma once
+#include "Exception.h"
+
 #include <Types.h>
 
 #include <codecvt>
@@ -60,11 +62,13 @@ struct SLogUtils
 		case ELogType::Error:
 			std::clog << "\n \t \t"
 				<< "Error: " << String << std::endl;
+			__debugbreak();
 			break;
 
 		case ELogType::Critical:
 			std::clog << "\n \t \t"
 				<< "Critical: " << String << std::endl;
+			assert(false);
 			break;
 		}
 	}

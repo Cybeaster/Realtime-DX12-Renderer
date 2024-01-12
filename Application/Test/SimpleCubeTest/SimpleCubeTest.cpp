@@ -77,7 +77,6 @@ void OSimpleCubeTest::OnUpdate(const UpdateEventArgs& Event)
 	ObjectCB->CopyData(0, objConstants);
 
 	LOG(Log, "Time: {}", Event.Timer.GetTime());
-	ObjectCBTime->CopyData(0, STimerConstants{ Event.Timer.GetTime() });
 }
 
 void OSimpleCubeTest::OnRender(const UpdateEventArgs& Event)
@@ -260,21 +259,6 @@ void OSimpleCubeTest::BuildConstantBuffers()
 	Engine.lock()->GetDevice()->CreateConstantBufferView(&cbvDesc, cbvHeapHandle);
 
 	// Create the second constant buffer
-	ObjectCBTime = make_unique<OUploadBuffer<STimerConstants>>(Engine.lock()->GetDevice().Get(), 1, true);
-	const auto objCBfloatsize = Utils::CalcBufferByteSize(sizeof(STimerConstants)); // Ensure this is 256-byte aligned
-
-	const D3D12_GPU_VIRTUAL_ADDRESS cbAddressTime = ObjectCBTime->GetResource()->GetGPUVirtualAddress();
-
-	// Configure the second CBV descriptor
-	cbvDesc.BufferLocation = cbAddressTime;
-	cbvDesc.SizeInBytes = objCBfloatsize;
-
-	// Increment the descriptor handle for the second CBV
-	const auto handleIncrementSize = Engine.lock()->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	cbvHeapHandle.ptr += handleIncrementSize;
-
-	// Create the second CBV
-	Engine.lock()->GetDevice()->CreateConstantBufferView(&cbvDesc, cbvHeapHandle);
 }
 
 void OSimpleCubeTest::BuildRootSignature()

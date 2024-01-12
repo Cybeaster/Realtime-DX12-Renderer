@@ -35,11 +35,15 @@ struct OGeometryGenerator::SVertex
 {
 	SVertex() = default;
 
-	SVertex(float X, float Y, float Z, float NX, float NY, float NZ, float U, float V, float TX, float TY, float TZ)
+	SVertex(float X, float Y, float Z,
+	        float NX, float NY, float NZ,
+	        float TX, float TY, float TZ,
+	        float U, float V)
 		: Position(X, Y, Z)
 		, Normal(NX, NY, NZ)
-		, TexC(U, V)
 		, TangentU(TX, TY, TZ)
+		, TexC(U, V)
+
 	{
 	}
 

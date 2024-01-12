@@ -6,6 +6,7 @@
 #include "RenderItem.h"
 #include "../../Materials/Material.h"
 #include "../../Objects/Geometry/Wave/Waves.h"
+#include "Textures/Texture.h"
 
 #include <dxgi1_6.h>
 
@@ -19,6 +20,8 @@ public:
 	using TWindowMap = std::map<HWND, TWindowPtr>;
 	using WindowNameMap = std::map<std::wstring, TWindowPtr>;
 	using TMaterialsMap = std::unordered_map<string, unique_ptr<SMaterial>>;
+	using TTexturesMap = std::unordered_map<string, unique_ptr<STexture>>;
+	using TSceneGeometryMap = std::unordered_map<string, unique_ptr<SMeshGeometry>>;
 
 	vector<unique_ptr<SFrameResource>> FrameResources;
 	SFrameResource* CurrentFrameResources = nullptr;
@@ -127,7 +130,13 @@ public:
 	void AddMaterial(string Name, unique_ptr<SMaterial>& Material);
 
 	const TMaterialsMap& GetMaterials() const;
+
 	SMaterial* FindMaterial(const string& Name) const;
+
+	STexture* CreateTexture(string Name, wstring FileName);
+
+	STexture* FindTexture(string Name) const;
+
 protected:
 	shared_ptr<OTest> GetTestByHWND(HWND Handler);
 
@@ -167,8 +176,9 @@ private:
 
 	std::unordered_map<string, ComPtr<ID3DBlob>> Shaders;
 	std::unordered_map<string, ComPtr<ID3D12PipelineState>> PSOs;
-	std::unordered_map<string, unique_ptr<SMeshGeometry>> SceneGeometry;
 
+	TSceneGeometryMap SceneGeometry;
+	TTexturesMap Textures;
 	TMaterialsMap Materials;
 
 	unique_ptr<OWaves> Waves = nullptr;
