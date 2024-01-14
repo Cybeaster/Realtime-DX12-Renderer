@@ -1,4 +1,4 @@
-#include "TextureWaves.h"
+#include "StencilingTest.h"
 
 #include "../../Engine/Engine.h"
 #include "../../Window/Window.h"
@@ -22,12 +22,13 @@ using namespace Microsoft::WRL;
 
 using namespace DirectX;
 
-OTextureWaves::OTextureWaves(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window)
+
+OStencilingTest::OStencilingTest(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window)
 	: OTest(_Engine, _Window)
 {
 }
 
-bool OTextureWaves::Initialize()
+bool OStencilingTest::Initialize()
 {
 	SetupProjection();
 
@@ -45,9 +46,6 @@ bool OTextureWaves::Initialize()
 	BuildRootSignature();
 	BuildDescriptorHeap();
 	BuildShadersAndInputLayout();
-	BuildLandGeometry();
-	BuildWavesGeometryBuffers();
-	BuildBoxGeometryBuffers();
 	BuildMaterials();
 	BuildRenderItems();
 
@@ -63,12 +61,12 @@ bool OTextureWaves::Initialize()
 	return true;
 }
 
-void OTextureWaves::UnloadContent()
+void OStencilingTest::UnloadContent()
 {
 	ContentLoaded = false;
 }
 
-void OTextureWaves::UpdateWave(const STimer& Timer)
+void OStencilingTest::UpdateWave(const STimer& Timer)
 {
 	static float tBase = 0.0f;
 	if (Timer.GetTime() - tBase >= 0.25)
@@ -95,7 +93,7 @@ void OTextureWaves::UpdateWave(const STimer& Timer)
 	WavesRenderItem->Geometry->VertexBufferGPU = currWavesVB->GetResource();
 }
 
-void OTextureWaves::OnUpdate(const UpdateEventArgs& Event)
+void OStencilingTest::OnUpdate(const UpdateEventArgs& Event)
 {
 	Super::OnUpdate(Event);
 
@@ -122,7 +120,7 @@ void OTextureWaves::OnUpdate(const UpdateEventArgs& Event)
 	UpdateWave(Event.Timer);
 }
 
-void OTextureWaves::UpdateMainPass(const STimer& Timer)
+void OStencilingTest::UpdateMainPass(const STimer& Timer)
 {
 	auto engine = Engine.lock();
 	auto window = Window.lock();
@@ -164,7 +162,7 @@ void OTextureWaves::UpdateMainPass(const STimer& Timer)
 	currPassCB->CopyData(0, MainPassCB);
 }
 
-void OTextureWaves::UpdateObjectCBs(const STimer& Timer)
+void OStencilingTest::UpdateObjectCBs(const STimer& Timer)
 {
 	const auto engine = Engine.lock();
 	const auto currentObjectCB = engine->CurrentFrameResources->ObjectCB.get();
@@ -190,7 +188,7 @@ void OTextureWaves::UpdateObjectCBs(const STimer& Timer)
 	}
 }
 
-void OTextureWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList, const vector<SRenderItem*>& RenderItems) const
+void OStencilingTest::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList, const vector<SRenderItem*>& RenderItems) const
 {
 	const auto engine = Engine.lock();
 
@@ -228,7 +226,7 @@ void OTextureWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandLis
 }
 
 
-void OTextureWaves::UpdateCamera()
+void OStencilingTest::UpdateCamera()
 {
 	// Convert Spherical to Cartesian coordinates.
 	EyePos.x = Radius * sinf(Phi) * cosf(Theta);
@@ -244,7 +242,7 @@ void OTextureWaves::UpdateCamera()
 	XMStoreFloat4x4(&ViewMatrix, view);
 }
 
-void OTextureWaves::OnKeyboardInput(const STimer& Timer)
+void OStencilingTest::OnKeyboardInput(const STimer& Timer)
 {
 	if (GetAsyncKeyState('1') & 0x8000)
 	{
@@ -264,21 +262,21 @@ void OTextureWaves::OnKeyboardInput(const STimer& Timer)
 	}
 }
 
-void OTextureWaves::OnMouseWheel(const MouseWheelEventArgs& Args)
+void OStencilingTest::OnMouseWheel(const MouseWheelEventArgs& Args)
 {
 	OTest::OnMouseWheel(Args);
 	MainPassCB.FogStart += Args.WheelDelta;
 }
 
-void OTextureWaves::CreateTexture()
+void OStencilingTest::CreateTexture()
 {
-	GetEngine()->CreateTexture("Grass", L"Resources/Textures/grass.dds");
-	GetEngine()->CreateTexture("Fence", L"Resources/Textures/WireFence.dds");
-	GetEngine()->CreateTexture("Water", L"Resources/Textures/water1.dds");
-	GetEngine()->CreateTexture("FireBall", L"Resources/Textures/Fireball.dds");
+	GetEngine()->CreateTexture(BricksTexture, L"Resources/Textures/bricks3.dds");
+	GetEngine()->CreateTexture(CheckboardTexture, L"Resources/Textures/checkboard.dds");
+	GetEngine()->CreateTexture(IceTexture, L"Resources/Textures/water1.dds");
+	GetEngine()->CreateTexture(White1x1Texture, L"Resources/Textures/white1x1.dds");
 }
 
-void OTextureWaves::OnRender(const UpdateEventArgs& Event)
+void OStencilingTest::OnRender(const UpdateEventArgs& Event)
 {
 	auto engine = Engine.lock();
 	auto commandList = engine->GetCommandQueue()->GetCommandList();
@@ -367,18 +365,18 @@ void OTextureWaves::OnRender(const UpdateEventArgs& Event)
 	engine->FlushGPU();
 }
 
-void OTextureWaves::OnResize(const ResizeEventArgs& Event)
+void OStencilingTest::OnResize(const ResizeEventArgs& Event)
 {
 	OTest::OnResize(Event);
 	SetupProjection();
 }
 
-void OTextureWaves::SetupProjection()
+void OStencilingTest::SetupProjection()
 {
 	XMStoreFloat4x4(&ProjectionMatrix, XMMatrixPerspectiveFovLH(0.25f * XM_PI, Window.lock()->GetAspectRatio(), 1.0f, 1000.0f));
 }
 
-void OTextureWaves::BuildMaterials()
+void OStencilingTest::BuildMaterials()
 {
 	auto grass = make_unique<SMaterial>();
 	grass->Name = "Grass";
@@ -418,7 +416,7 @@ void OTextureWaves::BuildMaterials()
 	GetEngine()->AddMaterial(fireball->Name, fireball);
 }
 
-void OTextureWaves::UpdateMaterialCB()
+void OStencilingTest::UpdateMaterialCB()
 {
 	const auto currentMaterialCB = Engine.lock()->CurrentFrameResources->MaterialCB.get();
 	for (auto& materials = Engine.lock()->GetMaterials(); const auto& val : materials | std::views::values)
@@ -442,7 +440,7 @@ void OTextureWaves::UpdateMaterialCB()
 	}
 }
 
-void OTextureWaves::OnKeyPressed(const KeyEventArgs& Event)
+void OStencilingTest::OnKeyPressed(const KeyEventArgs& Event)
 {
 	OTest::OnKeyPressed(Event);
 
@@ -464,7 +462,7 @@ void OTextureWaves::OnKeyPressed(const KeyEventArgs& Event)
 	}
 }
 
-void OTextureWaves::OnMouseMoved(const MouseMotionEventArgs& Args)
+void OStencilingTest::OnMouseMoved(const MouseMotionEventArgs& Args)
 {
 	OTest::OnMouseMoved(Args);
 	auto window = Window.lock();
@@ -491,7 +489,7 @@ void OTextureWaves::OnMouseMoved(const MouseMotionEventArgs& Args)
 	LOG(Log, "Theta: {} Phi: {} Radius: {}", Theta, Phi, Radius);
 }
 
-void OTextureWaves::BuildRootSignature()
+void OStencilingTest::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable;
 	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
@@ -524,7 +522,7 @@ void OTextureWaves::BuildRootSignature()
 		IID_PPV_ARGS(&RootSignature)));
 }
 
-void OTextureWaves::BuildShadersAndInputLayout()
+void OStencilingTest::BuildShadersAndInputLayout()
 {
 	const D3D_SHADER_MACRO fogDefines[] =
 	{
@@ -550,14 +548,14 @@ void OTextureWaves::BuildShadersAndInputLayout()
 	};
 }
 
-void OTextureWaves::BuildLandGeometry()
+void OStencilingTest::BuildLandGeometry()
 {
 	OGeometryGenerator generator;
 	auto grid = generator.CreateGrid(160.0f, 160.0f, 50, 50);
 
 	//
-	// Extract the vertex elements we are interested and apply the height
-	// function to each vertex. In addition, color the vertices based on
+	// Extract the SVertex elements we are interested and apply the height
+	// function to each SVertex. In addition, color the vertices based on
 	// their height so we have sandy looking beaches, grassy low hills,
 	// and snow mountain peaks.
 	//
@@ -610,7 +608,7 @@ void OTextureWaves::BuildLandGeometry()
 	GetEngine()->SetSceneGeometry("LandGeo", std::move(geo));
 }
 
-void OTextureWaves::BuildWavesGeometryBuffers()
+void OStencilingTest::BuildWavesGeometryBuffers()
 {
 	vector<uint16_t> indices(3 * GetEngine()->GetWaves()->GetTriangleCount());
 
@@ -666,7 +664,7 @@ void OTextureWaves::BuildWavesGeometryBuffers()
 	GetEngine()->SetSceneGeometry("WaterGeometry", std::move(geometry));
 }
 
-void OTextureWaves::BuildBoxGeometryBuffers()
+void OStencilingTest::BuildBoxGeometryBuffers()
 {
 	OGeometryGenerator geoGen;
 	OGeometryGenerator::SMeshData box = geoGen.CreateBox(8.0f, 8.0f, 8.0f, 3);
@@ -721,7 +719,7 @@ void OTextureWaves::BuildBoxGeometryBuffers()
 	GetEngine()->SetSceneGeometry("BoxGeometry", std::move(geo));
 }
 
-void OTextureWaves::BuildDescriptorHeap()
+void OStencilingTest::BuildDescriptorHeap()
 {
 	auto device = Engine.lock()->GetDevice();
 	//
@@ -738,39 +736,157 @@ void OTextureWaves::BuildDescriptorHeap()
 	//
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(SRVHeap->GetCPUDescriptorHandleForHeapStart());
 
-	auto grassTex = GetEngine()->FindTexture("Grass")->Resource;
-	auto waterTex = GetEngine()->FindTexture("Water")->Resource;
-	auto fenceTex = GetEngine()->FindTexture("Fence")->Resource;
-	auto fireballTex = GetEngine()->FindTexture("FireBall")->Resource;
+	auto bricksTexture = GetEngine()->FindTexture(BricksTexture)->Resource;
+	auto checkboardTexture = GetEngine()->FindTexture(CheckboardTexture)->Resource;
+	auto whiteTexture = GetEngine()->FindTexture(White1x1Texture)->Resource;
+	auto iceTexture = GetEngine()->FindTexture(IceTexture)->Resource;
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = grassTex->GetDesc().Format;
+	srvDesc.Format = bricksTexture->GetDesc().Format;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.MipLevels = -1;
-	device->CreateShaderResourceView(grassTex.Get(), &srvDesc, hDescriptor);
+	device->CreateShaderResourceView(bricksTexture.Get(), &srvDesc, hDescriptor);
 
 	// next descriptor
 	hDescriptor.Offset(1, GetEngine()->CBVSRVUAVDescriptorSize);
 
-	srvDesc.Format = waterTex->GetDesc().Format;
-	device->CreateShaderResourceView(waterTex.Get(), &srvDesc, hDescriptor);
+	srvDesc.Format = checkboardTexture->GetDesc().Format;
+	device->CreateShaderResourceView(checkboardTexture.Get(), &srvDesc, hDescriptor);
 
 	// next descriptor
 	hDescriptor.Offset(1, GetEngine()->CBVSRVUAVDescriptorSize);
 
-	srvDesc.Format = fenceTex->GetDesc().Format;
-	device->CreateShaderResourceView(fenceTex.Get(), &srvDesc, hDescriptor);
+	srvDesc.Format = whiteTexture->GetDesc().Format;
+	device->CreateShaderResourceView(whiteTexture.Get(), &srvDesc, hDescriptor);
 
 	hDescriptor.Offset(1, GetEngine()->CBVSRVUAVDescriptorSize);
 
-	srvDesc.Format = fireballTex->GetDesc().Format;
-	device->CreateShaderResourceView(fireballTex.Get(), &srvDesc, hDescriptor);
+	srvDesc.Format = iceTexture->GetDesc().Format;
+	device->CreateShaderResourceView(iceTexture.Get(), &srvDesc, hDescriptor);
+}
+
+void OStencilingTest::BuildRoomGeomety()
+{
+	// Create and specify geometry.  For this sample we draw a floor
+	// and a wall with a mirror on it.  We put the floor, wall, and
+	// mirror geometry in one SVertex buffer.
+	//
+	//   |--------------|
+	//   |              |
+	//   |----|----|----|
+	//   |Wall|Mirr|Wall|
+	//   |    | or |    |
+	//   /--------------/
+	//  /   Floor      /
+	// /--------------/
+
+	std::array<SVertex, 20> vertices =
+	{
+		// Floor: Observe we tile texture coordinates.
+		SVertex(-3.5f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 0.0f, 4.0f), // 0 
+		SVertex(-3.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f),
+		SVertex(7.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 4.0f, 0.0f),
+		SVertex(7.5f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 4.0f, 4.0f),
+
+		// Wall: Observe we tile texture coordinates, and that we
+		// leave a gap in the middle for the mirror.
+		SVertex(-3.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 2.0f), // 4
+		SVertex(-3.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f),
+		SVertex(-2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.5f, 0.0f),
+		SVertex(-2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.5f, 2.0f),
+
+		SVertex(2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 2.0f), // 8 
+		SVertex(2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f),
+		SVertex(7.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 2.0f, 0.0f),
+		SVertex(7.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 2.0f, 2.0f),
+
+		SVertex(-3.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f), // 12
+		SVertex(-3.5f, 6.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f),
+		SVertex(7.5f, 6.0f, 0.0f, 0.0f, 0.0f, -1.0f, 6.0f, 0.0f),
+		SVertex(7.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 6.0f, 1.0f),
+
+		// Mirror
+		SVertex(-2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f), // 16
+		SVertex(-2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f),
+		SVertex(2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f),
+		SVertex(2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f)
+	};
+
+	std::array<std::int16_t, 30> indices =
+	{
+		// Floor
+		0, 1, 2,
+		0, 2, 3,
+
+		// Walls
+		4, 5, 6,
+		4, 6, 7,
+
+		8, 9, 10,
+		8, 10, 11,
+
+		12, 13, 14,
+		12, 14, 15,
+
+		// Mirror
+		16, 17, 18,
+		16, 18, 19
+	};
+
+	SSubmeshGeometry floorSubmesh;
+	floorSubmesh.IndexCount = 6;
+	floorSubmesh.StartIndexLocation = 0;
+	floorSubmesh.BaseVertexLocation = 0;
+
+	SSubmeshGeometry wallSubmesh;
+	wallSubmesh.IndexCount = 18;
+	wallSubmesh.StartIndexLocation = 6;
+	wallSubmesh.BaseVertexLocation = 0;
+
+	SSubmeshGeometry mirrorSubmesh;
+	mirrorSubmesh.IndexCount = 6;
+	mirrorSubmesh.StartIndexLocation = 24;
+	mirrorSubmesh.BaseVertexLocation = 0;
+	const UINT vbByteSize = static_cast<UINT>(vertices.size()) * sizeof(SVertex);
+	const UINT ibByteSize = static_cast<UINT>(indices.size()) * sizeof(std::uint16_t);
+
+	auto geo = std::make_unique<SMeshGeometry>();
+	geo->Name = "RoomGeometry";
+
+	THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->VertexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
+	                                                  Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
+	                                                  vertices.data(),
+	                                                  vbByteSize,
+	                                                  geo->VertexBufferUploader);
+
+	geo->IndexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
+	                                                 Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
+	                                                 indices.data(),
+	                                                 ibByteSize,
+	                                                 geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(SVertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	geo->SetGeometry("Floor", floorSubmesh);
+	geo->SetGeometry("Wall", wallSubmesh);
+	geo->SetGeometry("Mirror", mirrorSubmesh);
+
+	GetEngine()->SetSceneGeometry(geo->Name, std::move(geo));
 }
 
 
-void OTextureWaves::BuildRenderItems()
+void OStencilingTest::BuildRenderItems()
 {
 	auto wavesRenderItem = make_unique<SRenderItem>();
 	wavesRenderItem->World = Utils::Math::Identity4x4();
@@ -813,12 +929,12 @@ void OTextureWaves::BuildRenderItems()
 	GetEngine()->AddRenderItem(SRenderLayer::AlphaTested, std::move(boxRenderItem));
 }
 
-float OTextureWaves::GetHillsHeight(float X, float Z) const
+float OStencilingTest::GetHillsHeight(float X, float Z) const
 {
 	return 0.3 * (Z * sinf(0.1f * X) + X * cosf(0.1f * Z));
 }
 
-void OTextureWaves::AnimateMaterials(const STimer& Timer)
+void OStencilingTest::AnimateMaterials(const STimer& Timer)
 {
 	auto waterMaterial = GetEngine()->FindMaterial("FireBall");
 
@@ -845,7 +961,7 @@ void OTextureWaves::AnimateMaterials(const STimer& Timer)
 }
 
 
-XMFLOAT3 OTextureWaves::GetHillsNormal(float X, float Z) const
+XMFLOAT3 OStencilingTest::GetHillsNormal(float X, float Z) const
 {
 	XMFLOAT3 n(
 		-0.03f * Z * cosf(0.1f * X) - 0.3f * cosf(0.1f * Z),

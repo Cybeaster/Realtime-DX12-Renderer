@@ -155,7 +155,7 @@ void OLitWaves::UpdateObjectCBs(const STimer& Timer)
 	const auto engine = Engine.lock();
 	const auto currentObjectCB = engine->CurrentFrameResources->ObjectCB.get();
 
-	for (const auto& item : engine->GetRenderItems())
+	for (const auto& item : engine->GetAllRenderItems())
 	{
 		// Only update the cbuffer data if the constants have changed.
 		// This needs to be tracked per frame resource.
@@ -482,7 +482,7 @@ void OLitWaves::BuildRootSignature()
 
 void OLitWaves::BuildShadersAndInputLayout()
 {
-	GetEngine()->BuildShader(L"Shaders/BaseShader.hlsl", "StandardVS", "OpaquePS");
+	GetEngine()->BuildShaders(L"Shaders/BaseShader.hlsl", "StandardVS", "OpaquePS");
 
 	InputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -682,11 +682,11 @@ void OLitWaves::BuildPSO()
 	psoDesc.SampleDesc.Count = msaaEnable ? 4 : 1;
 	psoDesc.SampleDesc.Quality = msaaEnable ? (quality - 1) : 0;
 	psoDesc.DSVFormat = SRenderConstants::DepthBufferFormat;
-	engine->BuildPSO("Opaque", psoDesc);
+	engine->CreatePSO("Opaque", psoDesc);
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaqueWireframePsoDesc = psoDesc;
 	opaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-	engine->BuildPSO("OpaqueWireframe", opaqueWireframePsoDesc);
+	engine->CreatePSO("OpaqueWireframe", opaqueWireframePsoDesc);
 }
 
 void OLitWaves::BuildRenderItems()
@@ -717,9 +717,6 @@ void OLitWaves::BuildRenderItems()
 	gridRenderItem->BaseVertexLocation = gridRenderItem->Geometry->GetGeomentry("grid").BaseVertexLocation;
 
 	GetEngine()->GetOpaqueRenderItems().push_back(gridRenderItem.get());
-
-	GetEngine()->GetRenderItems().push_back(std::move(wavesRenderItem));
-	GetEngine()->GetRenderItems().push_back(std::move(gridRenderItem));
 }
 
 float OLitWaves::GetHillsHeight(float X, float Z) const

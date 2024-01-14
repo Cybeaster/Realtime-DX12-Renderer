@@ -69,6 +69,8 @@ set(SRC_FILES
         Application/Textures/Texture.h
         Application/Test/TextureTest/TextureWaves.cpp
         Application/Test/TextureTest/TextureWaves.h
+        Application/Test/StencilingTest/StencilingTest.cpp
+        Application/Test/StencilingTest/StencilingTest.h
 )
 # Add sources to the project
 add_executable(DXRenderer

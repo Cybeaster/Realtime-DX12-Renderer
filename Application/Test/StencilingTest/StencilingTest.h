@@ -14,18 +14,24 @@
 #include <windows.h>
 #include <wrl/client.h>
 
-class OTextureWaves : public OTest
+class OStencilingTest : public OTest
 {
 	using Super = OTest;
 
+	struct
+	{
+		static constexpr string BricksTexture = "BricksTexture";
+		static constexpr string CheckboardTexture = "CheckboardTexture";
+		static constexpr string IceTexture = "IceTexture";
+		static constexpr string White1x1Texture = "White1x1Texture";
+	};
+
 public:
-	OTextureWaves(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window);
+	OStencilingTest(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window);
 
 	bool Initialize() override;
 
 	void UnloadContent() override;
-
-	void UpdateWave(const STimer& Timer);
 
 	void OnUpdate(const UpdateEventArgs& Event) override;
 
@@ -63,14 +69,8 @@ private:
 
 	void BuildShadersAndInputLayout();
 
-	void BuildLandGeometry();
-
-	void BuildWavesGeometryBuffers();
-
-	void BuildBoxGeometryBuffers();
-
 	void BuildDescriptorHeap();
-
+	void BuildRoomGeomety();
 	void BuildRenderItems();
 
 	float GetHillsHeight(float X, float Z) const;

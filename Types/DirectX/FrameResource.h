@@ -9,6 +9,14 @@
 
 struct SVertex
 {
+	SVertex() = default;
+	SVertex(float X, float Y, float Z, float Nx, float Ny, float Nz, float U, float V)
+		: Pos(X, Y, Z)
+		, Normal(Nx, Ny, Nz)
+		, TexC(U, V)
+	{
+	}
+
 	DirectX::XMFLOAT3 Pos;
 	DirectX::XMFLOAT3 Normal;
 	DirectX::XMFLOAT2 TexC;

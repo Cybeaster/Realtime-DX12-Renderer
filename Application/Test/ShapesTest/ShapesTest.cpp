@@ -122,7 +122,7 @@ void OShapesTest::UpdateObjectCBs(const STimer& Timer)
 	const auto engine = Engine.lock();
 	const auto currentObjectCB = engine->CurrentFrameResources->ObjectCB.get();
 
-	for (const auto& item : engine->GetRenderItems())
+	for (const auto& item : engine->GetAllRenderItems())
 	{
 		// Only update the cbuffer data if the constants have changed.
 		// This needs to be tracked per frame resource.
@@ -443,7 +443,7 @@ void OShapesTest::BuildRootSignature()
 
 void OShapesTest::BuildShadersAndInputLayout()
 {
-	GetEngine()->BuildShader(L"Shaders/BaseShader.hlsl", "StandardVS", "OpaquePS");
+	GetEngine()->BuildShaders(L"Shaders/BaseShader.hlsl", "StandardVS", "OpaquePS");
 
 	InputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -634,11 +634,11 @@ void OShapesTest::BuildPSO()
 	psoDesc.SampleDesc.Count = msaaEnable ? 4 : 1;
 	psoDesc.SampleDesc.Quality = msaaEnable ? (quality - 1) : 0;
 	psoDesc.DSVFormat = SRenderConstants::DepthBufferFormat;
-	engine->BuildPSO("Opaque", psoDesc);
+	engine->CreatePSO("Opaque", psoDesc);
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaqueWireframePsoDesc = psoDesc;
 	opaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-	engine->BuildPSO("OpaqueWireframe", opaqueWireframePsoDesc);
+	engine->CreatePSO("OpaqueWireframe", opaqueWireframePsoDesc);
 }
 
 void OShapesTest::BuildRenderItems()
@@ -654,7 +654,7 @@ void OShapesTest::BuildRenderItems()
 	boxRenderItem->IndexCount = boxRenderItem->Geometry->GetGeomentry("Box").IndexCount;
 	boxRenderItem->StartIndexLocation = boxRenderItem->Geometry->GetGeomentry("Box").StartIndexLocation;
 	boxRenderItem->BaseVertexLocation = boxRenderItem->Geometry->GetGeomentry("Box").BaseVertexLocation;
-	engine->GetRenderItems().push_back(std::move(boxRenderItem));
+
 
 	auto gridRenderItem = make_unique<SRenderItem>();
 	gridRenderItem->World = Utils::Math::Identity4x4();
@@ -664,7 +664,6 @@ void OShapesTest::BuildRenderItems()
 	gridRenderItem->IndexCount = gridRenderItem->Geometry->GetGeomentry("Grid").IndexCount;
 	gridRenderItem->StartIndexLocation = gridRenderItem->Geometry->GetGeomentry("Grid").StartIndexLocation;
 	gridRenderItem->BaseVertexLocation = gridRenderItem->Geometry->GetGeomentry("Grid").BaseVertexLocation;
-	engine->GetRenderItems().push_back(std::move(gridRenderItem));
 
 	// Build the columns and spheres in rows as in Figure 7.6.
 	UINT objCBIndex = 2;
@@ -712,16 +711,9 @@ void OShapesTest::BuildRenderItems()
 		rightSphereRenderItem->StartIndexLocation = rightSphereRenderItem->Geometry->GetGeomentry("Sphere").StartIndexLocation;
 		rightSphereRenderItem->BaseVertexLocation = rightSphereRenderItem->Geometry->GetGeomentry("Sphere").BaseVertexLocation;
 
-		engine->GetRenderItems().push_back(std::move(leftCylinderRenderItem));
-		engine->GetRenderItems().push_back(std::move(rightCylinderRenderItem));
-		engine->GetRenderItems().push_back(std::move(leftSphereRenderItem));
-		engine->GetRenderItems().push_back(std::move(rightSphereRenderItem));
+
 	}
 
-	for (auto& item : engine->GetRenderItems())
-	{
-		engine->GetOpaqueRenderItems().push_back(item.get());
-	}
 }
 
 #pragma optimize("", on)

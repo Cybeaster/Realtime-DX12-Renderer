@@ -94,11 +94,17 @@ public:
 
 	bool GetMSAAState(UINT& Quality) const;
 
-	vector<unique_ptr<SRenderItem>>& GetRenderItems();
 
 	vector<SRenderItem*>& GetOpaqueRenderItems();
 
-	vector<unique_ptr<SRenderItem>>& GetTransparentRenderItems();
+	vector<SRenderItem*>& GetAlphaTestedRenderItems();
+
+	vector<SRenderItem*>& GetTransparentRenderItems();
+
+	void BuildPSOs(ComPtr<ID3D12RootSignature> RootSignature, const vector<D3D12_INPUT_ELEMENT_DESC>& InputLayout);
+
+	D3D12_RENDER_TARGET_BLEND_DESC GetBlendState();
+
 
 	ComPtr<IDXGIFactory2> GetFactory() const;
 
@@ -110,12 +116,18 @@ public:
 
 	void SetSceneGeometry(const string& Name, unique_ptr<SMeshGeometry> Geometry);
 
-	void BuildShader(const wstring& ShaderName, const string& VSShaderName, const string& PSShaderName,
-	                 const D3D_SHADER_MACRO* Defines = nullptr);
+	void BuildShaders(const wstring& ShaderPath, const string& VSShaderName, const string& PSShaderName,
+	                  const D3D_SHADER_MACRO* Defines = nullptr);
+
+	void BuildShader(const wstring& ShaderPath, const string& ShaderName, const string& ShaderQualifier, const string& ShaderTarget, const D3D_SHADER_MACRO* Defines = nullptr);
+
+	void BuildVSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines = nullptr);
+
+	void BuildPSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines = nullptr);
 
 	ComPtr<ID3DBlob> GetShader(const string& ShaderName);
 
-	void BuildPSO(const string& PSOName, const D3D12_GRAPHICS_PIPELINE_STATE_DESC& PSODesc);
+	void CreatePSO(const string& PSOName, const D3D12_GRAPHICS_PIPELINE_STATE_DESC& PSODesc);
 
 	ComPtr<ID3D12PipelineState> GetPSO(const string& PSOName);
 
@@ -136,6 +148,12 @@ public:
 	STexture* CreateTexture(string Name, wstring FileName);
 
 	STexture* FindTexture(string Name) const;
+
+	void AddRenderItem(string Name, unique_ptr<SRenderItem> RenderItem);
+
+	const vector<unique_ptr<SRenderItem>>& GetAllRenderItems();
+
+	void SetPipelineState(string PSOName);
 
 protected:
 	shared_ptr<OTest> GetTestByHWND(HWND Handler);
@@ -170,9 +188,9 @@ private:
 	map<HWND, shared_ptr<OTest>> Tests;
 	ComPtr<IDXGIFactory4> Factory;
 
+	map<string, vector<SRenderItem*>> RenderItems;
 	vector<unique_ptr<SRenderItem>> AllRenderItems;
-	vector<SRenderItem*> OpaqueRenderItems;
-	vector<unique_ptr<SRenderItem>> TransparentRenderItems;
+
 
 	std::unordered_map<string, ComPtr<ID3DBlob>> Shaders;
 	std::unordered_map<string, ComPtr<ID3D12PipelineState>> PSOs;

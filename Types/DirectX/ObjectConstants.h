@@ -32,9 +32,10 @@ struct SPassConstants
 
 	// Allow application to change fog parameters once per frame.
 	// For example, we may only use fog for certain times of day.
-	DirectX::XMFLOAT4 gFogColor;
-	float gFogStart;
-	float gFogRange;
+	DirectX::XMFLOAT4 FogColor;
+	float FogStart;
+	float FogRange;
+
 	DirectX::XMFLOAT2 cbPerPassPad2;
 	SLight Lights[SRenderConstants::MaxLights];
 };

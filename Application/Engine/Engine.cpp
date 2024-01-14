@@ -211,7 +211,15 @@ void OEngine::OnMouseButtonReleased(MouseButtonEventArgs& Args)
 
 void OEngine::OnMouseWheel(MouseWheelEventArgs& Args)
 {
-	// By default, do nothing.
+	LOG(Log, "Engine::OnMouseWheel")
+	if (const auto window = GetWindowByHWND(Args.WindowHandle))
+	{
+		if (const auto test = GetTestByHWND(Args.WindowHandle))
+		{
+			test->OnMouseWheel(Args);
+		}
+		window->OnMouseWheel(Args);
+	}
 }
 
 void OEngine::OnResize(ResizeEventArgs& Args)
@@ -276,19 +284,83 @@ bool OEngine::GetMSAAState(UINT& Quality) const
 	return Msaa4xState;
 }
 
-vector<unique_ptr<SRenderItem>>& OEngine::GetRenderItems()
-{
-	return AllRenderItems;
-}
-
 vector<SRenderItem*>& OEngine::GetOpaqueRenderItems()
 {
-	return OpaqueRenderItems;
+	return RenderItems[SRenderLayer::Opaque];
 }
 
-vector<unique_ptr<SRenderItem>>& OEngine::GetTransparentRenderItems()
+vector<SRenderItem*>& OEngine::GetAlphaTestedRenderItems()
 {
-	return TransparentRenderItems;
+	return RenderItems[SRenderLayer::AlphaTested];
+}
+
+void OEngine::BuildPSOs(ComPtr<ID3D12RootSignature> RootSignature, const vector<D3D12_INPUT_ELEMENT_DESC>& InputLayout)
+{
+	UINT quality = 0;
+	bool msaaEnable = GetMSAAState(quality);
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePSO;
+	ZeroMemory(&opaquePSO, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+
+	opaquePSO.InputLayout = { InputLayout.data(), static_cast<UINT>(InputLayout.size()) };
+	opaquePSO.pRootSignature = RootSignature.Get();
+
+	auto vsShader = GetShader(SShaderTypes::VSBaseShader);
+	auto psShader = GetShader(SShaderTypes::PSOpaque);
+
+	opaquePSO.VS = { reinterpret_cast<BYTE*>(vsShader->GetBufferPointer()), vsShader->GetBufferSize() };
+	opaquePSO.PS = { reinterpret_cast<BYTE*>(psShader->GetBufferPointer()), psShader->GetBufferSize() };
+
+	opaquePSO.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	opaquePSO.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	opaquePSO.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	opaquePSO.SampleMask = UINT_MAX;
+	opaquePSO.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	opaquePSO.NumRenderTargets = 1;
+	opaquePSO.RTVFormats[0] = SRenderConstants::BackBufferFormat;
+	opaquePSO.SampleDesc.Count = msaaEnable ? 4 : 1;
+	opaquePSO.SampleDesc.Quality = msaaEnable ? (quality - 1) : 0;
+	opaquePSO.DSVFormat = SRenderConstants::DepthBufferFormat;
+	CreatePSO(SPSOType::Opaque, opaquePSO);
+
+	//wireframe debug
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaqueWireframePsoDesc = opaquePSO;
+	opaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	CreatePSO(SPSOType::Debug, opaqueWireframePsoDesc);
+
+	//transparent pipeline
+	auto transparent = opaquePSO;
+	transparent.BlendState.RenderTarget[0] = GetBlendState();
+	CreatePSO(SPSOType::Transparent, transparent);
+
+	// alpha tested pipeline
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTestedPSO = opaquePSO;
+	auto psAlphaTestedShader = GetShader(SShaderTypes::PSAlphaTested);
+	alphaTestedPSO.PS = { reinterpret_cast<BYTE*>(psAlphaTestedShader->GetBufferPointer()), psAlphaTestedShader->GetBufferSize() };
+	alphaTestedPSO.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	CreatePSO(SPSOType::AlphaTested, alphaTestedPSO);
+}
+
+D3D12_RENDER_TARGET_BLEND_DESC OEngine::GetBlendState()
+{
+	D3D12_RENDER_TARGET_BLEND_DESC transparencyBlendDesc;
+	transparencyBlendDesc.BlendEnable = true;
+	transparencyBlendDesc.LogicOpEnable = false;
+	transparencyBlendDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+	transparencyBlendDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+	transparencyBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
+	transparencyBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+	transparencyBlendDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
+	transparencyBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	transparencyBlendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
+	transparencyBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_BLUE | D3D12_COLOR_WRITE_ENABLE_ALPHA;;
+	return transparencyBlendDesc;
+}
+
+
+vector<SRenderItem*>& OEngine::GetTransparentRenderItems()
+{
+	return RenderItems[SRenderLayer::Transparent];
 }
 
 ComPtr<IDXGIFactory2> OEngine::GetFactory() const
@@ -349,6 +421,22 @@ STexture* OEngine::FindTexture(string Name) const
 		return nullptr;
 	}
 	return Textures.at(Name).get();
+}
+
+void OEngine::AddRenderItem(string Name, unique_ptr<SRenderItem> RenderItem)
+{
+	RenderItems[Name].push_back(RenderItem.get());
+	AllRenderItems.push_back(move(RenderItem));
+}
+
+const vector<unique_ptr<SRenderItem>>& OEngine::GetAllRenderItems()
+{
+	return AllRenderItems;
+}
+
+void OEngine::SetPipelineState(string PSOName)
+{
+	GetCommandQueue()->GetCommandList()->SetPipelineState(PSOs[PSOName].Get());
 }
 
 shared_ptr<OTest> OEngine::GetTestByHWND(HWND Handler)
@@ -489,11 +577,27 @@ void OEngine::SetSceneGeometry(const string& Name, unique_ptr<SMeshGeometry> Geo
 	SceneGeometry[Name] = move(Geometry);
 }
 
-void OEngine::BuildShader(const wstring& ShaderName, const string& VSShaderName, const string& PSShaderName, const D3D_SHADER_MACRO* Defines)
+void OEngine::BuildShaders(const wstring& ShaderPath, const string& VSShaderName, const string& PSShaderName, const D3D_SHADER_MACRO* Defines)
 {
-	Shaders[VSShaderName] = Utils::CompileShader(ShaderName, Defines, "VS", "vs_5_1");
-	Shaders[PSShaderName] = Utils::CompileShader(ShaderName, Defines, "PS", "ps_5_1");
+	Shaders[VSShaderName] = Utils::CompileShader(ShaderPath, Defines, "VS", "vs_5_1");
+	Shaders[PSShaderName] = Utils::CompileShader(ShaderPath, Defines, "PS", "ps_5_1");
 }
+
+void OEngine::BuildShader(const wstring& ShaderPath, const string& ShaderName, const string& ShaderQualifier, const string& ShaderTarget, const D3D_SHADER_MACRO* Defines)
+{
+	Shaders[ShaderName] = Utils::CompileShader(ShaderPath, Defines, ShaderQualifier, ShaderTarget);
+}
+
+void OEngine::BuildVSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines)
+{
+	Shaders[ShaderName] = Utils::CompileShader(ShaderPath, Defines, "VS", "vs_5_1");
+}
+
+void OEngine::BuildPSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines)
+{
+	Shaders[ShaderName] = Utils::CompileShader(ShaderPath, Defines, "PS", "ps_5_1");
+}
+
 
 ComPtr<ID3DBlob> OEngine::GetShader(const string& ShaderName)
 {
@@ -518,9 +622,8 @@ OWaves* OEngine::GetWaves() const
 	return Waves.get();
 }
 
-void OEngine::BuildPSO(const string& PSOName, const D3D12_GRAPHICS_PIPELINE_STATE_DESC& PSODesc)
+void OEngine::CreatePSO(const string& PSOName, const D3D12_GRAPHICS_PIPELINE_STATE_DESC& PSODesc)
 {
 	THROW_IF_FAILED(Device->CreateGraphicsPipelineState(&PSODesc, IID_PPV_ARGS(&PSOs[PSOName])));
 }
-
 
