@@ -4,7 +4,7 @@
 
 #include "Test/LandTest/LandTest.h"
 #include "Test/LitWaves/LitWaves.h"
-#include "Test/TextureTest/TextureWaves.h"
+#include "Test/StencilingTest/StencilingTest.h"
 
 
 #include <Application.h>
@@ -26,7 +26,7 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	const auto application = OApplication::Get();
 	application->InitApplication(hInstance);
 
-	returnCode = application->Run<OTextureWaves>();
+	returnCode = application->Run<OStencilingTest>();
 	application->Destory();
 
 	return returnCode;

@@ -479,7 +479,7 @@ void OLandTest::BuildLandGeometry()
 	geometry.BaseVertexLocation = 0;
 	geo->SetGeometry("grid", geometry);
 
-	GetEngine()->SetSceneGeometry("LandGeo", std::move(geo));
+	GetEngine()->SetSceneGeometry(std::move(geo));
 }
 
 void OLandTest::BuildWavesGeometryBuffers()
@@ -535,7 +535,7 @@ void OLandTest::BuildWavesGeometryBuffers()
 	submesh.BaseVertexLocation = 0;
 
 	geometry->SetGeometry("grid", submesh);
-	GetEngine()->SetSceneGeometry("WaterGeometry", std::move(geometry));
+	GetEngine()->SetSceneGeometry(std::move(geometry));
 }
 
 void OLandTest::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> CommandList,
@@ -628,9 +628,9 @@ void OLandTest::BuildRenderItems()
 	wavesRenderItem->ObjectCBIndex = 0;
 	wavesRenderItem->Geometry = GetEngine()->GetSceneGeometry()["WaterGeometry"].get();
 	wavesRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	wavesRenderItem->IndexCount = wavesRenderItem->Geometry->GetGeomentry("grid").IndexCount;
-	wavesRenderItem->StartIndexLocation = wavesRenderItem->Geometry->GetGeomentry("grid").StartIndexLocation;
-	wavesRenderItem->BaseVertexLocation = wavesRenderItem->Geometry->GetGeomentry("grid").BaseVertexLocation;
+	wavesRenderItem->IndexCount = wavesRenderItem->Geometry->FindSubmeshGeomentry("grid").IndexCount;
+	wavesRenderItem->StartIndexLocation = wavesRenderItem->Geometry->FindSubmeshGeomentry("grid").StartIndexLocation;
+	wavesRenderItem->BaseVertexLocation = wavesRenderItem->Geometry->FindSubmeshGeomentry("grid").BaseVertexLocation;
 	wavesRenderItem->NumFramesDirty = SRenderConstants::NumFrameResources;
 
 	WavesRenderItem = wavesRenderItem.get();
@@ -641,9 +641,9 @@ void OLandTest::BuildRenderItems()
 	gridRenderItem->ObjectCBIndex = 1;
 	gridRenderItem->Geometry = GetEngine()->GetSceneGeometry()["LandGeo"].get();
 	gridRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	gridRenderItem->IndexCount = gridRenderItem->Geometry->GetGeomentry("grid").IndexCount;
-	gridRenderItem->StartIndexLocation = gridRenderItem->Geometry->GetGeomentry("grid").StartIndexLocation;
-	gridRenderItem->BaseVertexLocation = gridRenderItem->Geometry->GetGeomentry("grid").BaseVertexLocation;
+	gridRenderItem->IndexCount = gridRenderItem->Geometry->FindSubmeshGeomentry("grid").IndexCount;
+	gridRenderItem->StartIndexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("grid").StartIndexLocation;
+	gridRenderItem->BaseVertexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("grid").BaseVertexLocation;
 
 	GetEngine()->GetOpaqueRenderItems().push_back(gridRenderItem.get());
 }

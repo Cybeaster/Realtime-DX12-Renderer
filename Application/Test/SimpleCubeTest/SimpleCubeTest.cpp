@@ -135,7 +135,7 @@ void OSimpleCubeTest::OnRender(const UpdateEventArgs& Event)
 	commandList->SetGraphicsRootDescriptorTable(1, cbvHeapHandleSecond);
 
 	commandList->DrawIndexedInstanced(
-		BoxGeometry->GetGeomentry("Box").IndexCount,
+		BoxGeometry->FindSubmeshGeomentry("Box").IndexCount,
 		1,
 		0,
 		0,

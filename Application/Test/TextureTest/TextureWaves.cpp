@@ -607,7 +607,7 @@ void OTextureWaves::BuildLandGeometry()
 	geometry.BaseVertexLocation = 0;
 	geo->SetGeometry("Grid", geometry);
 
-	GetEngine()->SetSceneGeometry("LandGeo", std::move(geo));
+	GetEngine()->SetSceneGeometry(std::move(geo));
 }
 
 void OTextureWaves::BuildWavesGeometryBuffers()
@@ -663,7 +663,7 @@ void OTextureWaves::BuildWavesGeometryBuffers()
 	submesh.BaseVertexLocation = 0;
 
 	geometry->SetGeometry("Grid", submesh);
-	GetEngine()->SetSceneGeometry("WaterGeometry", std::move(geometry));
+	GetEngine()->SetSceneGeometry(std::move(geometry));
 }
 
 void OTextureWaves::BuildBoxGeometryBuffers()
@@ -718,7 +718,7 @@ void OTextureWaves::BuildBoxGeometryBuffers()
 	submesh.BaseVertexLocation = 0;
 
 	geo->SetGeometry("Box", submesh);
-	GetEngine()->SetSceneGeometry("BoxGeometry", std::move(geo));
+	GetEngine()->SetSceneGeometry(std::move(geo));
 }
 
 void OTextureWaves::BuildDescriptorHeap()
@@ -779,9 +779,9 @@ void OTextureWaves::BuildRenderItems()
 	wavesRenderItem->Geometry = GetEngine()->GetSceneGeometry()["WaterGeometry"].get();
 	wavesRenderItem->Material = GetEngine()->FindMaterial("Water");
 	wavesRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	wavesRenderItem->IndexCount = wavesRenderItem->Geometry->GetGeomentry("Grid").IndexCount;
-	wavesRenderItem->StartIndexLocation = wavesRenderItem->Geometry->GetGeomentry("Grid").StartIndexLocation;
-	wavesRenderItem->BaseVertexLocation = wavesRenderItem->Geometry->GetGeomentry("Grid").BaseVertexLocation;
+	wavesRenderItem->IndexCount = wavesRenderItem->Geometry->FindSubmeshGeomentry("Grid").IndexCount;
+	wavesRenderItem->StartIndexLocation = wavesRenderItem->Geometry->FindSubmeshGeomentry("Grid").StartIndexLocation;
+	wavesRenderItem->BaseVertexLocation = wavesRenderItem->Geometry->FindSubmeshGeomentry("Grid").BaseVertexLocation;
 
 	WavesRenderItem = wavesRenderItem.get();
 	GetEngine()->AddRenderItem(SRenderLayer::Transparent, std::move(wavesRenderItem));
@@ -793,9 +793,9 @@ void OTextureWaves::BuildRenderItems()
 	gridRenderItem->Geometry = GetEngine()->GetSceneGeometry()["LandGeo"].get();
 	gridRenderItem->Material = GetEngine()->FindMaterial("Grass");
 	gridRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	gridRenderItem->IndexCount = gridRenderItem->Geometry->GetGeomentry("Grid").IndexCount;
-	gridRenderItem->StartIndexLocation = gridRenderItem->Geometry->GetGeomentry("Grid").StartIndexLocation;
-	gridRenderItem->BaseVertexLocation = gridRenderItem->Geometry->GetGeomentry("Grid").BaseVertexLocation;
+	gridRenderItem->IndexCount = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid").IndexCount;
+	gridRenderItem->StartIndexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid").StartIndexLocation;
+	gridRenderItem->BaseVertexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid").BaseVertexLocation;
 	XMStoreFloat4x4(&gridRenderItem->TexTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f));
 
 	GetEngine()->AddRenderItem(SRenderLayer::Opaque, std::move(gridRenderItem));
@@ -806,9 +806,9 @@ void OTextureWaves::BuildRenderItems()
 	boxRenderItem->Geometry = GetEngine()->GetSceneGeometry()["BoxGeometry"].get();
 	boxRenderItem->Material = GetEngine()->FindMaterial("WireFence");
 	boxRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	boxRenderItem->IndexCount = boxRenderItem->Geometry->GetGeomentry("Box").IndexCount;
-	boxRenderItem->StartIndexLocation = boxRenderItem->Geometry->GetGeomentry("Box").StartIndexLocation;
-	boxRenderItem->BaseVertexLocation = boxRenderItem->Geometry->GetGeomentry("Box").BaseVertexLocation;
+	boxRenderItem->IndexCount = boxRenderItem->Geometry->FindSubmeshGeomentry("Box").IndexCount;
+	boxRenderItem->StartIndexLocation = boxRenderItem->Geometry->FindSubmeshGeomentry("Box").StartIndexLocation;
+	boxRenderItem->BaseVertexLocation = boxRenderItem->Geometry->FindSubmeshGeomentry("Box").BaseVertexLocation;
 
 	GetEngine()->AddRenderItem(SRenderLayer::AlphaTested, std::move(boxRenderItem));
 }

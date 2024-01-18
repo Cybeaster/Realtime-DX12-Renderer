@@ -1,17 +1,15 @@
 #pragma once
+#include "../../Materials/Material.h"
+#include "../../Objects/Geometry/Wave/Waves.h"
 #include "../CommandQueue/CommandQueue.h"
 #include "../Types/Types.h"
 #include "../Window/Window.h"
 #include "DirectX/FrameResource.h"
 #include "RenderItem.h"
-#include "../../Materials/Material.h"
-#include "../../Objects/Geometry/Wave/Waves.h"
 #include "Textures/Texture.h"
 
 #include <dxgi1_6.h>
-
 #include <map>
-
 
 class OEngine : public std::enable_shared_from_this<OEngine>
 {
@@ -66,7 +64,7 @@ public:
 
 	void OnEnd(shared_ptr<OTest> Test) const;
 
-	void BuildFrameResource();
+	void BuildFrameResource(uint32_t PassCount = 1);
 
 	void OnRender(const UpdateEventArgs& Args) const;
 
@@ -94,17 +92,21 @@ public:
 
 	bool GetMSAAState(UINT& Quality) const;
 
-
 	vector<SRenderItem*>& GetOpaqueRenderItems();
 
 	vector<SRenderItem*>& GetAlphaTestedRenderItems();
 
+	vector<SRenderItem*>& GetMirrorsRenderItems();
+
+	vector<SRenderItem*>& GetReflectedRenderItems();
+
 	vector<SRenderItem*>& GetTransparentRenderItems();
+
+	vector<SRenderItem*>& GetShadowRenderItems();
 
 	void BuildPSOs(ComPtr<ID3D12RootSignature> RootSignature, const vector<D3D12_INPUT_ELEMENT_DESC>& InputLayout);
 
-	D3D12_RENDER_TARGET_BLEND_DESC GetBlendState();
-
+	D3D12_RENDER_TARGET_BLEND_DESC GetTransparentBlendState();
 
 	ComPtr<IDXGIFactory2> GetFactory() const;
 
@@ -114,7 +116,9 @@ public:
 
 	std::unordered_map<string, unique_ptr<SMeshGeometry>>& GetSceneGeometry();
 
-	void SetSceneGeometry(const string& Name, unique_ptr<SMeshGeometry> Geometry);
+	void SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry);
+
+	SMeshGeometry* FindSceneGeometry(const string& Name) const;
 
 	void BuildShaders(const wstring& ShaderPath, const string& VSShaderName, const string& PSShaderName,
 	                  const D3D_SHADER_MACRO* Defines = nullptr);
@@ -141,6 +145,8 @@ public:
 
 	void AddMaterial(string Name, unique_ptr<SMaterial>& Material);
 
+	void CreateMaterial(const string& Name, int32_t CBIndex, int32_t DiffuseSRVHeapIdx, const SMaterialConstants& Constants);
+
 	const TMaterialsMap& GetMaterials() const;
 
 	SMaterial* FindMaterial(const string& Name) const;
@@ -149,7 +155,9 @@ public:
 
 	STexture* FindTexture(string Name) const;
 
-	void AddRenderItem(string Name, unique_ptr<SRenderItem> RenderItem);
+	void AddRenderItem(string Category, unique_ptr<SRenderItem> RenderItem);
+
+	void AddRenderItem(const vector<string>& Categories, unique_ptr<SRenderItem> RenderItem);
 
 	const vector<unique_ptr<SRenderItem>>& GetAllRenderItems();
 
@@ -190,7 +198,6 @@ private:
 
 	map<string, vector<SRenderItem*>> RenderItems;
 	vector<unique_ptr<SRenderItem>> AllRenderItems;
-
 
 	std::unordered_map<string, ComPtr<ID3DBlob>> Shaders;
 	std::unordered_map<string, ComPtr<ID3D12PipelineState>> PSOs;

@@ -111,7 +111,7 @@ inline Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(
 	return defaultBuffer;
 }
 
-array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers()
+inline array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers()
 {
 	//clang-format off
 	// Applications usually only need a handful of samplers.  So just define them all up front

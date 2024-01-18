@@ -16,6 +16,9 @@ struct SRenderLayer
 	inline static const string Opaque = "Opaque";
 	inline static const string Transparent = "Transparent";
 	inline static const string AlphaTested = "AlphaTested";
+	inline static const string Shadow = "Shadow";
+	inline static const string Reflected = "Reflected";
+	inline static const string Mirror = "Mirror";
 };
 
 struct SPSOType
@@ -25,6 +28,8 @@ struct SPSOType
 	inline static const string AlphaTested = "AlphaTested";
 	inline static const string Shadow = "Shadow";
 	inline static const string Debug = "Debug";
+	inline static const string StencilReflection = "Reflected";
+	inline static const string StencilMirrors = "Mirror";
 };
 
 struct SShaderTypes

@@ -87,7 +87,7 @@ struct SMeshGeometry
 	UINT IndexBufferByteSize = 0;
 
 
-	SSubmeshGeometry& GetGeomentry(const string& SubmeshName)
+	SSubmeshGeometry& FindSubmeshGeomentry(const string& SubmeshName)
 	{
 		if (!DrawArgs.contains(SubmeshName))
 		{

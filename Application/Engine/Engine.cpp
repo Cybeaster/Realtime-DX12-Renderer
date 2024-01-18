@@ -121,13 +121,13 @@ void OEngine::OnEnd(shared_ptr<OTest> Test) const
 	Test->Destroy();
 }
 
-void OEngine::BuildFrameResource()
+void OEngine::BuildFrameResource(uint32_t PassCount)
 {
 	for (int i = 0; i < SRenderConstants::NumFrameResources; ++i)
 	{
 		FrameResources.push_back(make_unique<SFrameResource>(
 			Device.Get(),
-			1,
+			PassCount,
 			AllRenderItems.size(),
 			Waves->GetVertexCount(),
 			Materials.size()));
@@ -294,6 +294,16 @@ vector<SRenderItem*>& OEngine::GetAlphaTestedRenderItems()
 	return RenderItems[SRenderLayer::AlphaTested];
 }
 
+vector<SRenderItem*>& OEngine::GetMirrorsRenderItems()
+{
+	return RenderItems[SRenderLayer::Mirror];
+}
+
+vector<SRenderItem*>& OEngine::GetReflectedRenderItems()
+{
+	return RenderItems[SRenderLayer::Reflected];
+}
+
 void OEngine::BuildPSOs(ComPtr<ID3D12RootSignature> RootSignature, const vector<D3D12_INPUT_ELEMENT_DESC>& InputLayout)
 {
 	UINT quality = 0;
@@ -330,7 +340,7 @@ void OEngine::BuildPSOs(ComPtr<ID3D12RootSignature> RootSignature, const vector<
 
 	//transparent pipeline
 	auto transparent = opaquePSO;
-	transparent.BlendState.RenderTarget[0] = GetBlendState();
+	transparent.BlendState.RenderTarget[0] = GetTransparentBlendState();
 	CreatePSO(SPSOType::Transparent, transparent);
 
 	// alpha tested pipeline
@@ -339,9 +349,97 @@ void OEngine::BuildPSOs(ComPtr<ID3D12RootSignature> RootSignature, const vector<
 	alphaTestedPSO.PS = { reinterpret_cast<BYTE*>(psAlphaTestedShader->GetBufferPointer()), psAlphaTestedShader->GetBufferSize() };
 	alphaTestedPSO.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 	CreatePSO(SPSOType::AlphaTested, alphaTestedPSO);
+
+	//
+	//PSO for stencil mirrors
+	//
+
+	CD3DX12_BLEND_DESC mirrorBlendState(D3D12_DEFAULT);
+	mirrorBlendState.RenderTarget[0].RenderTargetWriteMask = 0;
+
+	D3D12_DEPTH_STENCIL_DESC mirrorDSS;
+	mirrorDSS.DepthEnable = true;
+	mirrorDSS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	mirrorDSS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	mirrorDSS.StencilEnable = true;
+	mirrorDSS.StencilReadMask = 0xff;
+	mirrorDSS.StencilWriteMask = 0xff;
+
+	mirrorDSS.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	mirrorDSS.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	mirrorDSS.FrontFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
+	mirrorDSS.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+
+	// We are not rendering backfacing polygons, so these settings do not matter.
+	mirrorDSS.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	mirrorDSS.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	mirrorDSS.BackFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
+	mirrorDSS.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC mirrorPsoDesc = opaquePSO;
+	mirrorPsoDesc.BlendState = mirrorBlendState;
+	mirrorPsoDesc.DepthStencilState = mirrorDSS;
+	CreatePSO(SPSOType::StencilMirrors, mirrorPsoDesc);
+
+	//
+	// PSO For Reflected objects
+	//
+
+	D3D12_DEPTH_STENCIL_DESC reflectionsDSS;
+	reflectionsDSS.DepthEnable = true;
+	reflectionsDSS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	reflectionsDSS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	reflectionsDSS.StencilEnable = true;
+	reflectionsDSS.StencilReadMask = 0xff;
+	reflectionsDSS.StencilWriteMask = 0xff;
+
+	reflectionsDSS.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSS.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSS.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSS.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+	// We are not rendering backfacing polygons, so these settings do not matter.
+	reflectionsDSS.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSS.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSS.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSS.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC reflectionsPsoDesc = opaquePSO;
+	reflectionsPsoDesc.DepthStencilState = reflectionsDSS;
+	reflectionsPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+	reflectionsPsoDesc.RasterizerState.FrontCounterClockwise = true;
+	CreatePSO(SPSOType::StencilReflection, reflectionsPsoDesc);
+
+	//
+	// PSO for shadow objects
+	//
+
+	// We are going to draw shadows with transparency, so base it off the transparency description.
+	D3D12_DEPTH_STENCIL_DESC shadowDSS;
+	shadowDSS.DepthEnable = true;
+	shadowDSS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	shadowDSS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	shadowDSS.StencilEnable = true;
+	shadowDSS.StencilReadMask = 0xff;
+	shadowDSS.StencilWriteMask = 0xff;
+
+	shadowDSS.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	shadowDSS.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	shadowDSS.FrontFace.StencilPassOp = D3D12_STENCIL_OP_INCR;
+	shadowDSS.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+	// We are not rendering backfacing polygons, so these settings do not matter.
+	shadowDSS.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	shadowDSS.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	shadowDSS.BackFace.StencilPassOp = D3D12_STENCIL_OP_INCR;
+	shadowDSS.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC shadowPsoDesc = transparent;
+	shadowPsoDesc.DepthStencilState = shadowDSS;
+	CreatePSO(SPSOType::Shadow, shadowPsoDesc);
 }
 
-D3D12_RENDER_TARGET_BLEND_DESC OEngine::GetBlendState()
+D3D12_RENDER_TARGET_BLEND_DESC OEngine::GetTransparentBlendState()
 {
 	D3D12_RENDER_TARGET_BLEND_DESC transparencyBlendDesc;
 	transparencyBlendDesc.BlendEnable = true;
@@ -353,7 +451,7 @@ D3D12_RENDER_TARGET_BLEND_DESC OEngine::GetBlendState()
 	transparencyBlendDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
 	transparencyBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
 	transparencyBlendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
-	transparencyBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_BLUE | D3D12_COLOR_WRITE_ENABLE_ALPHA;;
+	transparencyBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 	return transparencyBlendDesc;
 }
 
@@ -361,6 +459,11 @@ D3D12_RENDER_TARGET_BLEND_DESC OEngine::GetBlendState()
 vector<SRenderItem*>& OEngine::GetTransparentRenderItems()
 {
 	return RenderItems[SRenderLayer::Transparent];
+}
+
+vector<SRenderItem*>& OEngine::GetShadowRenderItems()
+{
+	return RenderItems[SRenderLayer::Shadow];
 }
 
 ComPtr<IDXGIFactory2> OEngine::GetFactory() const
@@ -376,6 +479,16 @@ void OEngine::AddMaterial(string Name, unique_ptr<SMaterial>& Material)
 		return;
 	}
 	Materials[Name] = move(Material);
+}
+
+void OEngine::CreateMaterial(const string& Name, const int32_t CBIndex, const int32_t HeapIdx, const SMaterialConstants& Constants)
+{
+	auto mat = make_unique<SMaterial>();
+	mat->Name = Name;
+	mat->MaterialCBIndex = CBIndex;
+	mat->DiffuseSRVHeapIndex = HeapIdx;
+	mat->MaterialConsatnts = Constants;
+	AddMaterial(Name, mat);
 }
 
 const OEngine::TMaterialsMap& OEngine::GetMaterials() const
@@ -423,9 +536,18 @@ STexture* OEngine::FindTexture(string Name) const
 	return Textures.at(Name).get();
 }
 
-void OEngine::AddRenderItem(string Name, unique_ptr<SRenderItem> RenderItem)
+void OEngine::AddRenderItem(string Category, unique_ptr<SRenderItem> RenderItem)
 {
-	RenderItems[Name].push_back(RenderItem.get());
+	RenderItems[Category].push_back(RenderItem.get());
+	AllRenderItems.push_back(move(RenderItem));
+}
+
+void OEngine::AddRenderItem(const vector<string>& Categories, unique_ptr<SRenderItem> RenderItem)
+{
+	for (auto category : Categories)
+	{
+		RenderItems[category].push_back(RenderItem.get());
+	}
 	AllRenderItems.push_back(move(RenderItem));
 }
 
@@ -572,9 +694,19 @@ std::unordered_map<string, unique_ptr<SMeshGeometry>>& OEngine::GetSceneGeometry
 	return SceneGeometry;
 }
 
-void OEngine::SetSceneGeometry(const string& Name, unique_ptr<SMeshGeometry> Geometry)
+void OEngine::SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry)
 {
-	SceneGeometry[Name] = move(Geometry);
+	SceneGeometry[Geometry->Name] = move(Geometry);
+}
+
+SMeshGeometry* OEngine::FindSceneGeometry(const string& Name) const
+{
+	if (!SceneGeometry.contains(Name))
+	{
+		LOG(Error, "Geometry not found!");
+		return nullptr;
+	}
+	return SceneGeometry.at(Name).get();
 }
 
 void OEngine::BuildShaders(const wstring& ShaderPath, const string& VSShaderName, const string& PSShaderName, const D3D_SHADER_MACRO* Defines)
