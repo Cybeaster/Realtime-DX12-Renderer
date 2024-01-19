@@ -466,6 +466,11 @@ vector<SRenderItem*>& OEngine::GetShadowRenderItems()
 	return RenderItems[SRenderLayer::Shadow];
 }
 
+vector<SRenderItem*>& OEngine::GetRenderItems(const string& Type)
+{
+	return RenderItems[Type];
+}
+
 ComPtr<IDXGIFactory2> OEngine::GetFactory() const
 {
 	return Factory;
@@ -728,6 +733,11 @@ void OEngine::BuildVSShader(const wstring& ShaderPath, const string& ShaderName,
 void OEngine::BuildPSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines)
 {
 	Shaders[ShaderName] = Utils::CompileShader(ShaderPath, Defines, "PS", "ps_5_1");
+}
+
+void OEngine::BuildGSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines)
+{
+	Shaders[ShaderName] = Utils::CompileShader(ShaderPath, Defines, "GS", "gs_5_1");
 }
 
 

@@ -66,33 +66,6 @@ void OStencilingTest::UnloadContent()
 	ContentLoaded = false;
 }
 
-void OStencilingTest::UpdateWave(const STimer& Timer)
-{
-	static float tBase = 0.0f;
-	if (Timer.GetTime() - tBase >= 0.25)
-	{
-		tBase += 0.25;
-		int i = Utils::Math::Random(4, GetEngine()->GetWaves()->GetRowCount() - 5);
-		int j = Utils::Math::Random(4, GetEngine()->GetWaves()->GetColumnCount() - 5);
-		float r = Utils::Math::Random(0.2f, 0.5f);
-		GetEngine()->GetWaves()->Disturb(i, j, r);
-	}
-
-	GetEngine()->GetWaves()->Update(Timer.GetDeltaTime());
-	auto currWavesVB = Engine.lock()->CurrentFrameResources->WavesVB.get();
-	for (int32_t i = 0; i < GetEngine()->GetWaves()->GetVertexCount(); ++i)
-	{
-		SVertex v;
-		v.Pos = GetEngine()->GetWaves()->GetPosition(i);
-		v.Normal = GetEngine()->GetWaves()->GetNormal(i);
-
-		v.TexC.x = 0.5f + v.Pos.x / GetEngine()->GetWaves()->GetWidth();
-		v.TexC.y = 0.5f - v.Pos.z / GetEngine()->GetWaves()->GetDepth();
-		currWavesVB->CopyData(i, v);
-	}
-	WavesRenderItem->Geometry->VertexBufferGPU = currWavesVB->GetResource();
-}
-
 void OStencilingTest::OnUpdate(const UpdateEventArgs& Event)
 {
 	Super::OnUpdate(Event);
@@ -117,7 +90,6 @@ void OStencilingTest::OnUpdate(const UpdateEventArgs& Event)
 	UpdateObjectCBs(Event.Timer);
 	UpdateMaterialCB();
 	UpdateMainPass(Event.Timer);
-	UpdateWave(Event.Timer);
 }
 
 void OStencilingTest::UpdateMainPass(const STimer& Timer)
@@ -548,177 +520,6 @@ void OStencilingTest::BuildShadersAndInputLayout()
 	};
 }
 
-void OStencilingTest::BuildLandGeometry()
-{
-	OGeometryGenerator generator;
-	auto grid = generator.CreateGrid(160.0f, 160.0f, 50, 50);
-
-	//
-	// Extract the SVertex elements we are interested and apply the height
-	// function to each SVertex. In addition, color the vertices based on
-	// their height so we have sandy looking beaches, grassy low hills,
-	// and snow mountain peaks.
-	//
-	std::vector<SVertex> vertices(grid.Vertices.size());
-	for (size_t i = 0; i < grid.Vertices.size(); ++i)
-	{
-		auto& p = grid.Vertices[i].Position;
-		vertices[i].Pos = p;
-		vertices[i].Pos.y = GetHillsHeight(p.x, p.z);
-		vertices[i].Normal = GetHillsNormal(p.x, p.z);
-		vertices[i].TexC = grid.Vertices[i].TexC;
-	}
-
-	const UINT vbByteSize = static_cast<UINT>(vertices.size() * sizeof(SVertex));
-	const std::vector<std::uint16_t> indices = grid.GetIndices16();
-	const UINT ibByteSize = static_cast<UINT>(indices.size() * sizeof(std::uint16_t));
-
-	auto geo = make_unique<SMeshGeometry>();
-	geo->Name = "LandGeo";
-
-	THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-
-	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-	geo->VertexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
-	                                                  Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
-	                                                  vertices.data(),
-	                                                  vbByteSize,
-	                                                  geo->VertexBufferUploader);
-
-	geo->IndexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
-	                                                 Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
-	                                                 indices.data(),
-	                                                 ibByteSize,
-	                                                 geo->IndexBufferUploader);
-
-	geo->VertexByteStride = sizeof(SVertex);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
-
-	SSubmeshGeometry geometry;
-	geometry.IndexCount = static_cast<UINT>(indices.size());
-	geometry.StartIndexLocation = 0;
-	geometry.BaseVertexLocation = 0;
-	geo->SetGeometry("Grid", geometry);
-
-	GetEngine()->SetSceneGeometry("LandGeo", std::move(geo));
-}
-
-void OStencilingTest::BuildWavesGeometryBuffers()
-{
-	vector<uint16_t> indices(3 * GetEngine()->GetWaves()->GetTriangleCount());
-
-	//iterate over each quad
-	int m = GetEngine()->GetWaves()->GetRowCount();
-	int n = GetEngine()->GetWaves()->GetColumnCount();
-	int k = 0;
-
-	for (int i = 0; i < m - 1; ++i)
-	{
-		for (int j = 0; j < n - 1; ++j)
-		{
-			indices[k] = i * n + j;
-			indices[k + 1] = i * n + j + 1;
-			indices[k + 2] = (i + 1) * n + j;
-
-			indices[k + 3] = (i + 1) * n + j;
-			indices[k + 4] = i * n + j + 1;
-			indices[k + 5] = (i + 1) * n + j + 1;
-
-			k += 6; // next quad
-		}
-	}
-
-	UINT vbByteSize = GetEngine()->GetWaves()->GetVertexCount() * sizeof(SVertex);
-	UINT ibByteSize = static_cast<UINT>(indices.size() * sizeof(uint16_t));
-
-	auto geometry = make_unique<SMeshGeometry>();
-	geometry->Name = "WaterGeometry";
-	geometry->VertexBufferCPU = nullptr;
-	geometry->VertexBufferGPU = nullptr;
-
-	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geometry->IndexBufferCPU));
-	CopyMemory(geometry->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-	geometry->IndexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
-	                                                      Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
-	                                                      indices.data(),
-	                                                      ibByteSize,
-	                                                      geometry->IndexBufferUploader);
-
-	geometry->VertexByteStride = sizeof(SVertex);
-	geometry->VertexBufferByteSize = vbByteSize;
-	geometry->IndexFormat = DXGI_FORMAT_R16_UINT;
-	geometry->IndexBufferByteSize = ibByteSize;
-
-	SSubmeshGeometry submesh;
-	submesh.IndexCount = static_cast<UINT>(indices.size());
-	submesh.StartIndexLocation = 0;
-	submesh.BaseVertexLocation = 0;
-
-	geometry->SetGeometry("Grid", submesh);
-	GetEngine()->SetSceneGeometry("WaterGeometry", std::move(geometry));
-}
-
-void OStencilingTest::BuildBoxGeometryBuffers()
-{
-	OGeometryGenerator geoGen;
-	OGeometryGenerator::SMeshData box = geoGen.CreateBox(8.0f, 8.0f, 8.0f, 3);
-	auto device = Engine.lock()->GetDevice();
-	auto commandList = Engine.lock()->GetCommandQueue()->GetCommandList();
-	std::vector<SVertex> vertices(box.Vertices.size());
-	for (size_t i = 0; i < box.Vertices.size(); ++i)
-	{
-		auto& p = box.Vertices[i].Position;
-		vertices[i].Pos = p;
-		vertices[i].Normal = box.Vertices[i].Normal;
-		vertices[i].TexC = box.Vertices[i].TexC;
-	}
-
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(SVertex);
-
-	std::vector<std::uint16_t> indices = box.GetIndices16();
-	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
-
-	auto geo = std::make_unique<SMeshGeometry>();
-	geo->Name = "BoxGeometry";
-
-	THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-
-	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-	geo->VertexBufferGPU = Utils::CreateDefaultBuffer(device.Get(),
-	                                                  commandList.Get(),
-	                                                  vertices.data(),
-	                                                  vbByteSize,
-	                                                  geo->VertexBufferUploader);
-
-	geo->IndexBufferGPU = Utils::CreateDefaultBuffer(device.Get(),
-	                                                 commandList.Get(),
-	                                                 indices.data(),
-	                                                 ibByteSize,
-	                                                 geo->IndexBufferUploader);
-
-	geo->VertexByteStride = sizeof(SVertex);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
-
-	SSubmeshGeometry submesh;
-	submesh.IndexCount = (UINT)indices.size();
-	submesh.StartIndexLocation = 0;
-	submesh.BaseVertexLocation = 0;
-
-	geo->SetGeometry("Box", submesh);
-	GetEngine()->SetSceneGeometry("BoxGeometry", std::move(geo));
-}
-
 void OStencilingTest::BuildDescriptorHeap()
 {
 	auto device = Engine.lock()->GetDevice();
@@ -882,7 +683,7 @@ void OStencilingTest::BuildRoomGeomety()
 	geo->SetGeometry("Wall", wallSubmesh);
 	geo->SetGeometry("Mirror", mirrorSubmesh);
 
-	GetEngine()->SetSceneGeometry(geo->Name, std::move(geo));
+	GetEngine()->SetSceneGeometry(std::move(geo));
 }
 
 
@@ -895,9 +696,9 @@ void OStencilingTest::BuildRenderItems()
 	wavesRenderItem->Geometry = GetEngine()->GetSceneGeometry()["WaterGeometry"].get();
 	wavesRenderItem->Material = GetEngine()->FindMaterial("Water");
 	wavesRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	wavesRenderItem->IndexCount = wavesRenderItem->Geometry->GetGeomentry("Grid").IndexCount;
-	wavesRenderItem->StartIndexLocation = wavesRenderItem->Geometry->GetGeomentry("Grid").StartIndexLocation;
-	wavesRenderItem->BaseVertexLocation = wavesRenderItem->Geometry->GetGeomentry("Grid").BaseVertexLocation;
+	wavesRenderItem->IndexCount = wavesRenderItem->Geometry->FindSubmeshGeomentry("Grid").IndexCount;
+	wavesRenderItem->StartIndexLocation = wavesRenderItem->Geometry->FindSubmeshGeomentry("Grid").StartIndexLocation;
+	wavesRenderItem->BaseVertexLocation = wavesRenderItem->Geometry->FindSubmeshGeomentry("Grid").BaseVertexLocation;
 
 	WavesRenderItem = wavesRenderItem.get();
 	GetEngine()->AddRenderItem(SRenderLayer::Transparent, std::move(wavesRenderItem));
@@ -909,9 +710,9 @@ void OStencilingTest::BuildRenderItems()
 	gridRenderItem->Geometry = GetEngine()->GetSceneGeometry()["LandGeo"].get();
 	gridRenderItem->Material = GetEngine()->FindMaterial("Grass");
 	gridRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	gridRenderItem->IndexCount = gridRenderItem->Geometry->GetGeomentry("Grid").IndexCount;
-	gridRenderItem->StartIndexLocation = gridRenderItem->Geometry->GetGeomentry("Grid").StartIndexLocation;
-	gridRenderItem->BaseVertexLocation = gridRenderItem->Geometry->GetGeomentry("Grid").BaseVertexLocation;
+	gridRenderItem->IndexCount = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid").IndexCount;
+	gridRenderItem->StartIndexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid").StartIndexLocation;
+	gridRenderItem->BaseVertexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid").BaseVertexLocation;
 	XMStoreFloat4x4(&gridRenderItem->TexTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f));
 
 	GetEngine()->AddRenderItem(SRenderLayer::Opaque, std::move(gridRenderItem));
@@ -922,9 +723,9 @@ void OStencilingTest::BuildRenderItems()
 	boxRenderItem->Geometry = GetEngine()->GetSceneGeometry()["BoxGeometry"].get();
 	boxRenderItem->Material = GetEngine()->FindMaterial("WireFence");
 	boxRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	boxRenderItem->IndexCount = boxRenderItem->Geometry->GetGeomentry("Box").IndexCount;
-	boxRenderItem->StartIndexLocation = boxRenderItem->Geometry->GetGeomentry("Box").StartIndexLocation;
-	boxRenderItem->BaseVertexLocation = boxRenderItem->Geometry->GetGeomentry("Box").BaseVertexLocation;
+	boxRenderItem->IndexCount = boxRenderItem->Geometry->FindSubmeshGeomentry("Box").IndexCount;
+	boxRenderItem->StartIndexLocation = boxRenderItem->Geometry->FindSubmeshGeomentry("Box").StartIndexLocation;
+	boxRenderItem->BaseVertexLocation = boxRenderItem->Geometry->FindSubmeshGeomentry("Box").BaseVertexLocation;
 
 	GetEngine()->AddRenderItem(SRenderLayer::AlphaTested, std::move(boxRenderItem));
 }

@@ -104,6 +104,9 @@ public:
 
 	vector<SRenderItem*>& GetShadowRenderItems();
 
+	vector<SRenderItem*>& GetRenderItems(const string& Type);
+
+
 	void BuildPSOs(ComPtr<ID3D12RootSignature> RootSignature, const vector<D3D12_INPUT_ELEMENT_DESC>& InputLayout);
 
 	D3D12_RENDER_TARGET_BLEND_DESC GetTransparentBlendState();
@@ -128,6 +131,8 @@ public:
 	void BuildVSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines = nullptr);
 
 	void BuildPSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines = nullptr);
+
+	void BuildGSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines = nullptr);
 
 	ComPtr<ID3DBlob> GetShader(const string& ShaderName);
 

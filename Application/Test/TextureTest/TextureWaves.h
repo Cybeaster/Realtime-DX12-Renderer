@@ -51,9 +51,16 @@ public:
 	void OnMouseWheel(const MouseWheelEventArgs& Args) override;
 
 private:
+	void BuildTreeSpriteGeometry();
+
 	void CreateTexture();
 
 	void SetupProjection();
+
+	void BuildPSOTreeSprites();
+
+	void BuildPSOGeosphere();
+
 
 	void BuildMaterials();
 
@@ -85,6 +92,9 @@ private:
 
 	SPassConstants MainPassCB;
 
+	SRenderItem* Geosphere = nullptr;
+	DirectX::XMFLOAT3 GeospherePos = { 0, 0, 0 };
+
 	unique_ptr<OUploadBuffer<SVertex>> WavesVB = nullptr;
 	DirectX::XMFLOAT3 EyePos = { 0, 0, 0 };
 	DirectX::XMFLOAT4X4 ViewMatrix = Utils::Math::Identity4x4();
@@ -93,6 +103,7 @@ private:
 	bool ContentLoaded = false;
 
 	vector<D3D12_INPUT_ELEMENT_DESC> InputLayout;
+	vector<D3D12_INPUT_ELEMENT_DESC> TreeSpriteInputLayout;
 
 	float Theta = 1.5f * DirectX::XM_PI;
 	float Phi = DirectX::XM_PIDIV4;

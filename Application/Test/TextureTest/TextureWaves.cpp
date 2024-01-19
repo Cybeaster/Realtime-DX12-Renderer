@@ -46,6 +46,7 @@ bool OTextureWaves::Initialize()
 	BuildDescriptorHeap();
 	BuildShadersAndInputLayout();
 	BuildLandGeometry();
+	BuildTreeSpriteGeometry();
 	BuildWavesGeometryBuffers();
 	BuildBoxGeometryBuffers();
 	BuildMaterials();
@@ -53,6 +54,7 @@ bool OTextureWaves::Initialize()
 
 	engine->BuildFrameResource();
 	engine->BuildPSOs(RootSignature, InputLayout);
+	BuildPSOTreeSprites();
 	THROW_IF_FAILED(queue->GetCommandList()->Close());
 
 	ID3D12CommandList* cmdsLists[] = { queue->GetCommandList().Get() };
@@ -270,12 +272,82 @@ void OTextureWaves::OnMouseWheel(const MouseWheelEventArgs& Args)
 	MainPassCB.FogStart += Args.WheelDelta;
 }
 
+void OTextureWaves::BuildTreeSpriteGeometry()
+{
+	struct STreeSpriteVertex
+	{
+		XMFLOAT3 Pos;
+		XMFLOAT2 Size;
+	};
+
+	static const int treeCount = 16;
+	array<STreeSpriteVertex, 16> vertices;
+
+	for (UINT i = 0; i < treeCount; ++i)
+	{
+		float x = Utils::Math::Random(-45.0f, 45.0f);
+		float z = Utils::Math::Random(-45.0f, 45.0f);
+		float y = GetHillsHeight(x, z);
+
+		//move slightly above the hill height
+		y += 10.0f;
+
+		vertices[i].Pos = XMFLOAT3(x, y, z);
+		vertices[i].Size = XMFLOAT2(20.0f, 20.0f);
+	}
+
+	array<uint16_t, 16> indices =
+	{
+		0, 1, 2, 3, 4, 5, 6, 7,
+		8, 9, 10, 11, 12, 13, 14, 15
+	};
+
+	const UINT vbByteSize = static_cast<UINT>(vertices.size() * sizeof(STreeSpriteVertex));
+	const UINT ibByteSize = static_cast<UINT>(indices.size() * sizeof(uint16_t));
+
+	auto geometry = make_unique<SMeshGeometry>();
+	geometry->Name = "TreeSprites";
+
+	THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &geometry->VertexBufferCPU));
+	CopyMemory(geometry->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geometry->IndexBufferCPU));
+	CopyMemory(geometry->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geometry->VertexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
+	                                                       Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
+	                                                       vertices.data(),
+	                                                       vbByteSize,
+	                                                       geometry->VertexBufferUploader);
+
+	geometry->IndexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
+	                                                      Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
+	                                                      indices.data(),
+	                                                      ibByteSize,
+	                                                      geometry->IndexBufferUploader);
+
+	geometry->VertexByteStride = sizeof(STreeSpriteVertex);
+	geometry->VertexBufferByteSize = vbByteSize;
+	geometry->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geometry->IndexBufferByteSize = ibByteSize;
+
+	SSubmeshGeometry submesh;
+	submesh.IndexCount = static_cast<UINT>(indices.size());
+	submesh.StartIndexLocation = 0;
+	submesh.BaseVertexLocation = 0;
+
+	geometry->SetGeometry("Points", submesh);
+	GetEngine()->SetSceneGeometry(std::move(geometry));
+}
+
+
 void OTextureWaves::CreateTexture()
 {
 	GetEngine()->CreateTexture("Grass", L"Resources/Textures/grass.dds");
 	GetEngine()->CreateTexture("Fence", L"Resources/Textures/WireFence.dds");
 	GetEngine()->CreateTexture("Water", L"Resources/Textures/water1.dds");
 	GetEngine()->CreateTexture("FireBall", L"Resources/Textures/Fireball.dds");
+	GetEngine()->CreateTexture("TreeArray", L"Resources/Textures/treeArray2.dds");
 }
 
 void OTextureWaves::OnRender(const UpdateEventArgs& Event)
@@ -338,6 +410,9 @@ void OTextureWaves::OnRender(const UpdateEventArgs& Event)
 	GetEngine()->SetPipelineState(SPSOType::AlphaTested);
 	DrawRenderItems(commandList.Get(), engine->GetAlphaTestedRenderItems());
 
+	GetEngine()->SetPipelineState(SPSOType::TreeSprites);
+	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::AlphaTestedTreeSprites));
+
 	GetEngine()->SetPipelineState(SPSOType::Transparent);
 	DrawRenderItems(commandList.Get(), engine->GetTransparentRenderItems());
 
@@ -378,44 +453,51 @@ void OTextureWaves::SetupProjection()
 	XMStoreFloat4x4(&ProjectionMatrix, XMMatrixPerspectiveFovLH(0.25f * XM_PI, Window.lock()->GetAspectRatio(), 1.0f, 1000.0f));
 }
 
+void OTextureWaves::BuildPSOTreeSprites()
+{
+	UINT quality = 0;
+	auto state = true;
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC treeSpritePSO;
+	ZeroMemory(&treeSpritePSO, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+
+	treeSpritePSO.InputLayout = { TreeSpriteInputLayout.data(), static_cast<UINT>(TreeSpriteInputLayout.size()) };
+	treeSpritePSO.pRootSignature = RootSignature.Get();
+
+	auto vsShader = GetEngine()->GetShader(SShaderTypes::VSTreeSprite);
+	auto psShader = GetEngine()->GetShader(SShaderTypes::PSTreeSprite);
+	auto gsShader = GetEngine()->GetShader(SShaderTypes::GSTreeSprite);
+
+	treeSpritePSO.VS = { reinterpret_cast<BYTE*>(vsShader->GetBufferPointer()), vsShader->GetBufferSize() };
+	treeSpritePSO.PS = { reinterpret_cast<BYTE*>(psShader->GetBufferPointer()), psShader->GetBufferSize() };
+	treeSpritePSO.GS = { reinterpret_cast<BYTE*>(gsShader->GetBufferPointer()), gsShader->GetBufferSize() };
+
+	treeSpritePSO.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	treeSpritePSO.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	treeSpritePSO.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	treeSpritePSO.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	treeSpritePSO.SampleMask = UINT_MAX;
+	treeSpritePSO.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+	treeSpritePSO.NumRenderTargets = 1;
+	treeSpritePSO.RTVFormats[0] = SRenderConstants::BackBufferFormat;
+	treeSpritePSO.SampleDesc.Count = state ? 4 : 1;
+	treeSpritePSO.SampleDesc.Quality = state ? (quality - 1) : 0;
+	treeSpritePSO.DSVFormat = SRenderConstants::DepthBufferFormat;
+	GetEngine()->CreatePSO(SPSOType::TreeSprites, treeSpritePSO);
+}
+
+void OTextureWaves::BuildPSOGeosphere()
+{
+
+}
+
 void OTextureWaves::BuildMaterials()
 {
-	auto grass = make_unique<SMaterial>();
-	grass->Name = "Grass";
-	grass->MaterialCBIndex = 0;
-	grass->DiffuseSRVHeapIndex = 0;
-	grass->MaterialConsatnts.DiffuseAlbedo = XMFLOAT4(0.2f, 0.6f, 0.2f, 1.0f);
-	grass->MaterialConsatnts.FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
-	grass->MaterialConsatnts.Roughness = 0.125f;
-
-	auto water = make_unique<SMaterial>();
-	water->Name = "Water";
-	water->MaterialCBIndex = 1;
-	water->DiffuseSRVHeapIndex = 1;
-	water->MaterialConsatnts.DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f);
-	water->MaterialConsatnts.FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
-	water->MaterialConsatnts.Roughness = 0.0f;
-
-	auto fence = make_unique<SMaterial>();
-	fence->Name = "WireFence";
-	fence->MaterialCBIndex = 2;
-	fence->DiffuseSRVHeapIndex = 2;
-	fence->MaterialConsatnts.DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	fence->MaterialConsatnts.FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
-	fence->MaterialConsatnts.Roughness = 0.25f;
-
-	auto fireball = make_unique<SMaterial>();
-	fireball->Name = "FireBall";
-	fireball->MaterialCBIndex = 3;
-	fireball->DiffuseSRVHeapIndex = 3;
-	fireball->MaterialConsatnts.DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f);
-	fireball->MaterialConsatnts.FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
-	fireball->MaterialConsatnts.Roughness = 0.25f;
-
-	GetEngine()->AddMaterial(fence->Name, fence);
-	GetEngine()->AddMaterial(grass->Name, grass);
-	GetEngine()->AddMaterial(water->Name, water);
-	GetEngine()->AddMaterial(fireball->Name, fireball);
+	GetEngine()->CreateMaterial("Grass", 0, 0, { XMFLOAT4(0.2f, 0.6f, 0.2f, 1.0f), XMFLOAT3(0.01f, 0.01f, 0.01f), 0.125f });
+	GetEngine()->CreateMaterial("Water", 1, 1, { XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.0f });
+	GetEngine()->CreateMaterial("WireFence", 2, 2, { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.25f });
+	GetEngine()->CreateMaterial("FireBall", 3, 3, { XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.25f });
+	GetEngine()->CreateMaterial("TreeSprite", 4, 4, { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.125f });
 }
 
 void OTextureWaves::UpdateMaterialCB()
@@ -543,10 +625,20 @@ void OTextureWaves::BuildShadersAndInputLayout()
 	GetEngine()->BuildPSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::PSOpaque, fogDefines);
 	GetEngine()->BuildPSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::PSAlphaTested, alphaTestDefines);
 
+	GetEngine()->BuildVSShader(L"Shaders/TreeSprite.hlsl", SShaderTypes::VSTreeSprite);
+	GetEngine()->BuildGSShader(L"Shaders/TreeSprite.hlsl", SShaderTypes::GSTreeSprite);
+	GetEngine()->BuildPSShader(L"Shaders/TreeSprite.hlsl", SShaderTypes::PSTreeSprite, alphaTestDefines);
+
 	InputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
+
+	TreeSpriteInputLayout =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "SIZE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 	};
 }
 
@@ -728,7 +820,7 @@ void OTextureWaves::BuildDescriptorHeap()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 4;
+	srvHeapDesc.NumDescriptors = 5;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	THROW_IF_FAILED(device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&SRVHeap)));
@@ -742,6 +834,7 @@ void OTextureWaves::BuildDescriptorHeap()
 	auto waterTex = GetEngine()->FindTexture("Water")->Resource;
 	auto fenceTex = GetEngine()->FindTexture("Fence")->Resource;
 	auto fireballTex = GetEngine()->FindTexture("FireBall")->Resource;
+	auto treeArray = GetEngine()->FindTexture("TreeArray")->Resource;
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -767,6 +860,16 @@ void OTextureWaves::BuildDescriptorHeap()
 
 	srvDesc.Format = fireballTex->GetDesc().Format;
 	device->CreateShaderResourceView(fireballTex.Get(), &srvDesc, hDescriptor);
+
+	hDescriptor.Offset(1, GetEngine()->CBVSRVUAVDescriptorSize);
+
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+	srvDesc.Format = treeArray->GetDesc().Format;
+	srvDesc.Texture2DArray.MostDetailedMip = 0;
+	srvDesc.Texture2DArray.MipLevels = -1;
+	srvDesc.Texture2DArray.ArraySize = treeArray->GetDesc().DepthOrArraySize;
+	srvDesc.Texture2DArray.FirstArraySlice = 0;
+	GetEngine()->GetDevice()->CreateShaderResourceView(treeArray.Get(), &srvDesc, hDescriptor);
 }
 
 
@@ -811,6 +914,17 @@ void OTextureWaves::BuildRenderItems()
 	boxRenderItem->BaseVertexLocation = boxRenderItem->Geometry->FindSubmeshGeomentry("Box").BaseVertexLocation;
 
 	GetEngine()->AddRenderItem(SRenderLayer::AlphaTested, std::move(boxRenderItem));
+
+	auto treeRenderItem = make_unique<SRenderItem>();
+	treeRenderItem->World = Utils::Math::Identity4x4();
+	treeRenderItem->ObjectCBIndex = 3;
+	treeRenderItem->Geometry = GetEngine()->FindSceneGeometry("TreeSprites");
+	treeRenderItem->Material = GetEngine()->FindMaterial("TreeSprite");
+	treeRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_POINTLIST;
+	treeRenderItem->IndexCount = treeRenderItem->Geometry->FindSubmeshGeomentry("Points").IndexCount;
+	treeRenderItem->StartIndexLocation = treeRenderItem->Geometry->FindSubmeshGeomentry("Points").StartIndexLocation;
+	treeRenderItem->BaseVertexLocation = treeRenderItem->Geometry->FindSubmeshGeomentry("Points").BaseVertexLocation;
+	GetEngine()->AddRenderItem(SRenderLayer::AlphaTestedTreeSprites, std::move(treeRenderItem));
 }
 
 float OTextureWaves::GetHillsHeight(float X, float Z) const

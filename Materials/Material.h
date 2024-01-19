@@ -1,10 +1,7 @@
 #pragma once
 
+#include "MaterialConstants.h"
 #include "RenderConstants.h"
-#include "..\Utils\DirectX.h"
-#include "..\Utils\Math.h"
-
-#include <Types.h>
 
 struct SMaterial
 {

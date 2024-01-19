@@ -20,10 +20,10 @@ class OStencilingTest : public OTest
 
 	struct
 	{
-		static constexpr string BricksTexture = "BricksTexture";
-		static constexpr string CheckboardTexture = "CheckboardTexture";
-		static constexpr string IceTexture = "IceTexture";
-		static constexpr string White1x1Texture = "White1x1Texture";
+		const string BricksTexture = "BricksTexture";
+		const string CheckboardTexture = "CheckboardTexture";
+		const string IceTexture = "IceTexture";
+		const string White1x1Texture = "White1x1Texture";
 	};
 
 public:

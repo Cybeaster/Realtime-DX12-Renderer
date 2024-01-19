@@ -19,6 +19,7 @@ struct SRenderLayer
 	inline static const string Shadow = "Shadow";
 	inline static const string Reflected = "Reflected";
 	inline static const string Mirror = "Mirror";
+	inline static const string AlphaTestedTreeSprites = "AlphaTestedTreeSprites";
 };
 
 struct SPSOType
@@ -30,12 +31,18 @@ struct SPSOType
 	inline static const string Debug = "Debug";
 	inline static const string StencilReflection = "Reflected";
 	inline static const string StencilMirrors = "Mirror";
+	inline static const string TreeSprites = "TreeSprites";
 };
 
 struct SShaderTypes
 {
 	inline static const string VSBaseShader = "VSBaseShader";
+
 	inline static const string PSAlphaTested = "PSAlphaTested";
 	inline static const string PSOpaque = "PSOpaque";
 	inline static const string PSBaseShader = "PSBaseShader";
+
+	inline static const string VSTreeSprite = "VSTreeSprite";
+	inline static const string GSTreeSprite = "GSTreeSprite";
+	inline static const string PSTreeSprite = "PSTreeSprite";
 };
