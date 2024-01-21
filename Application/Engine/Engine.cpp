@@ -1,12 +1,12 @@
 
 #include "Engine.h"
 
+#include "../../Objects/Geometry/Wave/Waves.h"
 #include "../Application.h"
 #include "../Test/Test.h"
 #include "../Window/Window.h"
 #include "Exception.h"
 #include "Logger.h"
-#include "../../Objects/Geometry/Wave/Waves.h"
 #include "Textures/DDSTextureLoader/DDSTextureLoader.h"
 
 #include <DirectXMath.h>
@@ -65,8 +65,16 @@ bool OEngine::Initialize()
 
 	bIsTearingSupported = CheckTearingSupport();
 	CreateWindow();
-
+	PostInitialize();
 	return true;
+}
+
+void OEngine::PostInitialize()
+{
+	BuildDefaultRootSignature();
+	BuildPostProcessRootSignature();
+	BuildPSOs();
+	BuildBlurPSO();
 }
 
 shared_ptr<OWindow> OEngine::GetWindow() const
@@ -126,23 +134,123 @@ void OEngine::BuildFrameResource(uint32_t PassCount)
 	for (int i = 0; i < SRenderConstants::NumFrameResources; ++i)
 	{
 		FrameResources.push_back(make_unique<SFrameResource>(
-			Device.Get(),
-			PassCount,
-			AllRenderItems.size(),
-			Waves->GetVertexCount(),
-			Materials.size()));
+		    Device.Get(),
+		    PassCount,
+		    AllRenderItems.size(),
+		    Waves->GetVertexCount(),
+		    Materials.size()));
 	}
 }
 
-void OEngine::OnRender(const UpdateEventArgs& Args) const
+void OEngine::OnPreRender()
+{
+	const auto allocator = GetCommandQueue()->GetCommandAllocator();
+	const auto commandList = GetCommandQueue()->GetCommandList();
+
+	// Reuse the memory associated with command recording.
+	// We can only reset when the associated command lists have finished execution on the GPU.
+	THROW_IF_FAILED(allocator->Reset());
+
+	// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
+	// Reusing the command list reuses memory.
+	THROW_IF_FAILED(commandList->Reset(allocator.Get(), GetPSO(SPSOType::Opaque).Get()));
+
+	const auto window = GetWindow();
+	commandList->RSSetViewports(1, &window->Viewport);
+	commandList->RSSetScissorRects(1, &window->ScissorRect);
+
+	const auto currentBackBuffer = window->GetCurrentBackBuffer().Get();
+	const auto dsv = window->GetDepthStensilView();
+	const auto rtv = window->CurrentBackBufferView();
+
+	Utils::ResourceBarrier(commandList.Get(), currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+	// Clear the back buffer and depth buffer.
+	commandList->ClearRenderTargetView(rtv, reinterpret_cast<float*>(&MainPassCB.FogColor), 0, nullptr);
+	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+	// Specify the buffers we are going to render to.
+	commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
+
+	ID3D12DescriptorHeap* heaps[] = { SRVHeap.Get() };
+	commandList->SetDescriptorHeaps(_countof(heaps), heaps);
+
+	commandList->SetGraphicsRootSignature(DefaultRootSignature.Get());
+}
+
+void OEngine::Draw(const UpdateEventArgs& Args)
 {
 	LOG(Log, "Engine::OnRender")
 
+	OnUpdate(Args);
 	for (const auto val : Tests | std::views::values)
 	{
 		val->OnUpdate(Args);
+	}
+
+	OnPreRender();
+	for (const auto val : Tests | std::views::values)
+	{
 		val->OnRender(Args);
 	}
+	OnPostRender();
+}
+
+void OEngine::OnUpdate(const UpdateEventArgs& Args)
+{
+	UpdateMainPass(Args.Timer);
+}
+
+void OEngine::OnPostRender()
+{
+	PostProcess(Window->GetHWND());
+
+	const auto commandList = GetCommandQueue()->GetCommandList();
+
+	// Done recording commands.
+	THROW_IF_FAILED(commandList->Close());
+
+	// Add the command list to the queue for execution.
+	ID3D12CommandList* cmdsLists[] = { commandList.Get() };
+	GetCommandQueue()->GetCommandQueue()->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+
+	THROW_IF_FAILED(Window->GetSwapChain()->Present(0, 0));
+	Window->MoveToNextFrame();
+
+	// Add an instruction to the command queue to set a new fence point.
+	// Because we are on the GPU timeline, the new fence point won’t be
+	// set until the GPU finishes processing all the commands prior to
+	// this Signal().
+	CurrentFrameResources->Fence = GetCommandQueue()->Signal();
+
+	// Wait until frame commands are complete.  This waiting is inefficient and is
+	// done for simplicity.  Later we will show how to organize our rendering code
+	// so we do not have to wait per frame.
+	FlushGPU();
+}
+
+void OEngine::PostProcess(HWND Handler)
+{
+	const auto commandList = GetCommandQueue()->GetCommandList();
+	const auto backBuffer = GetWindowByHWND(Handler)->GetCurrentBackBuffer().Get();
+	BlurFilter->Execute(commandList.Get(),
+	                    PostProcessRootSignature.Get(),
+	                    PSOs[SPSOType::HorizontalBlur].Get(),
+	                    PSOs[SPSOType::VerticalBlur].Get(),
+	                    backBuffer,
+	                    4);
+
+	Utils::ResourceBarrier(commandList.Get(),
+	                       backBuffer,
+	                       D3D12_RESOURCE_STATE_COPY_SOURCE,
+	                       D3D12_RESOURCE_STATE_COPY_DEST);
+
+	commandList->CopyResource(backBuffer, BlurFilter->Output());
+
+	Utils::ResourceBarrier(commandList.Get(),
+	                       backBuffer,
+	                       D3D12_RESOURCE_STATE_COPY_DEST,
+	                       D3D12_RESOURCE_STATE_PRESENT);
 }
 
 void OEngine::DestroyWindow()
@@ -270,9 +378,9 @@ void OEngine::CheckMSAAQualitySupport()
 	msQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
 	msQualityLevels.NumQualityLevels = 0;
 	THROW_IF_FAILED(Device->CheckFeatureSupport(
-		D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS,
-		&msQualityLevels,
-		sizeof(msQualityLevels)));
+	    D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS,
+	    &msQualityLevels,
+	    sizeof(msQualityLevels)));
 
 	Msaa4xQuality = msQualityLevels.NumQualityLevels;
 	assert(Msaa4xQuality > 0 && "Unexpected MSAA quality level.");
@@ -284,27 +392,7 @@ bool OEngine::GetMSAAState(UINT& Quality) const
 	return Msaa4xState;
 }
 
-vector<SRenderItem*>& OEngine::GetOpaqueRenderItems()
-{
-	return RenderItems[SRenderLayer::Opaque];
-}
-
-vector<SRenderItem*>& OEngine::GetAlphaTestedRenderItems()
-{
-	return RenderItems[SRenderLayer::AlphaTested];
-}
-
-vector<SRenderItem*>& OEngine::GetMirrorsRenderItems()
-{
-	return RenderItems[SRenderLayer::Mirror];
-}
-
-vector<SRenderItem*>& OEngine::GetReflectedRenderItems()
-{
-	return RenderItems[SRenderLayer::Reflected];
-}
-
-void OEngine::BuildPSOs(ComPtr<ID3D12RootSignature> RootSignature, const vector<D3D12_INPUT_ELEMENT_DESC>& InputLayout)
+void OEngine::BuildPSOs()
 {
 	UINT quality = 0;
 	bool msaaEnable = GetMSAAState(quality);
@@ -439,6 +527,33 @@ void OEngine::BuildPSOs(ComPtr<ID3D12RootSignature> RootSignature, const vector<
 	CreatePSO(SPSOType::Shadow, shadowPsoDesc);
 }
 
+void OEngine::BuildBlurPSO()
+{
+	D3D12_COMPUTE_PIPELINE_STATE_DESC horizontalBlurPSO = {};
+	horizontalBlurPSO.pRootSignature = PostProcessRootSignature.Get();
+	horizontalBlurPSO.CS = {
+		reinterpret_cast<BYTE*>(GetShader(SShaderTypes::CSHorizontalBlur)->GetBufferPointer()),
+		GetShader(SShaderTypes::CSHorizontalBlur)->GetBufferSize()
+	};
+	horizontalBlurPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+
+	CreatePSO(SPSOType::HorizontalBlur, horizontalBlurPSO);
+
+	D3D12_COMPUTE_PIPELINE_STATE_DESC verticalBlurPSO = {};
+	verticalBlurPSO.pRootSignature = PostProcessRootSignature.Get();
+	verticalBlurPSO.CS = {
+		reinterpret_cast<BYTE*>(GetShader(SShaderTypes::CSVerticalBlur)->GetBufferPointer()),
+		GetShader(SShaderTypes::CSVerticalBlur)->GetBufferSize()
+	};
+	verticalBlurPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	CreatePSO(SPSOType::VerticalBlur, verticalBlurPSO);
+}
+
+void OEngine::BuildShadersAndInputLayouts()
+{
+
+}
+
 D3D12_RENDER_TARGET_BLEND_DESC OEngine::GetTransparentBlendState()
 {
 	D3D12_RENDER_TARGET_BLEND_DESC transparencyBlendDesc;
@@ -453,17 +568,6 @@ D3D12_RENDER_TARGET_BLEND_DESC OEngine::GetTransparentBlendState()
 	transparencyBlendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
 	transparencyBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 	return transparencyBlendDesc;
-}
-
-
-vector<SRenderItem*>& OEngine::GetTransparentRenderItems()
-{
-	return RenderItems[SRenderLayer::Transparent];
-}
-
-vector<SRenderItem*>& OEngine::GetShadowRenderItems()
-{
-	return RenderItems[SRenderLayer::Shadow];
 }
 
 vector<SRenderItem*>& OEngine::GetRenderItems(const string& Type)
@@ -523,10 +627,10 @@ STexture* OEngine::CreateTexture(string Name, wstring FileName)
 	texture->FileName = FileName;
 
 	THROW_IF_FAILED(DirectX::CreateDDSTextureFromFile12(GetDevice().Get(),
-		GetCommandQueue()->GetCommandList().Get(),
-		texture->FileName.c_str(),
-		texture->Resource,
-		texture->UploadHeap));
+	                                                    GetCommandQueue()->GetCommandList().Get(),
+	                                                    texture->FileName.c_str(),
+	                                                    texture->Resource,
+	                                                    texture->UploadHeap));
 	Textures[Name] = move(texture);
 	return Textures[Name].get();
 }
@@ -694,6 +798,87 @@ ComPtr<ID3D12Device2> OEngine::CreateDevice(Microsoft::WRL::ComPtr<IDXGIAdapter4
 	return d3d12Device2;
 }
 
+void OEngine::BuildPostProcessRootSignature() const
+{
+	CD3DX12_DESCRIPTOR_RANGE srvTable;
+	srvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE uavTable;
+	uavTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
+
+	//Order from most frequent to least frequent.
+	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
+	slotRootParameter[0].InitAsConstants(12, 0);
+	slotRootParameter[1].InitAsDescriptorTable(1, &srvTable);
+	slotRootParameter[2].InitAsDescriptorTable(1, &uavTable);
+
+	const CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3,
+	                                              slotRootParameter,
+	                                              0,
+	                                              nullptr,
+	                                              D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	Utils::BuildRootSignature(Device.Get(), PostProcessRootSignature, rootSigDesc);
+}
+
+void OEngine::BuildDefaultRootSignature() const
+{
+	CD3DX12_DESCRIPTOR_RANGE texTable;
+	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+	constexpr auto size = 4;
+	CD3DX12_ROOT_PARAMETER slotRootParameter[size];
+
+	slotRootParameter[0].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[1].InitAsConstantBufferView(0);
+	slotRootParameter[2].InitAsConstantBufferView(1);
+	slotRootParameter[3].InitAsConstantBufferView(2);
+
+	const auto staticSamples = Utils::GetStaticSamplers();
+	const CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(size, slotRootParameter, staticSamples.size(), staticSamples.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	Utils::BuildRootSignature(Device.Get(), DefaultRootSignature, rootSigDesc);
+}
+
+void OEngine::UpdateMainPass(const STimer& Timer)
+{
+	const XMMATRIX view = XMLoadFloat4x4(&Window->ViewMatrix);
+	const XMMATRIX proj = XMLoadFloat4x4(&Window->ProjectionMatrix);
+	const XMMATRIX viewProj = XMMatrixMultiply(view, proj);
+
+	auto viewDet = XMMatrixDeterminant(view);
+	auto projDet = XMMatrixDeterminant(proj);
+	auto viewProjDet = XMMatrixDeterminant(viewProj);
+
+	const XMMATRIX invView = XMMatrixInverse(&viewDet, view);
+	const XMMATRIX invProj = XMMatrixInverse(&projDet, proj);
+	const XMMATRIX invViewProj = XMMatrixInverse(&viewProjDet, viewProj);
+
+	XMStoreFloat4x4(&MainPassCB.View, XMMatrixTranspose(view));
+	XMStoreFloat4x4(&MainPassCB.InvView, XMMatrixTranspose(invView));
+	XMStoreFloat4x4(&MainPassCB.Proj, XMMatrixTranspose(proj));
+	XMStoreFloat4x4(&MainPassCB.InvProj, XMMatrixTranspose(invProj));
+	XMStoreFloat4x4(&MainPassCB.ViewProj, XMMatrixTranspose(viewProj));
+	XMStoreFloat4x4(&MainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
+	MainPassCB.EyePosW = Window->EyePos;
+	MainPassCB.RenderTargetSize = XMFLOAT2(static_cast<float>(Window->GetWidth()), static_cast<float>(Window->GetHeight()));
+	MainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / Window->GetWidth(), 1.0f / Window->GetHeight());
+	MainPassCB.NearZ = 1.0f;
+	MainPassCB.FarZ = 1000.0f;
+	MainPassCB.TotalTime = Timer.GetTime();
+	MainPassCB.DeltaTime = Timer.GetDeltaTime();
+	MainPassCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
+	MainPassCB.Lights[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
+	MainPassCB.Lights[0].Strength = { 0.9f, 0.9f, 0.9f };
+	MainPassCB.Lights[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
+	MainPassCB.Lights[1].Strength = { 0.5f, 0.5f, 0.5f };
+	MainPassCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
+	MainPassCB.Lights[2].Strength = { 0.2f, 0.2f, 0.2f };
+
+	const auto currPassCB = CurrentFrameResources->PassCB.get();
+	currPassCB->CopyData(0, MainPassCB);
+}
+
 std::unordered_map<string, unique_ptr<SMeshGeometry>>& OEngine::GetSceneGeometry()
 {
 	return SceneGeometry;
@@ -740,7 +925,6 @@ void OEngine::BuildGSShader(const wstring& ShaderPath, const string& ShaderName,
 	Shaders[ShaderName] = Utils::CompileShader(ShaderPath, Defines, "GS", "gs_5_1");
 }
 
-
 ComPtr<ID3DBlob> OEngine::GetShader(const string& ShaderName)
 {
 	if (!Shaders.contains(ShaderName))
@@ -764,8 +948,29 @@ OWaves* OEngine::GetWaves() const
 	return Waves.get();
 }
 
+void OEngine::SetFog(XMFLOAT4 Color, float Start, float Range)
+{
+	MainPassCB.FogColor = Color;
+	MainPassCB.FogStart = Start;
+	MainPassCB.FogRange = Range;
+}
+
+SPassConstants& OEngine::GetMainPassCB()
+{
+	return MainPassCB;
+}
+
+ComPtr<ID3D12DescriptorHeap> OEngine::GetSRVHeap() const
+{
+	return SRVHeap;
+}
+
 void OEngine::CreatePSO(const string& PSOName, const D3D12_GRAPHICS_PIPELINE_STATE_DESC& PSODesc)
 {
 	THROW_IF_FAILED(Device->CreateGraphicsPipelineState(&PSODesc, IID_PPV_ARGS(&PSOs[PSOName])));
 }
 
+void OEngine::CreatePSO(const string& PSOName, const D3D12_COMPUTE_PIPELINE_STATE_DESC& PSODesc)
+{
+	THROW_IF_FAILED(Device->CreateComputePipelineState(&PSODesc, IID_PPV_ARGS(&PSOs[PSOName])));
+}

@@ -54,8 +54,6 @@ private:
 
 	void UpdateMaterialCB();
 
-	void BuildRootSignature();
-
 	void BuildShadersAndInputLayout();
 
 	void BuildLandGeometry();

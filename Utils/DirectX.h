@@ -1,9 +1,9 @@
 #pragma once
 #include <DXHelper.h>
 #include <Windows.h>
-#include <array>
 #include <d3dx12.h>
 
+#include <array>
 #include <fstream>
 
 namespace Utils
@@ -53,11 +53,11 @@ inline ComPtr<ID3DBlob> LoadBinary(const wstring& FileName)
 }
 
 inline Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(
-	ID3D12Device* Device,
-	ID3D12GraphicsCommandList* CommandList,
-	const void* InitData,
-	UINT64 ByteSize,
-	ComPtr<ID3D12Resource>& UploadBuffer)
+    ID3D12Device* Device,
+    ID3D12GraphicsCommandList* CommandList,
+    const void* InitData,
+    UINT64 ByteSize,
+    ComPtr<ID3D12Resource>& UploadBuffer)
 {
 	ComPtr<ID3D12Resource> defaultBuffer;
 
@@ -65,22 +65,22 @@ inline Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(
 	const auto buffer = CD3DX12_RESOURCE_DESC::Buffer(ByteSize);
 	// Create the actual default buffer resource.
 	THROW_IF_FAILED(Device->CreateCommittedResource(&property,
-		D3D12_HEAP_FLAG_NONE,
-		&buffer,
-		D3D12_RESOURCE_STATE_COMMON,
-		nullptr,
-		IID_PPV_ARGS(defaultBuffer.GetAddressOf())));
+	                                                D3D12_HEAP_FLAG_NONE,
+	                                                &buffer,
+	                                                D3D12_RESOURCE_STATE_COMMON,
+	                                                nullptr,
+	                                                IID_PPV_ARGS(defaultBuffer.GetAddressOf())));
 
 	const auto uploadProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 	// In order to copy CPU memory data into our default buffer, we need to create
 	// an intermediate upload heap.
 	THROW_IF_FAILED(Device->CreateCommittedResource(
-		&uploadProperty,
-		D3D12_HEAP_FLAG_NONE,
-		&buffer,
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,
-		IID_PPV_ARGS(UploadBuffer.GetAddressOf())));
+	    &uploadProperty,
+	    D3D12_HEAP_FLAG_NONE,
+	    &buffer,
+	    D3D12_RESOURCE_STATE_GENERIC_READ,
+	    nullptr,
+	    IID_PPV_ARGS(UploadBuffer.GetAddressOf())));
 
 	D3D12_SUBRESOURCE_DATA subResourceData = {};
 	subResourceData.pData = InitData;
@@ -88,14 +88,14 @@ inline Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(
 	subResourceData.SlicePitch = subResourceData.RowPitch;
 
 	auto commonCpyTransition = CD3DX12_RESOURCE_BARRIER::Transition(
-		defaultBuffer.Get(),
-		D3D12_RESOURCE_STATE_COMMON,
-		D3D12_RESOURCE_STATE_COPY_DEST);
+	    defaultBuffer.Get(),
+	    D3D12_RESOURCE_STATE_COMMON,
+	    D3D12_RESOURCE_STATE_COPY_DEST);
 
 	auto cpyDestGenericReadTransition = CD3DX12_RESOURCE_BARRIER::Transition(
-		defaultBuffer.Get(),
-		D3D12_RESOURCE_STATE_COPY_DEST,
-		D3D12_RESOURCE_STATE_GENERIC_READ);
+	    defaultBuffer.Get(),
+	    D3D12_RESOURCE_STATE_COPY_DEST,
+	    D3D12_RESOURCE_STATE_GENERIC_READ);
 	// Schedule to copy the data to the default buffer resource.  At a high level, the helper function UpdateSubresources
 	// will copy the CPU memory into the intermediate upload heap.  Then, using ID3D12CommandList::CopySubresourceRegion,
 	// the intermediate upload heap data will be copied to mBuffer.
@@ -118,55 +118,82 @@ inline array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers()
 	// and keep them available as part of the root signature.
 
 	const CD3DX12_STATIC_SAMPLER_DESC pointWrap(
-		0, // shaderRegister
-		D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP); // addressW
+	    0, // shaderRegister
+	    D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
+	    D3D12_TEXTURE_ADDRESS_MODE_WRAP, // addressU
+	    D3D12_TEXTURE_ADDRESS_MODE_WRAP, // addressV
+	    D3D12_TEXTURE_ADDRESS_MODE_WRAP); // addressW
 
 	const CD3DX12_STATIC_SAMPLER_DESC pointClamp(
-		1, // shaderRegister
-		D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
-		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
-		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
-		D3D12_TEXTURE_ADDRESS_MODE_CLAMP); // addressW
+	    1, // shaderRegister
+	    D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
+	    D3D12_TEXTURE_ADDRESS_MODE_CLAMP, // addressU
+	    D3D12_TEXTURE_ADDRESS_MODE_CLAMP, // addressV
+	    D3D12_TEXTURE_ADDRESS_MODE_CLAMP); // addressW
 
 	const CD3DX12_STATIC_SAMPLER_DESC linearWrap(
-		2, // shaderRegister
-		D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP); // addressW
+	    2, // shaderRegister
+	    D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
+	    D3D12_TEXTURE_ADDRESS_MODE_WRAP, // addressU
+	    D3D12_TEXTURE_ADDRESS_MODE_WRAP, // addressV
+	    D3D12_TEXTURE_ADDRESS_MODE_WRAP); // addressW
 
 	const CD3DX12_STATIC_SAMPLER_DESC linearClamp(
-		3, // shaderRegister
-		D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
-		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
-		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
-		D3D12_TEXTURE_ADDRESS_MODE_CLAMP); // addressW
+	    3, // shaderRegister
+	    D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
+	    D3D12_TEXTURE_ADDRESS_MODE_CLAMP, // addressU
+	    D3D12_TEXTURE_ADDRESS_MODE_CLAMP, // addressV
+	    D3D12_TEXTURE_ADDRESS_MODE_CLAMP); // addressW
 
 	const CD3DX12_STATIC_SAMPLER_DESC anisotropicWrap(
-		4, // shaderRegister
-		D3D12_FILTER_ANISOTROPIC, // filter
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressW
-		0.0f,                             // mipLODBias
-		8);                               // maxAnisotropy
+	    4, // shaderRegister
+	    D3D12_FILTER_ANISOTROPIC, // filter
+	    D3D12_TEXTURE_ADDRESS_MODE_WRAP, // addressU
+	    D3D12_TEXTURE_ADDRESS_MODE_WRAP, // addressV
+	    D3D12_TEXTURE_ADDRESS_MODE_WRAP, // addressW
+	    0.0f, // mipLODBias
+	    8); // maxAnisotropy
 
 	const CD3DX12_STATIC_SAMPLER_DESC anisotropicClamp(
-		5, // shaderRegister
-		D3D12_FILTER_ANISOTROPIC, // filter
-		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
-		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
-		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressW
-		0.0f,                              // mipLODBias
-		8);                                // maxAnisotropy
+	    5, // shaderRegister
+	    D3D12_FILTER_ANISOTROPIC, // filter
+	    D3D12_TEXTURE_ADDRESS_MODE_CLAMP, // addressU
+	    D3D12_TEXTURE_ADDRESS_MODE_CLAMP, // addressV
+	    D3D12_TEXTURE_ADDRESS_MODE_CLAMP, // addressW
+	    0.0f, // mipLODBias
+	    8); // maxAnisotropy
 
 	return {
-		pointWrap, pointClamp,
-		linearWrap, linearClamp,
-		anisotropicWrap, anisotropicClamp };
+		pointWrap, pointClamp, linearWrap, linearClamp, anisotropicWrap, anisotropicClamp
+	};
 	//clang-format on
+}
+
+inline void ResourceBarrier(ID3D12GraphicsCommandList* CMDList, ID3D12Resource* Resource, D3D12_RESOURCE_STATES Before, D3D12_RESOURCE_STATES After)
+{
+	const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(Resource, Before, After);
+	CMDList->ResourceBarrier(1, &barrier);
+}
+
+inline void BuildRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature> RootSignature, const D3D12_ROOT_SIGNATURE_DESC& Desc)
+{
+	// Create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
+	ComPtr<ID3DBlob> serializedRootSig = nullptr;
+	ComPtr<ID3DBlob> errorBlob = nullptr;
+
+	HRESULT hr = D3D12SerializeRootSignature(&Desc,
+	                                         D3D_ROOT_SIGNATURE_VERSION_1,
+	                                         serializedRootSig.GetAddressOf(),
+	                                         errorBlob.GetAddressOf());
+
+	if (errorBlob != nullptr)
+	{
+		::OutputDebugStringA(static_cast<char*>(errorBlob->GetBufferPointer()));
+	}
+	THROW_IF_FAILED(hr);
+	THROW_IF_FAILED(Device->CreateRootSignature(0,
+	                                            serializedRootSig->GetBufferPointer(),
+	                                            serializedRootSig->GetBufferSize(),
+	                                            IID_PPV_ARGS(&RootSignature)));
 }
 } // namespace Utils

@@ -1,4 +1,5 @@
 #pragma once
+#include "../../Utils/Math.h"
 #include "../InputHandler/InputHandler.h"
 #include "Events.h"
 
@@ -95,18 +96,20 @@ public:
 	D3D12_RECT ScissorRect;
 	uint64_t FenceValues[BuffersCount];
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> DepthBuffer;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DSVDescriptorHeap;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> RTVDescriptorHeap;
-	void MoveToNextFrame();
-	const Microsoft::WRL::ComPtr<IDXGISwapChain4>& GetSwapChain();
+	ComPtr<ID3D12Resource> DepthBuffer;
+	ComPtr<ID3D12DescriptorHeap> DSVDescriptorHeap;
+	ComPtr<ID3D12DescriptorHeap> RTVDescriptorHeap;
 
-	void TransitionResource(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> CommandList, Microsoft::WRL::ComPtr<ID3D12Resource> Resource, D3D12_RESOURCE_STATES BeforeState, D3D12_RESOURCE_STATES AfterState);
-	void ClearRTV(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> CommandList, D3D12_CPU_DESCRIPTOR_HANDLE RTV, FLOAT* ClearColor);
-	void ClearDepth(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> CommandList, D3D12_CPU_DESCRIPTOR_HANDLE DSV, FLOAT Depth = 1.0f);
+	void MoveToNextFrame();
+	const ComPtr<IDXGISwapChain4>& GetSwapChain();
+
+	void TransitionResource(ComPtr<ID3D12GraphicsCommandList> CommandList, Microsoft::WRL::ComPtr<ID3D12Resource> Resource, D3D12_RESOURCE_STATES BeforeState, D3D12_RESOURCE_STATES AfterState);
+	void ClearRTV(ComPtr<ID3D12GraphicsCommandList> CommandList, D3D12_CPU_DESCRIPTOR_HANDLE RTV, FLOAT* ClearColor);
+	void ClearDepth(ComPtr<ID3D12GraphicsCommandList> CommandList, D3D12_CPU_DESCRIPTOR_HANDLE DSV, FLOAT Depth = 1.0f);
 
 	// Update and Draw can only be called by the application.
 	virtual void OnRender(const UpdateEventArgs& Event);
+	virtual void OnUpdate(const UpdateEventArgs& Event);
 
 	// A keyboard key was pressed
 	virtual void OnKeyPressed(KeyEventArgs& Event);
@@ -128,6 +131,10 @@ public:
 	float GetLastXMousePos() const;
 	float GetLastYMousePos() const;
 	shared_ptr<OCamera> GetCamera();
+
+	DirectX::XMFLOAT3 EyePos = { 0, 0, 0 };
+	DirectX::XMFLOAT4X4 ViewMatrix = Utils::Math::Identity4x4();
+	DirectX::XMFLOAT4X4 ProjectionMatrix = Utils::Math::Identity4x4();
 
 protected:
 	// The Window procedure needs to call protected methods of this class.
@@ -154,11 +161,13 @@ private:
 
 	uint64_t FrameCounter = 0;
 
-	Microsoft::WRL::ComPtr<IDXGISwapChain4> SwapChain;
-	Microsoft::WRL::ComPtr<ID3D12Resource> BackBuffers[BuffersCount];
+	ComPtr<IDXGISwapChain4> SwapChain;
+	ComPtr<ID3D12Resource> BackBuffers[BuffersCount];
 
 	SWindowInfo WindowInfo;
 
 	float LastMouseXPos = 0;
 	float LastMouseYPos = 0;
+
+
 };

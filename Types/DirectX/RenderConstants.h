@@ -10,7 +10,6 @@ struct SRenderConstants
 	inline static constexpr uint32_t MaxLights = 16;
 };
 
-
 struct SRenderLayer
 {
 	inline static const string Opaque = "Opaque";
@@ -20,6 +19,7 @@ struct SRenderLayer
 	inline static const string Reflected = "Reflected";
 	inline static const string Mirror = "Mirror";
 	inline static const string AlphaTestedTreeSprites = "AlphaTestedTreeSprites";
+	inline static const string IcosahedronLODs = "IcosahedronLODs";
 };
 
 struct SPSOType
@@ -32,6 +32,10 @@ struct SPSOType
 	inline static const string StencilReflection = "Reflected";
 	inline static const string StencilMirrors = "Mirror";
 	inline static const string TreeSprites = "TreeSprites";
+	inline static const string Icosahedron = "Icosahedron";
+
+	inline static const string HorizontalBlur = "HorizontalBlur";
+	inline static const string VerticalBlur = "VerticalBlur";
 };
 
 struct SShaderTypes
@@ -45,4 +49,11 @@ struct SShaderTypes
 	inline static const string VSTreeSprite = "VSTreeSprite";
 	inline static const string GSTreeSprite = "GSTreeSprite";
 	inline static const string PSTreeSprite = "PSTreeSprite";
+
+	inline static const string GSIcosahedron = "GSIcosahedron";
+	inline static const string PSIcosahedron = "PSIcosahedron";
+	inline static const string VSIcosahedron = "VSIcosahedron";
+
+	inline static const string CSHorizontalBlur = "CSHorizontalBlur";
+	inline static const string CSVerticalBlur = "CSVerticalBlur";
 };

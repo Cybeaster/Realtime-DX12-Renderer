@@ -1,13 +1,13 @@
 #include "TextureWaves.h"
 
+#include "../../../Materials/Material.h"
+#include "../../../Objects/GeomertryGenerator/GeometryGenerator.h"
 #include "../../Engine/Engine.h"
 #include "../../Window/Window.h"
 #include "Application.h"
 #include "Camera/Camera.h"
 #include "RenderConstants.h"
 #include "RenderItem.h"
-#include "../../../Materials/Material.h"
-#include "../../../Objects/GeomertryGenerator/GeometryGenerator.h"
 #include "Textures/DDSTextureLoader/DDSTextureLoader.h"
 
 #include <DXHelper.h>
@@ -23,30 +23,25 @@ using namespace Microsoft::WRL;
 using namespace DirectX;
 
 OTextureWaves::OTextureWaves(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window)
-	: OTest(_Engine, _Window)
+    : OTest(_Engine, _Window)
 {
 }
 
 bool OTextureWaves::Initialize()
 {
-	SetupProjection();
-
 	const auto engine = Engine.lock();
 	assert(engine->GetCommandQueue()->GetCommandQueue());
 	const auto queue = engine->GetCommandQueue();
 	queue->ResetCommandList();
 
-	MainPassCB.FogColor = { 0.7f, 0.7f, 0.7f, 1.0f };
-	MainPassCB.FogStart = 5.0f;
-	MainPassCB.FogRange = 150.0f;
-
+	engine->SetFog({ 0.7f, 0.7f, 0.7f, 1.0f }, 50.0f, 150.0f);
 	engine->CreateWaves(256, 256, 0.5f, 0.01f, 4.0f, 0.2f);
 	CreateTexture();
-	BuildRootSignature();
 	BuildDescriptorHeap();
 	BuildShadersAndInputLayout();
 	BuildLandGeometry();
 	BuildTreeSpriteGeometry();
+	BuildIcosahedronGeometry();
 	BuildWavesGeometryBuffers();
 	BuildBoxGeometryBuffers();
 	BuildMaterials();
@@ -55,6 +50,7 @@ bool OTextureWaves::Initialize()
 	engine->BuildFrameResource();
 	engine->BuildPSOs(RootSignature, InputLayout);
 	BuildPSOTreeSprites();
+	BuildPSOGeosphere();
 	THROW_IF_FAILED(queue->GetCommandList()->Close());
 
 	ID3D12CommandList* cmdsLists[] = { queue->GetCommandList().Get() };
@@ -120,50 +116,7 @@ void OTextureWaves::OnUpdate(const UpdateEventArgs& Event)
 	AnimateMaterials(Event.Timer);
 	UpdateObjectCBs(Event.Timer);
 	UpdateMaterialCB();
-	UpdateMainPass(Event.Timer);
 	UpdateWave(Event.Timer);
-}
-
-void OTextureWaves::UpdateMainPass(const STimer& Timer)
-{
-	auto engine = Engine.lock();
-	auto window = Window.lock();
-
-	XMMATRIX view = XMLoadFloat4x4(&ViewMatrix);
-	XMMATRIX proj = XMLoadFloat4x4(&ProjectionMatrix);
-	XMMATRIX viewProj = XMMatrixMultiply(view, proj);
-
-	auto viewDet = XMMatrixDeterminant(view);
-	auto projDet = XMMatrixDeterminant(proj);
-	auto viewProjDet = XMMatrixDeterminant(viewProj);
-
-	XMMATRIX invView = XMMatrixInverse(&viewDet, view);
-	XMMATRIX invProj = XMMatrixInverse(&projDet, proj);
-	XMMATRIX invViewProj = XMMatrixInverse(&viewProjDet, viewProj);
-
-	XMStoreFloat4x4(&MainPassCB.View, XMMatrixTranspose(view));
-	XMStoreFloat4x4(&MainPassCB.InvView, XMMatrixTranspose(invView));
-	XMStoreFloat4x4(&MainPassCB.Proj, XMMatrixTranspose(proj));
-	XMStoreFloat4x4(&MainPassCB.InvProj, XMMatrixTranspose(invProj));
-	XMStoreFloat4x4(&MainPassCB.ViewProj, XMMatrixTranspose(viewProj));
-	XMStoreFloat4x4(&MainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
-	MainPassCB.EyePosW = EyePos;
-	MainPassCB.RenderTargetSize = XMFLOAT2((float)window->GetWidth(), (float)window->GetHeight());
-	MainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / window->GetWidth(), 1.0f / window->GetHeight());
-	MainPassCB.NearZ = 1.0f;
-	MainPassCB.FarZ = 1000.0f;
-	MainPassCB.TotalTime = Timer.GetTime();
-	MainPassCB.DeltaTime = Timer.GetDeltaTime();
-	MainPassCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
-	MainPassCB.Lights[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
-	MainPassCB.Lights[0].Strength = { 0.9f, 0.9f, 0.9f };
-	MainPassCB.Lights[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
-	MainPassCB.Lights[1].Strength = { 0.5f, 0.5f, 0.5f };
-	MainPassCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
-	MainPassCB.Lights[2].Strength = { 0.2f, 0.2f, 0.2f };
-
-	auto currPassCB = engine->CurrentFrameResources->PassCB.get();
-	currPassCB->CopyData(0, MainPassCB);
 }
 
 void OTextureWaves::UpdateObjectCBs(const STimer& Timer)
@@ -195,10 +148,9 @@ void OTextureWaves::UpdateObjectCBs(const STimer& Timer)
 void OTextureWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList, const vector<SRenderItem*>& RenderItems) const
 {
 	const auto engine = Engine.lock();
-
-	auto matCBByteSize = Utils::CalcBufferByteSize(sizeof(SMaterialConstants));
+	const auto matCBByteSize = Utils::CalcBufferByteSize(sizeof(SMaterialConstants));
 	const auto objectCBByteSize = Utils::CalcBufferByteSize(sizeof(SObjectConstants));
-
+	const auto srv = engine->GetSRVHeap();
 	const auto objectCB = engine->CurrentFrameResources->ObjectCB->GetResource();
 	const auto materialCB = engine->CurrentFrameResources->MaterialCB->GetResource();
 	for (size_t i = 0; i < RenderItems.size(); i++)
@@ -212,7 +164,7 @@ void OTextureWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandLis
 		CommandList->IASetIndexBuffer(&indexView);
 		CommandList->IASetPrimitiveTopology(renderItem->PrimitiveType);
 
-		CD3DX12_GPU_DESCRIPTOR_HANDLE texDef(SRVHeap->GetGPUDescriptorHandleForHeapStart());
+		CD3DX12_GPU_DESCRIPTOR_HANDLE texDef(srv->GetGPUDescriptorHandleForHeapStart());
 		texDef.Offset(renderItem->Material->DiffuseSRVHeapIndex, engine->CBVSRVUAVDescriptorSize);
 
 		// Offset to the CBV in the descriptor heap for this object and
@@ -229,47 +181,31 @@ void OTextureWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandLis
 	}
 }
 
-
 void OTextureWaves::UpdateCamera()
 {
+	auto window = Window.lock();
 	// Convert Spherical to Cartesian coordinates.
-	EyePos.x = Radius * sinf(Phi) * cosf(Theta);
-	EyePos.z = Radius * sinf(Phi) * sinf(Theta);
-	EyePos.y = Radius * cosf(Phi);
+	window->EyePos.x = Radius * sinf(Phi) * cosf(Theta);
+	window->EyePos.z = Radius * sinf(Phi) * sinf(Theta);
+	window->EyePos.y = Radius * cosf(Phi);
 
 	// Build the view matrix.
-	XMVECTOR pos = XMVectorSet(EyePos.x, EyePos.y, EyePos.z, 1.0f);
+	XMVECTOR pos = XMVectorSet(GetWindow()->EyePos.x, window->EyePos.y, window->EyePos.z, 1.0f);
 	XMVECTOR target = XMVectorZero();
 	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
 	XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
-	XMStoreFloat4x4(&ViewMatrix, view);
+	XMStoreFloat4x4(&window->ViewMatrix, view);
 }
 
 void OTextureWaves::OnKeyboardInput(const STimer& Timer)
 {
-	if (GetAsyncKeyState('1') & 0x8000)
-	{
-		MainPassCB.FogColor = { 0.7, 0.7, 0.7, 1.0 };
-	}
-	if (GetAsyncKeyState('2') & 0x8000)
-	{
-		MainPassCB.FogColor = { 1, 0, 0, 1.0 };
-	}
-	if (GetAsyncKeyState('3') & 0x8000)
-	{
-		MainPassCB.FogColor = { 0, 1, 0, 1.0 };
-	}
-	if (GetAsyncKeyState('4') & 0x8000)
-	{
-		MainPassCB.FogColor = { 0.7, 0.7, 0.7, 0.5 };
-	}
 }
 
 void OTextureWaves::OnMouseWheel(const MouseWheelEventArgs& Args)
 {
 	OTest::OnMouseWheel(Args);
-	MainPassCB.FogStart += Args.WheelDelta;
+	GetEngine()->GetMainPassCB().FogStart += Args.WheelDelta;
 }
 
 void OTextureWaves::BuildTreeSpriteGeometry()
@@ -296,14 +232,12 @@ void OTextureWaves::BuildTreeSpriteGeometry()
 		vertices[i].Size = XMFLOAT2(20.0f, 20.0f);
 	}
 
-	array<uint16_t, 16> indices =
-	{
-		0, 1, 2, 3, 4, 5, 6, 7,
-		8, 9, 10, 11, 12, 13, 14, 15
+	array<uint16_t, 16> indices = {
+		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
 	};
 
-	const UINT vbByteSize = static_cast<UINT>(vertices.size() * sizeof(STreeSpriteVertex));
-	const UINT ibByteSize = static_cast<UINT>(indices.size() * sizeof(uint16_t));
+	const UINT vbByteSize = vertices.size() * sizeof(STreeSpriteVertex);
+	const UINT ibByteSize = indices.size() * sizeof(uint16_t);
 
 	auto geometry = make_unique<SMeshGeometry>();
 	geometry->Name = "TreeSprites";
@@ -340,7 +274,6 @@ void OTextureWaves::BuildTreeSpriteGeometry()
 	GetEngine()->SetSceneGeometry(std::move(geometry));
 }
 
-
 void OTextureWaves::CreateTexture()
 {
 	GetEngine()->CreateTexture("Grass", L"Resources/Textures/grass.dds");
@@ -352,111 +285,32 @@ void OTextureWaves::CreateTexture()
 
 void OTextureWaves::OnRender(const UpdateEventArgs& Event)
 {
-	auto engine = Engine.lock();
-	auto commandList = engine->GetCommandQueue()->GetCommandList();
-	auto window = Window.lock();
-	auto allocator = engine->GetCommandQueue()->GetCommandAllocator();
-	auto commandQueue = engine->GetCommandQueue();
+	const auto engine = Engine.lock();
+	const auto commandList = engine->GetCommandQueue()->GetCommandList();
 
-	// Reuse the memory associated with command recording.
-	// We can only reset when the associated command lists have finished execution on the GPU.
-	THROW_IF_FAILED(allocator->Reset());
-
-	// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
-	// Reusing the command list reuses memory.
-	switch (PSOMode)
-	{
-	case 0:
-		THROW_IF_FAILED(commandList->Reset(allocator.Get(), GetEngine()->GetPSO(SPSOType::Opaque).Get()));
-		break;
-	case 1:
-		THROW_IF_FAILED(commandList->Reset(allocator.Get(), GetEngine()->GetPSO(SPSOType::Debug).Get()));
-		break;
-	case 2:
-		THROW_IF_FAILED(commandList->Reset(allocator.Get(), GetEngine()->GetPSO(SPSOType::Transparent).Get()));
-		break;
-	}
-
-	commandList->RSSetViewports(1, &window->Viewport);
-	commandList->RSSetScissorRects(1, &window->ScissorRect);
-
-	auto currentBackBuffer = window->GetCurrentBackBuffer().Get();
-	auto dsv = window->GetDepthStensilView();
-	auto rtv = window->CurrentBackBufferView();
-
-	auto transitionPresentRenderTarget = CD3DX12_RESOURCE_BARRIER::Transition(currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-	// Indicate a state transition on the resource usage.
-	commandList->ResourceBarrier(1, &transitionPresentRenderTarget);
-
-	// Clear the back buffer and depth buffer.
-	commandList->ClearRenderTargetView(rtv, reinterpret_cast<float*>(&MainPassCB.FogColor), 0, nullptr);
-	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-
-	// Specify the buffers we are going to render to.
-	commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
-
-	ID3D12DescriptorHeap* heaps[] = { SRVHeap.Get() };
-	commandList->SetDescriptorHeaps(_countof(heaps), heaps);
-
-	commandList->SetGraphicsRootSignature(RootSignature.Get());
-
-	auto passCB = engine->CurrentFrameResources->PassCB->GetResource();
+	const auto passCB = engine->CurrentFrameResources->PassCB->GetResource();
 	commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
 	GetEngine()->SetPipelineState(SPSOType::Opaque);
-	DrawRenderItems(commandList.Get(), engine->GetOpaqueRenderItems());
+	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Opaque));
+
+	GetEngine()->SetPipelineState(SPSOType::Icosahedron);
+	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::IcosahedronLODs));
 
 	GetEngine()->SetPipelineState(SPSOType::AlphaTested);
-	DrawRenderItems(commandList.Get(), engine->GetAlphaTestedRenderItems());
+	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::AlphaTested));
 
 	GetEngine()->SetPipelineState(SPSOType::TreeSprites);
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::AlphaTestedTreeSprites));
 
 	GetEngine()->SetPipelineState(SPSOType::Transparent);
-	DrawRenderItems(commandList.Get(), engine->GetTransparentRenderItems());
-
-	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(currentBackBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-	// Indicate a state transition on the resource usage.
-	commandList->ResourceBarrier(1, &transition);
-
-	// Done recording commands.
-	THROW_IF_FAILED(commandList->Close());
-
-	// Add the command list to the queue for execution.
-	ID3D12CommandList* cmdsLists[] = { commandList.Get() };
-	engine->GetCommandQueue()->GetCommandQueue()->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
-
-	THROW_IF_FAILED(window->GetSwapChain()->Present(0, 0));
-	window->MoveToNextFrame();
-
-	// Add an instruction to the command queue to set a new fence point.
-	// Because we are on the GPU timeline, the new fence point won’t be
-	// set until the GPU finishes processing all the commands prior to
-	// this Signal().
-	engine->CurrentFrameResources->Fence = commandQueue->Signal();
-
-	// Wait until frame commands are complete.  This waiting is inefficient and is
-	// done for simplicity.  Later we will show how to organize our rendering code
-	// so we do not have to wait per frame.
-	engine->FlushGPU();
-}
-
-void OTextureWaves::OnResize(const ResizeEventArgs& Event)
-{
-	OTest::OnResize(Event);
-	SetupProjection();
-}
-
-void OTextureWaves::SetupProjection()
-{
-	XMStoreFloat4x4(&ProjectionMatrix, XMMatrixPerspectiveFovLH(0.25f * XM_PI, Window.lock()->GetAspectRatio(), 1.0f, 1000.0f));
+	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Transparent));
 }
 
 void OTextureWaves::BuildPSOTreeSprites()
 {
-	UINT quality = 0;
-	auto state = true;
+	UINT state;
+	bool enable = GetEngine()->GetMSAAState(state);
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC treeSpritePSO;
 	ZeroMemory(&treeSpritePSO, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
@@ -480,15 +334,44 @@ void OTextureWaves::BuildPSOTreeSprites()
 	treeSpritePSO.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
 	treeSpritePSO.NumRenderTargets = 1;
 	treeSpritePSO.RTVFormats[0] = SRenderConstants::BackBufferFormat;
-	treeSpritePSO.SampleDesc.Count = state ? 4 : 1;
-	treeSpritePSO.SampleDesc.Quality = state ? (quality - 1) : 0;
+	treeSpritePSO.SampleDesc.Count = enable ? state - 1 : 1;
+	treeSpritePSO.SampleDesc.Quality = enable ? (state - 1) : 0;
 	treeSpritePSO.DSVFormat = SRenderConstants::DepthBufferFormat;
 	GetEngine()->CreatePSO(SPSOType::TreeSprites, treeSpritePSO);
 }
 
 void OTextureWaves::BuildPSOGeosphere()
 {
+	UINT state;
+	bool enable = GetEngine()->GetMSAAState(state);
 
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC IcosahedronPSO;
+	ZeroMemory(&IcosahedronPSO, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+
+	IcosahedronPSO.InputLayout = { InputLayout.data(), static_cast<UINT>(InputLayout.size()) };
+	IcosahedronPSO.pRootSignature = RootSignature.Get();
+
+	auto vsShader = GetEngine()->GetShader(SShaderTypes::VSIcosahedron);
+	auto psShader = GetEngine()->GetShader(SShaderTypes::PSIcosahedron);
+	auto gsShader = GetEngine()->GetShader(SShaderTypes::GSIcosahedron);
+
+	IcosahedronPSO.VS = { reinterpret_cast<BYTE*>(vsShader->GetBufferPointer()), vsShader->GetBufferSize() };
+	IcosahedronPSO.PS = { reinterpret_cast<BYTE*>(psShader->GetBufferPointer()), psShader->GetBufferSize() };
+	IcosahedronPSO.GS = { reinterpret_cast<BYTE*>(gsShader->GetBufferPointer()), gsShader->GetBufferSize() };
+
+	IcosahedronPSO.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	IcosahedronPSO.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+
+	IcosahedronPSO.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	IcosahedronPSO.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	IcosahedronPSO.SampleMask = UINT_MAX;
+	IcosahedronPSO.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	IcosahedronPSO.NumRenderTargets = 1;
+	IcosahedronPSO.RTVFormats[0] = SRenderConstants::BackBufferFormat;
+	IcosahedronPSO.SampleDesc.Count = enable ? state - 1 : 1;
+	IcosahedronPSO.SampleDesc.Quality = enable ? (state - 1) : 0;
+	IcosahedronPSO.DSVFormat = SRenderConstants::DepthBufferFormat;
+	GetEngine()->CreatePSO(SPSOType::Icosahedron, IcosahedronPSO);
 }
 
 void OTextureWaves::BuildMaterials()
@@ -573,53 +456,19 @@ void OTextureWaves::OnMouseMoved(const MouseMotionEventArgs& Args)
 	LOG(Log, "Theta: {} Phi: {} Radius: {}", Theta, Phi, Radius);
 }
 
-void OTextureWaves::BuildRootSignature()
-{
-	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-
-	constexpr auto size = 4;
-	CD3DX12_ROOT_PARAMETER slotRootParameter[size];
-
-	slotRootParameter[0].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[1].InitAsConstantBufferView(0);
-	slotRootParameter[2].InitAsConstantBufferView(1);
-	slotRootParameter[3].InitAsConstantBufferView(2);
-
-	const auto staticSamples = Utils::GetStaticSamplers();
-
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(size, slotRootParameter, staticSamples.size(), staticSamples.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-	ComPtr<ID3DBlob> serializedRootSig = nullptr;
-	ComPtr<ID3DBlob> errorBlob = nullptr;
-
-	auto hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
-
-	if (errorBlob != nullptr)
-	{
-		::OutputDebugStringA(static_cast<char*>(errorBlob->GetBufferPointer()));
-	}
-	THROW_IF_FAILED(hr);
-	THROW_IF_FAILED(Engine.lock()->GetDevice()->CreateRootSignature(0,
-		serializedRootSig->GetBufferPointer(),
-		serializedRootSig->GetBufferSize(),
-		IID_PPV_ARGS(&RootSignature)));
-}
-
 void OTextureWaves::BuildShadersAndInputLayout()
 {
-	const D3D_SHADER_MACRO fogDefines[] =
-	{
-		"FOG", "1",
-		NULL, NULL
+	const D3D_SHADER_MACRO fogDefines[] = {
+		"FOG", "1", NULL, NULL
 	};
 
-	const D3D_SHADER_MACRO alphaTestDefines[] =
-	{
-		"FOG", "1",
-		"ALPHA_TEST", "1",
-		NULL, NULL
+	const D3D_SHADER_MACRO alphaTestDefines[] = {
+		"FOG", "1", "ALPHA_TEST", "1", NULL, NULL
 	};
+
+	GetEngine()->BuildGSShader(L"Shaders/Geosphere.hlsl", SShaderTypes::GSIcosahedron);
+	GetEngine()->BuildPSShader(L"Shaders/Geosphere.hlsl", SShaderTypes::PSIcosahedron, fogDefines);
+	GetEngine()->BuildVSShader(L"Shaders/Geosphere.hlsl", SShaderTypes::VSIcosahedron);
 
 	GetEngine()->BuildVSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::VSBaseShader);
 	GetEngine()->BuildPSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::PSOpaque, fogDefines);
@@ -635,8 +484,7 @@ void OTextureWaves::BuildShadersAndInputLayout()
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
-	TreeSpriteInputLayout =
-	{
+	TreeSpriteInputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "SIZE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 	};
@@ -758,6 +606,62 @@ void OTextureWaves::BuildWavesGeometryBuffers()
 	GetEngine()->SetSceneGeometry(std::move(geometry));
 }
 
+void OTextureWaves::BuildIcosahedronGeometry()
+{
+	OGeometryGenerator geoGen;
+	OGeometryGenerator::SMeshData ico = geoGen.CreateGeosphere(10, 0);
+	auto device = Engine.lock()->GetDevice();
+	auto commandList = Engine.lock()->GetCommandQueue()->GetCommandList();
+
+	std::vector<SVertex> vertices(ico.Vertices.size());
+	for (size_t i = 0; i < ico.Vertices.size(); ++i)
+	{
+		auto& p = ico.Vertices[i].Position;
+		vertices[i].Pos = p;
+		vertices[i].Normal = ico.Vertices[i].Normal;
+		vertices[i].TexC = ico.Vertices[i].TexC;
+	}
+
+	auto vbByteSize = static_cast<UINT>(vertices.size() * sizeof(SVertex));
+
+	vector<uint16_t> indices = ico.GetIndices16();
+	auto ibByteSize = static_cast<UINT>(indices.size() * sizeof(uint16_t));
+
+	auto geometry = make_unique<SMeshGeometry>();
+	geometry->Name = "Icosahedron";
+
+	THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &geometry->VertexBufferCPU));
+	CopyMemory(geometry->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geometry->IndexBufferCPU));
+	CopyMemory(geometry->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geometry->VertexBufferGPU = Utils::CreateDefaultBuffer(device.Get(),
+	                                                       commandList.Get(),
+	                                                       vertices.data(),
+	                                                       vbByteSize,
+	                                                       geometry->VertexBufferUploader);
+
+	geometry->IndexBufferGPU = Utils::CreateDefaultBuffer(device.Get(),
+	                                                      commandList.Get(),
+	                                                      indices.data(),
+	                                                      ibByteSize,
+	                                                      geometry->IndexBufferUploader);
+
+	geometry->VertexByteStride = sizeof(SVertex);
+	geometry->VertexBufferByteSize = vbByteSize;
+	geometry->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geometry->IndexBufferByteSize = ibByteSize;
+
+	SSubmeshGeometry submesh;
+	submesh.IndexCount = (UINT)indices.size();
+	submesh.StartIndexLocation = 0;
+	submesh.BaseVertexLocation = 0;
+
+	geometry->SetGeometry("Icosahedron", submesh);
+	GetEngine()->SetSceneGeometry(std::move(geometry));
+}
+
 void OTextureWaves::BuildBoxGeometryBuffers()
 {
 	OGeometryGenerator geoGen;
@@ -816,6 +720,7 @@ void OTextureWaves::BuildBoxGeometryBuffers()
 void OTextureWaves::BuildDescriptorHeap()
 {
 	auto device = Engine.lock()->GetDevice();
+	auto srv = Engine.lock()->GetSRVHeap();
 	//
 	// Create the SRV heap.
 	//
@@ -823,12 +728,12 @@ void OTextureWaves::BuildDescriptorHeap()
 	srvHeapDesc.NumDescriptors = 5;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	THROW_IF_FAILED(device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&SRVHeap)));
+	THROW_IF_FAILED(device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&srv)));
 
 	//
 	// Fill out the heap with actual descriptors.
 	//
-	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(SRVHeap->GetCPUDescriptorHandleForHeapStart());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(srv->GetCPUDescriptorHandleForHeapStart());
 
 	auto grassTex = GetEngine()->FindTexture("Grass")->Resource;
 	auto waterTex = GetEngine()->FindTexture("Water")->Resource;
@@ -871,7 +776,6 @@ void OTextureWaves::BuildDescriptorHeap()
 	srvDesc.Texture2DArray.FirstArraySlice = 0;
 	GetEngine()->GetDevice()->CreateShaderResourceView(treeArray.Get(), &srvDesc, hDescriptor);
 }
-
 
 void OTextureWaves::BuildRenderItems()
 {
@@ -925,6 +829,18 @@ void OTextureWaves::BuildRenderItems()
 	treeRenderItem->StartIndexLocation = treeRenderItem->Geometry->FindSubmeshGeomentry("Points").StartIndexLocation;
 	treeRenderItem->BaseVertexLocation = treeRenderItem->Geometry->FindSubmeshGeomentry("Points").BaseVertexLocation;
 	GetEngine()->AddRenderItem(SRenderLayer::AlphaTestedTreeSprites, std::move(treeRenderItem));
+
+	auto icosahedronRenderItem = make_unique<SRenderItem>();
+	XMStoreFloat4x4(&icosahedronRenderItem->World, XMMatrixTranslation(0.0f, 10.f, 10));
+	icosahedronRenderItem->ObjectCBIndex = 4;
+	icosahedronRenderItem->Geometry = GetEngine()->FindSceneGeometry("Icosahedron");
+	icosahedronRenderItem->Material = GetEngine()->FindMaterial("FireBall");
+	icosahedronRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	auto geometry = icosahedronRenderItem->Geometry->FindSubmeshGeomentry("Icosahedron");
+	icosahedronRenderItem->IndexCount = geometry.IndexCount;
+	icosahedronRenderItem->StartIndexLocation = geometry.StartIndexLocation;
+	icosahedronRenderItem->BaseVertexLocation = geometry.BaseVertexLocation;
+	GetEngine()->AddRenderItem(SRenderLayer::IcosahedronLODs, std::move(icosahedronRenderItem));
 }
 
 float OTextureWaves::GetHillsHeight(float X, float Z) const
@@ -958,13 +874,12 @@ void OTextureWaves::AnimateMaterials(const STimer& Timer)
 	waterMaterial->NumFramesDirty = SRenderConstants::NumFrameResources;
 }
 
-
 XMFLOAT3 OTextureWaves::GetHillsNormal(float X, float Z) const
 {
 	XMFLOAT3 n(
-		-0.03f * Z * cosf(0.1f * X) - 0.3f * cosf(0.1f * Z),
-		1.0f,
-		-0.3f * sinf(0.1f * X) + 0.03f * X * sinf(0.1f * Z));
+	    -0.03f * Z * cosf(0.1f * X) - 0.3f * cosf(0.1f * Z),
+	    1.0f,
+	    -0.3f * sinf(0.1f * X) + 0.03f * X * sinf(0.1f * Z));
 
 	const XMVECTOR unitNormal = XMVector3Normalize(XMLoadFloat3(&n));
 	XMStoreFloat3(&n, unitNormal);

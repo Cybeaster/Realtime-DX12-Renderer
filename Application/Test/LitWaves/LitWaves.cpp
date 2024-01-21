@@ -1,14 +1,14 @@
 
 #include "LitWaves.h"
 
+#include "../../../Materials/Material.h"
+#include "../../../Objects/GeomertryGenerator/GeometryGenerator.h"
 #include "../../Engine/Engine.h"
 #include "../../Window/Window.h"
 #include "Application.h"
 #include "Camera/Camera.h"
 #include "RenderConstants.h"
 #include "RenderItem.h"
-#include "../../../Materials/Material.h"
-#include "../../../Objects/GeomertryGenerator/GeometryGenerator.h"
 
 #include <DXHelper.h>
 #include <Timer/Timer.h>
@@ -22,7 +22,7 @@ using namespace Microsoft::WRL;
 using namespace DirectX;
 
 OLitWaves::OLitWaves(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window)
-	: OTest(_Engine, _Window)
+    : OTest(_Engine, _Window)
 {
 }
 
@@ -37,7 +37,6 @@ bool OLitWaves::Initialize()
 
 	engine->CreateWaves(256, 256, 0.5f, 0.01f, 4.0f, 0.2f);
 
-	BuildRootSignature();
 	BuildShadersAndInputLayout();
 	BuildLandGeometry();
 	BuildWavesGeometryBuffers();
@@ -317,7 +316,7 @@ void OLitWaves::OnRender(const UpdateEventArgs& Event)
 	auto passCB = engine->CurrentFrameResources->PassCB->GetResource();
 	commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
-	DrawRenderItems(commandList.Get(), engine->GetOpaqueRenderItems());
+	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Opaque));
 
 	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(currentBackBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	// Indicate a state transition on the resource usage.
@@ -445,39 +444,6 @@ void OLitWaves::OnMouseMoved(const MouseMotionEventArgs& Args)
 		Radius = std::clamp(Radius, 5.0f, 150.f);
 	}
 	LOG(Log, "Theta: {} Phi: {} Radius: {}", Theta, Phi, Radius);
-}
-
-void OLitWaves::BuildRootSignature()
-{
-	// Shader programs typically require resources as input (constant buffers,
-	// textures, samplers).  The root signature defines the resources the shader
-	// programs expect.  If we think of the shader programs as a function, and
-	// the input resources as function parameters, then the root signature can be
-	// thought of as defining the function signature.
-
-	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
-
-	slotRootParameter[0].InitAsConstantBufferView(0);
-	slotRootParameter[1].InitAsConstantBufferView(1);
-	slotRootParameter[2].InitAsConstantBufferView(2);
-
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-	ComPtr<ID3DBlob> serializedRootSig = nullptr;
-	ComPtr<ID3DBlob> errorBlob = nullptr;
-
-	auto hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
-
-	if (errorBlob != nullptr)
-	{
-		::OutputDebugStringA(static_cast<char*>(errorBlob->GetBufferPointer()));
-	}
-	THROW_IF_FAILED(hr);
-	THROW_IF_FAILED(Engine.lock()->GetDevice()->CreateRootSignature(0,
-		serializedRootSig->GetBufferPointer(),
-		serializedRootSig->GetBufferSize(),
-		IID_PPV_ARGS(&RootSignature)));
 }
 
 void OLitWaves::BuildShadersAndInputLayout()
@@ -623,12 +589,12 @@ void OLitWaves::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> CommandL
 
 	// Create a committed resource for the GPU resource in a default heap.
 	THROW_IF_FAILED(device->CreateCommittedResource(
-		&defaultHeapProperties,
-		D3D12_HEAP_FLAG_NONE,
-		&bufferResourceDesc,
-		D3D12_RESOURCE_STATE_COMMON,
-		nullptr,
-		IID_PPV_ARGS(DestinationResource)));
+	    &defaultHeapProperties,
+	    D3D12_HEAP_FLAG_NONE,
+	    &bufferResourceDesc,
+	    D3D12_RESOURCE_STATE_COMMON,
+	    nullptr,
+	    IID_PPV_ARGS(DestinationResource)));
 
 	if (BufferData)
 	{
@@ -638,12 +604,12 @@ void OLitWaves::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> CommandL
 
 		// Create a committed resource for the upload.
 		THROW_IF_FAILED(device->CreateCommittedResource(
-			&uploadHeapProperties,
-			D3D12_HEAP_FLAG_NONE,
-			&uploadBufferResourceDesc,
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(IntermediateResource)));
+		    &uploadHeapProperties,
+		    D3D12_HEAP_FLAG_NONE,
+		    &uploadBufferResourceDesc,
+		    D3D12_RESOURCE_STATE_GENERIC_READ,
+		    nullptr,
+		    IID_PPV_ARGS(IntermediateResource)));
 
 		D3D12_SUBRESOURCE_DATA subresourceData = {};
 		subresourceData.pData = BufferData;
@@ -704,7 +670,7 @@ void OLitWaves::BuildRenderItems()
 	wavesRenderItem->NumFramesDirty = SRenderConstants::NumFrameResources;
 
 	WavesRenderItem = wavesRenderItem.get();
-	GetEngine()->GetOpaqueRenderItems().push_back(wavesRenderItem.get());
+	GetEngine()->GetRenderItems(SRenderLayer::Opaque).push_back(wavesRenderItem.get());
 
 	auto gridRenderItem = make_unique<SRenderItem>();
 	gridRenderItem->World = Utils::Math::Identity4x4();
@@ -716,7 +682,7 @@ void OLitWaves::BuildRenderItems()
 	gridRenderItem->StartIndexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("grid").StartIndexLocation;
 	gridRenderItem->BaseVertexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("grid").BaseVertexLocation;
 
-	GetEngine()->GetOpaqueRenderItems().push_back(gridRenderItem.get());
+	GetEngine()->GetRenderItems(SRenderLayer::Opaque).push_back(gridRenderItem.get());
 }
 
 float OLitWaves::GetHillsHeight(float X, float Z) const
@@ -727,9 +693,9 @@ float OLitWaves::GetHillsHeight(float X, float Z) const
 XMFLOAT3 OLitWaves::GetHillsNormal(float X, float Z) const
 {
 	XMFLOAT3 n(
-		-0.03f * Z * cosf(0.1f * X) - 0.3f * cosf(0.1f * Z),
-		1.0f,
-		-0.3f * sinf(0.1f * X) + 0.03f * X * sinf(0.1f * Z));
+	    -0.03f * Z * cosf(0.1f * X) - 0.3f * cosf(0.1f * Z),
+	    1.0f,
+	    -0.3f * sinf(0.1f * X) + 0.03f * X * sinf(0.1f * Z));
 
 	const XMVECTOR unitNormal = XMVector3Normalize(XMLoadFloat3(&n));
 	XMStoreFloat3(&n, unitNormal);
@@ -737,4 +703,3 @@ XMFLOAT3 OLitWaves::GetHillsNormal(float X, float Z) const
 }
 
 #pragma optimize("", on)
-

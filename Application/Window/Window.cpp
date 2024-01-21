@@ -17,10 +17,10 @@
 using namespace Microsoft::WRL;
 
 OWindow::OWindow(shared_ptr<OEngine> _Engine, HWND hWnd, const SWindowInfo& _WindowInfo, const shared_ptr<OCamera>& _Camera)
-	: Hwnd(hWnd)
-	, Engine(_Engine)
-	, WindowInfo{ _WindowInfo }
-	, Camera(_Camera)
+    : Hwnd(hWnd)
+    , Engine(_Engine)
+    , WindowInfo{ _WindowInfo }
+    , Camera(_Camera)
 {
 	SwapChain = CreateSwapChain();
 	RTVDescriptorHeap = _Engine->CreateDescriptorHeap(BuffersCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -32,7 +32,7 @@ OWindow::OWindow(shared_ptr<OEngine> _Engine, HWND hWnd, const SWindowInfo& _Win
 	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	dsvHeapDesc.NodeMask = 0;
 	THROW_IF_FAILED(Engine.lock()->GetDevice()->CreateDescriptorHeap(
-		&dsvHeapDesc, IID_PPV_ARGS(DSVDescriptorHeap.GetAddressOf())));
+	    &dsvHeapDesc, IID_PPV_ARGS(DSVDescriptorHeap.GetAddressOf())));
 
 	UpdateRenderTargetViews();
 	//ResizeDepthBuffer();
@@ -192,6 +192,10 @@ void OWindow::OnRender(const UpdateEventArgs& Event)
 {
 }
 
+void OWindow::OnUpdate(const UpdateEventArgs& Event)
+{
+}
+
 void OWindow::OnKeyPressed(KeyEventArgs& Event)
 {
 }
@@ -281,6 +285,7 @@ void OWindow::OnResize(ResizeEventArgs& Event)
 
 	Viewport = D3D12_VIEWPORT(0.0f, 0.0f, static_cast<float>(WindowInfo.ClientWidth), static_cast<float>(WindowInfo.ClientHeight), 0.0f, 1.0f);
 	ScissorRect = CD3DX12_RECT(0, 0, WindowInfo.ClientWidth, WindowInfo.ClientHeight);
+	XMStoreFloat4x4(&ProjectionMatrix, DirectX::XMMatrixPerspectiveFovLH(0.25f * DirectX::XM_PI, GetAspectRatio(), 1.0f, 1000.0f));
 }
 
 float OWindow::GetLastXMousePos() const
@@ -322,12 +327,12 @@ ComPtr<IDXGISwapChain4> OWindow::CreateSwapChain()
 
 	ComPtr<IDXGISwapChain1> swapChain1;
 	THROW_IF_FAILED(engine->GetFactory()->CreateSwapChainForHwnd(
-		commandQueue.Get(),
-		Hwnd,
-		&swapChainDesc,
-		nullptr,
-		nullptr,
-		&swapChain1));
+	    commandQueue.Get(),
+	    Hwnd,
+	    &swapChainDesc,
+	    nullptr,
+	    nullptr,
+	    &swapChain1));
 
 	// Disable the Alt+Enter fullscreen toggle feature. Switching to fullscreen
 	// will be handled manually.
@@ -389,12 +394,12 @@ void OWindow::ResizeDepthBuffer()
 	optClear.DepthStencil.Depth = 1.0f;
 	optClear.DepthStencil.Stencil = 0;
 	THROW_IF_FAILED(device->CreateCommittedResource(
-		&defaultHeap,
-		D3D12_HEAP_FLAG_NONE,
-		&depthStencilDesc,
-		D3D12_RESOURCE_STATE_COMMON,
-		&optClear,
-		IID_PPV_ARGS(DepthBuffer.GetAddressOf())));
+	    &defaultHeap,
+	    D3D12_HEAP_FLAG_NONE,
+	    &depthStencilDesc,
+	    D3D12_RESOURCE_STATE_COMMON,
+	    &optClear,
+	    IID_PPV_ARGS(DepthBuffer.GetAddressOf())));
 
 	// Create descriptor to mip level 0 of entire resource using the format of the resource.
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;

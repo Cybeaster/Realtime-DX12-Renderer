@@ -163,8 +163,6 @@ void GS(point VertexOut gin[1],
 }
 
 
-
-
 float4 PS(GeometryOut pin) : SV_Target
 {
 	float3 uvw = float3(pin.TexC, pin.PrimID%3);

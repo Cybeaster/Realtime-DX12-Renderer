@@ -1,13 +1,13 @@
 
 #include "ShapesTest.h"
 
+#include "../../../Objects/GeomertryGenerator/GeometryGenerator.h"
 #include "../../Engine/Engine.h"
 #include "../../Window/Window.h"
 #include "Application.h"
 #include "Camera/Camera.h"
 #include "RenderConstants.h"
 #include "RenderItem.h"
-#include "../../../Objects/GeomertryGenerator/GeometryGenerator.h"
 
 #include <DXHelper.h>
 #include <Timer/Timer.h>
@@ -19,9 +19,8 @@ using namespace Microsoft::WRL;
 
 using namespace DirectX;
 
-
 OShapesTest::OShapesTest(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window)
-	: OTest(_Engine, _Window)
+    : OTest(_Engine, _Window)
 {
 }
 
@@ -157,7 +156,7 @@ void OShapesTest::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList,
 		// Offset to the CBV in the descriptor heap for this object and
 		// for this frame resource.
 
-		const UINT cbvIndex = engine->CurrentFrameResourceIndex * engine->GetOpaqueRenderItems().size() + renderItem->ObjectCBIndex;
+		const UINT cbvIndex = engine->CurrentFrameResourceIndex * engine->GetRenderItems(SRenderLayer::Opaque).size() + renderItem->ObjectCBIndex;
 		auto cbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
 		cbvHandle.Offset(cbvIndex, engine->CBVSRVUAVDescriptorSize);
 
@@ -241,7 +240,7 @@ void OShapesTest::OnRender(const UpdateEventArgs& Event)
 	auto passCBVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
 	passCBVHandle.Offset(passCBVIndex, engine->CBVSRVUAVDescriptorSize);
 	commandList->SetGraphicsRootDescriptorTable(1, passCBVHandle);
-	DrawRenderItems(commandList.Get(), engine->GetOpaqueRenderItems());
+	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Opaque));
 
 	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(currentBackBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	// Indicate a state transition on the resource usage.
@@ -344,7 +343,7 @@ void OShapesTest::OnMouseMoved(const MouseMotionEventArgs& Args)
 void OShapesTest::BuildDescriptorHeaps()
 {
 	auto engine = Engine.lock();
-	const UINT objectCount = engine->GetOpaqueRenderItems().size();
+	const UINT objectCount = engine->GetRenderItems(SRenderLayer::Opaque).size();
 	const UINT numDescriptors = (objectCount + 1) * SRenderConstants::NumFrameResources;
 
 	PassConstantCBVOffset = objectCount * SRenderConstants::NumFrameResources;
@@ -360,7 +359,7 @@ void OShapesTest::BuildConstantBuffersViews()
 {
 	const auto engine = Engine.lock();
 	const UINT objectCBByteSize = Utils::CalcBufferByteSize(sizeof(SObjectConstants));
-	const UINT objectCount = engine->GetOpaqueRenderItems().size();
+	const UINT objectCount = engine->GetRenderItems(SRenderLayer::Opaque).size();
 
 	auto cmdList = engine->GetCommandQueue()->GetCommandList();
 	for (uint32_t frameIndex = 0; frameIndex < SRenderConstants::NumFrameResources; ++frameIndex)
@@ -436,9 +435,9 @@ void OShapesTest::BuildRootSignature()
 	}
 	THROW_IF_FAILED(hr);
 	THROW_IF_FAILED(Engine.lock()->GetDevice()->CreateRootSignature(0,
-		serializedRootSig->GetBufferPointer(),
-		serializedRootSig->GetBufferSize(),
-		IID_PPV_ARGS(&RootSignature)));
+	                                                                serializedRootSig->GetBufferPointer(),
+	                                                                serializedRootSig->GetBufferSize(),
+	                                                                IID_PPV_ARGS(&RootSignature)));
 }
 
 void OShapesTest::BuildShadersAndInputLayout()
@@ -575,12 +574,12 @@ void OShapesTest::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> Comman
 
 	// Create a committed resource for the GPU resource in a default heap.
 	THROW_IF_FAILED(device->CreateCommittedResource(
-		&defaultHeapProperties,
-		D3D12_HEAP_FLAG_NONE,
-		&bufferResourceDesc,
-		D3D12_RESOURCE_STATE_COMMON,
-		nullptr,
-		IID_PPV_ARGS(DestinationResource)));
+	    &defaultHeapProperties,
+	    D3D12_HEAP_FLAG_NONE,
+	    &bufferResourceDesc,
+	    D3D12_RESOURCE_STATE_COMMON,
+	    nullptr,
+	    IID_PPV_ARGS(DestinationResource)));
 
 	if (BufferData)
 	{
@@ -590,12 +589,12 @@ void OShapesTest::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> Comman
 
 		// Create a committed resource for the upload.
 		THROW_IF_FAILED(device->CreateCommittedResource(
-			&uploadHeapProperties,
-			D3D12_HEAP_FLAG_NONE,
-			&uploadBufferResourceDesc,
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(IntermediateResource)));
+		    &uploadHeapProperties,
+		    D3D12_HEAP_FLAG_NONE,
+		    &uploadBufferResourceDesc,
+		    D3D12_RESOURCE_STATE_GENERIC_READ,
+		    nullptr,
+		    IID_PPV_ARGS(IntermediateResource)));
 
 		D3D12_SUBRESOURCE_DATA subresourceData = {};
 		subresourceData.pData = BufferData;
@@ -655,7 +654,6 @@ void OShapesTest::BuildRenderItems()
 	boxRenderItem->StartIndexLocation = boxRenderItem->Geometry->FindSubmeshGeomentry("Box").StartIndexLocation;
 	boxRenderItem->BaseVertexLocation = boxRenderItem->Geometry->FindSubmeshGeomentry("Box").BaseVertexLocation;
 
-
 	auto gridRenderItem = make_unique<SRenderItem>();
 	gridRenderItem->World = Utils::Math::Identity4x4();
 	gridRenderItem->ObjectCBIndex = 1;
@@ -710,11 +708,7 @@ void OShapesTest::BuildRenderItems()
 		rightSphereRenderItem->IndexCount = rightSphereRenderItem->Geometry->FindSubmeshGeomentry("Sphere").IndexCount;
 		rightSphereRenderItem->StartIndexLocation = rightSphereRenderItem->Geometry->FindSubmeshGeomentry("Sphere").StartIndexLocation;
 		rightSphereRenderItem->BaseVertexLocation = rightSphereRenderItem->Geometry->FindSubmeshGeomentry("Sphere").BaseVertexLocation;
-
-
 	}
-
 }
 
 #pragma optimize("", on)
-

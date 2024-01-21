@@ -5,10 +5,12 @@
 #include "../Types/Types.h"
 #include "../Window/Window.h"
 #include "DirectX/FrameResource.h"
+#include "Filters/BlurFilter.h"
 #include "RenderItem.h"
 #include "Textures/Texture.h"
 
 #include <dxgi1_6.h>
+
 #include <map>
 
 class OEngine : public std::enable_shared_from_this<OEngine>
@@ -34,7 +36,7 @@ public:
 	OEngine() = default;
 
 	virtual bool Initialize();
-
+	void PostInitialize();
 	shared_ptr<OWindow> GetWindow() const;
 
 	ComPtr<ID3D12Device2> GetDevice() const;
@@ -51,9 +53,7 @@ public:
 	 */
 
 	void DestroyWindow();
-
 	void OnWindowDestroyed();
-
 	bool IsTearingSupported() const;
 
 	ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(UINT NumDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE Type) const;
@@ -66,22 +66,20 @@ public:
 
 	void BuildFrameResource(uint32_t PassCount = 1);
 
-	void OnRender(const UpdateEventArgs& Args) const;
+	void OnPreRender();
+	void Draw(const UpdateEventArgs& Args);
+	void OnUpdate(const UpdateEventArgs& Args);
+
+	void OnPostRender();
+	void PostProcess(HWND Handler);
 
 	void OnKeyPressed(KeyEventArgs& Args);
-
 	void OnKeyReleased(KeyEventArgs& Args);
-
 	void OnMouseMoved(class MouseMotionEventArgs& Args);
-
 	void OnMouseButtonPressed(MouseButtonEventArgs& Args);
-
 	void OnMouseButtonReleased(MouseButtonEventArgs& Args);
-
 	void OnMouseWheel(MouseWheelEventArgs& Args);
-
 	void OnResize(ResizeEventArgs& Args);
-
 	void OnUpdateWindowSize(ResizeEventArgs& Args);
 
 	bool CheckTearingSupport();
@@ -92,25 +90,14 @@ public:
 
 	bool GetMSAAState(UINT& Quality) const;
 
-	vector<SRenderItem*>& GetOpaqueRenderItems();
-
-	vector<SRenderItem*>& GetAlphaTestedRenderItems();
-
-	vector<SRenderItem*>& GetMirrorsRenderItems();
-
-	vector<SRenderItem*>& GetReflectedRenderItems();
-
-	vector<SRenderItem*>& GetTransparentRenderItems();
-
-	vector<SRenderItem*>& GetShadowRenderItems();
-
 	vector<SRenderItem*>& GetRenderItems(const string& Type);
 
+	void BuildPSOs();
+	void BuildBlurPSO();
 
-	void BuildPSOs(ComPtr<ID3D12RootSignature> RootSignature, const vector<D3D12_INPUT_ELEMENT_DESC>& InputLayout);
+	void BuildShadersAndInputLayouts();
 
 	D3D12_RENDER_TARGET_BLEND_DESC GetTransparentBlendState();
-
 	ComPtr<IDXGIFactory2> GetFactory() const;
 
 	UINT RTVDescriptorSize = 0;
@@ -118,74 +105,65 @@ public:
 	UINT CBVSRVUAVDescriptorSize = 0;
 
 	std::unordered_map<string, unique_ptr<SMeshGeometry>>& GetSceneGeometry();
-
 	void SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry);
-
 	SMeshGeometry* FindSceneGeometry(const string& Name) const;
 
 	void BuildShaders(const wstring& ShaderPath, const string& VSShaderName, const string& PSShaderName,
 	                  const D3D_SHADER_MACRO* Defines = nullptr);
-
 	void BuildShader(const wstring& ShaderPath, const string& ShaderName, const string& ShaderQualifier, const string& ShaderTarget, const D3D_SHADER_MACRO* Defines = nullptr);
-
 	void BuildVSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines = nullptr);
-
 	void BuildPSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines = nullptr);
-
 	void BuildGSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines = nullptr);
-
 	ComPtr<ID3DBlob> GetShader(const string& ShaderName);
 
 	void CreatePSO(const string& PSOName, const D3D12_GRAPHICS_PIPELINE_STATE_DESC& PSODesc);
-
+	void CreatePSO(const string& PSOName, const D3D12_COMPUTE_PIPELINE_STATE_DESC& PSODesc);
 	ComPtr<ID3D12PipelineState> GetPSO(const string& PSOName);
 
-	OWaves* GetWaves() const;
+	void AddMaterial(string Name, unique_ptr<SMaterial>& Material);
+	void CreateMaterial(const string& Name, int32_t CBIndex, int32_t DiffuseSRVHeapIdx, const SMaterialConstants& Constants);
+	const TMaterialsMap& GetMaterials() const;
+	SMaterial* FindMaterial(const string& Name) const;
+
+	STexture* CreateTexture(string Name, wstring FileName);
+	STexture* FindTexture(string Name) const;
+
+	void AddRenderItem(string Category, unique_ptr<SRenderItem> RenderItem);
+	void AddRenderItem(const vector<string>& Categories, unique_ptr<SRenderItem> RenderItem);
+
+	const vector<unique_ptr<SRenderItem>>& GetAllRenderItems();
+	void SetPipelineState(string PSOName);
 
 	template<typename... Args>
 	void CreateWaves(Args&&... args)
 	{
 		Waves = std::make_unique<OWaves>(std::forward<Args>(args)...);
 	}
+	OWaves* GetWaves() const;
 
-	void AddMaterial(string Name, unique_ptr<SMaterial>& Material);
-
-	void CreateMaterial(const string& Name, int32_t CBIndex, int32_t DiffuseSRVHeapIdx, const SMaterialConstants& Constants);
-
-	const TMaterialsMap& GetMaterials() const;
-
-	SMaterial* FindMaterial(const string& Name) const;
-
-	STexture* CreateTexture(string Name, wstring FileName);
-
-	STexture* FindTexture(string Name) const;
-
-	void AddRenderItem(string Category, unique_ptr<SRenderItem> RenderItem);
-
-	void AddRenderItem(const vector<string>& Categories, unique_ptr<SRenderItem> RenderItem);
-
-	const vector<unique_ptr<SRenderItem>>& GetAllRenderItems();
-
-	void SetPipelineState(string PSOName);
+	void SetFog(DirectX::XMFLOAT4 Color, float Start, float Range);
+	SPassConstants& GetMainPassCB();
+	ComPtr<ID3D12DescriptorHeap> GetSRVHeap() const;
 
 protected:
 	shared_ptr<OTest> GetTestByHWND(HWND Handler);
-
 	shared_ptr<OWindow> GetWindowByHWND(HWND Handler);
-
 	void LoadContent();
-
 	void UnloadContent();
-
 	void Destroy();
 
 	shared_ptr<OWindow> Window;
-
 	ComPtr<IDXGIAdapter4> GetAdapter(bool UseWarp);
-
 	ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> Adapter);
+	void BuildPostProcessRootSignature() const;
+	void BuildDefaultRootSignature() const;
+
+	ComPtr<ID3D12Resource> GetBackBuffer() const;
 
 private:
+	void UpdateMainPass(const STimer& Timer);
+	SPassConstants MainPassCB;
+
 	ComPtr<IDXGIAdapter4> Adapter;
 	ComPtr<ID3D12Device2> Device;
 
@@ -212,4 +190,12 @@ private:
 	TMaterialsMap Materials;
 
 	unique_ptr<OWaves> Waves = nullptr;
+
+	ComPtr<ID3D12RootSignature> PostProcessRootSignature = nullptr;
+
+	vector<D3D12_INPUT_ELEMENT_DESC> InputLayout;
+	ComPtr<ID3D12RootSignature> DefaultRootSignature = nullptr;
+
+	unique_ptr<OBlurFilter> BlurFilter = nullptr;
+	ComPtr<ID3D12DescriptorHeap> SRVHeap;
 };

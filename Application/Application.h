@@ -77,7 +77,7 @@ int OApplication::Run()
 			else
 			{
 				UpdateEventArgs args(Timer, Engine->GetWindow()->GetHWND());
-				Engine->OnRender(args);
+				Engine->Draw(args);
 			}
 		}
 	}

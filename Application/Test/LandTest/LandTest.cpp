@@ -1,13 +1,13 @@
 
 #include "LandTest.h"
 
+#include "../../../Objects/GeomertryGenerator/GeometryGenerator.h"
 #include "../../Engine/Engine.h"
 #include "../../Window/Window.h"
 #include "Application.h"
 #include "Camera/Camera.h"
 #include "RenderConstants.h"
 #include "RenderItem.h"
-#include "../../../Objects/GeomertryGenerator/GeometryGenerator.h"
 
 #include <DXHelper.h>
 #include <Timer/Timer.h>
@@ -20,7 +20,7 @@ using namespace Microsoft::WRL;
 using namespace DirectX;
 
 OLandTest::OLandTest(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window)
-	: OTest(_Engine, _Window)
+    : OTest(_Engine, _Window)
 {
 }
 
@@ -267,7 +267,7 @@ void OLandTest::OnRender(const UpdateEventArgs& Event)
 	auto passCB = engine->CurrentFrameResources->PassCB->GetResource();
 	commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
 
-	DrawRenderItems(commandList.Get(), engine->GetOpaqueRenderItems());
+	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Opaque));
 
 	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(currentBackBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	// Indicate a state transition on the resource usage.
@@ -382,9 +382,9 @@ void OLandTest::BuildRootSignature()
 	}
 	THROW_IF_FAILED(hr);
 	THROW_IF_FAILED(Engine.lock()->GetDevice()->CreateRootSignature(0,
-		serializedRootSig->GetBufferPointer(),
-		serializedRootSig->GetBufferSize(),
-		IID_PPV_ARGS(&RootSignature)));
+	                                                                serializedRootSig->GetBufferPointer(),
+	                                                                serializedRootSig->GetBufferSize(),
+	                                                                IID_PPV_ARGS(&RootSignature)));
 }
 
 void OLandTest::BuildShadersAndInputLayout()
@@ -555,12 +555,12 @@ void OLandTest::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> CommandL
 
 	// Create a committed resource for the GPU resource in a default heap.
 	THROW_IF_FAILED(device->CreateCommittedResource(
-		&defaultHeapProperties,
-		D3D12_HEAP_FLAG_NONE,
-		&bufferResourceDesc,
-		D3D12_RESOURCE_STATE_COMMON,
-		nullptr,
-		IID_PPV_ARGS(DestinationResource)));
+	    &defaultHeapProperties,
+	    D3D12_HEAP_FLAG_NONE,
+	    &bufferResourceDesc,
+	    D3D12_RESOURCE_STATE_COMMON,
+	    nullptr,
+	    IID_PPV_ARGS(DestinationResource)));
 
 	if (BufferData)
 	{
@@ -570,12 +570,12 @@ void OLandTest::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> CommandL
 
 		// Create a committed resource for the upload.
 		THROW_IF_FAILED(device->CreateCommittedResource(
-			&uploadHeapProperties,
-			D3D12_HEAP_FLAG_NONE,
-			&uploadBufferResourceDesc,
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(IntermediateResource)));
+		    &uploadHeapProperties,
+		    D3D12_HEAP_FLAG_NONE,
+		    &uploadBufferResourceDesc,
+		    D3D12_RESOURCE_STATE_GENERIC_READ,
+		    nullptr,
+		    IID_PPV_ARGS(IntermediateResource)));
 
 		D3D12_SUBRESOURCE_DATA subresourceData = {};
 		subresourceData.pData = BufferData;
@@ -634,7 +634,7 @@ void OLandTest::BuildRenderItems()
 	wavesRenderItem->NumFramesDirty = SRenderConstants::NumFrameResources;
 
 	WavesRenderItem = wavesRenderItem.get();
-	GetEngine()->GetOpaqueRenderItems().push_back(wavesRenderItem.get());
+	GetEngine()->GetRenderItems(SRenderLayer::Opaque).push_back(wavesRenderItem.get());
 
 	auto gridRenderItem = make_unique<SRenderItem>();
 	gridRenderItem->World = Utils::Math::Identity4x4();
@@ -645,7 +645,7 @@ void OLandTest::BuildRenderItems()
 	gridRenderItem->StartIndexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("grid").StartIndexLocation;
 	gridRenderItem->BaseVertexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("grid").BaseVertexLocation;
 
-	GetEngine()->GetOpaqueRenderItems().push_back(gridRenderItem.get());
+	GetEngine()->GetRenderItems(SRenderLayer::Opaque).push_back(gridRenderItem.get());
 }
 
 float OLandTest::GetHillsHeight(float X, float Z) const
@@ -656,9 +656,9 @@ float OLandTest::GetHillsHeight(float X, float Z) const
 XMFLOAT3 OLandTest::GetHillsNormal(float X, float Z) const
 {
 	XMFLOAT3 n(
-		-0.03f * Z * cosf(0.1f * X) - 0.3f * cosf(0.1f * Z),
-		1.0f,
-		-0.3f * sinf(0.1f * X) + 0.03f * X * sinf(0.1f * Z));
+	    -0.03f * Z * cosf(0.1f * X) - 0.3f * cosf(0.1f * Z),
+	    1.0f,
+	    -0.3f * sinf(0.1f * X) + 0.03f * X * sinf(0.1f * Z));
 
 	const XMVECTOR unitNormal = XMVector3Normalize(XMLoadFloat3(&n));
 	XMStoreFloat3(&n, unitNormal);
@@ -666,4 +666,3 @@ XMFLOAT3 OLandTest::GetHillsNormal(float X, float Z) const
 }
 
 #pragma optimize("", on)
-

@@ -73,6 +73,8 @@ set(SRC_FILES
         Application/Test/StencilingTest/StencilingTest.h
         Application/Test/StencilingTest/StencilingTest.h
         Application/Test/StencilingTest/StencilingTest.cpp
+        Application/Filters/BlurFilter.cpp
+        Application/Filters/BlurFilter.h
 )
 # Add sources to the project
 add_executable(DXRenderer

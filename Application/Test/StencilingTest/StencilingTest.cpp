@@ -1,13 +1,13 @@
 #include "StencilingTest.h"
 
+#include "../../../Materials/Material.h"
+#include "../../../Objects/GeomertryGenerator/GeometryGenerator.h"
 #include "../../Engine/Engine.h"
 #include "../../Window/Window.h"
 #include "Application.h"
 #include "Camera/Camera.h"
 #include "RenderConstants.h"
 #include "RenderItem.h"
-#include "../../../Materials/Material.h"
-#include "../../../Objects/GeomertryGenerator/GeometryGenerator.h"
 #include "Textures/DDSTextureLoader/DDSTextureLoader.h"
 
 #include <DXHelper.h>
@@ -22,9 +22,8 @@ using namespace Microsoft::WRL;
 
 using namespace DirectX;
 
-
 OStencilingTest::OStencilingTest(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window)
-	: OTest(_Engine, _Window)
+    : OTest(_Engine, _Window)
 {
 }
 
@@ -197,7 +196,6 @@ void OStencilingTest::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandL
 	}
 }
 
-
 void OStencilingTest::UpdateCamera()
 {
 	// Convert Spherical to Cartesian coordinates.
@@ -303,13 +301,13 @@ void OStencilingTest::OnRender(const UpdateEventArgs& Event)
 	commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
 	GetEngine()->SetPipelineState(SPSOType::Opaque);
-	DrawRenderItems(commandList.Get(), engine->GetOpaqueRenderItems());
+	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Opaque));
 
 	GetEngine()->SetPipelineState(SPSOType::AlphaTested);
-	DrawRenderItems(commandList.Get(), engine->GetAlphaTestedRenderItems());
+	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::AlphaTested));
 
 	GetEngine()->SetPipelineState(SPSOType::Transparent);
-	DrawRenderItems(commandList.Get(), engine->GetTransparentRenderItems());
+	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Transparent));
 
 	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(currentBackBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	// Indicate a state transition on the resource usage.
@@ -489,24 +487,19 @@ void OStencilingTest::BuildRootSignature()
 	}
 	THROW_IF_FAILED(hr);
 	THROW_IF_FAILED(Engine.lock()->GetDevice()->CreateRootSignature(0,
-		serializedRootSig->GetBufferPointer(),
-		serializedRootSig->GetBufferSize(),
-		IID_PPV_ARGS(&RootSignature)));
+	                                                                serializedRootSig->GetBufferPointer(),
+	                                                                serializedRootSig->GetBufferSize(),
+	                                                                IID_PPV_ARGS(&RootSignature)));
 }
 
 void OStencilingTest::BuildShadersAndInputLayout()
 {
-	const D3D_SHADER_MACRO fogDefines[] =
-	{
-		"FOG", "1",
-		NULL, NULL
+	const D3D_SHADER_MACRO fogDefines[] = {
+		"FOG", "1", NULL, NULL
 	};
 
-	const D3D_SHADER_MACRO alphaTestDefines[] =
-	{
-		"FOG", "1",
-		"ALPHA_TEST", "1",
-		NULL, NULL
+	const D3D_SHADER_MACRO alphaTestDefines[] = {
+		"FOG", "1", "ALPHA_TEST", "1", NULL, NULL
 	};
 
 	GetEngine()->BuildVSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::VSBaseShader);
@@ -583,10 +576,9 @@ void OStencilingTest::BuildRoomGeomety()
 	//  /   Floor      /
 	// /--------------/
 
-	std::array<SVertex, 20> vertices =
-	{
+	std::array<SVertex, 20> vertices = {
 		// Floor: Observe we tile texture coordinates.
-		SVertex(-3.5f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 0.0f, 4.0f), // 0 
+		SVertex(-3.5f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 0.0f, 4.0f), // 0
 		SVertex(-3.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f),
 		SVertex(7.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 4.0f, 0.0f),
 		SVertex(7.5f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 4.0f, 4.0f),
@@ -598,7 +590,7 @@ void OStencilingTest::BuildRoomGeomety()
 		SVertex(-2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.5f, 0.0f),
 		SVertex(-2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.5f, 2.0f),
 
-		SVertex(2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 2.0f), // 8 
+		SVertex(2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 2.0f), // 8
 		SVertex(2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f),
 		SVertex(7.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 2.0f, 0.0f),
 		SVertex(7.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 2.0f, 2.0f),
@@ -615,25 +607,44 @@ void OStencilingTest::BuildRoomGeomety()
 		SVertex(2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f)
 	};
 
-	std::array<std::int16_t, 30> indices =
-	{
+	std::array<std::int16_t, 30> indices = {
 		// Floor
-		0, 1, 2,
-		0, 2, 3,
+		0,
+		1,
+		2,
+		0,
+		2,
+		3,
 
 		// Walls
-		4, 5, 6,
-		4, 6, 7,
+		4,
+		5,
+		6,
+		4,
+		6,
+		7,
 
-		8, 9, 10,
-		8, 10, 11,
+		8,
+		9,
+		10,
+		8,
+		10,
+		11,
 
-		12, 13, 14,
-		12, 14, 15,
+		12,
+		13,
+		14,
+		12,
+		14,
+		15,
 
 		// Mirror
-		16, 17, 18,
-		16, 18, 19
+		16,
+		17,
+		18,
+		16,
+		18,
+		19
 	};
 
 	SSubmeshGeometry floorSubmesh;
@@ -685,7 +696,6 @@ void OStencilingTest::BuildRoomGeomety()
 
 	GetEngine()->SetSceneGeometry(std::move(geo));
 }
-
 
 void OStencilingTest::BuildRenderItems()
 {
@@ -761,13 +771,12 @@ void OStencilingTest::AnimateMaterials(const STimer& Timer)
 	waterMaterial->NumFramesDirty = SRenderConstants::NumFrameResources;
 }
 
-
 XMFLOAT3 OStencilingTest::GetHillsNormal(float X, float Z) const
 {
 	XMFLOAT3 n(
-		-0.03f * Z * cosf(0.1f * X) - 0.3f * cosf(0.1f * Z),
-		1.0f,
-		-0.3f * sinf(0.1f * X) + 0.03f * X * sinf(0.1f * Z));
+	    -0.03f * Z * cosf(0.1f * X) - 0.3f * cosf(0.1f * Z),
+	    1.0f,
+	    -0.3f * sinf(0.1f * X) + 0.03f * X * sinf(0.1f * Z));
 
 	const XMVECTOR unitNormal = XMVector3Normalize(XMLoadFloat3(&n));
 	XMStoreFloat3(&n, unitNormal);

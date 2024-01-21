@@ -14,8 +14,8 @@
 
 // Include structures and functions for lighting.
 #include "LightingUtils.hlsl"
-
-Texture2D    gTreeMapArray : register(t0);
+#include "GeometryUtils.hlsl"
+Texture2D    gDiffuseMap : register(t0);
 
 SamplerState gsamPointWrap        : register(s0);
 SamplerState gsamPointClamp       : register(s1);
@@ -74,15 +74,17 @@ cbuffer cbMaterial : register(b2)
 
 struct VertexIn
 {
-	float3 PosW  : POSITION;
-	float2 SizeW : SIZE;
+	float3 PosL    : POSITION;
+    float3 NormalL : NORMAL;
+	float2 TexC    : TEXCOORD;
 };
 
 struct VertexOut
 {
-	float4 CenterW    : SV_POSITION;
-    float2 SizeW    : POSITION;
-
+	float4 PosH    : SV_POSITION;
+    float3 PosW    : POSITION;
+    float3 NormalW : NORMAL;
+	float2 TexC    : TEXCOORD;
 };
 
 struct GeometryOut
@@ -94,117 +96,175 @@ struct GeometryOut
 	uint PrimID    : SV_PrimitiveID;
 };
 
+
 VertexOut VS(VertexIn vin)
 {
-	VertexOut vout;
+	VertexOut vout = (VertexOut)0.0f;
 
-	// Just pass data over to geometry shader.
-	vout.CenterW = float4(vin.PosW, 1.0);
-	vout.SizeW   = vin.SizeW;
+    // Transform to world space.
+    float4 posW = mul(float4(vin.PosL, 1.0f), gWorld);
+    vout.PosW = posW.xyz;
 
-	return vout;
+    // Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
+    vout.NormalW = mul(vin.NormalL, (float3x3)gWorld);
+
+    // Transform to homogeneous clip space.
+    vout.PosH = mul(posW, gViewProj);
+
+	// Output vertex attributes for interpolation across triangle.
+	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gTexTransform);
+	vout.TexC = mul(texC, gMatTransform).xy;
+
+    return vout;
 }
 
-// We expand each point into a quad (4 vertices), so the maximum number of vertices
-// we output per geometry shader invocation is 4.
-[maxvertexcount(4)]
-void GS(point VertexOut gin[1],
-		uint primID : SV_PrimitiveID,
-		inout TriangleStream<GeometryOut> stream)
+void EmitTriangle(VertexOut v0, VertexOut v1, VertexOut v2, inout TriangleStream<GeometryOut> stream) {
+	GeometryOut gout = (GeometryOut)0.0f;
+
+	// First vertex
+	gout.PosH = v0.PosH;
+	gout.PosW = v0.PosW;
+	gout.NormalW = v0.NormalW;
+	gout.TexC = v0.TexC;
+	stream.Append(gout);
+
+	// Second vertex
+	gout.PosH = v1.PosH;
+	gout.PosW = v1.PosW;
+	gout.NormalW = v1.NormalW;
+	gout.TexC = v1.TexC;
+	stream.Append(gout);
+
+	// Third vertex
+	gout.PosH = v2.PosH;
+	gout.PosW = v2.PosW;
+	gout.NormalW = v2.NormalW;
+	gout.TexC = v2.TexC;
+
+	stream.Append(gout);
+}
+
+
+VertexOut Midpoint(VertexOut v0, VertexOut v1)
 {
-//
-	// Compute the local coordinate system of the sprite relative to the world
-	// space such that the billboard is aligned with the y-axis and faces the eye.
-	//
+	VertexOut mid= (VertexOut)0.0f;
 
-	float3 up = float3(0.0f, 1.0f, 0.0f);
-	float3 look = gEyePosW - gin[0].CenterW;
-	look.y = 0.0f; // y-axis aligned, so project to xz-plane
-	look = normalize(look);
-	float3 right = cross(up, look);
+	// Interpolate positions in world space
+	mid.PosW = (v0.PosW + v1.PosW) * 0.5;
 
-	//
-	// Compute triangle strip vertices (quad) in world space.
-	//
-	float halfWidth  = 0.5f*gin[0].SizeW.x;
-	float halfHeight = 0.5f*gin[0].SizeW.y;
+	// Interpolate normals and normalize them
+	mid.NormalW = normalize((v0.NormalW + v1.NormalW) * 0.5);
 
-	float4 v[4];
-	v[0] = float4(gin[0].CenterW + halfWidth*right - halfHeight*up, 1.0f);
-	v[1] = float4(gin[0].CenterW + halfWidth*right + halfHeight*up, 1.0f);
-	v[2] = float4(gin[0].CenterW - halfWidth*right - halfHeight*up, 1.0f);
-	v[3] = float4(gin[0].CenterW - halfWidth*right + halfHeight*up, 1.0f);
+	// Interpolate texture coordinates
+	mid.TexC = (v0.TexC + v1.TexC) * 0.5;
 
-	//
-	// Transform quad vertices to world space and output
-	// them as a triangle strip.
-	//
+	mid.PosH = mul(float4(mid.PosW, 1.0f), gViewProj);
 
-	float2 texC[4] =
-	{
-		float2(0.0f, 1.0f),
-		float2(0.0f, 0.0f),
-		float2(1.0f, 1.0f),
-		float2(1.0f, 0.0f)
-	};
+	return mid;
+}
 
-	GeometryOut gout;
-	[unroll]
-	for(int i = 0; i < 4; ++i)
-	{
-		gout.PosH     = mul(v[i], gViewProj);
-		gout.PosW     = v[i].xyz;
-		gout.NormalW  = look;
-		gout.TexC     = texC[i];
-		gout.PrimID   = primID;
 
-		stream.Append(gout);
-	}
+#define MAX_VERTICES 32 // Adjust this based on your maximum expected triangles
+
+void SubdivideIcosahedron(VertexOut v0, VertexOut v1, VertexOut v2, inout TriangleStream<GeometryOut> stream, int lod) {
+    // Static array to store intermediate vertices
+    VertexOut vertices[MAX_VERTICES];
+    int numVertices = 0;
+
+    // Add initial vertices
+    vertices[numVertices++] = v0;
+    vertices[numVertices++] = v1;
+    vertices[numVertices++] = v2;
+
+    for (int level = 0; level < lod; ++level) {
+        int currentNumVertices = numVertices;
+        numVertices = 0;
+      // Inside the for loop for subdivision
+		for (int i = 0; i < currentNumVertices; i += 3) {
+		    // Extract vertices of the current triangle
+		    VertexOut v0 = vertices[i];
+		    VertexOut v1 = vertices[i + 1];
+		    VertexOut v2 = vertices[i + 2];
+
+		    // Calculate midpoints
+		    VertexOut v01 = Midpoint(v0, v1);
+		    VertexOut v12 = Midpoint(v1, v2);
+		    VertexOut v20 = Midpoint(v2, v0);
+
+		    // Add new triangles to the array with correct winding order
+		    vertices[numVertices++] = v0;
+		    vertices[numVertices++] = v01;
+		    vertices[numVertices++] = v20;
+
+		    vertices[numVertices++] = v01;
+		    vertices[numVertices++] = v1;
+		    vertices[numVertices++] = v12;
+
+		    vertices[numVertices++] = v20;
+		    vertices[numVertices++] = v01;
+		    vertices[numVertices++] = v12;
+
+		    vertices[numVertices++] = v20;
+		    vertices[numVertices++] = v12;
+		    vertices[numVertices++] = v2;
+		}
+    }
+
+    // Emit final triangles
+    for (int i = 0; i < numVertices; i += 3) {
+        EmitTriangle(vertices[i], vertices[i + 1], vertices[i + 2], stream);
+    }
 }
 
 
 
+
+
+[maxvertexcount(32)] // Adjust based on maximum expected vertices after subdivision
+void GS(triangle VertexOut gin[3], uint primID : SV_PrimitiveID, inout TriangleStream<GeometryOut> stream)
+{
+	// Calculate the distance from the camera to the center of the triangle
+	float distance = length((gin[0].PosW + gin[1].PosW + gin[2].PosW) / 3 - gEyePosW);
+	int lod = DetermineLOD(distance);
+
+	// Subdivide the icosahedron based on the level of detail
+	SubdivideIcosahedron(gin[0],gin[1],gin[2], stream, lod);
+}
 
 float4 PS(GeometryOut pin) : SV_Target
 {
-	float3 uvw = float3(pin.TexC, pin.PrimID%3);
-    float4 diffuseAlbedo = gTreeMapArray.Sample(gsamAnisotropicWrap, uvw) * gDiffuseAlbedo;
-
+	float4 diffuseAlbedo = gDiffuseMap.Sample(
+	 gsamAnisotropicWrap, pin.TexC) * gDiffuseAlbedo;
 #ifdef ALPHA_TEST
-	// Discard pixel if texture alpha < 0.1.  We do this test as soon
+
+	// Discard pixel if texture alpha < 0.1. We do this test as soon
 	// as possible in the shader so that we can potentially exit the
 	// shader early, thereby skipping the rest of the shader code.
 	clip(diffuseAlbedo.a - 0.1f);
+
 #endif
-
-    // Interpolating normal can unnormalize it, so renormalize it.
-    pin.NormalW = normalize(pin.NormalW);
-
-    // Vector from point being lit to eye.
+	// Interpolating normal can unnormalize it, so renormalize it.
+	pin.NormalW = normalize(pin.NormalW);
+	// Vector from point being lit to eye.
 	float3 toEyeW = gEyePosW - pin.PosW;
 	float distToEye = length(toEyeW);
 	toEyeW /= distToEye; // normalize
+	// Light terms.
+	float4 ambient = gAmbientLight*diffuseAlbedo;
+	const float shininess = 1.0f - gRoughness;
 
-    // Light terms.
-    float4 ambient = gAmbientLight*diffuseAlbedo;
-
-    const float shininess = 1.0f - gRoughness;
-    Material mat = { diffuseAlbedo, gFresnelR0, shininess };
-    float3 shadowFactor = 1.0f;
-    float4 directLight = ComputeLighting(gLights, mat, pin.PosW,
-        pin.NormalW, toEyeW, shadowFactor);
-
-    float4 litColor = ambient + directLight;
-
+	Material mat = { diffuseAlbedo, gFresnelR0, shininess };
+	float3 shadowFactor = 1.0f;
+	float4 directLight = ComputeLighting(gLights, mat, pin.PosW,
+	pin.NormalW, toEyeW, shadowFactor);
+	float4 litColor = ambient + directLight;
 #ifdef FOG
 	float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
 	litColor = lerp(litColor, gFogColor, fogAmount);
 #endif
-
-    // Common convention to take alpha from diffuse albedo.
-    litColor.a = diffuseAlbedo.a;
-
-    return litColor;
+	// Common convention to take alpha from diffuse albedo.
+	litColor.a = diffuseAlbedo.a;
+	return litColor;
 }
 
 
