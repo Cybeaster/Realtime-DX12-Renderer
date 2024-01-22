@@ -86,7 +86,6 @@ struct SMeshGeometry
 	DXGI_FORMAT IndexFormat = DXGI_FORMAT_R16_UINT;
 	UINT IndexBufferByteSize = 0;
 
-
 	SSubmeshGeometry& FindSubmeshGeomentry(const string& SubmeshName)
 	{
 		if (!DrawArgs.contains(SubmeshName))

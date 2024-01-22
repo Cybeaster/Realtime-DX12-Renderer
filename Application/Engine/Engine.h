@@ -7,6 +7,7 @@
 #include "DirectX/FrameResource.h"
 #include "Filters/BlurFilter.h"
 #include "RenderItem.h"
+#include "ShaderTypes.h"
 #include "Textures/Texture.h"
 
 #include <dxgi1_6.h>
@@ -43,8 +44,8 @@ public:
 
 	void FlushGPU() const;
 
-	int Run(shared_ptr<class OTest> Test);
-
+	int InitTests(shared_ptr<class OTest> Test);
+	void PostTestInit();
 	/**
 	 * Get a command queue. Valid types are:
 	 * - D3D12_COMMAND_LIST_TYPE_DIRECT : Can be used for draw, dispatch, or copy commands.
@@ -68,6 +69,8 @@ public:
 
 	void OnPreRender();
 	void Draw(const UpdateEventArgs& Args);
+	void Render(const UpdateEventArgs& Args);
+	void Update(const UpdateEventArgs& Args);
 	void OnUpdate(const UpdateEventArgs& Args);
 
 	void OnPostRender();
@@ -114,6 +117,9 @@ public:
 	void BuildVSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines = nullptr);
 	void BuildPSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines = nullptr);
 	void BuildGSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines = nullptr);
+	void BuildCSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines = nullptr);
+	void BuildShader(const wstring& ShaderPath, const string& ShaderName, EShaderLevel ShaderType, std::optional<string> ShaderEntry = {}, const D3D_SHADER_MACRO* Defines = nullptr);
+
 	ComPtr<ID3DBlob> GetShader(const string& ShaderName);
 
 	void CreatePSO(const string& PSOName, const D3D12_GRAPHICS_PIPELINE_STATE_DESC& PSODesc);
@@ -143,7 +149,11 @@ public:
 
 	void SetFog(DirectX::XMFLOAT4 Color, float Start, float Range);
 	SPassConstants& GetMainPassCB();
-	ComPtr<ID3D12DescriptorHeap> GetSRVHeap() const;
+	ComPtr<ID3D12DescriptorHeap>& GetSRVHeap();
+
+	vector<D3D12_INPUT_ELEMENT_DESC> InputLayout;
+	ComPtr<ID3D12RootSignature> DefaultRootSignature = nullptr;
+	OBlurFilter* GetBlurFilter();
 
 protected:
 	shared_ptr<OTest> GetTestByHWND(HWND Handler);
@@ -155,8 +165,8 @@ protected:
 	shared_ptr<OWindow> Window;
 	ComPtr<IDXGIAdapter4> GetAdapter(bool UseWarp);
 	ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> Adapter);
-	void BuildPostProcessRootSignature() const;
-	void BuildDefaultRootSignature() const;
+	void BuildPostProcessRootSignature();
+	void BuildDefaultRootSignature();
 
 	ComPtr<ID3D12Resource> GetBackBuffer() const;
 
@@ -193,9 +203,7 @@ private:
 
 	ComPtr<ID3D12RootSignature> PostProcessRootSignature = nullptr;
 
-	vector<D3D12_INPUT_ELEMENT_DESC> InputLayout;
-	ComPtr<ID3D12RootSignature> DefaultRootSignature = nullptr;
-
 	unique_ptr<OBlurFilter> BlurFilter = nullptr;
 	ComPtr<ID3D12DescriptorHeap> SRVHeap;
+	bool HasInitializedTests = false;
 };

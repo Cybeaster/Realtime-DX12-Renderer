@@ -3,7 +3,8 @@
 //=============================================================================
 
 #define N 256
-#define CacheSize (N + 2 * gMaxBlurRadius)
+static const int MaxBlurRadius = 5;
+#define CacheSize (N + 2 * MaxBlurRadius)
 
 cbuffer cbSettings : register(b0)
 {
@@ -26,17 +27,15 @@ cbuffer cbSettings : register(b0)
 	float w10;
 };
 
-static const int MaxBlurRadius = 5;
-
 Texture2D Input : register(t0);
 RWTexture2D<float4> Output : register(u0);
 
-groupshared float4 gCache[CacheSize];
+groupshared float4 Cache[CacheSize];
 
-[numthreads(N, 1, 1)]
-void HorizontalBLurCS(int3 GroupThreadID : SV_GroupThreadID,
-						int3 DispatchThreadID : SV_DispatchThreadID,
-{
+[numthreads(N, 1, 1)] void HorzBlurCS(int3 GroupThreadID
+                                      : SV_GroupThreadID,
+                                        int3 DispatchThreadID
+                                      : SV_DispatchThreadID) {
 	float weights[11] = { w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10 };
 
 	//
@@ -50,14 +49,14 @@ void HorizontalBLurCS(int3 GroupThreadID : SV_GroupThreadID,
 	if (GroupThreadID.x < BlurRadius)
 	{
 		// Clamp out of bound samples that occur at image borders.
-		int x = max(dispatchThreadID.x - BlurRadius, 0);
-		Cache[groupThreadID.x] = Input[int2(x, dispatchThreadID.y)];
+		int x = max(DispatchThreadID.x - BlurRadius, 0);
+		Cache[GroupThreadID.x] = Input[int2(x, DispatchThreadID.y)];
 	}
 
 	if (GroupThreadID.x >= N - BlurRadius)
 	{
 		// Clamp out of bound samples that occur at image borders.
-		int x = min(dispatchThreadID.x + BlurRadius, Input.Width - 1);
+		int x = min(DispatchThreadID.x + BlurRadius, Input.Length.x - 1);
 		Cache[GroupThreadID.x + 2 * BlurRadius] = Input[int2(x, DispatchThreadID.y)];
 	}
 
@@ -72,12 +71,13 @@ void HorizontalBLurCS(int3 GroupThreadID : SV_GroupThreadID,
 		int k = GroupThreadID.x + BlurRadius + i;
 		blurColor += weights[i + BlurRadius] * Cache[k];
 	}
-	Output(DispatchThreadID.xy) = blurColor;
+	Output[DispatchThreadID.xy] = blurColor;
 }
 
-[numthreads(1, N, 1)]
-void VertBlurCS(int3 GroupThreadID : SV_GroupThreadID,
-				int3 DispatchThreadID : SV_DispatchThreadID,
+    [numthreads(1, N, 1)] void VertBlurCS(int3 GroupThreadID
+                                          : SV_GroupThreadID,
+                                            int3 DispatchThreadID
+                                          : SV_DispatchThreadID)
 {
 	float weights[11] = { w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10 };
 
@@ -99,12 +99,12 @@ void VertBlurCS(int3 GroupThreadID : SV_GroupThreadID,
 	if (GroupThreadID.x >= N - BlurRadius)
 	{
 		// Clamp out of bound samples that occur at image borders.
-		int y = min(DispatchThreadID.y + BlurRadius, Input.Height - 1);
+		int y = min(DispatchThreadID.y + BlurRadius, Input.Length.y - 1);
 		Cache[GroupThreadID.x + 2 * BlurRadius] = Input[int2(DispatchThreadID.x, y)];
 	}
 
-	Cache[GroupThreadID.x + BlurRadius] = Input[min(DispatchThreadID.xy, Input.Length.xy - 1)];
-
+	// Clamp out of bound samples that occur at image borders.
+	Cache[GroupThreadID.y + BlurRadius] = Input[min(DispatchThreadID.xy, Input.Length.xy - 1)];
 	// Wait for all threads to finish.
 	GroupMemoryBarrierWithGroupSync();
 
@@ -114,5 +114,5 @@ void VertBlurCS(int3 GroupThreadID : SV_GroupThreadID,
 		int k = GroupThreadID.y + BlurRadius + i;
 		blurColor += weights[i + BlurRadius] * Cache[k];
 	}
-	Output(DispatchThreadID.xy) = blurColor;
+	Output[DispatchThreadID.xy] = blurColor;
 }

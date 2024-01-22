@@ -47,8 +47,6 @@ bool OTextureWaves::Initialize()
 	BuildMaterials();
 	BuildRenderItems();
 
-	engine->BuildFrameResource();
-	engine->BuildPSOs(RootSignature, InputLayout);
 	BuildPSOTreeSprites();
 	BuildPSOGeosphere();
 	THROW_IF_FAILED(queue->GetCommandList()->Close());
@@ -300,8 +298,8 @@ void OTextureWaves::OnRender(const UpdateEventArgs& Event)
 	GetEngine()->SetPipelineState(SPSOType::AlphaTested);
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::AlphaTested));
 
-	GetEngine()->SetPipelineState(SPSOType::TreeSprites);
-	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::AlphaTestedTreeSprites));
+	// GetEngine()->SetPipelineState(SPSOType::TreeSprites);
+	// DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::AlphaTestedTreeSprites));
 
 	GetEngine()->SetPipelineState(SPSOType::Transparent);
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Transparent));
@@ -315,8 +313,11 @@ void OTextureWaves::BuildPSOTreeSprites()
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC treeSpritePSO;
 	ZeroMemory(&treeSpritePSO, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 
+	auto defaultInputLayout = GetEngine()->InputLayout;
+	auto defaultRootSignature = GetEngine()->DefaultRootSignature;
+
 	treeSpritePSO.InputLayout = { TreeSpriteInputLayout.data(), static_cast<UINT>(TreeSpriteInputLayout.size()) };
-	treeSpritePSO.pRootSignature = RootSignature.Get();
+	treeSpritePSO.pRootSignature = defaultRootSignature.Get();
 
 	auto vsShader = GetEngine()->GetShader(SShaderTypes::VSTreeSprite);
 	auto psShader = GetEngine()->GetShader(SShaderTypes::PSTreeSprite);
@@ -345,11 +346,14 @@ void OTextureWaves::BuildPSOGeosphere()
 	UINT state;
 	bool enable = GetEngine()->GetMSAAState(state);
 
+	auto defaultInputLayout = GetEngine()->InputLayout;
+	auto defaultRootSignature = GetEngine()->DefaultRootSignature;
+
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC IcosahedronPSO;
 	ZeroMemory(&IcosahedronPSO, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 
-	IcosahedronPSO.InputLayout = { InputLayout.data(), static_cast<UINT>(InputLayout.size()) };
-	IcosahedronPSO.pRootSignature = RootSignature.Get();
+	IcosahedronPSO.InputLayout = { defaultInputLayout.data(), static_cast<UINT>(defaultInputLayout.size()) };
+	IcosahedronPSO.pRootSignature = defaultRootSignature.Get();
 
 	auto vsShader = GetEngine()->GetShader(SShaderTypes::VSIcosahedron);
 	auto psShader = GetEngine()->GetShader(SShaderTypes::PSIcosahedron);
@@ -458,32 +462,6 @@ void OTextureWaves::OnMouseMoved(const MouseMotionEventArgs& Args)
 
 void OTextureWaves::BuildShadersAndInputLayout()
 {
-	const D3D_SHADER_MACRO fogDefines[] = {
-		"FOG", "1", NULL, NULL
-	};
-
-	const D3D_SHADER_MACRO alphaTestDefines[] = {
-		"FOG", "1", "ALPHA_TEST", "1", NULL, NULL
-	};
-
-	GetEngine()->BuildGSShader(L"Shaders/Geosphere.hlsl", SShaderTypes::GSIcosahedron);
-	GetEngine()->BuildPSShader(L"Shaders/Geosphere.hlsl", SShaderTypes::PSIcosahedron, fogDefines);
-	GetEngine()->BuildVSShader(L"Shaders/Geosphere.hlsl", SShaderTypes::VSIcosahedron);
-
-	GetEngine()->BuildVSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::VSBaseShader);
-	GetEngine()->BuildPSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::PSOpaque, fogDefines);
-	GetEngine()->BuildPSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::PSAlphaTested, alphaTestDefines);
-
-	GetEngine()->BuildVSShader(L"Shaders/TreeSprite.hlsl", SShaderTypes::VSTreeSprite);
-	GetEngine()->BuildGSShader(L"Shaders/TreeSprite.hlsl", SShaderTypes::GSTreeSprite);
-	GetEngine()->BuildPSShader(L"Shaders/TreeSprite.hlsl", SShaderTypes::PSTreeSprite, alphaTestDefines);
-
-	InputLayout = {
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-	};
-
 	TreeSpriteInputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "SIZE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -719,13 +697,17 @@ void OTextureWaves::BuildBoxGeometryBuffers()
 
 void OTextureWaves::BuildDescriptorHeap()
 {
-	auto device = Engine.lock()->GetDevice();
-	auto srv = Engine.lock()->GetSRVHeap();
+	constexpr int textureNum = 5;
+	constexpr int blurNum = 4;
+
+	auto engine = Engine.lock();
+	auto device = engine->GetDevice();
+	auto& srv = engine->GetSRVHeap();
 	//
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 5;
+	srvHeapDesc.NumDescriptors = textureNum + blurNum;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	THROW_IF_FAILED(device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&srv)));
@@ -775,6 +757,11 @@ void OTextureWaves::BuildDescriptorHeap()
 	srvDesc.Texture2DArray.ArraySize = treeArray->GetDesc().DepthOrArraySize;
 	srvDesc.Texture2DArray.FirstArraySlice = 0;
 	GetEngine()->GetDevice()->CreateShaderResourceView(treeArray.Get(), &srvDesc, hDescriptor);
+
+	GetEngine()->GetBlurFilter()->BuildDescriptors(
+	    CD3DX12_CPU_DESCRIPTOR_HANDLE(srv->GetCPUDescriptorHandleForHeapStart(), 3, engine->CBVSRVUAVDescriptorSize),
+	    CD3DX12_GPU_DESCRIPTOR_HANDLE(srv->GetGPUDescriptorHandleForHeapStart(), 3, engine->CBVSRVUAVDescriptorSize),
+	    engine->CBVSRVUAVDescriptorSize);
 }
 
 void OTextureWaves::BuildRenderItems()

@@ -42,7 +42,6 @@ bool OLitWaves::Initialize()
 	BuildWavesGeometryBuffers();
 	BuildMaterials();
 	BuildRenderItems();
-	engine->BuildFrameResource();
 	BuildPSO();
 
 	THROW_IF_FAILED(queue->GetCommandList()->Close());

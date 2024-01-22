@@ -49,7 +49,6 @@ bool OStencilingTest::Initialize()
 	BuildRenderItems();
 
 	engine->BuildFrameResource();
-	engine->BuildPSOs(RootSignature, InputLayout);
 	THROW_IF_FAILED(queue->GetCommandList()->Close());
 
 	ID3D12CommandList* cmdsLists[] = { queue->GetCommandList().Get() };

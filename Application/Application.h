@@ -56,7 +56,7 @@ template<typename TestType>
 int OApplication::Run()
 {
 	auto test = make_shared<TestType>(Engine, Engine->GetWindow());
-	Engine->Run(test);
+	Engine->InitTests(test);
 	MSG msg = { 0 };
 	Timer.Reset();
 	while (msg.message != WM_QUIT)

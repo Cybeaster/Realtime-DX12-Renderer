@@ -367,7 +367,6 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 			app->bIsAppPaused = false;
 			app->bIsResizing = false;
 			app->Timer.Start();
-
 			ResizeEventArgs resizeEventArgs(width, height, hwnd);
 			Engine->OnResize(resizeEventArgs);
 			break;

@@ -71,6 +71,8 @@ bool OEngine::Initialize()
 
 void OEngine::PostInitialize()
 {
+	BlurFilter = make_unique<OBlurFilter>(Device.Get(), GetCommandQueue()->GetCommandList().Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), DXGI_FORMAT_R8G8B8A8_UNORM);
+	BuildShadersAndInputLayouts();
 	BuildDefaultRootSignature();
 	BuildPostProcessRootSignature();
 	BuildPSOs();
@@ -94,13 +96,20 @@ void OEngine::FlushGPU() const
 	CopyCommandQueue->Flush();
 }
 
-int OEngine::Run(shared_ptr<OTest> Test)
+int OEngine::InitTests(shared_ptr<OTest> Test)
 {
 	LOG(Log, "Engine::Run")
 
 	Tests[Test->GetWindow()->GetHWND()] = Test;
 	Test->Initialize();
+	PostTestInit();
 	return 0;
+}
+
+void OEngine::PostTestInit()
+{
+	BuildFrameResource();
+	HasInitializedTests = true;
 }
 
 shared_ptr<OCommandQueue> OEngine::GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type)
@@ -144,50 +153,56 @@ void OEngine::BuildFrameResource(uint32_t PassCount)
 
 void OEngine::OnPreRender()
 {
-	const auto allocator = GetCommandQueue()->GetCommandAllocator();
-	const auto commandList = GetCommandQueue()->GetCommandList();
+	if (SRVHeap)
+	{
+		const auto allocator = GetCommandQueue()->GetCommandAllocator();
+		const auto commandList = GetCommandQueue()->GetCommandList();
 
-	// Reuse the memory associated with command recording.
-	// We can only reset when the associated command lists have finished execution on the GPU.
-	THROW_IF_FAILED(allocator->Reset());
+		// Reuse the memory associated with command recording.
+		// We can only reset when the associated command lists have finished execution on the GPU.
+		THROW_IF_FAILED(allocator->Reset());
 
-	// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
-	// Reusing the command list reuses memory.
-	THROW_IF_FAILED(commandList->Reset(allocator.Get(), GetPSO(SPSOType::Opaque).Get()));
+		// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
+		// Reusing the command list reuses memory.
+		THROW_IF_FAILED(commandList->Reset(allocator.Get(), GetPSO(SPSOType::Opaque).Get()));
 
-	const auto window = GetWindow();
-	commandList->RSSetViewports(1, &window->Viewport);
-	commandList->RSSetScissorRects(1, &window->ScissorRect);
+		const auto window = GetWindow();
+		commandList->RSSetViewports(1, &window->Viewport);
+		commandList->RSSetScissorRects(1, &window->ScissorRect);
 
-	const auto currentBackBuffer = window->GetCurrentBackBuffer().Get();
-	const auto dsv = window->GetDepthStensilView();
-	const auto rtv = window->CurrentBackBufferView();
+		const auto currentBackBuffer = window->GetCurrentBackBuffer().Get();
+		const auto dsv = window->GetDepthStensilView();
+		const auto rtv = window->CurrentBackBufferView();
 
-	Utils::ResourceBarrier(commandList.Get(), currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		Utils::ResourceBarrier(commandList.Get(), currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-	// Clear the back buffer and depth buffer.
-	commandList->ClearRenderTargetView(rtv, reinterpret_cast<float*>(&MainPassCB.FogColor), 0, nullptr);
-	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+		// Clear the back buffer and depth buffer.
+		commandList->ClearRenderTargetView(rtv, reinterpret_cast<float*>(&MainPassCB.FogColor), 0, nullptr);
+		commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
-	// Specify the buffers we are going to render to.
-	commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
+		// Specify the buffers we are going to render to.
+		commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
 
-	ID3D12DescriptorHeap* heaps[] = { SRVHeap.Get() };
-	commandList->SetDescriptorHeaps(_countof(heaps), heaps);
+		ID3D12DescriptorHeap* heaps[] = { SRVHeap.Get() };
+		commandList->SetDescriptorHeaps(_countof(heaps), heaps);
 
-	commandList->SetGraphicsRootSignature(DefaultRootSignature.Get());
+		commandList->SetGraphicsRootSignature(DefaultRootSignature.Get());
+	}
 }
 
 void OEngine::Draw(const UpdateEventArgs& Args)
 {
 	LOG(Log, "Engine::OnRender")
 
-	OnUpdate(Args);
-	for (const auto val : Tests | std::views::values)
+	if (HasInitializedTests)
 	{
-		val->OnUpdate(Args);
+		Update(Args);
+		Render(Args);
 	}
+}
 
+void OEngine::Render(const UpdateEventArgs& Args)
+{
 	OnPreRender();
 	for (const auto val : Tests | std::views::values)
 	{
@@ -196,9 +211,21 @@ void OEngine::Draw(const UpdateEventArgs& Args)
 	OnPostRender();
 }
 
+void OEngine::Update(const UpdateEventArgs& Args)
+{
+	OnUpdate(Args);
+	for (const auto val : Tests | std::views::values)
+	{
+		val->OnUpdate(Args);
+	}
+}
+
 void OEngine::OnUpdate(const UpdateEventArgs& Args)
 {
-	UpdateMainPass(Args.Timer);
+	if (CurrentFrameResources)
+	{
+		UpdateMainPass(Args.Timer);
+	}
 }
 
 void OEngine::OnPostRender()
@@ -233,8 +260,7 @@ void OEngine::PostProcess(HWND Handler)
 {
 	const auto commandList = GetCommandQueue()->GetCommandList();
 	const auto backBuffer = GetWindowByHWND(Handler)->GetCurrentBackBuffer().Get();
-	BlurFilter->Execute(commandList.Get(),
-	                    PostProcessRootSignature.Get(),
+	BlurFilter->Execute(PostProcessRootSignature.Get(),
 	                    PSOs[SPSOType::HorizontalBlur].Get(),
 	                    PSOs[SPSOType::VerticalBlur].Get(),
 	                    backBuffer,
@@ -245,7 +271,7 @@ void OEngine::PostProcess(HWND Handler)
 	                       D3D12_RESOURCE_STATE_COPY_SOURCE,
 	                       D3D12_RESOURCE_STATE_COPY_DEST);
 
-	commandList->CopyResource(backBuffer, BlurFilter->Output());
+	BlurFilter->OutputTo(backBuffer);
 
 	Utils::ResourceBarrier(commandList.Get(),
 	                       backBuffer,
@@ -335,10 +361,18 @@ void OEngine::OnResize(ResizeEventArgs& Args)
 	LOG(Log, "Engine::OnResize")
 
 	const auto window = GetWindowByHWND(Args.WindowHandle);
+	Args.Height = window->GetHeight();
+	Args.Width = window->GetWidth();
+
 	window->OnResize(Args);
 	if (const auto test = GetTestByHWND(Args.WindowHandle))
 	{
 		test->OnResize(Args);
+	}
+
+	if (BlurFilter)
+	{
+		BlurFilter->OnResize(Args.Width, Args.Height);
 	}
 }
 
@@ -401,7 +435,7 @@ void OEngine::BuildPSOs()
 	ZeroMemory(&opaquePSO, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 
 	opaquePSO.InputLayout = { InputLayout.data(), static_cast<UINT>(InputLayout.size()) };
-	opaquePSO.pRootSignature = RootSignature.Get();
+	opaquePSO.pRootSignature = DefaultRootSignature.Get();
 
 	auto vsShader = GetShader(SShaderTypes::VSBaseShader);
 	auto psShader = GetShader(SShaderTypes::PSOpaque);
@@ -551,7 +585,34 @@ void OEngine::BuildBlurPSO()
 
 void OEngine::BuildShadersAndInputLayouts()
 {
+	constexpr D3D_SHADER_MACRO fogDefines[] = {
+		"FOG", "1", NULL, NULL
+	};
 
+	constexpr D3D_SHADER_MACRO alphaTestDefines[] = {
+		"FOG", "1", "ALPHA_TEST", "1", NULL, NULL
+	};
+
+	BuildGSShader(L"Shaders/Geosphere.hlsl", SShaderTypes::GSIcosahedron);
+	BuildPSShader(L"Shaders/Geosphere.hlsl", SShaderTypes::PSIcosahedron, fogDefines);
+	BuildVSShader(L"Shaders/Geosphere.hlsl", SShaderTypes::VSIcosahedron);
+
+	BuildVSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::VSBaseShader);
+	BuildPSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::PSOpaque, fogDefines);
+	BuildPSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::PSAlphaTested, alphaTestDefines);
+
+	BuildVSShader(L"Shaders/TreeSprite.hlsl", SShaderTypes::VSTreeSprite);
+	BuildGSShader(L"Shaders/TreeSprite.hlsl", SShaderTypes::GSTreeSprite);
+	BuildPSShader(L"Shaders/TreeSprite.hlsl", SShaderTypes::PSTreeSprite, alphaTestDefines);
+
+	BuildShader(L"Shaders/Blur.hlsl", SShaderTypes::CSHorizontalBlur, EShaderLevel::ComputeShader, "HorzBlurCS");
+	BuildShader(L"Shaders/Blur.hlsl", SShaderTypes::CSVerticalBlur, EShaderLevel::ComputeShader, "VertBlurCS");
+
+	InputLayout = {
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
 }
 
 D3D12_RENDER_TARGET_BLEND_DESC OEngine::GetTransparentBlendState()
@@ -668,6 +729,11 @@ const vector<unique_ptr<SRenderItem>>& OEngine::GetAllRenderItems()
 void OEngine::SetPipelineState(string PSOName)
 {
 	GetCommandQueue()->GetCommandList()->SetPipelineState(PSOs[PSOName].Get());
+}
+
+OBlurFilter* OEngine::GetBlurFilter()
+{
+	return BlurFilter.get();
 }
 
 shared_ptr<OTest> OEngine::GetTestByHWND(HWND Handler)
@@ -798,7 +864,7 @@ ComPtr<ID3D12Device2> OEngine::CreateDevice(Microsoft::WRL::ComPtr<IDXGIAdapter4
 	return d3d12Device2;
 }
 
-void OEngine::BuildPostProcessRootSignature() const
+void OEngine::BuildPostProcessRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE srvTable;
 	srvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
@@ -821,7 +887,7 @@ void OEngine::BuildPostProcessRootSignature() const
 	Utils::BuildRootSignature(Device.Get(), PostProcessRootSignature, rootSigDesc);
 }
 
-void OEngine::BuildDefaultRootSignature() const
+void OEngine::BuildDefaultRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable;
 	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
@@ -925,6 +991,46 @@ void OEngine::BuildGSShader(const wstring& ShaderPath, const string& ShaderName,
 	Shaders[ShaderName] = Utils::CompileShader(ShaderPath, Defines, "GS", "gs_5_1");
 }
 
+void OEngine::BuildCSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines)
+{
+	Shaders[ShaderName] = Utils::CompileShader(ShaderPath, Defines, "CS", "cs_5_1");
+}
+
+void OEngine::BuildShader(const wstring& ShaderPath, const string& ShaderName, EShaderLevel ShaderType, std::optional<string> ShaderEntry, const D3D_SHADER_MACRO* Defines)
+{
+	string entry = "";
+	string target = "";
+	switch (ShaderType)
+	{
+	case EShaderLevel::VertexShader:
+		entry = "VS";
+		target = "vs_5_1";
+		break;
+	case EShaderLevel::PixelShader:
+		entry = "PS";
+		target = "ps_5_1";
+		break;
+	case EShaderLevel::GeometryShader:
+		entry = "GS";
+		target = "gs_5_1";
+		break;
+	case EShaderLevel::HullShader:
+		entry = "HS";
+		target = "hs_5_1";
+		break;
+	case EShaderLevel::DomainShader:
+		entry = "DS";
+		target = "ds_5_1";
+		break;
+	case EShaderLevel::ComputeShader:
+		entry = "CS";
+		target = "cs_5_1";
+		break;
+	}
+	entry = ShaderEntry.value_or(entry);
+	Shaders[ShaderName] = Utils::CompileShader(ShaderPath, Defines, entry, target);
+}
+
 ComPtr<ID3DBlob> OEngine::GetShader(const string& ShaderName)
 {
 	if (!Shaders.contains(ShaderName))
@@ -960,7 +1066,7 @@ SPassConstants& OEngine::GetMainPassCB()
 	return MainPassCB;
 }
 
-ComPtr<ID3D12DescriptorHeap> OEngine::GetSRVHeap() const
+ComPtr<ID3D12DescriptorHeap>& OEngine::GetSRVHeap()
 {
 	return SRVHeap;
 }

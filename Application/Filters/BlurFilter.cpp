@@ -1,16 +1,16 @@
 #include "BlurFilter.h"
 
 #include "../../Utils/DirectX.h"
-
-OBlurFilter::OBlurFilter(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format)
-    : Device(Device), Width(Width), Height(Height), Format(Format)
+#pragma optimize("", off)
+OBlurFilter::OBlurFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format)
+    : Device(Device), CMDList(List), Width(Width), Height(Height), Format(Format)
 {
 	BuildResources();
 }
 
-ID3D12Resource* OBlurFilter::Output() const
+void OBlurFilter::OutputTo(ID3D12Resource* Destination) const
 {
-	return BlurMap0.Get();
+	CMDList->CopyResource(Destination, BlurMap0.Get());
 }
 
 void OBlurFilter::BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE HCPUDescriptor, CD3DX12_GPU_DESCRIPTOR_HANDLE HGPUDescriptor, UINT DescriptorSize)
@@ -96,11 +96,11 @@ void OBlurFilter::OnResize(UINT NewWidth, UINT NewHeight)
 	}
 }
 
-void OBlurFilter::Execute(ID3D12GraphicsCommandList* CMDList,
-                          ID3D12RootSignature* RootSignature,
-                          ID3D12PipelineState* HorizontalBlurPSO,
-                          ID3D12PipelineState* VerticalBlurPSO,
-                          ID3D12Resource* Input, int BlurCount)
+void OBlurFilter::Execute(
+    ID3D12RootSignature* RootSignature,
+    ID3D12PipelineState* HorizontalBlurPSO,
+    ID3D12PipelineState* VerticalBlurPSO,
+    ID3D12Resource* Input, int BlurCount) const
 {
 	using namespace Utils;
 	const auto weights = CalcGaussWeights(2.5f);
@@ -111,13 +111,13 @@ void OBlurFilter::Execute(ID3D12GraphicsCommandList* CMDList,
 	CMDList->SetComputeRoot32BitConstants(0, 1, &blurRadius, 0);
 	CMDList->SetComputeRoot32BitConstants(0, static_cast<UINT>(weights.size()), weights.data(), 1);
 
-	ResourceBarrier(CMDList, Input, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_COPY_SOURCE);
-	ResourceBarrier(CMDList, BlurMap0.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_COPY_DEST);
+	ResourceBarrier(CMDList, Input, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_SOURCE);
+	ResourceBarrier(CMDList, BlurMap0.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
 
 	CMDList->CopyResource(BlurMap0.Get(), Input);
 
 	ResourceBarrier(CMDList, BlurMap0.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ);
-	ResourceBarrier(CMDList, BlurMap1.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	ResourceBarrier(CMDList, BlurMap1.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
 	for (int i = 0; i < BlurCount; i++)
 	{
@@ -132,8 +132,8 @@ void OBlurFilter::Execute(ID3D12GraphicsCommandList* CMDList,
 		const UINT numGroupsX = (UINT)ceilf(Width / 256.0f);
 		CMDList->Dispatch(numGroupsX, Height, 1);
 
-		ResourceBarrier(CMDList, BlurMap0.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
-		ResourceBarrier(CMDList, BlurMap1.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		ResourceBarrier(CMDList, BlurMap0.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		ResourceBarrier(CMDList, BlurMap1.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
 
 		// vertical BLur
 		CMDList->SetPipelineState(VerticalBlurPSO);
@@ -183,3 +183,5 @@ vector<float> OBlurFilter::CalcGaussWeights(float Sigma) const
 	}
 	return weights;
 }
+
+#pragma optimize("", on)

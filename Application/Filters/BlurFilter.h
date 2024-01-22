@@ -5,21 +5,21 @@
 class OBlurFilter
 {
 public:
-	OBlurFilter(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format);
+	OBlurFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format);
 	OBlurFilter(const OBlurFilter& rhs) = delete;
 	OBlurFilter& operator=(const OBlurFilter& rhs) = delete;
 	~OBlurFilter() = default;
 
-	ID3D12Resource* Output() const;
+	void OutputTo(ID3D12Resource* Destination) const;
 
 	void BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE HCPUDescriptor, CD3DX12_GPU_DESCRIPTOR_HANDLE HGPUDescriptor, UINT DescriptorSize);
 	void OnResize(UINT NewWidth, UINT NewHeight);
-	void Execute(ID3D12GraphicsCommandList* CMDList,
-	             ID3D12RootSignature* RootSignature,
-	             ID3D12PipelineState* HorizontalBlurPSO,
-	             ID3D12PipelineState* VerticalBlurPSO,
-	             ID3D12Resource* Input,
-	             int BlurCount);
+	void Execute(
+	    ID3D12RootSignature* RootSignature,
+	    ID3D12PipelineState* HorizontalBlurPSO,
+	    ID3D12PipelineState* VerticalBlurPSO,
+	    ID3D12Resource* Input,
+	    int BlurCount) const;
 
 private:
 	vector<float> CalcGaussWeights(float Sigma) const;
@@ -30,6 +30,7 @@ private:
 private:
 	const uint32_t MaxBlurRadius = 5;
 
+	ID3D12GraphicsCommandList* CMDList = nullptr;
 	ID3D12Device* Device = nullptr;
 
 	uint32_t Width = 0;

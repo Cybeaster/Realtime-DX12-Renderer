@@ -75,6 +75,9 @@ set(SRC_FILES
         Application/Test/StencilingTest/StencilingTest.cpp
         Application/Filters/BlurFilter.cpp
         Application/Filters/BlurFilter.h
+        Types/DirectX/ShaderTypes.h
+        Types/DirectX/ShaderTypes.h
+        Utils/DirectX.cpp
 )
 # Add sources to the project
 add_executable(DXRenderer
