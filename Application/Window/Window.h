@@ -97,8 +97,8 @@ public:
 	uint64_t FenceValues[BuffersCount];
 
 	ComPtr<ID3D12Resource> DepthBuffer;
-	ComPtr<ID3D12DescriptorHeap> DSVDescriptorHeap;
-	ComPtr<ID3D12DescriptorHeap> RTVDescriptorHeap;
+	ComPtr<ID3D12DescriptorHeap> DSVHeap;
+	ComPtr<ID3D12DescriptorHeap> RTVHeap;
 
 	void MoveToNextFrame();
 	const ComPtr<IDXGISwapChain4>& GetSwapChain();

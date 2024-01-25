@@ -1,15 +1,14 @@
 #include "BlurFilter.h"
 
 #include "../../Utils/DirectX.h"
-#pragma optimize("", off)
 OBlurFilter::OBlurFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format)
-    : Device(Device), CMDList(List), Width(Width), Height(Height), Format(Format)
+    : OFilterBase(Device, List, Width, Height, Format)
 {
-	BuildResources();
 }
 
 void OBlurFilter::OutputTo(ID3D12Resource* Destination) const
 {
+	Utils::ResourceBarrier(CMDList, Destination, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
 	CMDList->CopyResource(Destination, BlurMap0.Get());
 }
 
@@ -51,7 +50,7 @@ void OBlurFilter::BuildDescriptors() const
 	Device->CreateUnorderedAccessView(BlurMap1.Get(), nullptr, &uavDesc, Blur1CpuUav);
 }
 
-void OBlurFilter::BuildResources()
+void OBlurFilter::BuildResource()
 {
 	D3D12_RESOURCE_DESC texDesc = {};
 	ZeroMemory(&texDesc, sizeof(D3D12_RESOURCE_DESC));
@@ -82,18 +81,6 @@ void OBlurFilter::BuildResources()
 	                                                D3D12_RESOURCE_STATE_COMMON,
 	                                                nullptr,
 	                                                IID_PPV_ARGS(BlurMap1.GetAddressOf())));
-}
-
-void OBlurFilter::OnResize(UINT NewWidth, UINT NewHeight)
-{
-	if (Width != NewWidth || Height != NewHeight)
-	{
-		Width = NewWidth;
-		Height = NewHeight;
-
-		BuildResources();
-		BuildDescriptors();
-	}
 }
 
 void OBlurFilter::Execute(
@@ -183,5 +170,3 @@ vector<float> OBlurFilter::CalcGaussWeights(float Sigma) const
 	}
 	return weights;
 }
-
-#pragma optimize("", on)

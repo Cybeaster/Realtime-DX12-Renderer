@@ -5,8 +5,10 @@
 #include "../Types/Types.h"
 #include "../Window/Window.h"
 #include "DirectX/FrameResource.h"
-#include "Filters/BlurFilter.h"
+#include "Filters/Blur/BlurFilter.h"
+#include "Filters/SobelFilter/SobelFilter.h"
 #include "RenderItem.h"
+#include "RenderTarget/RenderTarget.h"
 #include "ShaderTypes.h"
 #include "Textures/Texture.h"
 
@@ -46,12 +48,6 @@ public:
 
 	int InitTests(shared_ptr<class OTest> Test);
 	void PostTestInit();
-	/**
-	 * Get a command queue. Valid types are:
-	 * - D3D12_COMMAND_LIST_TYPE_DIRECT : Can be used for draw, dispatch, or copy commands.
-	 * - D3D12_COMMAND_LIST_TYPE_COMPUTE: Can be used for dispatch or copy commands.
-	 * - D3D12_COMMAND_LIST_TYPE_COPY   : Can be used for copy commands.
-	 */
 
 	void DestroyWindow();
 	void OnWindowDestroyed();
@@ -95,8 +91,28 @@ public:
 
 	vector<SRenderItem*>& GetRenderItems(const string& Type);
 
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetOpaquePSODesc();
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetAlphaTestedPSODesc();
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetTransparentPSODesc();
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetShadowPSODesc();
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetReflectedPSODesc();
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetMirrorPSODesc();
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetDebugPSODesc();
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetCompositePSODesc();
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetTreeSpritePSODesc();
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetIcosahedronPSODesc();
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetHorizontalBlurPSODesc();
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetVerticalBlurPSODesc();
+
+	D3D12_COMPUTE_PIPELINE_STATE_DESC GetWavesDisturbPSODesc();
+	D3D12_COMPUTE_PIPELINE_STATE_DESC GetWavesUpdatePSODesc();
+
+	D3D12_COMPUTE_PIPELINE_STATE_DESC GetSobelPSODesc();
+
 	void BuildPSOs();
 	void BuildBlurPSO();
+	void BuildSobelPSO();
+	void BuildCompositePSO();
 
 	void BuildShadersAndInputLayouts();
 
@@ -151,15 +167,18 @@ public:
 	SPassConstants& GetMainPassCB();
 	ComPtr<ID3D12DescriptorHeap>& GetSRVHeap();
 
-	vector<D3D12_INPUT_ELEMENT_DESC> InputLayout;
-	ComPtr<ID3D12RootSignature> DefaultRootSignature = nullptr;
+	ID3D12RootSignature* GetDefaultRootSignature() const;
+	vector<D3D12_INPUT_ELEMENT_DESC>& GetDefaultInputLayout();
+
 	OBlurFilter* GetBlurFilter();
+	void BuildFilters();
+	void BuildOffscreenRT();
+	ORenderTarget* GetOffscreenRT() const;
+	void DrawFullScreenQuad();
 
 protected:
 	shared_ptr<OTest> GetTestByHWND(HWND Handler);
 	shared_ptr<OWindow> GetWindowByHWND(HWND Handler);
-	void LoadContent();
-	void UnloadContent();
 	void Destroy();
 
 	shared_ptr<OWindow> Window;
@@ -203,7 +222,15 @@ private:
 
 	ComPtr<ID3D12RootSignature> PostProcessRootSignature = nullptr;
 
+	ComPtr<ID3D12RootSignature> DefaultRootSignature = nullptr;
+	vector<D3D12_INPUT_ELEMENT_DESC> InputLayout;
+
+	//filters
 	unique_ptr<OBlurFilter> BlurFilter = nullptr;
+	unique_ptr<OSobelFilter> SobelFilter = nullptr;
+
 	ComPtr<ID3D12DescriptorHeap> SRVHeap;
 	bool HasInitializedTests = false;
+
+	unique_ptr<ORenderTarget> OffscreenRT = nullptr;
 };

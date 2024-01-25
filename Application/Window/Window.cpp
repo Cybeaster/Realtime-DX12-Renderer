@@ -23,7 +23,7 @@ OWindow::OWindow(shared_ptr<OEngine> _Engine, HWND hWnd, const SWindowInfo& _Win
     , Camera(_Camera)
 {
 	SwapChain = CreateSwapChain();
-	RTVDescriptorHeap = _Engine->CreateDescriptorHeap(BuffersCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	RTVHeap = _Engine->CreateDescriptorHeap(BuffersCount + 1, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	RTVDescriptorSize = _Engine->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
@@ -32,10 +32,9 @@ OWindow::OWindow(shared_ptr<OEngine> _Engine, HWND hWnd, const SWindowInfo& _Win
 	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	dsvHeapDesc.NodeMask = 0;
 	THROW_IF_FAILED(Engine.lock()->GetDevice()->CreateDescriptorHeap(
-	    &dsvHeapDesc, IID_PPV_ARGS(DSVDescriptorHeap.GetAddressOf())));
+	    &dsvHeapDesc, IID_PPV_ARGS(DSVHeap.GetAddressOf())));
 
 	UpdateRenderTargetViews();
-	//ResizeDepthBuffer();
 }
 
 const wstring& OWindow::GetName() const
@@ -67,7 +66,7 @@ UINT OWindow::Present()
 
 D3D12_CPU_DESCRIPTOR_HANDLE OWindow::CurrentBackBufferView() const
 {
-	return CD3DX12_CPU_DESCRIPTOR_HANDLE(RTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
+	return CD3DX12_CPU_DESCRIPTOR_HANDLE(RTVHeap->GetCPUDescriptorHandleForHeapStart(),
 	                                     CurrentBackBufferIndex,
 	                                     RTVDescriptorSize);
 }
@@ -347,7 +346,7 @@ ComPtr<IDXGISwapChain4> OWindow::CreateSwapChain()
 void OWindow::UpdateRenderTargetViews()
 {
 	const auto device = Engine.lock()->GetDevice();
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(RTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(RTVHeap->GetCPUDescriptorHandleForHeapStart());
 
 	for (int i = 0; i < BuffersCount; i++)
 	{
@@ -419,12 +418,12 @@ HWND OWindow::GetHWND() const
 
 ComPtr<ID3D12DescriptorHeap> OWindow::GetDSVDescriptorHeap() const
 {
-	return DSVDescriptorHeap;
+	return DSVHeap;
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE OWindow::GetDepthStensilView() const
 {
-	return DSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	return DSVHeap->GetCPUDescriptorHandleForHeapStart();
 }
 
 #pragma optimize("", on)

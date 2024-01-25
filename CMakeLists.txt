@@ -73,11 +73,20 @@ set(SRC_FILES
         Application/Test/StencilingTest/StencilingTest.h
         Application/Test/StencilingTest/StencilingTest.h
         Application/Test/StencilingTest/StencilingTest.cpp
-        Application/Filters/BlurFilter.cpp
-        Application/Filters/BlurFilter.h
+        Application/Filters/Blur/BlurFilter.cpp
+        Application/Filters/Blur/BlurFilter.h
         Types/DirectX/ShaderTypes.h
         Types/DirectX/ShaderTypes.h
         Utils/DirectX.cpp
+        Types/Settings.h
+        Types/Settings.cpp
+        Application/Filters/SobelFilter/SobelFilter.cpp
+        Application/Filters/SobelFilter/SobelFilter.h
+        Application/Filters/FilterBase.h
+        Objects/Geometry/GPUWave/GpuWave.cpp
+        Objects/Geometry/GPUWave/GpuWave.h
+        Application/Engine/RenderTarget/RenderTarget.cpp
+        Application/Engine/RenderTarget/RenderTarget.h
 )
 # Add sources to the project
 add_executable(DXRenderer

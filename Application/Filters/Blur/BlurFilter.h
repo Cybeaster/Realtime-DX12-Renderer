@@ -1,19 +1,20 @@
 #pragma once
+#include "Filters/FilterBase.h"
+
 #include <Types.h>
 #include <d3dx12.h>
 #include <wrl/client.h>
-class OBlurFilter
+class OBlurFilter : public OFilterBase
 {
 public:
 	OBlurFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format);
 	OBlurFilter(const OBlurFilter& rhs) = delete;
 	OBlurFilter& operator=(const OBlurFilter& rhs) = delete;
-	~OBlurFilter() = default;
 
 	void OutputTo(ID3D12Resource* Destination) const;
 
-	void BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE HCPUDescriptor, CD3DX12_GPU_DESCRIPTOR_HANDLE HGPUDescriptor, UINT DescriptorSize);
-	void OnResize(UINT NewWidth, UINT NewHeight);
+	void BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE HCPUDescriptor, CD3DX12_GPU_DESCRIPTOR_HANDLE HGPUDescriptor, UINT DescriptorSize) override;
+
 	void Execute(
 	    ID3D12RootSignature* RootSignature,
 	    ID3D12PipelineState* HorizontalBlurPSO,
@@ -24,18 +25,11 @@ public:
 private:
 	vector<float> CalcGaussWeights(float Sigma) const;
 
-	void BuildDescriptors() const;
-	void BuildResources();
+	void BuildDescriptors() const override;
+	void BuildResource() override;
 
 private:
 	const uint32_t MaxBlurRadius = 5;
-
-	ID3D12GraphicsCommandList* CMDList = nullptr;
-	ID3D12Device* Device = nullptr;
-
-	uint32_t Width = 0;
-	uint32_t Height = 0;
-	DXGI_FORMAT Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE Blur0CpuSrv;
 	CD3DX12_CPU_DESCRIPTOR_HANDLE Blur0CpuUav;

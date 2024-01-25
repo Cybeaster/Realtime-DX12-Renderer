@@ -33,9 +33,10 @@ struct SPSOType
 	inline static const string StencilMirrors = "Mirror";
 	inline static const string TreeSprites = "TreeSprites";
 	inline static const string Icosahedron = "Icosahedron";
-
 	inline static const string HorizontalBlur = "HorizontalBlur";
 	inline static const string VerticalBlur = "VerticalBlur";
+	inline static const string SobelFilter = "SobelFilter";
+	inline static const string Composite = "Composite";
 };
 
 struct SShaderTypes
@@ -56,4 +57,12 @@ struct SShaderTypes
 
 	inline static const string CSHorizontalBlur = "CSHorizontalBlur";
 	inline static const string CSVerticalBlur = "CSVerticalBlur";
+
+	inline static const string PSComposite = "PSComposite";
+	inline static const string VSComposite = "VSComposite";
+
+	inline static const string CSWavesDisturb = "CSWavesDisturb";
+	inline static const string CSWavesUpdate = "CSWavesUpdate";
+
+	inline static const string CSSobelFilter = "CSSobelFilter";
 };

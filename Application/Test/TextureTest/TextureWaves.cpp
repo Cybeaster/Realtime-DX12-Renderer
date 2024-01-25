@@ -313,13 +313,14 @@ void OTextureWaves::BuildPSOTreeSprites()
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC treeSpritePSO;
 	ZeroMemory(&treeSpritePSO, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 
-	auto defaultInputLayout = GetEngine()->InputLayout;
-	auto defaultRootSignature = GetEngine()->DefaultRootSignature;
+	auto defaultInputLayout = GetEngine()->GetDefaultInputLayout();
+	auto defaultRootSignature = GetEngine()->GetDefaultRootSignature();
 
 	treeSpritePSO.InputLayout = { TreeSpriteInputLayout.data(), static_cast<UINT>(TreeSpriteInputLayout.size()) };
-	treeSpritePSO.pRootSignature = defaultRootSignature.Get();
+	treeSpritePSO.pRootSignature = defaultRootSignature;
 
-	auto vsShader = GetEngine()->GetShader(SShaderTypes::VSTreeSprite);
+	auto vsShader
+	    = GetEngine()->GetShader(SShaderTypes::VSTreeSprite);
 	auto psShader = GetEngine()->GetShader(SShaderTypes::PSTreeSprite);
 	auto gsShader = GetEngine()->GetShader(SShaderTypes::GSTreeSprite);
 
@@ -346,14 +347,14 @@ void OTextureWaves::BuildPSOGeosphere()
 	UINT state;
 	bool enable = GetEngine()->GetMSAAState(state);
 
-	auto defaultInputLayout = GetEngine()->InputLayout;
-	auto defaultRootSignature = GetEngine()->DefaultRootSignature;
+	auto defaultInputLayout = GetEngine()->GetDefaultInputLayout();
+	auto defaultRootSignature = GetEngine()->GetDefaultRootSignature();
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC IcosahedronPSO;
 	ZeroMemory(&IcosahedronPSO, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 
 	IcosahedronPSO.InputLayout = { defaultInputLayout.data(), static_cast<UINT>(defaultInputLayout.size()) };
-	IcosahedronPSO.pRootSignature = defaultRootSignature.Get();
+	IcosahedronPSO.pRootSignature = defaultRootSignature;
 
 	auto vsShader = GetEngine()->GetShader(SShaderTypes::VSIcosahedron);
 	auto psShader = GetEngine()->GetShader(SShaderTypes::PSIcosahedron);

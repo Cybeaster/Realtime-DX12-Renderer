@@ -89,18 +89,18 @@ groupshared float4 Cache[CacheSize];
 
 	// This thread group runs N threads.  To get the extra 2*BlurRadius pixels,
 	// have 2*BlurRadius threads sample an extra pixel.
-	if (GroupThreadID.x < BlurRadius)
+	if (GroupThreadID.y < BlurRadius)
 	{
 		// Clamp out of bound samples that occur at image borders.
 		int y = max(DispatchThreadID.y - BlurRadius, 0);
-		Cache[GroupThreadID.x] = Input[int2(DispatchThreadID.x, y)];
+		Cache[GroupThreadID.y] = Input[int2(DispatchThreadID.x, y)];
 	}
 
-	if (GroupThreadID.x >= N - BlurRadius)
+	if (GroupThreadID.y >= N - BlurRadius)
 	{
 		// Clamp out of bound samples that occur at image borders.
 		int y = min(DispatchThreadID.y + BlurRadius, Input.Length.y - 1);
-		Cache[GroupThreadID.x + 2 * BlurRadius] = Input[int2(DispatchThreadID.x, y)];
+		Cache[GroupThreadID.y + 2 * BlurRadius] = Input[int2(DispatchThreadID.x, y)];
 	}
 
 	// Clamp out of bound samples that occur at image borders.

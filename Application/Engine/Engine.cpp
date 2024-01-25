@@ -7,6 +7,7 @@
 #include "../Window/Window.h"
 #include "Exception.h"
 #include "Logger.h"
+#include "Settings.h"
 #include "Textures/DDSTextureLoader/DDSTextureLoader.h"
 
 #include <DirectXMath.h>
@@ -71,12 +72,39 @@ bool OEngine::Initialize()
 
 void OEngine::PostInitialize()
 {
-	BlurFilter = make_unique<OBlurFilter>(Device.Get(), GetCommandQueue()->GetCommandList().Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), DXGI_FORMAT_R8G8B8A8_UNORM);
+	BuildFilters();
+	BuildOffscreenRT();
 	BuildShadersAndInputLayouts();
 	BuildDefaultRootSignature();
 	BuildPostProcessRootSignature();
 	BuildPSOs();
 	BuildBlurPSO();
+}
+
+void OEngine::BuildFilters()
+{
+	const auto commandList = GetCommandQueue()->GetCommandList();
+	BlurFilter = OFilterBase::CreateFilter<OBlurFilter>(Device.Get(), commandList.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
+	SobelFilter = OFilterBase::CreateFilter<OSobelFilter>(Device.Get(), commandList.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
+}
+
+void OEngine::BuildOffscreenRT()
+{
+	OffscreenRT = make_unique<ORenderTarget>(Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
+}
+
+ORenderTarget* OEngine::GetOffscreenRT() const
+{
+	return OffscreenRT.get();
+}
+
+void OEngine::DrawFullScreenQuad()
+{
+	const auto commandList = GetCommandQueue()->GetCommandList();
+	commandList->IASetVertexBuffers(0, 1, nullptr);
+	commandList->IASetIndexBuffer(nullptr);
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	commandList->DrawInstanced(6, 1, 0, 0);
 }
 
 shared_ptr<OWindow> OEngine::GetWindow() const
@@ -228,11 +256,64 @@ void OEngine::OnUpdate(const UpdateEventArgs& Args)
 	}
 }
 
+void OEngine::PostProcess(HWND Handler)
+{
+	const auto commandList = GetCommandQueue()->GetCommandList();
+	const auto backBuffer = GetWindowByHWND(Handler)->GetCurrentBackBuffer().Get();
+
+	BlurFilter->Execute(PostProcessRootSignature.Get(),
+	                    PSOs[SPSOType::HorizontalBlur].Get(),
+	                    PSOs[SPSOType::VerticalBlur].Get(),
+	                    OffscreenRT->GetResource(),
+	                    SGlobalSettings::BlurRadius);
+
+	/*SobelFilter->Execute(PostProcessRootSignature.Get(),
+						 PSOs[SPSOType::SobelFilter].Get(),
+						 OffscreenRT->GetSRV());*/
+
+	Utils::ResourceBarrier(commandList.Get(),
+	                       OffscreenRT->GetResource(),
+	                       D3D12_RESOURCE_STATE_COPY_SOURCE,
+	                       D3D12_RESOURCE_STATE_COPY_DEST);
+
+	BlurFilter->OutputTo(OffscreenRT->GetResource());
+
+	Utils::ResourceBarrier(commandList.Get(),
+	                       OffscreenRT->GetResource(),
+	                       D3D12_RESOURCE_STATE_COPY_DEST,
+	                       D3D12_RESOURCE_STATE_GENERIC_READ);
+}
+
 void OEngine::OnPostRender()
 {
 	PostProcess(Window->GetHWND());
 
 	const auto commandList = GetCommandQueue()->GetCommandList();
+	const auto backBuffer = Window->GetCurrentBackBuffer().Get();
+
+	Utils::ResourceBarrier(commandList.Get(),
+	                       backBuffer,
+	                       D3D12_RESOURCE_STATE_PRESENT,
+	                       D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+	auto rtv = Window->CurrentBackBufferView();
+	auto dsv = Window->GetDepthStensilView();
+
+	commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
+
+	commandList->SetGraphicsRootSignature(PostProcessRootSignature.Get());
+
+	SetPipelineState(SPSOType::Composite);
+
+	commandList->SetGraphicsRootDescriptorTable(0, OffscreenRT->GetSRV());
+	commandList->SetGraphicsRootDescriptorTable(1, SobelFilter->OutputSRV());
+
+	DrawFullScreenQuad();
+
+	Utils::ResourceBarrier(commandList.Get(),
+	                       backBuffer,
+	                       D3D12_RESOURCE_STATE_RENDER_TARGET,
+	                       D3D12_RESOURCE_STATE_PRESENT);
 
 	// Done recording commands.
 	THROW_IF_FAILED(commandList->Close());
@@ -254,29 +335,6 @@ void OEngine::OnPostRender()
 	// done for simplicity.  Later we will show how to organize our rendering code
 	// so we do not have to wait per frame.
 	FlushGPU();
-}
-
-void OEngine::PostProcess(HWND Handler)
-{
-	const auto commandList = GetCommandQueue()->GetCommandList();
-	const auto backBuffer = GetWindowByHWND(Handler)->GetCurrentBackBuffer().Get();
-	BlurFilter->Execute(PostProcessRootSignature.Get(),
-	                    PSOs[SPSOType::HorizontalBlur].Get(),
-	                    PSOs[SPSOType::VerticalBlur].Get(),
-	                    backBuffer,
-	                    4);
-
-	Utils::ResourceBarrier(commandList.Get(),
-	                       backBuffer,
-	                       D3D12_RESOURCE_STATE_COPY_SOURCE,
-	                       D3D12_RESOURCE_STATE_COPY_DEST);
-
-	BlurFilter->OutputTo(backBuffer);
-
-	Utils::ResourceBarrier(commandList.Get(),
-	                       backBuffer,
-	                       D3D12_RESOURCE_STATE_COPY_DEST,
-	                       D3D12_RESOURCE_STATE_PRESENT);
 }
 
 void OEngine::DestroyWindow()
@@ -426,7 +484,7 @@ bool OEngine::GetMSAAState(UINT& Quality) const
 	return Msaa4xState;
 }
 
-void OEngine::BuildPSOs()
+D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetOpaquePSODesc()
 {
 	UINT quality = 0;
 	bool msaaEnable = GetMSAAState(quality);
@@ -453,29 +511,81 @@ void OEngine::BuildPSOs()
 	opaquePSO.SampleDesc.Count = msaaEnable ? 4 : 1;
 	opaquePSO.SampleDesc.Quality = msaaEnable ? (quality - 1) : 0;
 	opaquePSO.DSVFormat = SRenderConstants::DepthBufferFormat;
-	CreatePSO(SPSOType::Opaque, opaquePSO);
+	return opaquePSO;
+}
 
-	//wireframe debug
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaqueWireframePsoDesc = opaquePSO;
-	opaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-	CreatePSO(SPSOType::Debug, opaqueWireframePsoDesc);
-
-	//transparent pipeline
-	auto transparent = opaquePSO;
-	transparent.BlendState.RenderTarget[0] = GetTransparentBlendState();
-	CreatePSO(SPSOType::Transparent, transparent);
-
-	// alpha tested pipeline
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTestedPSO = opaquePSO;
-	auto psAlphaTestedShader = GetShader(SShaderTypes::PSAlphaTested);
+D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetAlphaTestedPSODesc()
+{
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTestedPSO = GetOpaquePSODesc();
+	const auto psAlphaTestedShader = GetShader(SShaderTypes::PSAlphaTested);
 	alphaTestedPSO.PS = { reinterpret_cast<BYTE*>(psAlphaTestedShader->GetBufferPointer()), psAlphaTestedShader->GetBufferSize() };
 	alphaTestedPSO.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-	CreatePSO(SPSOType::AlphaTested, alphaTestedPSO);
+	return alphaTestedPSO;
+}
+D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetTransparentPSODesc()
+{
+	auto transparent = GetOpaquePSODesc();
+	transparent.BlendState.RenderTarget[0] = GetTransparentBlendState();
+	return transparent;
+}
 
-	//
-	//PSO for stencil mirrors
-	//
+D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetShadowPSODesc()
+{
+	// We are going to draw shadows with transparency, so base it off the transparency description.
+	D3D12_DEPTH_STENCIL_DESC shadowDSS;
+	shadowDSS.DepthEnable = true;
+	shadowDSS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	shadowDSS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	shadowDSS.StencilEnable = true;
+	shadowDSS.StencilReadMask = 0xff;
+	shadowDSS.StencilWriteMask = 0xff;
 
+	shadowDSS.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	shadowDSS.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	shadowDSS.FrontFace.StencilPassOp = D3D12_STENCIL_OP_INCR;
+	shadowDSS.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+	// We are not rendering backfacing polygons, so these settings do not matter.
+	shadowDSS.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	shadowDSS.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	shadowDSS.BackFace.StencilPassOp = D3D12_STENCIL_OP_INCR;
+	shadowDSS.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC shadowPsoDesc = GetTransparentPSODesc();
+	shadowPsoDesc.DepthStencilState = shadowDSS;
+	return shadowPsoDesc;
+}
+
+D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetReflectedPSODesc()
+{
+	D3D12_DEPTH_STENCIL_DESC reflectionsDSS;
+	reflectionsDSS.DepthEnable = true;
+	reflectionsDSS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	reflectionsDSS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	reflectionsDSS.StencilEnable = true;
+	reflectionsDSS.StencilReadMask = 0xff;
+	reflectionsDSS.StencilWriteMask = 0xff;
+
+	reflectionsDSS.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSS.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSS.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSS.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+	// We are not rendering backfacing polygons, so these settings do not matter.
+	reflectionsDSS.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSS.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSS.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSS.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC reflectionsPsoDesc = GetOpaquePSODesc();
+	reflectionsPsoDesc.DepthStencilState = reflectionsDSS;
+	reflectionsPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+	reflectionsPsoDesc.RasterizerState.FrontCounterClockwise = true;
+	return reflectionsPsoDesc;
+}
+
+D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetMirrorPSODesc()
+{
 	CD3DX12_BLEND_DESC mirrorBlendState(D3D12_DEFAULT);
 	mirrorBlendState.RenderTarget[0].RenderTargetWriteMask = 0;
 
@@ -498,67 +608,86 @@ void OEngine::BuildPSOs()
 	mirrorDSS.BackFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
 	mirrorDSS.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
 
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC mirrorPsoDesc = opaquePSO;
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC mirrorPsoDesc = GetOpaquePSODesc();
 	mirrorPsoDesc.BlendState = mirrorBlendState;
 	mirrorPsoDesc.DepthStencilState = mirrorDSS;
-	CreatePSO(SPSOType::StencilMirrors, mirrorPsoDesc);
+	return mirrorPsoDesc;
+}
 
-	//
-	// PSO For Reflected objects
-	//
+D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetDebugPSODesc()
+{
+	//wireframe debug
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaqueWireframePsoDesc = GetOpaquePSODesc();
+	opaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	return opaqueWireframePsoDesc;
+}
 
-	D3D12_DEPTH_STENCIL_DESC reflectionsDSS;
-	reflectionsDSS.DepthEnable = true;
-	reflectionsDSS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-	reflectionsDSS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
-	reflectionsDSS.StencilEnable = true;
-	reflectionsDSS.StencilReadMask = 0xff;
-	reflectionsDSS.StencilWriteMask = 0xff;
+D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetCompositePSODesc()
+{
+	auto compositePSO = GetOpaquePSODesc();
+	compositePSO.pRootSignature = PostProcessRootSignature.Get();
+	compositePSO.DepthStencilState.DepthEnable = false;
+	compositePSO.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	compositePSO.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
 
-	reflectionsDSS.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
-	reflectionsDSS.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
-	reflectionsDSS.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
-	reflectionsDSS.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+	compositePSO.VS = {
+		reinterpret_cast<BYTE*>(GetShader(SShaderTypes::VSComposite)->GetBufferPointer()),
+		GetShader(SShaderTypes::VSComposite)->GetBufferSize()
+	};
 
-	// We are not rendering backfacing polygons, so these settings do not matter.
-	reflectionsDSS.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
-	reflectionsDSS.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
-	reflectionsDSS.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
-	reflectionsDSS.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+	compositePSO.PS = {
+		reinterpret_cast<BYTE*>(GetShader(SShaderTypes::PSComposite)->GetBufferPointer()),
+		GetShader(SShaderTypes::PSComposite)->GetBufferSize()
+	};
 
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC reflectionsPsoDesc = opaquePSO;
-	reflectionsPsoDesc.DepthStencilState = reflectionsDSS;
-	reflectionsPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
-	reflectionsPsoDesc.RasterizerState.FrontCounterClockwise = true;
-	CreatePSO(SPSOType::StencilReflection, reflectionsPsoDesc);
+	return compositePSO;
+}
 
-	//
-	// PSO for shadow objects
-	//
+D3D12_COMPUTE_PIPELINE_STATE_DESC OEngine::GetSobelPSODesc()
+{
+	D3D12_COMPUTE_PIPELINE_STATE_DESC sobelPSO = {};
+	sobelPSO.pRootSignature = PostProcessRootSignature.Get();
+	sobelPSO.CS = {
+		reinterpret_cast<BYTE*>(GetShader(SShaderTypes::CSSobelFilter)->GetBufferPointer()),
+		GetShader(SShaderTypes::CSSobelFilter)->GetBufferSize()
+	};
+	sobelPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	return sobelPSO;
+}
 
-	// We are going to draw shadows with transparency, so base it off the transparency description.
-	D3D12_DEPTH_STENCIL_DESC shadowDSS;
-	shadowDSS.DepthEnable = true;
-	shadowDSS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-	shadowDSS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
-	shadowDSS.StencilEnable = true;
-	shadowDSS.StencilReadMask = 0xff;
-	shadowDSS.StencilWriteMask = 0xff;
+D3D12_COMPUTE_PIPELINE_STATE_DESC OEngine::GetWavesDisturbPSODesc()
+{
+	D3D12_COMPUTE_PIPELINE_STATE_DESC wavesPSO = {};
+	wavesPSO.pRootSignature = WavesRootSignature.Get();
+	wavesPSO.CS = {
+		reinterpret_cast<BYTE*>(GetShader(SShaderTypes::CSWavesDisturb)->GetBufferPointer()),
+		GetShader(SShaderTypes::CSWavesDisturb)->GetBufferSize()
+	};
+	wavesPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	return wavesPSO;
+}
 
-	shadowDSS.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
-	shadowDSS.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
-	shadowDSS.FrontFace.StencilPassOp = D3D12_STENCIL_OP_INCR;
-	shadowDSS.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+D3D12_COMPUTE_PIPELINE_STATE_DESC OEngine::GetWavesUpdatePSODesc()
+{
+	D3D12_COMPUTE_PIPELINE_STATE_DESC wavesPSO = {};
+	wavesPSO.pRootSignature = WavesRootSignature.Get();
+	wavesPSO.CS = {
+		reinterpret_cast<BYTE*>(GetShader(SShaderTypes::CSWavesUpdate)->GetBufferPointer()),
+		GetShader(SShaderTypes::CSWavesUpdate)->GetBufferSize()
+	};
+	wavesPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	return wavesPSO;
+}
 
-	// We are not rendering backfacing polygons, so these settings do not matter.
-	shadowDSS.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
-	shadowDSS.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
-	shadowDSS.BackFace.StencilPassOp = D3D12_STENCIL_OP_INCR;
-	shadowDSS.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
-
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC shadowPsoDesc = transparent;
-	shadowPsoDesc.DepthStencilState = shadowDSS;
-	CreatePSO(SPSOType::Shadow, shadowPsoDesc);
+void OEngine::BuildPSOs()
+{
+	CreatePSO(SPSOType::Opaque, GetOpaquePSODesc());
+	CreatePSO(SPSOType::Debug, GetDebugPSODesc());
+	CreatePSO(SPSOType::Transparent, GetTransparentPSODesc());
+	CreatePSO(SPSOType::AlphaTested, GetAlphaTestedPSODesc());
+	CreatePSO(SPSOType::StencilMirrors, GetMirrorPSODesc());
+	CreatePSO(SPSOType::StencilReflection, GetReflectedPSODesc());
+	CreatePSO(SPSOType::Shadow, GetShadowPSODesc());
 }
 
 void OEngine::BuildBlurPSO()
@@ -583,6 +712,14 @@ void OEngine::BuildBlurPSO()
 	CreatePSO(SPSOType::VerticalBlur, verticalBlurPSO);
 }
 
+void OEngine::BuildSobelPSO()
+{
+}
+
+void OEngine::BuildCompositePSO()
+{
+}
+
 void OEngine::BuildShadersAndInputLayouts()
 {
 	constexpr D3D_SHADER_MACRO fogDefines[] = {
@@ -591,6 +728,10 @@ void OEngine::BuildShadersAndInputLayouts()
 
 	constexpr D3D_SHADER_MACRO alphaTestDefines[] = {
 		"FOG", "1", "ALPHA_TEST", "1", NULL, NULL
+	};
+
+	constexpr D3D_SHADER_MACRO wavesDefines[] = {
+		"DISPLACEMENT_MAP", "1", NULL, NULL
 	};
 
 	BuildGSShader(L"Shaders/Geosphere.hlsl", SShaderTypes::GSIcosahedron);
@@ -608,6 +749,14 @@ void OEngine::BuildShadersAndInputLayouts()
 	BuildShader(L"Shaders/Blur.hlsl", SShaderTypes::CSHorizontalBlur, EShaderLevel::ComputeShader, "HorzBlurCS");
 	BuildShader(L"Shaders/Blur.hlsl", SShaderTypes::CSVerticalBlur, EShaderLevel::ComputeShader, "VertBlurCS");
 
+	BuildShader(L"Shaders/Sobel.hlsl", SShaderTypes::CSSobelFilter, EShaderLevel::ComputeShader, "SobelCS");
+
+	BuildShader(L"Shaders/Composite.hlsl", SShaderTypes::VSComposite, EShaderLevel::VertexShader, "VS");
+	BuildShader(L"Shaders/Composite.hlsl", SShaderTypes::PSComposite, EShaderLevel::PixelShader, "PS");
+
+	BuildShader(L"Shaders/WavesSimulation", SShaderTypes::CSWavesDisturb, EShaderLevel::ComputeShader, "DisturbWavesCS");
+	BuildShader(L"Shaders/WavesSimulation", SShaderTypes::CSWavesUpdate, EShaderLevel::ComputeShader, "UpdateWaveCS");
+	BuildShader(L"Shader/WavesSimulation", SShaderTypes::VSBaseShader, EShaderLevel::VertexShader, "PS", wavesDefines);
 	InputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -1069,6 +1218,16 @@ SPassConstants& OEngine::GetMainPassCB()
 ComPtr<ID3D12DescriptorHeap>& OEngine::GetSRVHeap()
 {
 	return SRVHeap;
+}
+
+ID3D12RootSignature* OEngine::GetDefaultRootSignature() const
+{
+	return DefaultRootSignature.Get();
+}
+
+vector<D3D12_INPUT_ELEMENT_DESC>& OEngine::GetDefaultInputLayout()
+{
+	return InputLayout;
 }
 
 void OEngine::CreatePSO(const string& PSOName, const D3D12_GRAPHICS_PIPELINE_STATE_DESC& PSODesc)
