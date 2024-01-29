@@ -1,6 +1,4 @@
 
-//     neighbors to generate a wave.
-
 cbuffer cbUpdateSettings
 {
 	float WaveConstant0;
@@ -17,8 +15,9 @@ RWTexture2D<float> Output : register(u2);
 
 // Solves 2D wave equation using the compute shader.
 //clang-format off
-[numthreads(16, 16, 1)] void UpdateWaveCS(int3 DispatchThreadID
-                                          : SV_DispatchThreadID) {
+
+[numthreads(16, 16, 1)]
+void UpdateWavesCS(int3 DispatchThreadID : SV_DispatchThreadID) {
 	// We do not need to do bounds checking because:
 	//	 *out-of-bounds reads return 0, which works for us--it just means the boundary of
 	//    our water simulation is clamped to 0 in local space.
@@ -27,14 +26,20 @@ RWTexture2D<float> Output : register(u2);
 	int x = DispatchThreadID.x;
 	int y = DispatchThreadID.y;
 
-	Output[int2(x, y)] = WaveConstant0 * PrevSolution[int2(x, y)].r + WaveConstant1 * CurrSolution[int2(x, y)].r + WaveConstant2 * (PrevSolution[int2(x + 1, y)].r + PrevSolution[int2(x - 1, y)].r + PrevSolution[int2(x, y + 1)].r + PrevSolution[int2(x, y - 1)].r);
+	Output[int2(x, y)] =
+			 WaveConstant0 * PrevSolution[int2(x, y)].r +
+			 WaveConstant1 * CurrSolution[int2(x, y)].r +
+			 WaveConstant2 * (
+			 		CurrSolution[int2(x + 1, y)].r +
+					CurrSolution[int2(x - 1, y)].r +
+					CurrSolution[int2(x, y + 1)].r +
+					CurrSolution[int2(x, y - 1)].r
+			);
 }
 
-    // Runs one thread to disturb a grid height and its
-    [numthreads(1, 1, 1)] void DisturbWavesCS(int3 GroupThreadID
-                                              : SV_GroupThreadID,
-                                                int3 DispatchThreadID
-                                              : SV_DispatchThreadID)
+// Runs one thread to disturb a grid height and its
+[numthreads(1, 1, 1)]
+void DisturbWavesCS(int3 GroupThreadID : SV_GroupThreadID, int3 DispatchThreadID : SV_DispatchThreadID)
 {
 	int x = DisturbIndex.x;
 	int y = DisturbIndex.y;

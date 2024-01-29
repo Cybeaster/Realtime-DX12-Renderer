@@ -5,6 +5,7 @@
 #include "../Types/Types.h"
 #include "../Window/Window.h"
 #include "DirectX/FrameResource.h"
+#include "Filters/BilateralBlur/BilateralBlurFilter.h"
 #include "Filters/Blur/BlurFilter.h"
 #include "Filters/SobelFilter/SobelFilter.h"
 #include "RenderItem.h"
@@ -78,7 +79,7 @@ public:
 	void OnMouseButtonPressed(MouseButtonEventArgs& Args);
 	void OnMouseButtonReleased(MouseButtonEventArgs& Args);
 	void OnMouseWheel(MouseWheelEventArgs& Args);
-	void OnResize(ResizeEventArgs& Args);
+	void OnResizeRequest(HWND& WindowHandle);
 	void OnUpdateWindowSize(ResizeEventArgs& Args);
 
 	bool CheckTearingSupport();
@@ -101,9 +102,9 @@ public:
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetCompositePSODesc();
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetTreeSpritePSODesc();
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetIcosahedronPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetHorizontalBlurPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetVerticalBlurPSODesc();
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetWavesRenderPSODesc();
 
+	D3D12_COMPUTE_PIPELINE_STATE_DESC GetBilateralBlurPSODesc();
 	D3D12_COMPUTE_PIPELINE_STATE_DESC GetWavesDisturbPSODesc();
 	D3D12_COMPUTE_PIPELINE_STATE_DESC GetWavesUpdatePSODesc();
 
@@ -111,8 +112,6 @@ public:
 
 	void BuildPSOs();
 	void BuildBlurPSO();
-	void BuildSobelPSO();
-	void BuildCompositePSO();
 
 	void BuildShadersAndInputLayouts();
 
@@ -156,25 +155,23 @@ public:
 	const vector<unique_ptr<SRenderItem>>& GetAllRenderItems();
 	void SetPipelineState(string PSOName);
 
-	template<typename... Args>
-	void CreateWaves(Args&&... args)
-	{
-		Waves = std::make_unique<OWaves>(std::forward<Args>(args)...);
-	}
-	OWaves* GetWaves() const;
-
 	void SetFog(DirectX::XMFLOAT4 Color, float Start, float Range);
 	SPassConstants& GetMainPassCB();
 	ComPtr<ID3D12DescriptorHeap>& GetSRVHeap();
 
 	ID3D12RootSignature* GetDefaultRootSignature() const;
+	ID3D12RootSignature* GetWavesRootSignature() const;
+
 	vector<D3D12_INPUT_ELEMENT_DESC>& GetDefaultInputLayout();
 
 	OBlurFilter* GetBlurFilter();
+	OBilateralBlurFilter* GetBilateralBlurFilter();
+	OSobelFilter* GetSobelFilter();
 	void BuildFilters();
 	void BuildOffscreenRT();
 	ORenderTarget* GetOffscreenRT() const;
 	void DrawFullScreenQuad();
+	uint32_t GetTextureNum();
 
 protected:
 	shared_ptr<OTest> GetTestByHWND(HWND Handler);
@@ -184,8 +181,12 @@ protected:
 	shared_ptr<OWindow> Window;
 	ComPtr<IDXGIAdapter4> GetAdapter(bool UseWarp);
 	ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> Adapter);
+
 	void BuildPostProcessRootSignature();
 	void BuildDefaultRootSignature();
+	void BuildBlurRootSignature();
+	void BuildWavesRootSignature();
+	void BuildBilateralBlurRootSignature();
 
 	ComPtr<ID3D12Resource> GetBackBuffer() const;
 
@@ -218,19 +219,23 @@ private:
 	TTexturesMap Textures;
 	TMaterialsMap Materials;
 
-	unique_ptr<OWaves> Waves = nullptr;
-
 	ComPtr<ID3D12RootSignature> PostProcessRootSignature = nullptr;
-
+	ComPtr<ID3D12RootSignature> WavesRootSignature = nullptr;
 	ComPtr<ID3D12RootSignature> DefaultRootSignature = nullptr;
+	ComPtr<ID3D12RootSignature> BlurRootSignature = nullptr;
+	ComPtr<ID3D12RootSignature> BilateralBlurRootSignature = nullptr;
+
 	vector<D3D12_INPUT_ELEMENT_DESC> InputLayout;
 
 	//filters
 	unique_ptr<OBlurFilter> BlurFilter = nullptr;
 	unique_ptr<OSobelFilter> SobelFilter = nullptr;
+	unique_ptr<OBilateralBlurFilter> BilateralFilter = nullptr;
 
-	ComPtr<ID3D12DescriptorHeap> SRVHeap;
+	ComPtr<ID3D12DescriptorHeap> SRVDescriptorHeap;
 	bool HasInitializedTests = false;
 
 	unique_ptr<ORenderTarget> OffscreenRT = nullptr;
+
+	STimer TickTimer;
 };

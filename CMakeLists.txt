@@ -87,6 +87,8 @@ set(SRC_FILES
         Objects/Geometry/GPUWave/GpuWave.h
         Application/Engine/RenderTarget/RenderTarget.cpp
         Application/Engine/RenderTarget/RenderTarget.h
+        Application/Filters/BilateralBlur/BilateralBlurFilter.cpp
+        Application/Filters/BilateralBlur/BilateralBlurFilter.h
 )
 # Add sources to the project
 add_executable(DXRenderer

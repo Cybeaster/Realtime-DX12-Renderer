@@ -40,7 +40,6 @@ bool OStencilingTest::Initialize()
 	MainPassCB.FogStart = 5.0f;
 	MainPassCB.FogRange = 150.0f;
 
-	engine->CreateWaves(256, 256, 0.5f, 0.01f, 4.0f, 0.2f);
 	CreateTexture();
 	BuildRootSignature();
 	BuildDescriptorHeap();

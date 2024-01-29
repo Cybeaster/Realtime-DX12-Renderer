@@ -3,7 +3,7 @@
 #include "../../../Utils/DirectX.h"
 
 OGPUWave::OGPUWave(ID3D12Device* _Device, ID3D12GraphicsCommandList* _List, int32_t _M, int32_t _N, float dx, float dt, float speed, float damping)
-    : Device(_Device), CMDList(_List), NumRows(_M), NumCols(_N), SpatialStep(dx), TimeStep(dt)
+    : Device(_Device), CMDList(_List), NumRows(_M), NumCols(_N), SpatialStep(dx), TimeStep(dt), VertexCount(_M * _N), TriangleCount((_M - 1) * (_N - 1) * 2)
 {
 	float d = damping * dt + 2.0f;
 	float e = (speed * speed) * (dt * dt) / (dx * dx);
@@ -124,17 +124,18 @@ void OGPUWave::BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE CpuDescriptor, CD3
 	uavDesc.Texture2D.MipSlice = 0;
 
 	Device->CreateShaderResourceView(PrevSol.Get(), &srvDesc, CpuDescriptor);
-	Device->CreateUnorderedAccessView(CurrSol.Get(), nullptr, &uavDesc, CpuDescriptor.Offset(1, DescriptorSize));
+	Device->CreateShaderResourceView(CurrSol.Get(), &srvDesc, CpuDescriptor.Offset(1, DescriptorSize));
 	Device->CreateShaderResourceView(NextSol.Get(), &srvDesc, CpuDescriptor.Offset(1, DescriptorSize));
 
-	Device->CreateUnorderedAccessView(PrevSol.Get(), nullptr, &uavDesc, CpuDescriptor);
-	Device->CreateShaderResourceView(CurrSol.Get(), &srvDesc, CpuDescriptor.Offset(1, DescriptorSize));
+	Device->CreateUnorderedAccessView(PrevSol.Get(), nullptr, &uavDesc, CpuDescriptor.Offset(1, DescriptorSize));
+	Device->CreateUnorderedAccessView(CurrSol.Get(), nullptr, &uavDesc, CpuDescriptor.Offset(1, DescriptorSize));
 	Device->CreateUnorderedAccessView(NextSol.Get(), nullptr, &uavDesc, CpuDescriptor.Offset(1, DescriptorSize));
 
 	//save references to gpu resources
 	PrevSolSrv = GpuDescriptor;
 	CurrSolSrv = GpuDescriptor.Offset(1, DescriptorSize);
 	NextSolSrv = GpuDescriptor.Offset(1, DescriptorSize);
+
 	PrevSolUav = GpuDescriptor.Offset(1, DescriptorSize);
 	CurrSolUav = GpuDescriptor.Offset(1, DescriptorSize);
 	NextSolUav = GpuDescriptor.Offset(1, DescriptorSize);
@@ -199,7 +200,7 @@ void OGPUWave::Disturb(ID3D12RootSignature* RootSignature, ID3D12PipelineState* 
 	CMDList->SetPipelineState(PSO);
 	CMDList->SetComputeRootSignature(RootSignature);
 
-	UINT disturbIdx[2] = { I, J };
+	const UINT disturbIdx[2] = { J, I };
 	CMDList->SetComputeRoot32BitConstants(0, 1, &Magnitude, 3);
 	CMDList->SetComputeRoot32BitConstants(0, 2, disturbIdx, 4);
 

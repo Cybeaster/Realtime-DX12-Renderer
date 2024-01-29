@@ -20,6 +20,7 @@ struct SRenderLayer
 	inline static const string Mirror = "Mirror";
 	inline static const string AlphaTestedTreeSprites = "AlphaTestedTreeSprites";
 	inline static const string IcosahedronLODs = "IcosahedronLODs";
+	inline static const string Waves = "Waves";
 };
 
 struct SPSOType
@@ -37,6 +38,12 @@ struct SPSOType
 	inline static const string VerticalBlur = "VerticalBlur";
 	inline static const string SobelFilter = "SobelFilter";
 	inline static const string Composite = "Composite";
+
+	inline static const string WavesRender = "WavesRender";
+	inline static const string WavesDisturb = "WavesDisturb";
+	inline static const string WavesUpdate = "WavesUpdate";
+
+	inline static const string BilateralBlur = "BilateralBlur";
 };
 
 struct SShaderTypes
@@ -58,11 +65,14 @@ struct SShaderTypes
 	inline static const string CSHorizontalBlur = "CSHorizontalBlur";
 	inline static const string CSVerticalBlur = "CSVerticalBlur";
 
+	inline static const string CSBilateralBlur = "CSBilateralBlur";
+
 	inline static const string PSComposite = "PSComposite";
 	inline static const string VSComposite = "VSComposite";
 
 	inline static const string CSWavesDisturb = "CSWavesDisturb";
 	inline static const string CSWavesUpdate = "CSWavesUpdate";
+	inline static const string VSWaves = "PSWaves";
 
 	inline static const string CSSobelFilter = "CSSobelFilter";
 };

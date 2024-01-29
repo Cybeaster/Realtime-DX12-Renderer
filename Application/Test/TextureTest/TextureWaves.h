@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../../Objects/Geometry/GPUWave/GpuWave.h"
 #include "../../../Objects/Geometry/Wave/Waves.h"
 #include "../../Window/Window.h"
 #include "../Test.h"
@@ -25,7 +26,7 @@ public:
 
 	void UnloadContent() override;
 
-	void UpdateWave(const STimer& Timer);
+	void UpdateWave(const STimer& Timer) const;
 
 	void OnUpdate(const UpdateEventArgs& Event) override;
 
@@ -44,6 +45,7 @@ public:
 	void OnKeyboardInput(const STimer& Timer);
 
 	void OnMouseWheel(const MouseWheelEventArgs& Args) override;
+	unique_ptr<OGPUWave> Waves = nullptr;
 
 private:
 	void BuildTreeSpriteGeometry();

@@ -1,14 +1,22 @@
+//***************************************************************************************
+// Default.hlsl by Frank Luna (C) 2015 All Rights Reserved.
+//
+// Default shader, currently supports lighting.
+//***************************************************************************************
 
 // Defaults for number of lights.
 #ifndef NUM_DIR_LIGHTS
+
 #define NUM_DIR_LIGHTS 3
 #endif
 
 #ifndef NUM_POINT_LIGHTS
+
 #define NUM_POINT_LIGHTS 0
 #endif
 
 #ifndef NUM_SPOT_LIGHTS
+
 #define NUM_SPOT_LIGHTS 0
 #endif
 
@@ -16,6 +24,7 @@
 #include "LightingUtils.hlsl"
 
 Texture2D gDiffuseMap : register(t0);
+Texture2D gDisplacementMap : register(t1);
 
 SamplerState gsamPointWrap : register(s0);
 SamplerState gsamPointClamp : register(s1);
@@ -44,7 +53,7 @@ cbuffer cbPass : register(b1)
 	float4x4 gViewProj;
 	float4x4 gInvViewProj;
 	float3 gEyePosW;
-	float cbPerObjectPad1;
+	float cbPerPassPad1;
 	float2 gRenderTargetSize;
 	float2 gInvRenderTargetSize;
 	float gNearZ;
@@ -53,17 +62,19 @@ cbuffer cbPass : register(b1)
 	float gDeltaTime;
 	float4 gAmbientLight;
 
-	// Allow application to change fog parameters once per frame.
-	// For example, we may only use fog for certain times of day.
 	float4 gFogColor;
 	float gFogStart;
 	float gFogRange;
 	float2 cbPerPassPad2;
 
 	// Indices [0, NUM_DIR_LIGHTS) are directional lights;
+
 	// indices [NUM_DIR_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHTS) are point lights;
+
 	// indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)
+
 	// are spot lights for a maximum of MaxLights per object.
+
 	Light gLights[MaxLights];
 };
 
@@ -94,9 +105,11 @@ VertexOut VS(VertexIn vin)
 {
 	VertexOut vout = (VertexOut)0.0f;
 
-#ifdef DISPLACEMENT_MAPPING
-	vin.PosL += vin.NormalL * gDisplacementMap.SampleLevel(gsamLinearWrap, vin.TexC, 1.0f).r;
+#ifdef DISPLACEMENT_MAP
+	// Sample the displacement map using non-transformed [0,1]^2 tex-coords.
+	vin.PosL.y += gDisplacementMap.SampleLevel(gsamLinearWrap, vin.TexC, 1.0f).r;
 
+	// Estimate normal using finite difference.
 	float du = gDisplacementMapTexelSize.x;
 	float dv = gDisplacementMapTexelSize.y;
 	float l = gDisplacementMap.SampleLevel(gsamPointClamp, vin.TexC - float2(du, 0.0f), 0.0f).r;
@@ -104,6 +117,7 @@ VertexOut VS(VertexIn vin)
 	float t = gDisplacementMap.SampleLevel(gsamPointClamp, vin.TexC - float2(0.0f, dv), 0.0f).r;
 	float b = gDisplacementMap.SampleLevel(gsamPointClamp, vin.TexC + float2(0.0f, dv), 0.0f).r;
 	vin.NormalL = normalize(float3(-r + l, 2.0f * gGridSpatialStep, b - t));
+
 #endif
 
 	// Transform to world space.
@@ -112,9 +126,11 @@ VertexOut VS(VertexIn vin)
 	vout.PosW = posW.xyz;
 
 	// Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
+
 	vout.NormalW = mul(vin.NormalL, (float3x3)gWorld);
 
 	// Transform to homogeneous clip space.
+
 	vout.PosH = mul(posW, gViewProj);
 
 	// Output vertex attributes for interpolation across triangle.
@@ -127,36 +143,43 @@ VertexOut VS(VertexIn vin)
 float4 PS(VertexOut pin)
     : SV_Target
 {
-	float4 diffuseAlbedo = gDiffuseMap.Sample(
-	                           gsamAnisotropicWrap, pin.TexC)
-	                       * gDiffuseAlbedo;
-#ifdef ALPHA_TEST
+	float4 diffuseAlbedo = gDiffuseMap.Sample(gsamAnisotropicWrap, pin.TexC) * gDiffuseAlbedo;
 
-	// Discard pixel if texture alpha < 0.1. We do this test as soon
+#ifdef ALPHA_TEST
+	// Discard pixel if texture alpha < 0.1.  We do this test as soon
 	// as possible in the shader so that we can potentially exit the
 	// shader early, thereby skipping the rest of the shader code.
 	clip(diffuseAlbedo.a - 0.1f);
-
 #endif
+
 	// Interpolating normal can unnormalize it, so renormalize it.
+
 	pin.NormalW = normalize(pin.NormalW);
+
 	// Vector from point being lit to eye.
 	float3 toEyeW = gEyePosW - pin.PosW;
 	float distToEye = length(toEyeW);
 	toEyeW /= distToEye; // normalize
-	// Light terms.
-	float4 ambient = gAmbientLight * diffuseAlbedo;
-	const float shininess = 1.0f - gRoughness;
 
+	// Light terms.
+
+	float4 ambient = gAmbientLight * diffuseAlbedo;
+
+	const float shininess = 1.0f - gRoughness;
 	Material mat = { diffuseAlbedo, gFresnelR0, shininess };
 	float3 shadowFactor = 1.0f;
 	float4 directLight = ComputeLighting(gLights, mat, pin.PosW, pin.NormalW, toEyeW, shadowFactor);
+
 	float4 litColor = ambient + directLight;
+
 #ifdef FOG
 	float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
 	litColor = lerp(litColor, gFogColor, fogAmount);
 #endif
+
 	// Common convention to take alpha from diffuse albedo.
+
 	litColor.a = diffuseAlbedo.a;
+
 	return litColor;
 }

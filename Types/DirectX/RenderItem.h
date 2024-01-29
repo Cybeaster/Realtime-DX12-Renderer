@@ -1,8 +1,8 @@
 #pragma once
+#include "../../Materials/Material.h"
 #include "..\..\Utils\Math.h"
 #include "DXHelper.h"
 #include "RenderConstants.h"
-#include "../../Materials/Material.h"
 
 struct SRenderItem
 {
@@ -14,6 +14,8 @@ struct SRenderItem
 	DirectX::XMFLOAT4X4 World = Utils::Math::Identity4x4();
 	DirectX::XMFLOAT4X4 TexTransform = Utils::Math::Identity4x4();
 
+	DirectX::XMFLOAT2 DisplacementMapTexelSize = { 1.0f, 1.0f };
+	float GridSpatialStep = 1.0f;
 
 	// Dirty flag indicating the object data has changed and we need
 	// to update the constant buffer. Because we have an object

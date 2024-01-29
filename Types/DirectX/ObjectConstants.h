@@ -1,7 +1,7 @@
 #pragma once
-#include "RenderConstants.h"
 #include "..\..\Utils\Math.h"
 #include "Light/Light.h"
+#include "RenderConstants.h"
 
 #include <DirectXMath.h>
 
@@ -9,6 +9,9 @@ struct SObjectConstants
 {
 	DirectX::XMFLOAT4X4 World = Utils::Math::Identity4x4();
 	DirectX::XMFLOAT4X4 TexTransform = Utils::Math::Identity4x4();
+	DirectX::XMFLOAT2 DisplacementMapTexelSize = { 1.0f, 1.0f };
+	float GridSpatialStep = 1.0f;
+	float Pad;
 };
 
 struct SPassConstants

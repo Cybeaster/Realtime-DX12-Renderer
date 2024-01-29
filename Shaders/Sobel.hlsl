@@ -5,9 +5,9 @@ RWTexture2D<float4> Output : register(u0);
 
 // Approximates luminance ("brightness") from an RGB value.  These weights are derived from
 // experiment based on eye sensitivity to different wavelengths of light.
-float3 ComputeLuminance(float3 rgb)
+float CalcLuminance(float3 rgb)
 {
-	const float3 weights = float3(0.299f, 0.587f, 0.114f));
+	const float3 weights = float3(0.299f, 0.587f, 0.114f);
 	return dot(rgb, weights);
 }
 

@@ -66,4 +66,5 @@ void ORenderTarget::BuildResource()
 	                                                D3D12_RESOURCE_STATE_GENERIC_READ,
 	                                                nullptr,
 	                                                IID_PPV_ARGS(&OffscreenTex)));
+
 }

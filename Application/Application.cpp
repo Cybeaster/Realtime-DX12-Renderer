@@ -305,7 +305,7 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 				Application->bIsAppPaused = false;
 				Application->bIsAppMinimized = false;
 				Application->bIsAppMaximized = true;
-				Engine->OnResize(resizeEventArgs);
+				Engine->OnResizeRequest(hwnd);
 			}
 			else if (wParam == SIZE_RESTORED)
 			{
@@ -314,7 +314,7 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 				{
 					Application->SetAppPaused(false);
 					Application->bIsAppMinimized = false;
-					Engine->OnResize(resizeEventArgs);
+					Engine->OnResizeRequest(hwnd);
 				}
 
 				// Restoring from maximized state?
@@ -322,7 +322,7 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 				{
 					Application->bIsAppPaused = false;
 					Application->bIsAppMaximized = false;
-					Engine->OnResize(resizeEventArgs);
+					Engine->OnResizeRequest(hwnd);
 				}
 				else if (Application->bIsResizing)
 				{
@@ -337,7 +337,7 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 				}
 				else // API call such as SetWindowPos or mSwapChain->SetFullscreenState.
 				{
-					Engine->OnResize(resizeEventArgs);
+					Engine->OnResizeRequest(hwnd);
 				}
 			}
 		}
@@ -367,8 +367,7 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 			app->bIsAppPaused = false;
 			app->bIsResizing = false;
 			app->Timer.Start();
-			ResizeEventArgs resizeEventArgs(width, height, hwnd);
-			Engine->OnResize(resizeEventArgs);
+			Engine->OnResizeRequest(hwnd);
 			break;
 		}
 		case WM_MENUCHAR:

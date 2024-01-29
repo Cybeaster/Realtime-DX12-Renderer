@@ -35,7 +35,6 @@ bool OLitWaves::Initialize()
 	const auto queue = engine->GetCommandQueue();
 	queue->ResetCommandList();
 
-	engine->CreateWaves(256, 256, 0.5f, 0.01f, 4.0f, 0.2f);
 
 	BuildShadersAndInputLayout();
 	BuildLandGeometry();
@@ -60,26 +59,7 @@ void OLitWaves::UnloadContent()
 
 void OLitWaves::UpdateWave(const STimer& Timer)
 {
-	static float tBase = 0.0f;
-	if (Timer.GetTime() - tBase >= 0.25)
-	{
-		tBase += 0.25;
-		int i = Utils::Math::Random(4, GetEngine()->GetWaves()->GetRowCount() - 5);
-		int j = Utils::Math::Random(4, GetEngine()->GetWaves()->GetColumnCount() - 5);
-		float r = Utils::Math::Random(0.2f, 0.5f);
-		GetEngine()->GetWaves()->Disturb(i, j, r);
-	}
 
-	GetEngine()->GetWaves()->Update(Timer.GetDeltaTime());
-	auto currWavesVB = Engine.lock()->CurrentFrameResources->WavesVB.get();
-	for (int32_t i = 0; i < GetEngine()->GetWaves()->GetVertexCount(); ++i)
-	{
-		SVertex v;
-		v.Pos = GetEngine()->GetWaves()->GetPosition(i);
-		v.Normal = GetEngine()->GetWaves()->GetNormal(i);
-		currWavesVB->CopyData(i, v);
-	}
-	WavesRenderItem->Geometry->VertexBufferGPU = currWavesVB->GetResource();
 }
 
 void OLitWaves::OnUpdate(const UpdateEventArgs& Event)
@@ -517,58 +497,6 @@ void OLitWaves::BuildLandGeometry()
 
 void OLitWaves::BuildWavesGeometryBuffers()
 {
-	vector<uint16_t> indices(3 * GetEngine()->GetWaves()->GetTriangleCount());
-
-	//iterate over each quad
-	int m = GetEngine()->GetWaves()->GetRowCount();
-	int n = GetEngine()->GetWaves()->GetColumnCount();
-	int k = 0;
-
-	for (int i = 0; i < m - 1; ++i)
-	{
-		for (int j = 0; j < n - 1; ++j)
-		{
-			indices[k] = i * n + j;
-			indices[k + 1] = i * n + j + 1;
-			indices[k + 2] = (i + 1) * n + j;
-
-			indices[k + 3] = (i + 1) * n + j;
-			indices[k + 4] = i * n + j + 1;
-			indices[k + 5] = (i + 1) * n + j + 1;
-
-			k += 6; // next quad
-		}
-	}
-
-	UINT vbByteSize = GetEngine()->GetWaves()->GetVertexCount() * sizeof(SVertex);
-	UINT ibByteSize = static_cast<UINT>(indices.size() * sizeof(uint16_t));
-
-	auto geometry = make_unique<SMeshGeometry>();
-	geometry->Name = "WaterGeometry";
-	geometry->VertexBufferCPU = nullptr;
-	geometry->VertexBufferGPU = nullptr;
-
-	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geometry->IndexBufferCPU));
-	CopyMemory(geometry->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-	geometry->IndexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
-	                                                      Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
-	                                                      indices.data(),
-	                                                      ibByteSize,
-	                                                      geometry->IndexBufferUploader);
-
-	geometry->VertexByteStride = sizeof(SVertex);
-	geometry->VertexBufferByteSize = vbByteSize;
-	geometry->IndexFormat = DXGI_FORMAT_R16_UINT;
-	geometry->IndexBufferByteSize = ibByteSize;
-
-	SSubmeshGeometry submesh;
-	submesh.IndexCount = static_cast<UINT>(indices.size());
-	submesh.StartIndexLocation = 0;
-	submesh.BaseVertexLocation = 0;
-
-	geometry->SetGeometry("grid", submesh);
-	GetEngine()->SetSceneGeometry(std::move(geometry));
 }
 
 void OLitWaves::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> CommandList,

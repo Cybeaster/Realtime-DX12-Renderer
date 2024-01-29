@@ -8,6 +8,7 @@
 #include "Camera/Camera.h"
 #include "RenderConstants.h"
 #include "RenderItem.h"
+#include "Settings.h"
 #include "Textures/DDSTextureLoader/DDSTextureLoader.h"
 
 #include <DXHelper.h>
@@ -34,8 +35,16 @@ bool OTextureWaves::Initialize()
 	const auto queue = engine->GetCommandQueue();
 	queue->ResetCommandList();
 
+	Waves = make_unique<OGPUWave>(engine->GetDevice().Get(),
+	                              queue->GetCommandList().Get(),
+	                              256,
+	                              256,
+	                              0.25f,
+	                              0.03f,
+	                              2.0f,
+	                              0.2f);
+
 	engine->SetFog({ 0.7f, 0.7f, 0.7f, 1.0f }, 50.0f, 150.0f);
-	engine->CreateWaves(256, 256, 0.5f, 0.01f, 4.0f, 0.2f);
 	CreateTexture();
 	BuildDescriptorHeap();
 	BuildShadersAndInputLayout();
@@ -64,31 +73,21 @@ void OTextureWaves::UnloadContent()
 	ContentLoaded = false;
 }
 
-void OTextureWaves::UpdateWave(const STimer& Timer)
+void OTextureWaves::UpdateWave(const STimer& Timer) const
 {
+	auto commandList = Engine.lock()->GetCommandQueue()->GetCommandList();
+	const auto wavesRootSignature = Engine.lock()->GetWavesRootSignature();
 	static float tBase = 0.0f;
 	if (Timer.GetTime() - tBase >= 0.25)
 	{
 		tBase += 0.25;
-		int i = Utils::Math::Random(4, GetEngine()->GetWaves()->GetRowCount() - 5);
-		int j = Utils::Math::Random(4, GetEngine()->GetWaves()->GetColumnCount() - 5);
-		float r = Utils::Math::Random(0.2f, 0.5f);
-		GetEngine()->GetWaves()->Disturb(i, j, r);
-	}
+		int i = Utils::Math::Random(4, Waves->GetRowCount() - 5);
+		int j = Utils::Math::Random(4, Waves->GetColumnCount() - 5);
+		float r = Utils::Math::Random(1.f, 2.f);
 
-	GetEngine()->GetWaves()->Update(Timer.GetDeltaTime());
-	auto currWavesVB = Engine.lock()->CurrentFrameResources->WavesVB.get();
-	for (int32_t i = 0; i < GetEngine()->GetWaves()->GetVertexCount(); ++i)
-	{
-		SVertex v;
-		v.Pos = GetEngine()->GetWaves()->GetPosition(i);
-		v.Normal = GetEngine()->GetWaves()->GetNormal(i);
-
-		v.TexC.x = 0.5f + v.Pos.x / GetEngine()->GetWaves()->GetWidth();
-		v.TexC.y = 0.5f - v.Pos.z / GetEngine()->GetWaves()->GetDepth();
-		currWavesVB->CopyData(i, v);
+		Waves->Disturb(wavesRootSignature, Engine.lock()->GetPSO(SPSOType::WavesDisturb).Get(), i, j, r);
 	}
-	WavesRenderItem->Geometry->VertexBufferGPU = currWavesVB->GetResource();
+	Waves->Update(Timer, wavesRootSignature, Engine.lock()->GetPSO(SPSOType::WavesUpdate).Get());
 }
 
 void OTextureWaves::OnUpdate(const UpdateEventArgs& Event)
@@ -114,7 +113,6 @@ void OTextureWaves::OnUpdate(const UpdateEventArgs& Event)
 	AnimateMaterials(Event.Timer);
 	UpdateObjectCBs(Event.Timer);
 	UpdateMaterialCB();
-	UpdateWave(Event.Timer);
 }
 
 void OTextureWaves::UpdateObjectCBs(const STimer& Timer)
@@ -135,6 +133,8 @@ void OTextureWaves::UpdateObjectCBs(const STimer& Timer)
 			SObjectConstants objConstants;
 			XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
 			XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
+			objConstants.DisplacementMapTexelSize = item->DisplacementMapTexelSize;
+			objConstants.GridSpatialStep = item->GridSpatialStep;
 			currentObjectCB->CopyData(item->ObjectCBIndex, objConstants);
 
 			// Next FrameResource need to ber updated too
@@ -198,6 +198,48 @@ void OTextureWaves::UpdateCamera()
 
 void OTextureWaves::OnKeyboardInput(const STimer& Timer)
 {
+	if (GetAsyncKeyState('W') & 0x8000)
+	{
+		if (SGlobalSettings::BilateralBlurSpatialSigma == 0)
+		{
+			return;
+		}
+
+		SGlobalSettings::BilateralBlurSpatialSigma -= 1;
+	}
+
+	if (GetAsyncKeyState('S') & 0x8000)
+	{
+		SGlobalSettings::BilateralBlurSpatialSigma += 1;
+	}
+
+	if (GetAsyncKeyState('A') & 0x8000)
+	{
+		SGlobalSettings::BilateralBlurCount += 1;
+	}
+
+	if (GetAsyncKeyState('D') & 0x8000)
+	{
+		if (SGlobalSettings::BilateralBlurCount == 0)
+		{
+			return;
+		}
+		SGlobalSettings::BilateralBlurCount -= 1;
+	}
+
+	if (GetAsyncKeyState('Q') & 0x8000)
+	{
+		if (SGlobalSettings::BilateralBlurIntensitySigma == 0)
+		{
+			return;
+		}
+		SGlobalSettings::BilateralBlurIntensitySigma -= 1;
+	}
+
+	if (GetAsyncKeyState('E') & 0x8000)
+	{
+		SGlobalSettings::BilateralBlurIntensitySigma += 1;
+	}
 }
 
 void OTextureWaves::OnMouseWheel(const MouseWheelEventArgs& Args)
@@ -275,8 +317,8 @@ void OTextureWaves::BuildTreeSpriteGeometry()
 void OTextureWaves::CreateTexture()
 {
 	GetEngine()->CreateTexture("Grass", L"Resources/Textures/grass.dds");
-	GetEngine()->CreateTexture("Fence", L"Resources/Textures/WireFence.dds");
 	GetEngine()->CreateTexture("Water", L"Resources/Textures/water1.dds");
+	GetEngine()->CreateTexture("Fence", L"Resources/Textures/WireFence.dds");
 	GetEngine()->CreateTexture("FireBall", L"Resources/Textures/Fireball.dds");
 	GetEngine()->CreateTexture("TreeArray", L"Resources/Textures/treeArray2.dds");
 }
@@ -289,11 +331,11 @@ void OTextureWaves::OnRender(const UpdateEventArgs& Event)
 	const auto passCB = engine->CurrentFrameResources->PassCB->GetResource();
 	commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
+	UpdateWave(Event.Timer);
+	commandList->SetGraphicsRootDescriptorTable(4, Waves->GetDisplacementMap());
+
 	GetEngine()->SetPipelineState(SPSOType::Opaque);
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Opaque));
-
-	GetEngine()->SetPipelineState(SPSOType::Icosahedron);
-	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::IcosahedronLODs));
 
 	GetEngine()->SetPipelineState(SPSOType::AlphaTested);
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::AlphaTested));
@@ -303,6 +345,9 @@ void OTextureWaves::OnRender(const UpdateEventArgs& Event)
 
 	GetEngine()->SetPipelineState(SPSOType::Transparent);
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Transparent));
+
+	GetEngine()->SetPipelineState(SPSOType::WavesRender);
+	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Waves));
 }
 
 void OTextureWaves::BuildPSOTreeSprites()
@@ -381,7 +426,8 @@ void OTextureWaves::BuildPSOGeosphere()
 
 void OTextureWaves::BuildMaterials()
 {
-	GetEngine()->CreateMaterial("Grass", 0, 0, { XMFLOAT4(0.2f, 0.6f, 0.2f, 1.0f), XMFLOAT3(0.01f, 0.01f, 0.01f), 0.125f });
+	GetEngine()->CreateMaterial("Grass", 0, 0, { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.01f, 0.01f, 0.01f), 0.125f });
+
 	GetEngine()->CreateMaterial("Water", 1, 1, { XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.0f });
 	GetEngine()->CreateMaterial("WireFence", 2, 2, { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.25f });
 	GetEngine()->CreateMaterial("FireBall", 3, 3, { XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.25f });
@@ -531,58 +577,57 @@ void OTextureWaves::BuildLandGeometry()
 
 void OTextureWaves::BuildWavesGeometryBuffers()
 {
-	vector<uint16_t> indices(3 * GetEngine()->GetWaves()->GetTriangleCount());
-
-	//iterate over each quad
-	int m = GetEngine()->GetWaves()->GetRowCount();
-	int n = GetEngine()->GetWaves()->GetColumnCount();
-	int k = 0;
-
-	for (int i = 0; i < m - 1; ++i)
+	OGeometryGenerator geoGen;
+	OGeometryGenerator::SMeshData grid = geoGen.CreateGrid(160.0f, 160.0f, Waves->GetRowCount(), Waves->GetColumnCount());
+	auto device = Engine.lock()->GetDevice();
+	auto commandList = Engine.lock()->GetCommandQueue()->GetCommandList();
+	std::vector<SVertex> vertices(grid.Vertices.size());
+	for (size_t i = 0; i < grid.Vertices.size(); ++i)
 	{
-		for (int j = 0; j < n - 1; ++j)
-		{
-			indices[k] = i * n + j;
-			indices[k + 1] = i * n + j + 1;
-			indices[k + 2] = (i + 1) * n + j;
-
-			indices[k + 3] = (i + 1) * n + j;
-			indices[k + 4] = i * n + j + 1;
-			indices[k + 5] = (i + 1) * n + j + 1;
-
-			k += 6; // next quad
-		}
+		vertices[i].Pos = grid.Vertices[i].Position;
+		vertices[i].Normal = grid.Vertices[i].Normal;
+		vertices[i].TexC = grid.Vertices[i].TexC;
 	}
 
-	UINT vbByteSize = GetEngine()->GetWaves()->GetVertexCount() * sizeof(SVertex);
-	UINT ibByteSize = static_cast<UINT>(indices.size() * sizeof(uint16_t));
+	std::vector<std::uint32_t> indices = grid.Indices32;
 
-	auto geometry = make_unique<SMeshGeometry>();
-	geometry->Name = "WaterGeometry";
-	geometry->VertexBufferCPU = nullptr;
-	geometry->VertexBufferGPU = nullptr;
+	UINT vbByteSize = Waves->GetVertexCount() * sizeof(SVertex);
+	UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint32_t);
 
-	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geometry->IndexBufferCPU));
-	CopyMemory(geometry->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+	auto geo = std::make_unique<SMeshGeometry>();
+	geo->Name = "WaterGeometry";
 
-	geometry->IndexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
-	                                                      Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
-	                                                      indices.data(),
-	                                                      ibByteSize,
-	                                                      geometry->IndexBufferUploader);
+	THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
 
-	geometry->VertexByteStride = sizeof(SVertex);
-	geometry->VertexBufferByteSize = vbByteSize;
-	geometry->IndexFormat = DXGI_FORMAT_R16_UINT;
-	geometry->IndexBufferByteSize = ibByteSize;
+	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->VertexBufferGPU = Utils::CreateDefaultBuffer(device.Get(),
+	                                                  commandList.Get(),
+	                                                  vertices.data(),
+	                                                  vbByteSize,
+	                                                  geo->VertexBufferUploader);
+
+	geo->IndexBufferGPU = Utils::CreateDefaultBuffer(device.Get(),
+	                                                 commandList.Get(),
+	                                                 indices.data(),
+	                                                 ibByteSize,
+	                                                 geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(SVertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
 
 	SSubmeshGeometry submesh;
-	submesh.IndexCount = static_cast<UINT>(indices.size());
+	submesh.IndexCount = (UINT)indices.size();
 	submesh.StartIndexLocation = 0;
 	submesh.BaseVertexLocation = 0;
 
-	geometry->SetGeometry("Grid", submesh);
-	GetEngine()->SetSceneGeometry(std::move(geometry));
+	geo->SetGeometry("Grid", submesh);
+
+	GetEngine()->SetSceneGeometry(std::move(geo));
 }
 
 void OTextureWaves::BuildIcosahedronGeometry()
@@ -698,26 +743,29 @@ void OTextureWaves::BuildBoxGeometryBuffers()
 
 void OTextureWaves::BuildDescriptorHeap()
 {
-	constexpr int textureNum = 5;
-	constexpr int blurNum = 4;
-
+	auto rtvOffset = OWindow::BuffersCount;
 	auto engine = Engine.lock();
 	auto device = engine->GetDevice();
 	auto& srv = engine->GetSRVHeap();
-	//
-	// Create the SRV heap.
-	//
+
+	// Create offsets for each bunch of textures
+	auto wavesOffset = engine->GetTextureNum();
+	auto sobelOffset = wavesOffset + Waves->GetDescriptorCount();
+	auto offscreenOffset = sobelOffset + engine->GetSobelFilter()->GetDescriptorCount();
+	auto blurOffset = offscreenOffset + 1;
+	auto bilblurOffset = blurOffset + 4;
+	auto blurDescriptors = 4;
+	auto bilblurDescriptors = 4;
+
+	// create srv heap counting all the textures in it
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = textureNum + blurNum;
+	srvHeapDesc.NumDescriptors = engine->GetTextureNum() + Waves->GetDescriptorCount() + engine->GetSobelFilter()->GetDescriptorCount() + 1 + blurDescriptors + bilblurDescriptors;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	THROW_IF_FAILED(device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&srv)));
 
-	//
 	// Fill out the heap with actual descriptors.
-	//
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(srv->GetCPUDescriptorHandleForHeapStart());
-
 	auto grassTex = GetEngine()->FindTexture("Grass")->Resource;
 	auto waterTex = GetEngine()->FindTexture("Water")->Resource;
 	auto fenceTex = GetEngine()->FindTexture("Fence")->Resource;
@@ -730,39 +778,56 @@ void OTextureWaves::BuildDescriptorHeap()
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.MipLevels = -1;
-	device->CreateShaderResourceView(grassTex.Get(), &srvDesc, hDescriptor);
 
+	device->CreateShaderResourceView(grassTex.Get(), &srvDesc, hDescriptor);
+	auto dsvsrvuavDescSize = GetEngine()->CBVSRVUAVDescriptorSize;
 	// next descriptor
-	hDescriptor.Offset(1, GetEngine()->CBVSRVUAVDescriptorSize);
+	hDescriptor.Offset(1, dsvsrvuavDescSize);
 
 	srvDesc.Format = waterTex->GetDesc().Format;
 	device->CreateShaderResourceView(waterTex.Get(), &srvDesc, hDescriptor);
 
 	// next descriptor
-	hDescriptor.Offset(1, GetEngine()->CBVSRVUAVDescriptorSize);
+	hDescriptor.Offset(1, dsvsrvuavDescSize);
 
 	srvDesc.Format = fenceTex->GetDesc().Format;
 	device->CreateShaderResourceView(fenceTex.Get(), &srvDesc, hDescriptor);
 
-	hDescriptor.Offset(1, GetEngine()->CBVSRVUAVDescriptorSize);
+	hDescriptor.Offset(1, dsvsrvuavDescSize);
 
 	srvDesc.Format = fireballTex->GetDesc().Format;
 	device->CreateShaderResourceView(fireballTex.Get(), &srvDesc, hDescriptor);
 
-	hDescriptor.Offset(1, GetEngine()->CBVSRVUAVDescriptorSize);
+	hDescriptor.Offset(1, dsvsrvuavDescSize);
 
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-	srvDesc.Format = treeArray->GetDesc().Format;
-	srvDesc.Texture2DArray.MostDetailedMip = 0;
-	srvDesc.Texture2DArray.MipLevels = -1;
-	srvDesc.Texture2DArray.ArraySize = treeArray->GetDesc().DepthOrArraySize;
-	srvDesc.Texture2DArray.FirstArraySlice = 0;
-	GetEngine()->GetDevice()->CreateShaderResourceView(treeArray.Get(), &srvDesc, hDescriptor);
+	auto srvCPUStart = srv->GetCPUDescriptorHandleForHeapStart();
+	auto srvGPUStart = srv->GetGPUDescriptorHandleForHeapStart();
+	auto rtvCPUStart = Window.lock()->RTVHeap->GetCPUDescriptorHandleForHeapStart();
+
+	// Add descriptors of waves and post process
+	Waves->BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE(srvCPUStart, wavesOffset, dsvsrvuavDescSize),
+	                        CD3DX12_GPU_DESCRIPTOR_HANDLE(srvGPUStart, wavesOffset, dsvsrvuavDescSize),
+	                        dsvsrvuavDescSize);
+
+	GetEngine()->GetSobelFilter()->BuildDescriptors(
+	    CD3DX12_CPU_DESCRIPTOR_HANDLE(srvCPUStart, sobelOffset, dsvsrvuavDescSize),
+	    CD3DX12_GPU_DESCRIPTOR_HANDLE(srvGPUStart, sobelOffset, dsvsrvuavDescSize),
+	    dsvsrvuavDescSize);
+
+	GetEngine()->GetOffscreenRT()->BuildDescriptors(
+	    CD3DX12_CPU_DESCRIPTOR_HANDLE(srvCPUStart, offscreenOffset, dsvsrvuavDescSize),
+	    CD3DX12_GPU_DESCRIPTOR_HANDLE(srvGPUStart, offscreenOffset, dsvsrvuavDescSize),
+	    CD3DX12_CPU_DESCRIPTOR_HANDLE(rtvCPUStart, rtvOffset, GetEngine()->RTVDescriptorSize));
 
 	GetEngine()->GetBlurFilter()->BuildDescriptors(
-	    CD3DX12_CPU_DESCRIPTOR_HANDLE(srv->GetCPUDescriptorHandleForHeapStart(), 3, engine->CBVSRVUAVDescriptorSize),
-	    CD3DX12_GPU_DESCRIPTOR_HANDLE(srv->GetGPUDescriptorHandleForHeapStart(), 3, engine->CBVSRVUAVDescriptorSize),
-	    engine->CBVSRVUAVDescriptorSize);
+	    CD3DX12_CPU_DESCRIPTOR_HANDLE(srvCPUStart, blurOffset, dsvsrvuavDescSize),
+	    CD3DX12_GPU_DESCRIPTOR_HANDLE(srvGPUStart, blurOffset, dsvsrvuavDescSize),
+	    dsvsrvuavDescSize);
+
+	GetEngine()->GetBilateralBlurFilter()->BuildDescriptors(
+	    CD3DX12_CPU_DESCRIPTOR_HANDLE(srvCPUStart, bilblurOffset, dsvsrvuavDescSize),
+	    CD3DX12_GPU_DESCRIPTOR_HANDLE(srvGPUStart, bilblurOffset, dsvsrvuavDescSize),
+	    dsvsrvuavDescSize);
 }
 
 void OTextureWaves::BuildRenderItems()
@@ -770,6 +835,9 @@ void OTextureWaves::BuildRenderItems()
 	auto wavesRenderItem = make_unique<SRenderItem>();
 	wavesRenderItem->World = Utils::Math::Identity4x4();
 	XMStoreFloat4x4(&wavesRenderItem->TexTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f));
+	wavesRenderItem->DisplacementMapTexelSize.x = 1.0f / Waves->GetColumnCount();
+	wavesRenderItem->DisplacementMapTexelSize.y = 1.0f / Waves->GetRowCount();
+	wavesRenderItem->GridSpatialStep = Waves->GetSpatialStep();
 	wavesRenderItem->ObjectCBIndex = 0;
 	wavesRenderItem->Geometry = GetEngine()->GetSceneGeometry()["WaterGeometry"].get();
 	wavesRenderItem->Material = GetEngine()->FindMaterial("Water");
@@ -779,7 +847,7 @@ void OTextureWaves::BuildRenderItems()
 	wavesRenderItem->BaseVertexLocation = wavesRenderItem->Geometry->FindSubmeshGeomentry("Grid").BaseVertexLocation;
 
 	WavesRenderItem = wavesRenderItem.get();
-	GetEngine()->AddRenderItem(SRenderLayer::Transparent, std::move(wavesRenderItem));
+	GetEngine()->AddRenderItem(SRenderLayer::Waves, std::move(wavesRenderItem));
 
 	auto gridRenderItem = make_unique<SRenderItem>();
 	gridRenderItem->World = Utils::Math::Identity4x4();
@@ -838,7 +906,7 @@ float OTextureWaves::GetHillsHeight(float X, float Z) const
 
 void OTextureWaves::AnimateMaterials(const STimer& Timer)
 {
-	auto waterMaterial = GetEngine()->FindMaterial("FireBall");
+	auto waterMaterial = GetEngine()->FindMaterial("Water");
 
 	float& tu = waterMaterial->MaterialConsatnts.MatTransform(3, 0);
 	float& tv = waterMaterial->MaterialConsatnts.MatTransform(3, 1);

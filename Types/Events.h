@@ -118,15 +118,15 @@ class ResizeEventArgs : public EventArgs
 {
 public:
 	typedef EventArgs Super;
-	ResizeEventArgs(int width, int height, HWND Handle)
+	ResizeEventArgs(uint32_t width, uint32_t height, HWND Handle)
 	    : Super(Handle), Width(width), Height(height)
 	{
 	}
 
 	// The new width of the window
-	int Width;
+	uint32_t Width;
 	// The new height of the window.
-	int Height;
+	uint32_t Height;
 };
 
 class UpdateEventArgs : public EventArgs

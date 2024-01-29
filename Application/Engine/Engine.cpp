@@ -1,13 +1,14 @@
 
 #include "Engine.h"
 
-#include "../../Objects/Geometry/Wave/Waves.h"
 #include "../Application.h"
 #include "../Test/Test.h"
 #include "../Window/Window.h"
 #include "Exception.h"
+#include "Filters/BilateralBlur/BilateralBlurFilter.h"
 #include "Logger.h"
 #include "Settings.h"
+#include "Test/TextureTest/TextureWaves.h"
 #include "Textures/DDSTextureLoader/DDSTextureLoader.h"
 
 #include <DirectXMath.h>
@@ -77,8 +78,10 @@ void OEngine::PostInitialize()
 	BuildShadersAndInputLayouts();
 	BuildDefaultRootSignature();
 	BuildPostProcessRootSignature();
+	BuildWavesRootSignature();
+	BuildBlurRootSignature();
+	BuildBilateralBlurRootSignature();
 	BuildPSOs();
-	BuildBlurPSO();
 }
 
 void OEngine::BuildFilters()
@@ -86,6 +89,7 @@ void OEngine::BuildFilters()
 	const auto commandList = GetCommandQueue()->GetCommandList();
 	BlurFilter = OFilterBase::CreateFilter<OBlurFilter>(Device.Get(), commandList.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
 	SobelFilter = OFilterBase::CreateFilter<OSobelFilter>(Device.Get(), commandList.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
+	BilateralFilter = OFilterBase::CreateFilter<OBilateralBlurFilter>(Device.Get(), commandList.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
 }
 
 void OEngine::BuildOffscreenRT()
@@ -101,10 +105,17 @@ ORenderTarget* OEngine::GetOffscreenRT() const
 void OEngine::DrawFullScreenQuad()
 {
 	const auto commandList = GetCommandQueue()->GetCommandList();
+
 	commandList->IASetVertexBuffers(0, 1, nullptr);
 	commandList->IASetIndexBuffer(nullptr);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
 	commandList->DrawInstanced(6, 1, 0, 0);
+}
+
+uint32_t OEngine::GetTextureNum()
+{
+	return static_cast<uint32_t>(Textures.size());
 }
 
 shared_ptr<OWindow> OEngine::GetWindow() const
@@ -136,7 +147,7 @@ int OEngine::InitTests(shared_ptr<OTest> Test)
 
 void OEngine::PostTestInit()
 {
-	BuildFrameResource();
+	BuildFrameResource(2);
 	HasInitializedTests = true;
 }
 
@@ -174,14 +185,13 @@ void OEngine::BuildFrameResource(uint32_t PassCount)
 		    Device.Get(),
 		    PassCount,
 		    AllRenderItems.size(),
-		    Waves->GetVertexCount(),
 		    Materials.size()));
 	}
 }
 
 void OEngine::OnPreRender()
 {
-	if (SRVHeap)
+	if (SRVDescriptorHeap)
 	{
 		const auto allocator = GetCommandQueue()->GetCommandAllocator();
 		const auto commandList = GetCommandQueue()->GetCommandList();
@@ -194,25 +204,24 @@ void OEngine::OnPreRender()
 		// Reusing the command list reuses memory.
 		THROW_IF_FAILED(commandList->Reset(allocator.Get(), GetPSO(SPSOType::Opaque).Get()));
 
+		ID3D12DescriptorHeap* heaps[] = { SRVDescriptorHeap.Get() };
+		commandList->SetDescriptorHeaps(_countof(heaps), heaps);
+
 		const auto window = GetWindow();
 		commandList->RSSetViewports(1, &window->Viewport);
 		commandList->RSSetScissorRects(1, &window->ScissorRect);
 
-		const auto currentBackBuffer = window->GetCurrentBackBuffer().Get();
 		const auto dsv = window->GetDepthStensilView();
-		const auto rtv = window->CurrentBackBufferView();
+		const auto rtv = OffscreenRT->GetRTV();
 
-		Utils::ResourceBarrier(commandList.Get(), currentBackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		Utils::ResourceBarrier(commandList.Get(), OffscreenRT->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 		// Clear the back buffer and depth buffer.
-		commandList->ClearRenderTargetView(rtv, reinterpret_cast<float*>(&MainPassCB.FogColor), 0, nullptr);
+		commandList->ClearRenderTargetView(OffscreenRT->GetRTV(), reinterpret_cast<float*>(&MainPassCB.FogColor), 0, nullptr);
 		commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 		// Specify the buffers we are going to render to.
 		commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
-
-		ID3D12DescriptorHeap* heaps[] = { SRVHeap.Get() };
-		commandList->SetDescriptorHeaps(_countof(heaps), heaps);
 
 		commandList->SetGraphicsRootSignature(DefaultRootSignature.Get());
 	}
@@ -231,6 +240,7 @@ void OEngine::Draw(const UpdateEventArgs& Args)
 
 void OEngine::Render(const UpdateEventArgs& Args)
 {
+	TickTimer = Args.Timer;
 	OnPreRender();
 	for (const auto val : Tests | std::views::values)
 	{
@@ -261,35 +271,19 @@ void OEngine::PostProcess(HWND Handler)
 	const auto commandList = GetCommandQueue()->GetCommandList();
 	const auto backBuffer = GetWindowByHWND(Handler)->GetCurrentBackBuffer().Get();
 
-	BlurFilter->Execute(PostProcessRootSignature.Get(),
-	                    PSOs[SPSOType::HorizontalBlur].Get(),
-	                    PSOs[SPSOType::VerticalBlur].Get(),
-	                    OffscreenRT->GetResource(),
-	                    SGlobalSettings::BlurRadius);
-
-	/*SobelFilter->Execute(PostProcessRootSignature.Get(),
-						 PSOs[SPSOType::SobelFilter].Get(),
-						 OffscreenRT->GetSRV());*/
-
 	Utils::ResourceBarrier(commandList.Get(),
 	                       OffscreenRT->GetResource(),
-	                       D3D12_RESOURCE_STATE_COPY_SOURCE,
-	                       D3D12_RESOURCE_STATE_COPY_DEST);
+	                       D3D12_RESOURCE_STATE_RENDER_TARGET,
+	                       D3D12_RESOURCE_STATE_GENERIC_READ);
 
-	BlurFilter->OutputTo(OffscreenRT->GetResource());
+	SobelFilter->Execute(PostProcessRootSignature.Get(),
+	                     PSOs[SPSOType::SobelFilter].Get(),
+	                     OffscreenRT->GetSRV());
 
 	Utils::ResourceBarrier(commandList.Get(),
 	                       OffscreenRT->GetResource(),
 	                       D3D12_RESOURCE_STATE_COPY_DEST,
 	                       D3D12_RESOURCE_STATE_GENERIC_READ);
-}
-
-void OEngine::OnPostRender()
-{
-	PostProcess(Window->GetHWND());
-
-	const auto commandList = GetCommandQueue()->GetCommandList();
-	const auto backBuffer = Window->GetCurrentBackBuffer().Get();
 
 	Utils::ResourceBarrier(commandList.Get(),
 	                       backBuffer,
@@ -300,15 +294,36 @@ void OEngine::OnPostRender()
 	auto dsv = Window->GetDepthStensilView();
 
 	commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
-
 	commandList->SetGraphicsRootSignature(PostProcessRootSignature.Get());
-
 	SetPipelineState(SPSOType::Composite);
-
 	commandList->SetGraphicsRootDescriptorTable(0, OffscreenRT->GetSRV());
 	commandList->SetGraphicsRootDescriptorTable(1, SobelFilter->OutputSRV());
-
 	DrawFullScreenQuad();
+
+	BlurFilter->Execute(BlurRootSignature.Get(),
+	                    PSOs[SPSOType::HorizontalBlur].Get(),
+	                    PSOs[SPSOType::VerticalBlur].Get(),
+	                    backBuffer,
+	                    SGlobalSettings::BlurRadius);
+
+	BlurFilter->OutputTo(backBuffer);
+
+	BilateralFilter->Execute(BilateralBlurRootSignature.Get(),
+	                         PSOs[SPSOType::BilateralBlur].Get(),
+	                         backBuffer,
+	                         SGlobalSettings::BilateralBlurSpatialSigma,
+	                         SGlobalSettings::BilateralBlurIntensitySigma,
+	                         SGlobalSettings::BilateralBlurCount);
+
+	BilateralFilter->OutputTo(backBuffer);
+}
+
+void OEngine::OnPostRender()
+{
+	PostProcess(Window->GetHWND());
+
+	const auto commandList = GetCommandQueue()->GetCommandList();
+	const auto backBuffer = Window->GetCurrentBackBuffer().Get();
 
 	Utils::ResourceBarrier(commandList.Get(),
 	                       backBuffer,
@@ -414,23 +429,36 @@ void OEngine::OnMouseWheel(MouseWheelEventArgs& Args)
 	}
 }
 
-void OEngine::OnResize(ResizeEventArgs& Args)
+void OEngine::OnResizeRequest(HWND& WindowHandle)
 {
 	LOG(Log, "Engine::OnResize")
+	const auto window = GetWindowByHWND(WindowHandle);
+	ResizeEventArgs args = { window->GetWidth(), window->GetHeight(), WindowHandle };
 
-	const auto window = GetWindowByHWND(Args.WindowHandle);
-	Args.Height = window->GetHeight();
-	Args.Width = window->GetWidth();
-
-	window->OnResize(Args);
-	if (const auto test = GetTestByHWND(Args.WindowHandle))
+	window->OnResize(args);
+	if (const auto test = GetTestByHWND(WindowHandle))
 	{
-		test->OnResize(Args);
+		test->OnResize(args);
 	}
 
 	if (BlurFilter)
 	{
-		BlurFilter->OnResize(Args.Width, Args.Height);
+		BlurFilter->OnResize(args.Width, args.Height);
+	}
+
+	if (SobelFilter)
+	{
+		SobelFilter->OnResize(args.Width, args.Height);
+	}
+
+	if (OffscreenRT)
+	{
+		OffscreenRT->OnResize(args.Width, args.Height);
+	}
+
+	if (BilateralFilter)
+	{
+		BilateralFilter->OnResize(args.Width, args.Height);
 	}
 }
 
@@ -655,6 +683,16 @@ D3D12_COMPUTE_PIPELINE_STATE_DESC OEngine::GetSobelPSODesc()
 	return sobelPSO;
 }
 
+D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetWavesRenderPSODesc()
+{
+	auto wavesRenderPSO = GetTransparentPSODesc();
+	wavesRenderPSO.VS = {
+		reinterpret_cast<BYTE*>(GetShader(SShaderTypes::VSWaves)->GetBufferPointer()),
+		GetShader(SShaderTypes::VSWaves)->GetBufferSize()
+	};
+	return wavesRenderPSO;
+}
+
 D3D12_COMPUTE_PIPELINE_STATE_DESC OEngine::GetWavesDisturbPSODesc()
 {
 	D3D12_COMPUTE_PIPELINE_STATE_DESC wavesPSO = {};
@@ -688,12 +726,33 @@ void OEngine::BuildPSOs()
 	CreatePSO(SPSOType::StencilMirrors, GetMirrorPSODesc());
 	CreatePSO(SPSOType::StencilReflection, GetReflectedPSODesc());
 	CreatePSO(SPSOType::Shadow, GetShadowPSODesc());
+	CreatePSO(SPSOType::Composite, GetCompositePSODesc());
+	CreatePSO(SPSOType::SobelFilter, GetSobelPSODesc());
+
+	CreatePSO(SPSOType::WavesDisturb, GetWavesDisturbPSODesc());
+	CreatePSO(SPSOType::WavesUpdate, GetWavesUpdatePSODesc());
+	CreatePSO(SPSOType::WavesRender, GetWavesRenderPSODesc());
+
+	BuildBlurPSO();
+	CreatePSO(SPSOType::BilateralBlur, GetBilateralBlurPSODesc());
+}
+
+D3D12_COMPUTE_PIPELINE_STATE_DESC OEngine::GetBilateralBlurPSODesc()
+{
+	D3D12_COMPUTE_PIPELINE_STATE_DESC bilateralBlurPSO = {};
+	bilateralBlurPSO.pRootSignature = BilateralBlurRootSignature.Get();
+	bilateralBlurPSO.CS = {
+		reinterpret_cast<BYTE*>(GetShader(SShaderTypes::CSBilateralBlur)->GetBufferPointer()),
+		GetShader(SShaderTypes::CSBilateralBlur)->GetBufferSize()
+	};
+	bilateralBlurPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	return bilateralBlurPSO;
 }
 
 void OEngine::BuildBlurPSO()
 {
 	D3D12_COMPUTE_PIPELINE_STATE_DESC horizontalBlurPSO = {};
-	horizontalBlurPSO.pRootSignature = PostProcessRootSignature.Get();
+	horizontalBlurPSO.pRootSignature = BlurRootSignature.Get();
 	horizontalBlurPSO.CS = {
 		reinterpret_cast<BYTE*>(GetShader(SShaderTypes::CSHorizontalBlur)->GetBufferPointer()),
 		GetShader(SShaderTypes::CSHorizontalBlur)->GetBufferSize()
@@ -703,21 +762,13 @@ void OEngine::BuildBlurPSO()
 	CreatePSO(SPSOType::HorizontalBlur, horizontalBlurPSO);
 
 	D3D12_COMPUTE_PIPELINE_STATE_DESC verticalBlurPSO = {};
-	verticalBlurPSO.pRootSignature = PostProcessRootSignature.Get();
+	verticalBlurPSO.pRootSignature = BlurRootSignature.Get();
 	verticalBlurPSO.CS = {
 		reinterpret_cast<BYTE*>(GetShader(SShaderTypes::CSVerticalBlur)->GetBufferPointer()),
 		GetShader(SShaderTypes::CSVerticalBlur)->GetBufferSize()
 	};
 	verticalBlurPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 	CreatePSO(SPSOType::VerticalBlur, verticalBlurPSO);
-}
-
-void OEngine::BuildSobelPSO()
-{
-}
-
-void OEngine::BuildCompositePSO()
-{
 }
 
 void OEngine::BuildShadersAndInputLayouts()
@@ -742,6 +793,8 @@ void OEngine::BuildShadersAndInputLayouts()
 	BuildPSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::PSOpaque, fogDefines);
 	BuildPSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::PSAlphaTested, alphaTestDefines);
 
+	BuildShader(L"Shaders/BaseShader.hlsl", SShaderTypes::VSWaves, EShaderLevel::VertexShader, "VS", wavesDefines);
+
 	BuildVSShader(L"Shaders/TreeSprite.hlsl", SShaderTypes::VSTreeSprite);
 	BuildGSShader(L"Shaders/TreeSprite.hlsl", SShaderTypes::GSTreeSprite);
 	BuildPSShader(L"Shaders/TreeSprite.hlsl", SShaderTypes::PSTreeSprite, alphaTestDefines);
@@ -751,12 +804,14 @@ void OEngine::BuildShadersAndInputLayouts()
 
 	BuildShader(L"Shaders/Sobel.hlsl", SShaderTypes::CSSobelFilter, EShaderLevel::ComputeShader, "SobelCS");
 
-	BuildShader(L"Shaders/Composite.hlsl", SShaderTypes::VSComposite, EShaderLevel::VertexShader, "VS");
-	BuildShader(L"Shaders/Composite.hlsl", SShaderTypes::PSComposite, EShaderLevel::PixelShader, "PS");
+	BuildShader(L"Shaders/Composite.hlsl", SShaderTypes::VSComposite, EShaderLevel::VertexShader);
+	BuildShader(L"Shaders/Composite.hlsl", SShaderTypes::PSComposite, EShaderLevel::PixelShader);
 
-	BuildShader(L"Shaders/WavesSimulation", SShaderTypes::CSWavesDisturb, EShaderLevel::ComputeShader, "DisturbWavesCS");
-	BuildShader(L"Shaders/WavesSimulation", SShaderTypes::CSWavesUpdate, EShaderLevel::ComputeShader, "UpdateWaveCS");
-	BuildShader(L"Shader/WavesSimulation", SShaderTypes::VSBaseShader, EShaderLevel::VertexShader, "PS", wavesDefines);
+	BuildShader(L"Shaders/WaveSimulation.hlsl", SShaderTypes::CSWavesDisturb, EShaderLevel::ComputeShader, "DisturbWavesCS");
+	BuildShader(L"Shaders/WaveSimulation.hlsl", SShaderTypes::CSWavesUpdate, EShaderLevel::ComputeShader, "UpdateWavesCS");
+
+	BuildShader(L"Shaders/BilateralBlur.hlsl", SShaderTypes::CSBilateralBlur, EShaderLevel::ComputeShader, "BilateralBlur");
+
 	InputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -885,6 +940,16 @@ OBlurFilter* OEngine::GetBlurFilter()
 	return BlurFilter.get();
 }
 
+OBilateralBlurFilter* OEngine::GetBilateralBlurFilter()
+{
+	return BilateralFilter.get();
+}
+
+OSobelFilter* OEngine::GetSobelFilter()
+{
+	return SobelFilter.get();
+}
+
 shared_ptr<OTest> OEngine::GetTestByHWND(HWND Handler)
 {
 	if (Tests.size() > 0)
@@ -996,6 +1061,7 @@ ComPtr<ID3D12Device2> OEngine::CreateDevice(Microsoft::WRL::ComPtr<IDXGIAdapter4
 			D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE, // I'm really not sure how to avoid this message.
 			D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE, // This warning occurs when using capture frame while graphics debugging.
 			D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE, // This warning occurs when using capture frame while graphics debugging.
+			D3D12_MESSAGE_ID_COMMAND_LIST_DRAW_VERTEX_BUFFER_NOT_SET,
 		};
 
 		D3D12_INFO_QUEUE_FILTER NewFilter = {};
@@ -1015,22 +1081,27 @@ ComPtr<ID3D12Device2> OEngine::CreateDevice(Microsoft::WRL::ComPtr<IDXGIAdapter4
 
 void OEngine::BuildPostProcessRootSignature()
 {
-	CD3DX12_DESCRIPTOR_RANGE srvTable;
-	srvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+	CD3DX12_DESCRIPTOR_RANGE srvTable0;
+	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
-	CD3DX12_DESCRIPTOR_RANGE uavTable;
-	uavTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
+	CD3DX12_DESCRIPTOR_RANGE srvTable1;
+	srvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
+
+	CD3DX12_DESCRIPTOR_RANGE uavTable0;
+	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
 
 	//Order from most frequent to least frequent.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
-	slotRootParameter[0].InitAsConstants(12, 0);
-	slotRootParameter[1].InitAsDescriptorTable(1, &srvTable);
-	slotRootParameter[2].InitAsDescriptorTable(1, &uavTable);
+	slotRootParameter[0].InitAsDescriptorTable(1, &srvTable0);
+	slotRootParameter[1].InitAsDescriptorTable(1, &srvTable1);
+	slotRootParameter[2].InitAsDescriptorTable(1, &uavTable0);
+
+	auto staticSamplers = Utils::GetStaticSamplers();
 
 	const CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3,
 	                                              slotRootParameter,
-	                                              0,
-	                                              nullptr,
+	                                              staticSamplers.size(),
+	                                              staticSamplers.data(),
 	                                              D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	Utils::BuildRootSignature(Device.Get(), PostProcessRootSignature, rootSigDesc);
@@ -1041,18 +1112,94 @@ void OEngine::BuildDefaultRootSignature()
 	CD3DX12_DESCRIPTOR_RANGE texTable;
 	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
-	constexpr auto size = 4;
+	CD3DX12_DESCRIPTOR_RANGE displacementMapTable;
+	displacementMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
+
+	constexpr auto size = 5;
 	CD3DX12_ROOT_PARAMETER slotRootParameter[size];
 
-	slotRootParameter[0].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[0].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_ALL);
 	slotRootParameter[1].InitAsConstantBufferView(0);
 	slotRootParameter[2].InitAsConstantBufferView(1);
 	slotRootParameter[3].InitAsConstantBufferView(2);
+	slotRootParameter[4].InitAsDescriptorTable(1, &displacementMapTable, D3D12_SHADER_VISIBILITY_ALL);
 
 	const auto staticSamples = Utils::GetStaticSamplers();
 	const CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(size, slotRootParameter, staticSamples.size(), staticSamples.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	Utils::BuildRootSignature(Device.Get(), DefaultRootSignature, rootSigDesc);
+}
+
+void OEngine::BuildBilateralBlurRootSignature()
+{
+	CD3DX12_DESCRIPTOR_RANGE srvTable0;
+	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE uavTable1;
+	uavTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
+
+	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
+	slotRootParameter[0].InitAsConstants(3, 0);
+	slotRootParameter[1].InitAsConstants(2, 1);
+	slotRootParameter[2].InitAsDescriptorTable(1, &srvTable0);
+	slotRootParameter[3].InitAsDescriptorTable(1, &uavTable1);
+
+	const CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4,
+	                                              slotRootParameter,
+	                                              0,
+	                                              nullptr,
+	                                              D3D12_ROOT_SIGNATURE_FLAG_NONE);
+
+	Utils::BuildRootSignature(Device.Get(), BilateralBlurRootSignature, rootSigDesc);
+}
+
+void OEngine::BuildBlurRootSignature()
+{
+	CD3DX12_DESCRIPTOR_RANGE srvTable0;
+	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE uavTable1;
+	uavTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
+
+	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
+	slotRootParameter[0].InitAsConstants(12, 0);
+	slotRootParameter[1].InitAsDescriptorTable(1, &srvTable0);
+	slotRootParameter[2].InitAsDescriptorTable(1, &uavTable1);
+
+	const CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3,
+	                                              slotRootParameter,
+	                                              0,
+	                                              nullptr,
+	                                              D3D12_ROOT_SIGNATURE_FLAG_NONE);
+
+	Utils::BuildRootSignature(Device.Get(), BlurRootSignature, rootSigDesc);
+}
+
+void OEngine::BuildWavesRootSignature()
+{
+	CD3DX12_DESCRIPTOR_RANGE uavTable0;
+	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE uavTable1;
+	uavTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1);
+
+	CD3DX12_DESCRIPTOR_RANGE uavTable2;
+	uavTable2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 2);
+
+	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
+
+	slotRootParameter[0].InitAsConstants(6, 0);
+	slotRootParameter[1].InitAsDescriptorTable(1, &uavTable0);
+	slotRootParameter[2].InitAsDescriptorTable(1, &uavTable1);
+	slotRootParameter[3].InitAsDescriptorTable(1, &uavTable2);
+
+	const CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4,
+	                                              slotRootParameter,
+	                                              0,
+	                                              nullptr,
+	                                              D3D12_ROOT_SIGNATURE_FLAG_NONE);
+
+	Utils::BuildRootSignature(Device.Get(), WavesRootSignature, rootSigDesc);
 }
 
 void OEngine::UpdateMainPass(const STimer& Timer)
@@ -1075,6 +1222,7 @@ void OEngine::UpdateMainPass(const STimer& Timer)
 	XMStoreFloat4x4(&MainPassCB.InvProj, XMMatrixTranspose(invProj));
 	XMStoreFloat4x4(&MainPassCB.ViewProj, XMMatrixTranspose(viewProj));
 	XMStoreFloat4x4(&MainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
+
 	MainPassCB.EyePosW = Window->EyePos;
 	MainPassCB.RenderTargetSize = XMFLOAT2(static_cast<float>(Window->GetWidth()), static_cast<float>(Window->GetHeight()));
 	MainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / Window->GetWidth(), 1.0f / Window->GetHeight());
@@ -1082,13 +1230,14 @@ void OEngine::UpdateMainPass(const STimer& Timer)
 	MainPassCB.FarZ = 1000.0f;
 	MainPassCB.TotalTime = Timer.GetTime();
 	MainPassCB.DeltaTime = Timer.GetDeltaTime();
+
 	MainPassCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
 	MainPassCB.Lights[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
-	MainPassCB.Lights[0].Strength = { 0.9f, 0.9f, 0.9f };
+	MainPassCB.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
 	MainPassCB.Lights[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
-	MainPassCB.Lights[1].Strength = { 0.5f, 0.5f, 0.5f };
+	MainPassCB.Lights[1].Strength = { 0.3f, 0.3f, 0.3f };
 	MainPassCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
-	MainPassCB.Lights[2].Strength = { 0.2f, 0.2f, 0.2f };
+	MainPassCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
 
 	const auto currPassCB = CurrentFrameResources->PassCB.get();
 	currPassCB->CopyData(0, MainPassCB);
@@ -1198,11 +1347,6 @@ ComPtr<ID3D12PipelineState> OEngine::GetPSO(const string& PSOName)
 	return PSOs.at(PSOName);
 }
 
-OWaves* OEngine::GetWaves() const
-{
-	return Waves.get();
-}
-
 void OEngine::SetFog(XMFLOAT4 Color, float Start, float Range)
 {
 	MainPassCB.FogColor = Color;
@@ -1217,12 +1361,17 @@ SPassConstants& OEngine::GetMainPassCB()
 
 ComPtr<ID3D12DescriptorHeap>& OEngine::GetSRVHeap()
 {
-	return SRVHeap;
+	return SRVDescriptorHeap;
 }
 
 ID3D12RootSignature* OEngine::GetDefaultRootSignature() const
 {
 	return DefaultRootSignature.Get();
+}
+
+ID3D12RootSignature* OEngine::GetWavesRootSignature() const
+{
+	return WavesRootSignature.Get();
 }
 
 vector<D3D12_INPUT_ELEMENT_DESC>& OEngine::GetDefaultInputLayout()
