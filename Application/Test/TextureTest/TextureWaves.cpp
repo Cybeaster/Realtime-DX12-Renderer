@@ -35,14 +35,14 @@ bool OTextureWaves::Initialize()
 	const auto queue = engine->GetCommandQueue();
 	queue->ResetCommandList();
 
-	Waves = make_unique<OGPUWave>(engine->GetDevice().Get(),
-	                              queue->GetCommandList().Get(),
-	                              256,
-	                              256,
-	                              0.25f,
-	                              0.03f,
-	                              2.0f,
-	                              0.2f);
+	Waves = engine->BuildRenderObject<OGPUWave>(engine->GetDevice().Get(),
+	                                            queue->GetCommandList().Get(),
+	                                            256,
+	                                            256,
+	                                            0.25f,
+	                                            0.03f,
+	                                            2.0f,
+	                                            0.2f);
 
 	engine->SetFog({ 0.7f, 0.7f, 0.7f, 1.0f }, 50.0f, 150.0f);
 	CreateTexture();

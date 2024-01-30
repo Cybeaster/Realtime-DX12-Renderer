@@ -6,13 +6,17 @@ class OBilateralBlurFilter : public OFilterBase
 public:
 	OBilateralBlurFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format);
 
-	void BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE HCPUDescriptor, CD3DX12_GPU_DESCRIPTOR_HANDLE HGPUDescriptor, UINT DescriptorSize) override;
+	void BuildDescriptors(IDescriptor* Descriptor) override;
 
 	void OutputTo(ID3D12Resource* Destination) const;
 	void BuildDescriptors() const override;
 	void BuildResource() override;
 	void Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO,
 	             ID3D12Resource* Input, float SpatialSigma, float IntensitySigma, int32_t BlurCount) const;
+	uint32_t GetNumDescriptors() const override
+	{
+		return 4;
+	}
 
 private:
 	CD3DX12_CPU_DESCRIPTOR_HANDLE BlurOutputCpuSrv;

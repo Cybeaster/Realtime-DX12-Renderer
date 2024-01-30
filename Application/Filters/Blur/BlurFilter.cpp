@@ -1,6 +1,7 @@
 #include "BlurFilter.h"
 
 #include "../../Utils/DirectX.h"
+
 OBlurFilter::OBlurFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format)
     : OFilterBase(Device, List, Width, Height, Format)
 {
@@ -12,19 +13,29 @@ void OBlurFilter::OutputTo(ID3D12Resource* Destination) const
 	CMDList->CopyResource(Destination, BlurMap0.Get());
 }
 
-void OBlurFilter::BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE HCPUDescriptor, CD3DX12_GPU_DESCRIPTOR_HANDLE HGPUDescriptor, UINT DescriptorSize)
+void OBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
 {
-	Blur0CpuSrv = HCPUDescriptor;
-	Blur0CpuUav = HCPUDescriptor.Offset(1, DescriptorSize);
+	const auto descriptor = Cast<SRenderObjectDescriptor>(Descriptor);
+	if (!descriptor)
+	{
+		return;
+	}
 
-	Blur1CpuSrv = HCPUDescriptor.Offset(1, DescriptorSize);
-	Blur1CpuUav = HCPUDescriptor.Offset(1, DescriptorSize);
+	auto cpuDescriptor = descriptor->CPUSRVescriptor;
+	auto gpuDescriptor = descriptor->GPUSRVDescriptor;
+	const auto size = descriptor->DSVSRVUAVDescriptorSize;
 
-	Blur0GpuSrv = HGPUDescriptor;
-	Blur0GpuUav = HGPUDescriptor.Offset(1, DescriptorSize);
+	Blur0CpuSrv = cpuDescriptor;
+	Blur0CpuUav = cpuDescriptor.Offset(1, size);
 
-	Blur1GpuSrv = HGPUDescriptor.Offset(1, DescriptorSize);
-	Blur1GpuUav = HGPUDescriptor.Offset(1, DescriptorSize);
+	Blur1CpuSrv = cpuDescriptor.Offset(1, size);
+	Blur1CpuUav = cpuDescriptor.Offset(1, size);
+
+	Blur0GpuSrv = gpuDescriptor;
+	Blur0GpuUav = gpuDescriptor.Offset(1, size);
+
+	Blur1GpuSrv = gpuDescriptor.Offset(1, size);
+	Blur1GpuUav = gpuDescriptor.Offset(1, size);
 
 	BuildDescriptors();
 }

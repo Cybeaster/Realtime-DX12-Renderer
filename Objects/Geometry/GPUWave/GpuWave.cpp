@@ -109,8 +109,17 @@ void OGPUWave::BuildResources()
 	Utils::ResourceBarrier(CMDList, NextSol.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 }
 
-void OGPUWave::BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE CpuDescriptor, CD3DX12_GPU_DESCRIPTOR_HANDLE GpuDescriptor, UINT DescriptorSize)
+void OGPUWave::BuildDescriptors(IDescriptor* Descriptor)
 {
+	auto descriptor = Cast<SRenderObjectDescriptor>(Descriptor);
+	if (!descriptor)
+	{
+		return;
+	}
+	auto CpuDescriptor = descriptor->CPUSRVescriptor;
+	auto GpuDescriptor = descriptor->GPUSRVDescriptor;
+	auto DescriptorSize = descriptor->DescriptorSize;
+
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.Format = DXGI_FORMAT_R32_FLOAT;

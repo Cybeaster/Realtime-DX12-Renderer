@@ -13,7 +13,7 @@ public:
 
 	void OutputTo(ID3D12Resource* Destination) const;
 
-	void BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE HCPUDescriptor, CD3DX12_GPU_DESCRIPTOR_HANDLE HGPUDescriptor, UINT DescriptorSize) override;
+	void BuildDescriptors(IDescriptor* Descriptor) override;
 
 	void Execute(
 	    ID3D12RootSignature* RootSignature,
@@ -21,6 +21,10 @@ public:
 	    ID3D12PipelineState* VerticalBlurPSO,
 	    ID3D12Resource* Input,
 	    int BlurCount) const;
+	uint32_t GetNumDescriptors() const override
+	{
+		return 4;
+	}
 
 private:
 	vector<float> CalcGaussWeights(float Sigma) const;

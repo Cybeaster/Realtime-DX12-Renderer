@@ -11,19 +11,28 @@ OBilateralBlurFilter::OBilateralBlurFilter(ID3D12Device* Device, ID3D12GraphicsC
 {
 }
 
-void OBilateralBlurFilter::BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE HCPUDescriptor, CD3DX12_GPU_DESCRIPTOR_HANDLE HGPUDescriptor, UINT DescriptorSize)
+void OBilateralBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
 {
-	BlurOutputCpuSrv = HCPUDescriptor;
-	BlurOutputCpuUav = HCPUDescriptor.Offset(1, DescriptorSize);
+	const auto descriptor = Cast<SRenderObjectDescriptor>(Descriptor);
+	if (!descriptor)
+	{
+		return;
+	}
+	auto cpuDescriptor = descriptor->CPUSRVescriptor;
+	auto gpuDescriptor = descriptor->GPUSRVDescriptor;
+	const auto size = descriptor->DSVSRVUAVDescriptorSize;
 
-	BlurInputCpuSrv = HCPUDescriptor.Offset(1, DescriptorSize);
-	BlurInputCpuUav = HCPUDescriptor.Offset(1, DescriptorSize);
+	BlurOutputCpuSrv = cpuDescriptor;
+	BlurOutputCpuUav = cpuDescriptor.Offset(1, size);
 
-	BlurOutputGpuSrv = HGPUDescriptor;
-	BlurOutputGpuUav = HGPUDescriptor.Offset(1, DescriptorSize);
+	BlurInputCpuSrv = cpuDescriptor.Offset(1, size);
+	BlurInputCpuUav = cpuDescriptor.Offset(1, size);
 
-	BlurInputGpuSrv = HGPUDescriptor.Offset(1, DescriptorSize);
-	BlurInputGpuUav = HGPUDescriptor.Offset(1, DescriptorSize);
+	BlurOutputGpuSrv = gpuDescriptor;
+	BlurOutputGpuUav = gpuDescriptor.Offset(1, size);
+
+	BlurInputGpuSrv = gpuDescriptor.Offset(1, size);
+	BlurInputGpuUav = gpuDescriptor.Offset(1, size);
 
 	BuildDescriptors();
 }

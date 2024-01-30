@@ -1,14 +1,13 @@
 #pragma once
 #include "Exception.h"
+#include "Types.h"
 
-#include <Types.h>
+#include <Windows.h>
 
-#include <codecvt>
 #include <format>
 #include <iostream>
 #include <memory>
 #include <ostream>
-#include <Windows.h>
 #ifndef DEBUG
 #define DEBUG 0
 #endif
@@ -51,23 +50,23 @@ struct SLogUtils
 		{
 		case ELogType::Log:
 			std::cout << "\n"
-				<< "Log: " << String << std::endl;
+			          << "Log: " << String << std::endl;
 			break;
 
 		case ELogType::Warning:
 			std::clog << "\n"
-				<< "Warning: " << String << std::endl;
+			          << "Warning: " << String << std::endl;
 			break;
 
 		case ELogType::Error:
 			std::clog << "\n \t \t"
-				<< "Error: " << String << std::endl;
+			          << "Error: " << String << std::endl;
 			__debugbreak();
 			break;
 
 		case ELogType::Critical:
 			std::clog << "\n \t \t"
-				<< "Critical: " << String << std::endl;
+			          << "Critical: " << String << std::endl;
 			assert(false);
 			break;
 		}
@@ -104,12 +103,12 @@ struct SLogUtils
 	}
 
 	template<typename... ArgTypes>
-	static void Printf(const string& Str, ArgTypes&&... Args) noexcept
+	static void Printf(const std::string& Str, ArgTypes&&... Args) noexcept
 	{
 		std::printf(Str.c_str(), ToCString(Args)...);
 	}
 
-	static string ToString(int Argument) noexcept
+	static std::string ToString(int Argument) noexcept
 	{
 		return std::to_string(Argument);
 	}
@@ -121,7 +120,7 @@ struct SLogger
 	SLogger() = default;
 
 	explicit SLogger(std::shared_ptr<T> S)
-		: Stream(S)
+	    : Stream(S)
 	{
 	}
 
@@ -129,7 +128,7 @@ struct SLogger
 	{
 		auto stream = Stream.get();
 		*stream << Message << "\n"
-			<< std::flush;
+		        << std::flush;
 	}
 
 	void SetStream(std::shared_ptr<T> S)

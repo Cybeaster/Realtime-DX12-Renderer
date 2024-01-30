@@ -12,6 +12,7 @@
 #include "RenderTarget/RenderTarget.h"
 #include "ShaderTypes.h"
 #include "Textures/Texture.h"
+#include "UIManager/UiManager.h"
 
 #include <dxgi1_6.h>
 
@@ -41,8 +42,9 @@ public:
 
 	virtual bool Initialize();
 	void PostInitialize();
-	shared_ptr<OWindow> GetWindow() const;
+	void InitUIManager();
 
+	shared_ptr<OWindow> GetWindow() const;
 	ComPtr<ID3D12Device2> GetDevice() const;
 
 	void FlushGPU() const;
@@ -110,6 +112,7 @@ public:
 
 	D3D12_COMPUTE_PIPELINE_STATE_DESC GetSobelPSODesc();
 
+	void BuildDescriptorHeap();
 	void BuildPSOs();
 	void BuildBlurPSO();
 
@@ -168,12 +171,27 @@ public:
 	OBilateralBlurFilter* GetBilateralBlurFilter();
 	OSobelFilter* GetSobelFilter();
 	void BuildFilters();
+
+	template<typename T, typename... Args>
+	T* BuildRenderObject(Args&&... Params);
+
+	TUUID AddRenderObject(IRenderObject* RenderObject);
+
 	void BuildOffscreenRT();
 	ORenderTarget* GetOffscreenRT() const;
 	void DrawFullScreenQuad();
 	uint32_t GetTextureNum();
 
+	template<typename T>
+	TUUID AddFilter();
+
+	IRenderObject* GetObjectByUUID(TUUID UUID);
+	SRenderObjectDescriptor GetObjectDescriptor();
+
 protected:
+	template<typename T, typename... Args>
+	TUUID BuildRenderObjectImpl(Args&&... Params);
+
 	shared_ptr<OTest> GetTestByHWND(HWND Handler);
 	shared_ptr<OWindow> GetWindowByHWND(HWND Handler);
 	void Destroy();
@@ -189,6 +207,7 @@ protected:
 	void BuildBilateralBlurRootSignature();
 
 	ComPtr<ID3D12Resource> GetBackBuffer() const;
+	uint32_t GetNumOffscrenRT() const;
 
 private:
 	void UpdateMainPass(const STimer& Timer);
@@ -228,6 +247,10 @@ private:
 	vector<D3D12_INPUT_ELEMENT_DESC> InputLayout;
 
 	//filters
+	TUUID BlurFilterUUID;
+	TUUID SobelFilterUUID;
+	TUUID BilateralFilterUUID;
+
 	unique_ptr<OBlurFilter> BlurFilter = nullptr;
 	unique_ptr<OSobelFilter> SobelFilter = nullptr;
 	unique_ptr<OBilateralBlurFilter> BilateralFilter = nullptr;
@@ -235,7 +258,31 @@ private:
 	ComPtr<ID3D12DescriptorHeap> SRVDescriptorHeap;
 	bool HasInitializedTests = false;
 
-	unique_ptr<ORenderTarget> OffscreenRT = nullptr;
-
 	STimer TickTimer;
+
+	ORenderTarget* OffscreenRT = nullptr;
+	unique_ptr<OUIManager> UIManager;
+
+	map<TUUID, unique_ptr<IRenderObject>> RenderObjects;
 };
+
+template<typename T, typename... Args>
+TUUID OEngine::BuildRenderObjectImpl(Args&&... Params)
+{
+	auto object = new T(std::forward<Args>(Params)...);
+	auto uuid = GenerateUUID();
+	RenderObjects[uuid] = unique_ptr<IRenderObject>(object);
+	return uuid;
+}
+
+template<typename T, typename... Args>
+T* OEngine::BuildRenderObject(Args&&... Params)
+{
+	return Cast<T>(GetObjectByUUID(BuildRenderObjectImpl<T>(std::forward<Args>(Params)...)));
+}
+
+template<typename T>
+TUUID OEngine::AddFilter()
+{
+	return AddRenderObject(OFilterBase::CreateFilter<OBlurFilter>(Device.Get(), GetCommandQueue()->GetCommandList().Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat));
+}

@@ -1,7 +1,9 @@
 #pragma once
+#include "../../Utils/Statics.h"
+#include "Types.h"
+
 #include <dxgi1_3.h>
 #include <dxgidebug.h>
-
 #pragma once
 
 #define WIN32_LEAN_AND_MEAN

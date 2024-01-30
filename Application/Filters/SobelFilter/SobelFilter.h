@@ -9,13 +9,17 @@ public:
 	OSobelFilter& operator=(const OSobelFilter& rhs) = delete;
 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE OutputSRV() const;
-	UINT GetDescriptorCount() const;
+
+	uint32_t GetNumDescriptors() const override
+	{
+		return 2;
+	}
 
 	void BuildDescriptors() const override;
 	void BuildResource() override;
 
 	void Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO, CD3DX12_GPU_DESCRIPTOR_HANDLE Input) const;
-	void BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE HCPUDescriptor, CD3DX12_GPU_DESCRIPTOR_HANDLE HGPUDescriptor, UINT DescriptorSize) override;
+	void BuildDescriptors(IDescriptor* Descriptor) override;
 
 private:
 	CD3DX12_CPU_DESCRIPTOR_HANDLE CPUSRV;

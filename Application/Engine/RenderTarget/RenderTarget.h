@@ -1,6 +1,8 @@
 #pragma once
 #include "DXHelper.h"
-class ORenderTarget
+#include "Engine/RenderObject/RenderObject.h"
+
+class ORenderTarget : public IRenderObject
 {
 public:
 	ORenderTarget(ID3D12Device* Device,
@@ -15,12 +17,13 @@ public:
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GetSRV() const { return GpuSrv; }
 	CD3DX12_CPU_DESCRIPTOR_HANDLE GetRTV() const { return CpuRtv; }
 
-	void BuildDescriptors(
-	    CD3DX12_CPU_DESCRIPTOR_HANDLE _CpuSrv,
-	    CD3DX12_GPU_DESCRIPTOR_HANDLE _GpuSrv,
-	    CD3DX12_CPU_DESCRIPTOR_HANDLE _CpuRtv);
-
+	void BuildDescriptors(IDescriptor* Descriptor) override;
 	void OnResize(UINT NewWidth, UINT NewHeight);
+
+	uint32_t GetNumDescriptors() const override
+	{
+		return 1;
+	}
 
 private:
 	void BuildDescriptors();

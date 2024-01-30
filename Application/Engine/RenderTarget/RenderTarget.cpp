@@ -3,19 +3,24 @@
 //
 
 #include "RenderTarget.h"
+
+#include "../../../Utils/Statics.h"
 ORenderTarget::ORenderTarget(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format)
     : Device(Device), Width(Width), Height(Height), Format(Format)
 {
 	BuildResource();
 }
 
-void ORenderTarget::BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE _CpuSrv, CD3DX12_GPU_DESCRIPTOR_HANDLE _GpuSrv, CD3DX12_CPU_DESCRIPTOR_HANDLE _CpuRtv)
+void ORenderTarget::BuildDescriptors(IDescriptor* Descriptor)
 {
-	CpuSrv = _CpuSrv;
-	GpuSrv = _GpuSrv;
-	CpuRtv = _CpuRtv;
+	if (const auto descriptor = Cast<SRenderObjectDescriptor>(Descriptor))
+	{
+		CpuSrv = descriptor->CPUSRVescriptor;
+		GpuSrv = descriptor->GPUSRVDescriptor;
+		CpuRtv = descriptor->CPURTVDescriptor;
 
-	BuildDescriptors();
+		BuildDescriptors();
+	}
 }
 
 void ORenderTarget::OnResize(UINT NewWidth, UINT NewHeight)
@@ -66,5 +71,4 @@ void ORenderTarget::BuildResource()
 	                                                D3D12_RESOURCE_STATE_GENERIC_READ,
 	                                                nullptr,
 	                                                IID_PPV_ARGS(&OffscreenTex)));
-
 }

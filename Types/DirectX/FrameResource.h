@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine/UploadBuffer/UploadBuffer.h"
+#include "Logger.h"
 #include "MaterialConstants.h"
 #include "ObjectConstants.h"
 

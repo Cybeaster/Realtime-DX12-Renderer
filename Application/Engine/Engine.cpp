@@ -13,6 +13,7 @@
 
 #include <DirectXMath.h>
 
+#include <numeric>
 #include <ranges>
 
 using namespace Microsoft::WRL;
@@ -75,6 +76,7 @@ void OEngine::PostInitialize()
 {
 	BuildFilters();
 	BuildOffscreenRT();
+	InitUIManager();
 	BuildShadersAndInputLayouts();
 	BuildDefaultRootSignature();
 	BuildPostProcessRootSignature();
@@ -86,20 +88,28 @@ void OEngine::PostInitialize()
 
 void OEngine::BuildFilters()
 {
-	const auto commandList = GetCommandQueue()->GetCommandList();
-	BlurFilter = OFilterBase::CreateFilter<OBlurFilter>(Device.Get(), commandList.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
-	SobelFilter = OFilterBase::CreateFilter<OSobelFilter>(Device.Get(), commandList.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
-	BilateralFilter = OFilterBase::CreateFilter<OBilateralBlurFilter>(Device.Get(), commandList.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
+	BlurFilterUUID = AddFilter<OBlurFilter>();
+	SobelFilterUUID = AddFilter<OSobelFilter>();
+	BilateralFilterUUID = AddFilter<OBilateralBlurFilter>();
+}
+
+TUUID OEngine::AddRenderObject(IRenderObject* RenderObject)
+{
+	const auto uuid = GenerateUUID();
+	RenderObjects[uuid] = unique_ptr<IRenderObject>(RenderObject);
+	return uuid;
 }
 
 void OEngine::BuildOffscreenRT()
 {
-	OffscreenRT = make_unique<ORenderTarget>(Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
+	const auto RT = new ORenderTarget(Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
+	AddRenderObject(RT);
+	OffscreenRT = RT;
 }
 
 ORenderTarget* OEngine::GetOffscreenRT() const
 {
-	return OffscreenRT.get();
+	return OffscreenRT;
 }
 
 void OEngine::DrawFullScreenQuad()
@@ -116,6 +126,12 @@ void OEngine::DrawFullScreenQuad()
 uint32_t OEngine::GetTextureNum()
 {
 	return static_cast<uint32_t>(Textures.size());
+}
+
+void OEngine::InitUIManager()
+{
+	UIManager = make_unique<OUIManager>();
+	UIManager->InitContext(Device.Get(), Window->GetHWND(), SRenderConstants::NumFrameResources, GetSRVHeap().Get());
 }
 
 shared_ptr<OWindow> OEngine::GetWindow() const
@@ -193,6 +209,8 @@ void OEngine::OnPreRender()
 {
 	if (SRVDescriptorHeap)
 	{
+		UIManager->PreRender();
+
 		const auto allocator = GetCommandQueue()->GetCommandAllocator();
 		const auto commandList = GetCommandQueue()->GetCommandList();
 
@@ -242,6 +260,7 @@ void OEngine::Render(const UpdateEventArgs& Args)
 {
 	TickTimer = Args.Timer;
 	OnPreRender();
+	UIManager->Render();
 	for (const auto val : Tests | std::views::values)
 	{
 		val->OnRender(Args);
@@ -320,10 +339,11 @@ void OEngine::PostProcess(HWND Handler)
 
 void OEngine::OnPostRender()
 {
-	PostProcess(Window->GetHWND());
-
 	const auto commandList = GetCommandQueue()->GetCommandList();
 	const auto backBuffer = Window->GetCurrentBackBuffer().Get();
+
+	UIManager->PostRender(commandList.Get());
+	PostProcess(Window->GetHWND());
 
 	Utils::ResourceBarrier(commandList.Get(),
 	                       backBuffer,
@@ -683,6 +703,51 @@ D3D12_COMPUTE_PIPELINE_STATE_DESC OEngine::GetSobelPSODesc()
 	return sobelPSO;
 }
 
+void OEngine::BuildDescriptorHeap()
+{
+	auto texturesNum = GetTextureNum();
+	auto renderObjectDescCount = std::accumulate(
+	    std::views::values(RenderObjects).begin(),
+	    std::views::values(RenderObjects).end(),
+	    0,
+	    [](int acc, const auto& renderObject) {
+		    return acc + renderObject->GetNumDescriptors();
+	    });
+
+	auto totalDescriptors = texturesNum + renderObjectDescCount + GetNumOffscrenRT();
+
+	// create srv heap counting all the textures in it
+	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
+	srvHeapDesc.NumDescriptors = totalDescriptors;
+	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	THROW_IF_FAILED(Device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&SRVDescriptorHeap)));
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(SRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels = -1;
+
+	for (const auto& texture : Textures | std::views::values)
+	{
+		srvDesc.Format = texture->Resource->GetDesc().Format;
+		Device->CreateShaderResourceView(texture->Resource.Get(), &srvDesc, hDescriptor);
+		hDescriptor.Offset(1, CBVSRVUAVDescriptorSize);
+	}
+	uint32_t offset = texturesNum;
+	auto desc = GetObjectDescriptor();
+	desc.OffsetAll(offset);
+
+	for (const auto rObject : RenderObjects | std::views::values)
+	{
+		rObject->BuildDescriptors(&desc);
+		desc.OffsetAll(rObject->GetNumDescriptors());
+	}
+}
+
 D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetWavesRenderPSODesc()
 {
 	auto wavesRenderPSO = GetTransparentPSODesc();
@@ -950,6 +1015,29 @@ OSobelFilter* OEngine::GetSobelFilter()
 	return SobelFilter.get();
 }
 
+IRenderObject* OEngine::GetObjectByUUID(TUUID UUID)
+{
+	if (!RenderObjects.contains(UUID))
+	{
+		LOG(Error, "Render object not found!");
+		return nullptr;
+	}
+
+	return RenderObjects[UUID].get();
+}
+
+SRenderObjectDescriptor OEngine::GetObjectDescriptor()
+{
+	const auto rtvDesc = Window->RTVHeap->GetCPUDescriptorHandleForHeapStart();
+	SRenderObjectDescriptor desc;
+	desc.CPUSRVescriptor = SRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	desc.GPUSRVDescriptor = SRVDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+	desc.DSVSRVUAVDescriptorSize = CBVSRVUAVDescriptorSize;
+	desc.CPURTVDescriptor = rtvDesc;
+	desc.RTVDescriptorSize = RTVDescriptorSize;
+	return desc;
+}
+
 shared_ptr<OTest> OEngine::GetTestByHWND(HWND Handler)
 {
 	if (Tests.size() > 0)
@@ -1200,6 +1288,12 @@ void OEngine::BuildWavesRootSignature()
 	                                              D3D12_ROOT_SIGNATURE_FLAG_NONE);
 
 	Utils::BuildRootSignature(Device.Get(), WavesRootSignature, rootSigDesc);
+}
+
+uint32_t OEngine::GetNumOffscrenRT() const
+{
+	//TODO move RT to array
+	return 1;
 }
 
 void OEngine::UpdateMainPass(const STimer& Timer)

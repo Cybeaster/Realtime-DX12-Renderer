@@ -1,32 +1,30 @@
 #pragma once
 #define WIN32_LEAN_AND_MEAN
-#include "Logger.h"
+#include "Types.h"
 #include "comdef.h"
 
-#include <windows.h>
-
 #include <exception>
-
+#include <string>
 struct SDXException
 {
 public:
 	SDXException() = default;
-	SDXException(HRESULT Hr, const wstring& FuncName, const wstring& FileName, int LineNumber)
+	SDXException(HRESULT Hr, const std::wstring& FuncName, const std::wstring& FileName, int LineNumber)
 	    : ErrorCode(Hr), FunctionName(FuncName), FileName(FileName), LineNumber(LineNumber)
 	{
 	}
 
-	wstring ToString() const
+	std::wstring ToString() const
 	{
 		_com_error err(ErrorCode);
-		wstring msg = err.ErrorMessage();
+		std::wstring msg = err.ErrorMessage();
 
 		return FunctionName + L" failed in " + FileName + L"; line " + std::to_wstring(LineNumber) + L"; error: " + msg;
 	}
 
 	HRESULT ErrorCode = S_OK;
-	wstring FunctionName;
-	wstring FileName;
+	std::wstring FunctionName;
+	std::wstring FileName;
 	int LineNumber = -1;
 };
 

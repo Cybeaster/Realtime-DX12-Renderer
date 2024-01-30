@@ -3,6 +3,12 @@ project(DXRenderer)
 
 set(CMAKE_CXX_STANDARD 20)
 
+set(IMGUI_BACKENDS
+        Externals/imgui/backends/imgui_impl_dx12.cpp
+        Externals/imgui/backends/imgui_impl_win32.h
+        Externals/imgui/backends/imgui_impl_dx12.h
+        Externals/imgui/backends/imgui_impl_win32.cpp
+)
 
 # Use solution folders to organize projects
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -10,7 +16,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 source_group("Resources\\Shaders" FILES ${SHADER_FILES})
 
 add_definitions(-D_UNICODE -DUNICODE)
-
+find_package(Boost REQUIRED)
+include_directories(${Boost_INCLUDE_DIRS})
 set(SRC_FILES
         main.cpp
         Types/Types.h
@@ -78,6 +85,8 @@ set(SRC_FILES
         Types/DirectX/ShaderTypes.h
         Types/DirectX/ShaderTypes.h
         Utils/DirectX.cpp
+        Application/UIManager/UiManager.cpp
+        Application/UIManager/UiManager.h
         Types/Settings.h
         Types/Settings.cpp
         Application/Filters/SobelFilter/SobelFilter.cpp
@@ -89,12 +98,24 @@ set(SRC_FILES
         Application/Engine/RenderTarget/RenderTarget.h
         Application/Filters/BilateralBlur/BilateralBlurFilter.cpp
         Application/Filters/BilateralBlur/BilateralBlurFilter.h
+        Application/Engine/RenderObject/RenderObject.h
+        Utils/Statics.h
 )
+
+file(GLOB IMGUI_SOURCES Externals/imgui/*.cpp Externals/imgui/*.h)
+
+
 # Add sources to the project
 add_executable(DXRenderer
         ${SRC_FILES}
         ${SHADER_FILES}
 )
+
+add_library(imgui ${IMGUI_SOURCES})
+
+# Include them in your library or executable
+target_sources(imgui PRIVATE ${IMGUI_BACKENDS})
+
 
 # Specify the subsystem for Windows
 if (MSVC)
@@ -112,11 +133,14 @@ add_custom_command(TARGET DXRenderer POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/Resources $<TARGET_FILE_DIR:DXRenderer>/Resources/)
 
+include_directories(IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Externals/imgui)
+
 target_include_directories(DXRenderer PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Externals/directx
+        ${CMAKE_CURRENT_SOURCE_DIR}/Types/Utils
         ${CMAKE_CURRENT_SOURCE_DIR}/Types
         ${CMAKE_CURRENT_SOURCE_DIR}/Application
         ${CMAKE_CURRENT_SOURCE_DIR}/Types/DirectX)
 
 # Link necessary libraries
-target_link_libraries(DXRenderer d3d12.lib dxgi.lib dxguid.lib d3dcompiler.lib Shlwapi.lib)
+target_link_libraries(DXRenderer d3d12.lib dxgi.lib dxguid.lib d3dcompiler.lib Shlwapi.lib imgui ${Boost_LIBRARIES})

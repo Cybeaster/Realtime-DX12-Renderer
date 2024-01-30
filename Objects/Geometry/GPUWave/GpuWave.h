@@ -1,7 +1,8 @@
 #pragma once
 #include "DXHelper.h"
+#include "Engine/RenderObject/RenderObject.h"
 #include "Timer/Timer.h"
-class OGPUWave
+class OGPUWave : public IRenderObject
 {
 public:
 	OGPUWave(ID3D12Device* _Device, ID3D12GraphicsCommandList* _List, int32_t _M, int32_t _N, float dx, float dt, float speed, float damping);
@@ -19,13 +20,14 @@ public:
 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GetDisplacementMap() const { return CurrSolSrv; }
 
-	static UINT GetDescriptorCount() { return 6; }
+	uint32_t GetNumDescriptors() const override
+	{
+		return 6;
+	}
 
 	void BuildResources();
 
-	void BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE CpuDescriptor,
-	                      CD3DX12_GPU_DESCRIPTOR_HANDLE GpuDescriptor,
-	                      UINT DescriptorSize);
+	void BuildDescriptors(IDescriptor* Descriptor) override;
 
 	void Update(const STimer& Gt, ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO);
 	void Disturb(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO, UINT I, UINT J, float Magnitude);

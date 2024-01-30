@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <map>
 #include <queue>
+#include <string>
 #if defined(min)
 #undef min
 #endif
@@ -13,6 +14,7 @@
 #if defined(max)
 #undef max
 #endif
+
 using std::array;
 using std::make_shared;
 using std::make_unique;

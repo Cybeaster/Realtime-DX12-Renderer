@@ -45,7 +45,7 @@ public:
 	void OnKeyboardInput(const STimer& Timer);
 
 	void OnMouseWheel(const MouseWheelEventArgs& Args) override;
-	unique_ptr<OGPUWave> Waves = nullptr;
+	OGPUWave* Waves = nullptr;
 
 private:
 	void BuildTreeSpriteGeometry();

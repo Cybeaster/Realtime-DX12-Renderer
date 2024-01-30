@@ -1,12 +1,13 @@
 #define WIN32_LEAN_AND_MEAN
 
+#ifndef _DEBUG
 #define _DEBUG
+#endif
 
 #include "Test/LandTest/LandTest.h"
 #include "Test/LitWaves/LitWaves.h"
 #include "Test/StencilingTest/StencilingTest.h"
 #include "Test/TextureTest/TextureWaves.h"
-
 
 #include <Application.h>
 #include <Shlwapi.h>

@@ -12,11 +12,6 @@ CD3DX12_GPU_DESCRIPTOR_HANDLE OSobelFilter::OutputSRV() const
 	return GPUSRV;
 }
 
-UINT OSobelFilter::GetDescriptorCount() const
-{
-	return 2;
-}
-
 void OSobelFilter::BuildDescriptors() const
 {
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -77,12 +72,21 @@ void OSobelFilter::Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineSta
 	Utils::ResourceBarrier(CMDList, Output.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
 }
 
-void OSobelFilter::BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE HCPUDescriptor, CD3DX12_GPU_DESCRIPTOR_HANDLE HGPUDescriptor, UINT DescriptorSize)
+void OSobelFilter::BuildDescriptors(IDescriptor* Descriptor)
 {
-	CPUSRV = HCPUDescriptor;
-	CPUUAV = HCPUDescriptor.Offset(1, DescriptorSize);
+	auto descriptor = Cast<SRenderObjectDescriptor>(Descriptor);
+	if (!descriptor)
+	{
+		return;
+	}
+	auto cpuDescriptor = descriptor->CPUSRVescriptor;
+	auto gpuDescriptor = descriptor->GPUSRVDescriptor;
+	const auto size = descriptor->DescriptorSize;
 
-	GPUSRV = HGPUDescriptor;
-	GPUUAV = HGPUDescriptor.Offset(1, DescriptorSize);
+	CPUSRV = cpuDescriptor;
+	CPUUAV = cpuDescriptor.Offset(1, size);
+
+	GPUSRV = gpuDescriptor;
+	GPUUAV = gpuDescriptor.Offset(1, size);
 	BuildDescriptors();
 }

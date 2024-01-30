@@ -1,7 +1,8 @@
 #pragma once
 #include "DXHelper.h"
+#include "Engine/RenderObject/RenderObject.h"
 
-class OFilterBase
+class OFilterBase : public IRenderObject
 {
 public:
 	virtual ~OFilterBase() = default;
@@ -13,14 +14,13 @@ public:
 	void Init();
 
 	template<typename T>
-	static unique_ptr<T> CreateFilter(ID3D12Device* _Device, ID3D12GraphicsCommandList* _List, UINT _Width, UINT _Height, DXGI_FORMAT _Format)
+	static T* CreateFilter(ID3D12Device* _Device, ID3D12GraphicsCommandList* _List, UINT _Width, UINT _Height, DXGI_FORMAT _Format)
 	{
-		auto newFilter = make_unique<T>(_Device, _List, _Width, _Height, _Format);
+		auto newFilter = new T(_Device, _List, _Width, _Height, _Format);
 		newFilter->Init();
-		return move(newFilter);
+		return newFilter;
 	}
 
-	virtual void BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE HCPUDescriptor, CD3DX12_GPU_DESCRIPTOR_HANDLE HGPUDescriptor, UINT DescriptorSize) = 0;
 	virtual void OnResize(UINT NewWidth, UINT NewHeight);
 
 protected:
