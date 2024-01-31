@@ -10,6 +10,8 @@
 #include "Settings.h"
 #include "Test/TextureTest/TextureWaves.h"
 #include "Textures/DDSTextureLoader/DDSTextureLoader.h"
+#include "UI/Effects/FogWidget.h"
+#include "UI/Filters/GaussianBlurWidget.h"
 
 #include <DirectXMath.h>
 
@@ -133,6 +135,23 @@ void OEngine::InitUIManager()
 {
 	UIManager->InitContext(Device.Get(), Window->GetHWND(), SRenderConstants::NumFrameResources, GetSRVHeap().Get(), SRVDescriptor);
 	UIManager->MakeWidget<OBilateralBlurFilterWidget>(GetBilateralBlurFilter());
+	UIManager->MakeWidget<OGaussianBlurWidget>(GetBlurFilter());
+	UIManager->MakeWidget<OFogWidget>(this);
+}
+
+void OEngine::SetFogColor(DirectX::XMFLOAT4 Color)
+{
+	MainPassCB.FogColor = Color;
+}
+
+void OEngine::SetFogStart(float Start)
+{
+	MainPassCB.FogStart = Start;
+}
+
+void OEngine::SetFogRange(float Range)
+{
+	MainPassCB.FogRange = Range;
 }
 
 shared_ptr<OWindow> OEngine::GetWindow() const
@@ -317,8 +336,7 @@ void OEngine::PostProcess(HWND Handler)
 	GetBlurFilter()->Execute(BlurRootSignature.Get(),
 	                         PSOs[SPSOType::HorizontalBlur].Get(),
 	                         PSOs[SPSOType::VerticalBlur].Get(),
-	                         backBuffer,
-	                         SGlobalSettings::BlurRadius);
+	                         backBuffer);
 
 	GetBlurFilter()->OutputTo(backBuffer);
 

@@ -99,10 +99,10 @@ void OBlurFilter::Execute(
     ID3D12RootSignature* RootSignature,
     ID3D12PipelineState* HorizontalBlurPSO,
     ID3D12PipelineState* VerticalBlurPSO,
-    ID3D12Resource* Input, int BlurCount) const
+    ID3D12Resource* Input) const
 {
 	using namespace Utils;
-	const auto weights = CalcGaussWeights(2.5f);
+	const auto weights = CalcGaussWeights(Sigma);
 	const auto blurRadius = static_cast<int32_t>(weights.size() / 2);
 
 	CMDList->SetComputeRootSignature(RootSignature);

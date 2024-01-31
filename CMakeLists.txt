@@ -100,9 +100,14 @@ set(SRC_FILES
         Application/Filters/BilateralBlur/BilateralBlurFilter.h
         Application/Engine/RenderObject/RenderObject.h
         Utils/Statics.h
-        Application/UI/Filters/FilterWidget.cpp
-        Application/UI/Filters/FilterWidget.h
+        Application/UI/Filters/BilateralFilterWidget.cpp
+        Application/UI/Filters/BilateralFilterWidget.h
         Application/UI/Widget.h
+        Application/UI/Effects/FogWidget.h
+        Application/UI/Effects/FogWidget.cpp
+        Application/UI/Filters/GaussianBlurWidget.cpp
+        Application/UI/Filters/GaussianBlurWidget.h
+        Application/UI/Filters/GaussianBlurWidget.h
 )
 
 file(GLOB IMGUI_SOURCES Externals/imgui/*.cpp Externals/imgui/*.h)

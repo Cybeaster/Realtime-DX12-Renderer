@@ -1,16 +1,17 @@
 
-#include "FilterWidget.h"
+#include "BilateralFilterWidget.h"
 
 #include "Filters/BilateralBlur/BilateralBlurFilter.h"
 #include "Logger.h"
 void OBilateralBlurFilterWidget::Draw()
 {
-	ImGui::Begin("Bilateral Blur Filter");
-	ImGui::Checkbox("Is Enabled", &bEnabled);
-	ImGui::SliderFloat("Spatial Sigma", &SpatialSigma, 0.0f, 50.0f);
-	ImGui::SliderFloat("Intensity Sigma", &IntensitySigma, 0.0f, 25.0f);
-	ImGui::SliderInt("Blur Count", &BlurCount, 0, 15);
-	ImGui::End();
+	if (ImGui::CollapsingHeader("Bilateral Blur"))
+	{
+		ImGui::Checkbox("Is Bilateral filter Enabled", &bEnabled);
+		ImGui::SliderFloat("Bilateral Spatial Sigma", &SpatialSigma, 0.0f, 50.0f);
+		ImGui::SliderFloat("Bilateral Intensity Sigma", &IntensitySigma, 0.0f, 25.0f);
+		ImGui::SliderInt("Bilateral Blur Count", &BlurCount, 0, 15);
+	}
 }
 
 void OBilateralBlurFilterWidget::Update()

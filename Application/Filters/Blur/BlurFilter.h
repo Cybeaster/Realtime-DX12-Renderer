@@ -19,8 +19,7 @@ public:
 	    ID3D12RootSignature* RootSignature,
 	    ID3D12PipelineState* HorizontalBlurPSO,
 	    ID3D12PipelineState* VerticalBlurPSO,
-	    ID3D12Resource* Input,
-	    int BlurCount) const;
+	    ID3D12Resource* Input) const;
 	uint32_t GetNumDescriptors() const override
 	{
 		return 4;
@@ -29,6 +28,12 @@ public:
 	void UpdateDescriptors(SRenderObjectDescriptor& OutDescriptor) override
 	{
 		OutDescriptor.OffsetSRV(GetNumDescriptors());
+	}
+
+	void SetParameters(float InSigma, uint32_t InBlurCount)
+	{
+		Sigma = InSigma;
+		BlurCount = InBlurCount;
 	}
 
 private:
@@ -54,4 +59,7 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> BlurMap0 = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> BlurMap1 = nullptr;
+
+	float Sigma = 2.5;
+	uint32_t BlurCount = 1;
 };

@@ -38,8 +38,9 @@ void OUIManager::Draw()
 	}
 	ImGui::End();
 
+	ImGui::ShowDemoWindow();
+
 	ImGui::Render();
-	//ImGui::ShowDemoWindow();
 }
 
 void OUIManager::PostRender(ID3D12GraphicsCommandList* List)

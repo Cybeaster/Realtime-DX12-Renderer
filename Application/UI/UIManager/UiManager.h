@@ -1,10 +1,10 @@
 #pragma once
 #include "../Widget.h"
+#include "..\Filters\BilateralFilterWidget.h"
 #include "DXHelper.h"
 #include "Engine/RenderObject/RenderObject.h"
 #include "Events.h"
 #include "Filters/BilateralBlur/BilateralBlurFilter.h"
-#include "UI/Filters/FilterWidget.h"
 
 class OUIManager : public IWidget
     , public IRenderObject

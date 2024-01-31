@@ -44,6 +44,10 @@ public:
 	void PostInitialize();
 	void InitUIManager();
 
+	void SetFogColor(DirectX::XMFLOAT4 Color);
+	void SetFogStart(float Start);
+	void SetFogRange(float Range);
+
 	shared_ptr<OWindow> GetWindow() const;
 	ComPtr<ID3D12Device2> GetDevice() const;
 
