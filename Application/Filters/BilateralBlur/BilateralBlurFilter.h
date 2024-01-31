@@ -12,7 +12,7 @@ public:
 	void BuildDescriptors() const override;
 	void BuildResource() override;
 	void Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO,
-	             ID3D12Resource* Input, float SpatialSigma, float IntensitySigma, int32_t BlurCount) const;
+	             ID3D12Resource* Input) const;
 
 	uint32_t GetNumDescriptors() const override
 	{
@@ -21,6 +21,19 @@ public:
 	void UpdateDescriptors(SRenderObjectDescriptor& OutDescriptor) override
 	{
 		OutDescriptor.OffsetSRV(GetNumDescriptors());
+	}
+
+	void SetSpatialSigma(float Value)
+	{
+		SpatialSigma = Value;
+	}
+	void SetIntensitySigma(float Value)
+	{
+		IntensitySigma = Value;
+	}
+	void SetBlurCount(int32_t Value)
+	{
+		BlurCount = Value;
 	}
 
 private:
@@ -38,4 +51,8 @@ private:
 
 	ComPtr<ID3D12Resource> InputTexture;
 	ComPtr<ID3D12Resource> OutputTexture;
+
+	float SpatialSigma;
+	float IntensitySigma;
+	int32_t BlurCount;
 };

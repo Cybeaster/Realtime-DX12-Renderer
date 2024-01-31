@@ -454,7 +454,7 @@ void OStencilingTest::OnMouseMoved(const MouseMotionEventArgs& Args)
 
 		Radius = std::clamp(Radius, 5.0f, 150.f);
 	}
-	LOG(Log, "Theta: {} Phi: {} Radius: {}", Theta, Phi, Radius);
+	LOG(Default, Log, "Theta: {} Phi: {} Radius: {}", Theta, Phi, Radius);
 }
 
 void OStencilingTest::BuildRootSignature()

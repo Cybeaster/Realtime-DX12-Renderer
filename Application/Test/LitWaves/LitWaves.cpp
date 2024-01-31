@@ -35,7 +35,6 @@ bool OLitWaves::Initialize()
 	const auto queue = engine->GetCommandQueue();
 	queue->ResetCommandList();
 
-
 	BuildShadersAndInputLayout();
 	BuildLandGeometry();
 	BuildWavesGeometryBuffers();
@@ -59,7 +58,6 @@ void OLitWaves::UnloadContent()
 
 void OLitWaves::UpdateWave(const STimer& Timer)
 {
-
 }
 
 void OLitWaves::OnUpdate(const UpdateEventArgs& Event)
@@ -422,7 +420,7 @@ void OLitWaves::OnMouseMoved(const MouseMotionEventArgs& Args)
 
 		Radius = std::clamp(Radius, 5.0f, 150.f);
 	}
-	LOG(Log, "Theta: {} Phi: {} Radius: {}", Theta, Phi, Radius);
+	LOG(Test, Log, "Theta: {} Phi: {} Radius: {}", Theta, Phi, Radius);
 }
 
 void OLitWaves::BuildShadersAndInputLayout()

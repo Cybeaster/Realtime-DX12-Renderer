@@ -160,7 +160,7 @@ vector<float> OBlurFilter::CalcGaussWeights(float Sigma) const
 
 	if (blurRadius > MaxBlurRadius)
 	{
-		LOG(Warning, "Blur radius is too big: {}, Max blur radius is {}.", blurRadius, MaxBlurRadius);
+		LOG(Engine, Warning, "Blur radius is too big: {}, Max blur radius is {}.", blurRadius, MaxBlurRadius);
 		blurRadius = MaxBlurRadius;
 	}
 

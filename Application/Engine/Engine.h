@@ -12,7 +12,7 @@
 #include "RenderTarget/RenderTarget.h"
 #include "ShaderTypes.h"
 #include "Textures/Texture.h"
-#include "UIManager/UiManager.h"
+#include "UI/UIManager/UiManager.h"
 
 #include <dxgi1_6.h>
 
@@ -67,10 +67,10 @@ public:
 	void BuildFrameResource(uint32_t PassCount = 1);
 
 	void OnPreRender();
-	void Draw(const UpdateEventArgs& Args);
-	void Render(const UpdateEventArgs& Args);
-	void Update(const UpdateEventArgs& Args);
-	void OnUpdate(const UpdateEventArgs& Args);
+	void Draw(UpdateEventArgs& Args);
+	void Render(UpdateEventArgs& Args);
+	void Update(UpdateEventArgs& Args);
+	void OnUpdate(UpdateEventArgs& Args);
 
 	void OnPostRender();
 	void PostProcess(HWND Handler);
@@ -288,7 +288,7 @@ T* OEngine::GetObjectByUUID(TUUID UUID, bool Checked)
 	{
 		if (Checked)
 		{
-			LOG(Error, "Render object not found!");
+			LOG(Engine, Error, "Render object not found!");
 		}
 		return nullptr;
 	}

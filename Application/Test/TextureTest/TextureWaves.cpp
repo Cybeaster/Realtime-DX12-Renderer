@@ -93,8 +93,8 @@ void OTextureWaves::UpdateWave(const STimer& Timer) const
 void OTextureWaves::OnUpdate(const UpdateEventArgs& Event)
 {
 	Super::OnUpdate(Event);
-
-	UpdateCamera();
+	IsInputBlocked = Event.IsWidgetInFocus;
+	UpdateCamera(Event);
 	OnKeyboardInput(Event.Timer);
 
 	auto engine = Engine.lock();
@@ -179,21 +179,24 @@ void OTextureWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandLis
 	}
 }
 
-void OTextureWaves::UpdateCamera()
+void OTextureWaves::UpdateCamera(const UpdateEventArgs& Event)
 {
-	auto window = Window.lock();
-	// Convert Spherical to Cartesian coordinates.
-	window->EyePos.x = Radius * sinf(Phi) * cosf(Theta);
-	window->EyePos.z = Radius * sinf(Phi) * sinf(Theta);
-	window->EyePos.y = Radius * cosf(Phi);
+	if (!IsInputBlocked)
+	{
+		auto window = Window.lock();
+		// Convert Spherical to Cartesian coordinates.
+		window->EyePos.x = Radius * sinf(Phi) * cosf(Theta);
+		window->EyePos.z = Radius * sinf(Phi) * sinf(Theta);
+		window->EyePos.y = Radius * cosf(Phi);
 
-	// Build the view matrix.
-	XMVECTOR pos = XMVectorSet(GetWindow()->EyePos.x, window->EyePos.y, window->EyePos.z, 1.0f);
-	XMVECTOR target = XMVectorZero();
-	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+		// Build the view matrix.
+		XMVECTOR pos = XMVectorSet(GetWindow()->EyePos.x, window->EyePos.y, window->EyePos.z, 1.0f);
+		XMVECTOR target = XMVectorZero();
+		XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
-	XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
-	XMStoreFloat4x4(&window->ViewMatrix, view);
+		XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
+		XMStoreFloat4x4(&window->ViewMatrix, view);
+	}
 }
 
 void OTextureWaves::OnKeyboardInput(const STimer& Timer)
@@ -482,6 +485,10 @@ void OTextureWaves::OnKeyPressed(const KeyEventArgs& Event)
 
 void OTextureWaves::OnMouseMoved(const MouseMotionEventArgs& Args)
 {
+	if (IsInputBlocked)
+	{
+		return;
+	}
 	OTest::OnMouseMoved(Args);
 	auto window = Window.lock();
 
@@ -504,7 +511,7 @@ void OTextureWaves::OnMouseMoved(const MouseMotionEventArgs& Args)
 
 		Radius = std::clamp(Radius, 5.0f, 150.f);
 	}
-	LOG(Log, "Theta: {} Phi: {} Radius: {}", Theta, Phi, Radius);
+	LOG(Test, Log, "Theta: {} Phi: {} Radius: {}", Theta, Phi, Radius);
 }
 
 void OTextureWaves::BuildShadersAndInputLayout()

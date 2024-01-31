@@ -40,7 +40,7 @@ public:
 	void DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList,
 	                     const vector<SRenderItem*>& RenderItems) const;
 
-	void UpdateCamera();
+	void UpdateCamera(const UpdateEventArgs& Event);
 
 	void OnKeyboardInput(const STimer& Timer);
 
@@ -99,4 +99,6 @@ private:
 
 	SRenderItem* WavesRenderItem = nullptr;
 	ComPtr<ID3D12DescriptorHeap> SamplerDescriptorHeap = nullptr;
+
+	bool IsInputBlocked = false;
 };

@@ -138,6 +138,7 @@ public:
 	{
 	}
 	const STimer& Timer;
+	bool IsWidgetInFocus = false;
 };
 
 class UserEventArgs : public EventArgs

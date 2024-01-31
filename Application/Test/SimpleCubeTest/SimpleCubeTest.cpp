@@ -17,7 +17,7 @@ using namespace Microsoft::WRL;
 using namespace DirectX;
 
 OSimpleCubeTest::OSimpleCubeTest(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window)
-	: OTest(_Engine, _Window)
+    : OTest(_Engine, _Window)
 {
 }
 
@@ -76,7 +76,7 @@ void OSimpleCubeTest::OnUpdate(const UpdateEventArgs& Event)
 	XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(worldViewProj));
 	ObjectCB->CopyData(0, objConstants);
 
-	LOG(Log, "Time: {}", Event.Timer.GetTime());
+	LOG(Test, Log, "Time: {}", Event.Timer.GetTime());
 }
 
 void OSimpleCubeTest::OnRender(const UpdateEventArgs& Event)
@@ -135,11 +135,11 @@ void OSimpleCubeTest::OnRender(const UpdateEventArgs& Event)
 	commandList->SetGraphicsRootDescriptorTable(1, cbvHeapHandleSecond);
 
 	commandList->DrawIndexedInstanced(
-		BoxGeometry->FindSubmeshGeomentry("Box").IndexCount,
-		1,
-		0,
-		0,
-		0);
+	    BoxGeometry->FindSubmeshGeomentry("Box").IndexCount,
+	    1,
+	    0,
+	    0,
+	    0);
 
 	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(currentBackBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	// Indicate a state transition on the resource usage.
@@ -229,7 +229,7 @@ void OSimpleCubeTest::OnMouseMoved(const MouseMotionEventArgs& Args)
 
 		Radius = std::clamp(Radius, 3.0f, 15.0f);
 	}
-	LOG(Log, "Theta: {} Phi: {} Radius: {}", Theta, Phi, Radius);
+	LOG(Test, Log, "Theta: {} Phi: {} Radius: {}", Theta, Phi, Radius);
 }
 
 void OSimpleCubeTest::BuildDescriptorHeaps()
@@ -294,9 +294,9 @@ void OSimpleCubeTest::BuildRootSignature()
 	}
 	THROW_IF_FAILED(hr);
 	THROW_IF_FAILED(Engine.lock()->GetDevice()->CreateRootSignature(0,
-		serializedRootSig->GetBufferPointer(),
-		serializedRootSig->GetBufferSize(),
-		IID_PPV_ARGS(&RootSignature)));
+	                                                                serializedRootSig->GetBufferPointer(),
+	                                                                serializedRootSig->GetBufferSize(),
+	                                                                IID_PPV_ARGS(&RootSignature)));
 }
 
 void OSimpleCubeTest::BuildShadersAndInputLayout()
@@ -431,12 +431,12 @@ void OSimpleCubeTest::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> Co
 
 	// Create a committed resource for the GPU resource in a default heap.
 	THROW_IF_FAILED(device->CreateCommittedResource(
-		&defaultHeapProperties,
-		D3D12_HEAP_FLAG_NONE,
-		&bufferResourceDesc,
-		D3D12_RESOURCE_STATE_COMMON,
-		nullptr,
-		IID_PPV_ARGS(DestinationResource)));
+	    &defaultHeapProperties,
+	    D3D12_HEAP_FLAG_NONE,
+	    &bufferResourceDesc,
+	    D3D12_RESOURCE_STATE_COMMON,
+	    nullptr,
+	    IID_PPV_ARGS(DestinationResource)));
 
 	if (BufferData)
 	{
@@ -446,12 +446,12 @@ void OSimpleCubeTest::UpdateBufferResource(ComPtr<ID3D12GraphicsCommandList2> Co
 
 		// Create a committed resource for the upload.
 		THROW_IF_FAILED(device->CreateCommittedResource(
-			&uploadHeapProperties,
-			D3D12_HEAP_FLAG_NONE,
-			&uploadBufferResourceDesc,
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(IntermediateResource)));
+		    &uploadHeapProperties,
+		    D3D12_HEAP_FLAG_NONE,
+		    &uploadBufferResourceDesc,
+		    D3D12_RESOURCE_STATE_GENERIC_READ,
+		    nullptr,
+		    IID_PPV_ARGS(IntermediateResource)));
 
 		D3D12_SUBRESOURCE_DATA subresourceData = {};
 		subresourceData.pData = BufferData;

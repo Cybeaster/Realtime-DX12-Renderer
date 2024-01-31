@@ -97,7 +97,7 @@ void OBilateralBlurFilter::BuildResource()
 	                                                IID_PPV_ARGS(InputTexture.GetAddressOf())));
 }
 
-void OBilateralBlurFilter::Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO, ID3D12Resource* Input, float SpatialSigma, float IntensitySigma, int32_t BlurCount) const
+void OBilateralBlurFilter::Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO, ID3D12Resource* Input) const
 {
 	using namespace Utils;
 

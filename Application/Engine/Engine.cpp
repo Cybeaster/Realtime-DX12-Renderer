@@ -63,7 +63,7 @@ bool OEngine::Initialize()
 	}
 	else
 	{
-		LOG(Error, "Failed to create device");
+		LOG(Engine, Error, "Failed to create device");
 	}
 
 	bIsTearingSupported = CheckTearingSupport();
@@ -132,6 +132,7 @@ uint32_t OEngine::GetTextureNum()
 void OEngine::InitUIManager()
 {
 	UIManager->InitContext(Device.Get(), Window->GetHWND(), SRenderConstants::NumFrameResources, GetSRVHeap().Get(), SRVDescriptor);
+	UIManager->MakeWidget<OBilateralBlurFilterWidget>(GetBilateralBlurFilter());
 }
 
 shared_ptr<OWindow> OEngine::GetWindow() const
@@ -153,7 +154,7 @@ void OEngine::FlushGPU() const
 
 int OEngine::InitTests(shared_ptr<OTest> Test)
 {
-	LOG(Log, "Engine::Run")
+	LOG(Engine, Log, "Engine::Run")
 
 	Tests[Test->GetWindow()->GetHWND()] = Test;
 	Test->Initialize();
@@ -246,10 +247,8 @@ void OEngine::OnPreRender()
 	}
 }
 
-void OEngine::Draw(const UpdateEventArgs& Args)
+void OEngine::Draw(UpdateEventArgs& Args)
 {
-	LOG(Log, "Engine::OnRender")
-
 	if (HasInitializedTests)
 	{
 		Update(Args);
@@ -257,7 +256,7 @@ void OEngine::Draw(const UpdateEventArgs& Args)
 	}
 }
 
-void OEngine::Render(const UpdateEventArgs& Args)
+void OEngine::Render(UpdateEventArgs& Args)
 {
 	TickTimer = Args.Timer;
 	OnPreRender();
@@ -268,8 +267,9 @@ void OEngine::Render(const UpdateEventArgs& Args)
 	OnPostRender();
 }
 
-void OEngine::Update(const UpdateEventArgs& Args)
+void OEngine::Update(UpdateEventArgs& Args)
 {
+	Args.IsWidgetInFocus = UIManager->IsInFocus();
 	OnUpdate(Args);
 	for (const auto val : Tests | std::views::values)
 	{
@@ -277,7 +277,7 @@ void OEngine::Update(const UpdateEventArgs& Args)
 	}
 }
 
-void OEngine::OnUpdate(const UpdateEventArgs& Args)
+void OEngine::OnUpdate(UpdateEventArgs& Args)
 {
 	if (CurrentFrameResources)
 	{
@@ -324,10 +324,7 @@ void OEngine::PostProcess(HWND Handler)
 
 	GetBilateralBlurFilter()->Execute(BilateralBlurRootSignature.Get(),
 	                                  PSOs[SPSOType::BilateralBlur].Get(),
-	                                  backBuffer,
-	                                  SGlobalSettings::BilateralBlurSpatialSigma,
-	                                  SGlobalSettings::BilateralBlurIntensitySigma,
-	                                  SGlobalSettings::BilateralBlurCount);
+	                                  backBuffer);
 
 	GetBilateralBlurFilter()->OutputTo(backBuffer);
 
@@ -344,7 +341,7 @@ void OEngine::OnPostRender()
 
 	PostProcess(Window->GetHWND());
 
-	UIManager->Render();
+	UIManager->Draw();
 	UIManager->PostRender(commandList.Get());
 
 	Utils::ResourceBarrier(commandList.Get(),
@@ -400,8 +397,6 @@ void OEngine::OnKeyReleased(KeyEventArgs& Args)
 
 void OEngine::OnMouseMoved(MouseMotionEventArgs& Args)
 {
-	LOG(Log, "Engine::OnMouseMoved")
-
 	if (const auto window = GetWindowByHWND(Args.WindowHandle))
 	{
 		if (const auto test = GetTestByHWND(Args.WindowHandle))
@@ -414,7 +409,6 @@ void OEngine::OnMouseMoved(MouseMotionEventArgs& Args)
 
 void OEngine::OnMouseButtonPressed(MouseButtonEventArgs& Args)
 {
-	LOG(Log, "Engine::OnMouseButtonPressed")
 	UIManager->OnMouseButtonPressed(Args);
 	if (const auto window = GetWindowByHWND(Args.WindowHandle))
 	{
@@ -428,7 +422,6 @@ void OEngine::OnMouseButtonPressed(MouseButtonEventArgs& Args)
 
 void OEngine::OnMouseButtonReleased(MouseButtonEventArgs& Args)
 {
-	LOG(Log, "Engine::OnMouseButtonReleased")
 	UIManager->OnMouseButtonReleased(Args);
 	if (const auto window = GetWindowByHWND(Args.WindowHandle))
 	{
@@ -442,7 +435,7 @@ void OEngine::OnMouseButtonReleased(MouseButtonEventArgs& Args)
 
 void OEngine::OnMouseWheel(MouseWheelEventArgs& Args)
 {
-	LOG(Log, "Engine::OnMouseWheel")
+	LOG(Engine, Log, "Engine::OnMouseWheel")
 	if (const auto window = GetWindowByHWND(Args.WindowHandle))
 	{
 		if (const auto test = GetTestByHWND(Args.WindowHandle))
@@ -455,7 +448,7 @@ void OEngine::OnMouseWheel(MouseWheelEventArgs& Args)
 
 void OEngine::OnResizeRequest(HWND& WindowHandle)
 {
-	LOG(Log, "Engine::OnResize")
+	LOG(Engine, Log, "Engine::OnResize")
 	const auto window = GetWindowByHWND(WindowHandle);
 	ResizeEventArgs args = { window->GetWidth(), window->GetHeight(), WindowHandle };
 
@@ -928,7 +921,7 @@ void OEngine::AddMaterial(string Name, unique_ptr<SMaterial>& Material)
 {
 	if (Materials.contains(Name))
 	{
-		LOG(Error, "Material with this name already exists!");
+		LOG(Engine, Error, "Material with this name already exists!");
 		return;
 	}
 	Materials[Name] = move(Material);
@@ -953,7 +946,7 @@ SMaterial* OEngine::FindMaterial(const string& Name) const
 {
 	if (!Materials.contains(Name))
 	{
-		LOG(Error, "Material not found!");
+		LOG(Engine, Error, "Material not found!");
 		return nullptr;
 	}
 	return Materials.at(Name).get();
@@ -963,7 +956,7 @@ STexture* OEngine::CreateTexture(string Name, wstring FileName)
 {
 	if (Textures.contains(Name))
 	{
-		LOG(Error, "Texture with this name already exists!");
+		LOG(Engine, Error, "Texture with this name already exists!");
 		return nullptr;
 	}
 	auto texture = make_unique<STexture>(Name, FileName);
@@ -983,7 +976,7 @@ STexture* OEngine::FindTexture(string Name) const
 {
 	if (!Textures.contains(Name))
 	{
-		LOG(Error, "Texture not found!");
+		LOG(Engine, Error, "Texture not found!");
 		return nullptr;
 	}
 	return Textures.at(Name).get();
@@ -1050,7 +1043,7 @@ shared_ptr<OTest> OEngine::GetTestByHWND(HWND Handler)
 		{
 			return test->second;
 		}
-		LOG(Error, "Test not found!");
+		LOG(Engine, Error, "Test not found!");
 		return nullptr;
 	}
 	return nullptr;
@@ -1063,7 +1056,7 @@ shared_ptr<OWindow> OEngine::GetWindowByHWND(HWND Handler)
 	{
 		return window->second;
 	}
-	LOG(Error, "Window not found!");
+	LOG(Engine, Error, "Window not found!");
 
 	return nullptr;
 }
@@ -1354,7 +1347,7 @@ SMeshGeometry* OEngine::FindSceneGeometry(const string& Name) const
 {
 	if (!SceneGeometry.contains(Name))
 	{
-		LOG(Error, "Geometry not found!");
+		LOG(Engine, Error, "Geometry not found!");
 		return nullptr;
 	}
 	return SceneGeometry.at(Name).get();
@@ -1430,7 +1423,7 @@ ComPtr<ID3DBlob> OEngine::GetShader(const string& ShaderName)
 {
 	if (!Shaders.contains(ShaderName))
 	{
-		LOG(Error, "Shader not found!");
+		LOG(Engine, Error, "Shader not found!");
 	}
 	return Shaders.at(ShaderName);
 }
@@ -1439,7 +1432,7 @@ ComPtr<ID3D12PipelineState> OEngine::GetPSO(const string& PSOName)
 {
 	if (!PSOs.contains(PSOName))
 	{
-		LOG(Error, "Shader not found!");
+		LOG(Engine, Error, "Shader not found!");
 	}
 	return PSOs.at(PSOName);
 }

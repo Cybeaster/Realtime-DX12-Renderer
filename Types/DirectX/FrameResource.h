@@ -61,7 +61,7 @@ inline SFrameResource::SFrameResource(ID3D12Device* Device, UINT PassCount, UINT
 	}
 	else
 	{
-		LOG(Warning, "Material count is 0");
+		LOG(Engine, Warning, "Material count is 0");
 	}
 }
 

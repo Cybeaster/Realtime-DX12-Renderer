@@ -310,29 +310,7 @@ void OLandTest::OnKeyPressed(const KeyEventArgs& Event)
 
 void OLandTest::OnMouseMoved(const MouseMotionEventArgs& Args)
 {
-	OTest::OnMouseMoved(Args);
-	auto window = Window.lock();
 
-	if (Args.LeftButton)
-	{
-		float dx = XMConvertToRadians(0.25f * (Args.X - window->GetLastXMousePos()));
-		float dy = XMConvertToRadians(0.25f * (Args.Y - window->GetLastYMousePos()));
-
-		Theta += dx;
-		Phi += dy;
-
-		Phi = std::clamp(Phi, 0.1f, XM_PI - 0.1f);
-	}
-
-	else if (Args.RightButton)
-	{
-		float dx = 0.005f * (Args.X - window->GetLastXMousePos());
-		float dy = 0.005f * (Args.Y - window->GetLastYMousePos());
-		Radius += dx - dy;
-
-		Radius = std::clamp(Radius, 3.0f, 35.f);
-	}
-	LOG(Log, "Theta: {} Phi: {} Radius: {}", Theta, Phi, Radius);
 }
 
 void OLandTest::BuildRootSignature()

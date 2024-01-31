@@ -183,7 +183,7 @@ void OWindow::Destroy()
 
 	if (Hwnd && !::DestroyWindow(Hwnd))
 	{
-		LOG(Error, "Failed to destroy window.");
+		LOG(Engine, Error, "Failed to destroy window.");
 	}
 }
 

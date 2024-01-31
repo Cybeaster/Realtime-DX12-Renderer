@@ -188,12 +188,12 @@ void Utils::ResourceBarrier(ID3D12GraphicsCommandList* CMDList, ID3D12Resource* 
 
 	if (localBefore != Before)
 	{
-		LOG(Warning, "ResourceBarrier: Resource state mismatch on resource");
+		LOG(Debug, Warning, "ResourceBarrier: Resource state mismatch on resource");
 	}
 
 	if (localBefore == After)
 	{
-		LOG(Warning, "ResourceBarrier: Resource states must be different!");
+		LOG(Debug, Warning, "ResourceBarrier: Resource states must be different!");
 		return;
 	}
 

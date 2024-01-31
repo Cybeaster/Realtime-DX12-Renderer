@@ -27,8 +27,18 @@ enum class ELogType
 	Critical
 };
 
-#define LOG(LogType, String, ...) \
-	SLogUtils::Log(SLogUtils::Format(String, ##__VA_ARGS__), ELogType::LogType, false);
+struct SLogCategories
+{
+	inline static const std::string Default = "Default";
+	inline static const std::string Render = "Render";
+	inline static const std::string Widget = "Widgets";
+	inline static const std::string Debug = "Debug";
+	inline static const std::string Engine = "Engine";
+	inline static const std::string Test = "Test";
+};
+
+#define LOG(Category, LogType, String, ...) \
+	SLogUtils::Log(SLogCategories::Category, SLogUtils::Format(String, ##__VA_ARGS__), ELogType::LogType, false);
 
 #define DLOG(LogType, String, ...) \
 	SLogUtils::Log(SLogUtils::Format(String, ##__VA_ARGS__), ELogType::LogType, true);
@@ -38,10 +48,24 @@ enum class ELogType
 
 struct SLogUtils
 {
-	template<typename Object>
-	static void Log(const Object& String, ELogType Type = ELogType::Log, const bool Debug = false) noexcept
+	static inline map<string, bool> LogCategories = {
+		{ SLogCategories::Default, true },
+		{ SLogCategories::Render, true },
+		{ SLogCategories::Widget, true },
+		{ SLogCategories::Debug, false },
+		{ SLogCategories::Test, false },
+		{ SLogCategories::Engine, true }
+	};
+
+	static void AddCategory(string Category)
 	{
-		if (DEBUG == false && Debug == true)
+		LogCategories.insert({ Category, true });
+	}
+
+	template<typename Object>
+	static void Log(string Category, const Object& String, ELogType Type = ELogType::Log, const bool Debug = false) noexcept
+	{
+		if ((DEBUG == false && Debug == true) || LogCategories[Category] == false)
 		{
 			return;
 		}

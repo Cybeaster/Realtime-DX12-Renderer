@@ -1,9 +1,8 @@
 #include "UiManager.h"
 
+#include "Logger.h"
 #include "RenderConstants.h"
-#include "backends/imgui_impl_dx12.h"
-#include "backends/imgui_impl_win32.h"
-#include "imgui.h"
+
 void OUIManager::InitContext(ID3D12Device2* Device, HWND Hwnd, UINT NumFramesInLight, ID3D12DescriptorHeap* SRVDescriptorHeap, SRenderObjectDescriptor& OutDescriptor)
 {
 	IMGUI_CHECKVERSION();
@@ -24,13 +23,23 @@ void OUIManager::InitContext(ID3D12Device2* Device, HWND Hwnd, UINT NumFramesInL
 	UpdateDescriptors(OutDescriptor);
 }
 
-void OUIManager::Render()
+void OUIManager::Draw()
 {
+	PostInputUpdate();
+
 	ImGui_ImplDX12_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
-	ImGui::ShowDemoWindow();
+	ImGui::Begin("Main Menu");
+	for (const auto& widget : Widgets)
+	{
+		widget->Update();
+		widget->Draw();
+	}
+	ImGui::End();
+
 	ImGui::Render();
+	//ImGui::ShowDemoWindow();
 }
 
 void OUIManager::PostRender(ID3D12GraphicsCommandList* List)
@@ -93,4 +102,14 @@ void OUIManager::OnResize(ResizeEventArgs& Args)
 void OUIManager::UpdateDescriptors(SRenderObjectDescriptor& OutDescriptor)
 {
 	OutDescriptor.OffsetSRV(GetNumDescriptors());
+}
+
+void OUIManager::PostInputUpdate()
+{
+	bIsInFocus = ImGui::IsAnyItemFocused() || ImGui::IsAnyItemActive() || ImGui::IsItemClicked();
+	LOG(Widget, Log, "IsInFocus: {}", bIsInFocus);
+}
+bool OUIManager::IsInFocus()
+{
+	return bIsInFocus;
 }

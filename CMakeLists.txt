@@ -85,8 +85,8 @@ set(SRC_FILES
         Types/DirectX/ShaderTypes.h
         Types/DirectX/ShaderTypes.h
         Utils/DirectX.cpp
-        Application/UIManager/UiManager.cpp
-        Application/UIManager/UiManager.h
+        Application/UI/UIManager/UiManager.cpp
+        Application/UI/UIManager/UiManager.h
         Types/Settings.h
         Types/Settings.cpp
         Application/Filters/SobelFilter/SobelFilter.cpp
@@ -100,6 +100,9 @@ set(SRC_FILES
         Application/Filters/BilateralBlur/BilateralBlurFilter.h
         Application/Engine/RenderObject/RenderObject.h
         Utils/Statics.h
+        Application/UI/Filters/FilterWidget.cpp
+        Application/UI/Filters/FilterWidget.h
+        Application/UI/Widget.h
 )
 
 file(GLOB IMGUI_SOURCES Externals/imgui/*.cpp Externals/imgui/*.h)
