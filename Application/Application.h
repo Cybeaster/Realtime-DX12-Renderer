@@ -49,7 +49,7 @@ private:
 	bool bIsAppMaximized = false;
 	bool bIsResizing = false;
 
-	SWindowInfo DefaultWindowInfo = { false, L"Window", 800, 600, false, 45.f };
+	SWindowInfo DefaultWindowInfo = { false, L"Window", 1300, 900, false, 45.f };
 };
 
 template<typename TestType>
@@ -57,8 +57,9 @@ int OApplication::Run()
 {
 	auto test = make_shared<TestType>(Engine, Engine->GetWindow());
 	Engine->InitTests(test);
-	MSG msg = { 0 };
+
 	Timer.Reset();
+	MSG msg = { 0 };
 	while (msg.message != WM_QUIT)
 	{
 		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))

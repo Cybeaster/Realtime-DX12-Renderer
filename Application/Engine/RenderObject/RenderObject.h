@@ -3,6 +3,7 @@
 
 struct IDescriptor
 {
+	virtual ~IDescriptor() = default;
 };
 
 struct SRenderObjectDescriptor : IDescriptor
@@ -29,11 +30,17 @@ struct SRenderObjectDescriptor : IDescriptor
 		CPURTVDescriptor.Offset(Value, RTVDescriptorSize);
 	}
 
+	void OffsetSRV(UINT Value)
+	{
+		CPUSRVescriptor.Offset(Value, DSVSRVUAVDescriptorSize);
+		GPUSRVDescriptor.Offset(Value, DSVSRVUAVDescriptorSize);
+	}
+
 	void OffsetAll(UINT Value)
 	{
-		SRVCPUOffset(Value);
-		SRVGPUOffset(Value);
-		RTVCPUOffset(Value);
+		CPUSRVescriptor.Offset(Value, DSVSRVUAVDescriptorSize);
+		GPUSRVDescriptor.Offset(Value, DSVSRVUAVDescriptorSize);
+		CPURTVDescriptor.Offset(Value, RTVDescriptorSize);
 	}
 };
 
@@ -41,6 +48,7 @@ class IRenderObject
 {
 public:
 	virtual ~IRenderObject() = default;
+	virtual void UpdateDescriptors(SRenderObjectDescriptor& OutDescriptor) = 0;
 	virtual uint32_t GetNumDescriptors() const = 0;
 	virtual void BuildDescriptors(IDescriptor* Descriptor) = 0;
 };

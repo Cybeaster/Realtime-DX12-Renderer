@@ -170,6 +170,7 @@ public:
 	OBlurFilter* GetBlurFilter();
 	OBilateralBlurFilter* GetBilateralBlurFilter();
 	OSobelFilter* GetSobelFilter();
+
 	void BuildFilters();
 
 	template<typename T, typename... Args>
@@ -185,7 +186,9 @@ public:
 	template<typename T>
 	TUUID AddFilter();
 
-	IRenderObject* GetObjectByUUID(TUUID UUID);
+	template<typename T>
+	T* GetObjectByUUID(TUUID UUID, bool Checked = false);
+
 	SRenderObjectDescriptor GetObjectDescriptor();
 
 protected:
@@ -251,11 +254,9 @@ private:
 	TUUID SobelFilterUUID;
 	TUUID BilateralFilterUUID;
 
-	unique_ptr<OBlurFilter> BlurFilter = nullptr;
-	unique_ptr<OSobelFilter> SobelFilter = nullptr;
-	unique_ptr<OBilateralBlurFilter> BilateralFilter = nullptr;
-
 	ComPtr<ID3D12DescriptorHeap> SRVDescriptorHeap;
+	SRenderObjectDescriptor SRVDescriptor;
+
 	bool HasInitializedTests = false;
 
 	STimer TickTimer;
@@ -278,11 +279,25 @@ TUUID OEngine::BuildRenderObjectImpl(Args&&... Params)
 template<typename T, typename... Args>
 T* OEngine::BuildRenderObject(Args&&... Params)
 {
-	return Cast<T>(GetObjectByUUID(BuildRenderObjectImpl<T>(std::forward<Args>(Params)...)));
+	return GetObjectByUUID<T>(BuildRenderObjectImpl<T>(std::forward<Args>(Params)...));
+}
+template<typename T>
+T* OEngine::GetObjectByUUID(TUUID UUID, bool Checked)
+{
+	if (!RenderObjects.contains(UUID))
+	{
+		if (Checked)
+		{
+			LOG(Error, "Render object not found!");
+		}
+		return nullptr;
+	}
+	const auto obj = RenderObjects[UUID].get();
+	return Cast<T>(obj);
 }
 
 template<typename T>
 TUUID OEngine::AddFilter()
 {
-	return AddRenderObject(OFilterBase::CreateFilter<OBlurFilter>(Device.Get(), GetCommandQueue()->GetCommandList().Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat));
+	return AddRenderObject(OFilterBase::CreateFilter<T>(Device.Get(), GetCommandQueue()->GetCommandList().Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat));
 }

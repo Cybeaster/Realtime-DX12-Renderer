@@ -31,6 +31,10 @@ public:
 
 	void Update(const STimer& Gt, ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO);
 	void Disturb(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO, UINT I, UINT J, float Magnitude);
+	void UpdateDescriptors(SRenderObjectDescriptor& OutDescriptor) override
+	{
+		OutDescriptor.OffsetSRV(GetNumDescriptors());
+	}
 
 private:
 	UINT NumRows;

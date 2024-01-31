@@ -13,9 +13,14 @@ public:
 	void BuildResource() override;
 	void Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO,
 	             ID3D12Resource* Input, float SpatialSigma, float IntensitySigma, int32_t BlurCount) const;
+
 	uint32_t GetNumDescriptors() const override
 	{
 		return 4;
+	}
+	void UpdateDescriptors(SRenderObjectDescriptor& OutDescriptor) override
+	{
+		OutDescriptor.OffsetSRV(GetNumDescriptors());
 	}
 
 private:

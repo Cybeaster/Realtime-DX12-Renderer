@@ -118,7 +118,7 @@ void OGPUWave::BuildDescriptors(IDescriptor* Descriptor)
 	}
 	auto CpuDescriptor = descriptor->CPUSRVescriptor;
 	auto GpuDescriptor = descriptor->GPUSRVDescriptor;
-	auto DescriptorSize = descriptor->DescriptorSize;
+	auto DescriptorSize = descriptor->DSVSRVUAVDescriptorSize;
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;

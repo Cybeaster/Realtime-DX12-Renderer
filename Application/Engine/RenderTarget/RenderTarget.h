@@ -24,6 +24,10 @@ public:
 	{
 		return 1;
 	}
+	void UpdateDescriptors(SRenderObjectDescriptor& OutDescriptor) override
+	{
+		OutDescriptor.OffsetSRV(GetNumDescriptors());
+	}
 
 private:
 	void BuildDescriptors();

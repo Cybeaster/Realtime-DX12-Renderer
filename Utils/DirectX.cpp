@@ -1,5 +1,7 @@
 #include "DirectX.h"
 
+#include "Logger.h"
+
 UINT Utils::CalcBufferByteSize(const UINT ByteSize)
 {
 	return (ByteSize + 255) & ~255;
@@ -151,10 +153,27 @@ array<const CD3DX12_STATIC_SAMPLER_DESC, 6> Utils::GetStaticSamplers()
 	};
 	//clang-format on
 }
-void Utils::ResourceBarrier(ID3D12GraphicsCommandList* CMDList, ID3D12Resource* Resource, D3D12_RESOURCE_STATES Before, D3D12_RESOURCE_STATES After)
+
+static map<ID3D12Resource*, D3D12_RESOURCE_STATES> ResourceStateMap = {};
+
+D3D12_RESOURCE_STATES Utils::ResourceBarrier(ID3D12GraphicsCommandList* CMDList, ID3D12Resource* Resource, D3D12_RESOURCE_STATES After)
 {
 	static map<ID3D12Resource*, D3D12_RESOURCE_STATES> ResourceStateMap = {};
 
+	D3D12_RESOURCE_STATES localBefore = {};
+	if (ResourceStateMap.contains(Resource))
+	{
+		localBefore = ResourceStateMap[Resource];
+	}
+	ResourceStateMap[Resource] = After;
+
+	const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(Resource, localBefore, After);
+	CMDList->ResourceBarrier(1, &barrier);
+	return localBefore;
+}
+
+void Utils::ResourceBarrier(ID3D12GraphicsCommandList* CMDList, ID3D12Resource* Resource, D3D12_RESOURCE_STATES Before, D3D12_RESOURCE_STATES After)
+{
 	D3D12_RESOURCE_STATES localBefore = {};
 	if (ResourceStateMap.contains(Resource))
 	{

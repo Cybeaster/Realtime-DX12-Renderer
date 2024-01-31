@@ -21,6 +21,11 @@ public:
 	void Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO, CD3DX12_GPU_DESCRIPTOR_HANDLE Input) const;
 	void BuildDescriptors(IDescriptor* Descriptor) override;
 
+	void UpdateDescriptors(SRenderObjectDescriptor& OutDescriptor) override
+	{
+		OutDescriptor.OffsetSRV(GetNumDescriptors());
+	}
+
 private:
 	CD3DX12_CPU_DESCRIPTOR_HANDLE CPUSRV;
 	CD3DX12_CPU_DESCRIPTOR_HANDLE CPUUAV;

@@ -18,8 +18,8 @@ struct SWindowInfo
 {
 	bool Fullscreen = false;
 	wstring Name = L"NONE";
-	uint32_t ClientWidth = 800;
-	uint32_t ClientHeight = 600;
+	uint32_t ClientWidth = 1920;
+	uint32_t ClientHeight = 1080;
 	bool VSync = false;
 	float FoV = 45.0f;
 };
@@ -168,6 +168,4 @@ private:
 
 	float LastMouseXPos = 0;
 	float LastMouseYPos = 0;
-
-
 };

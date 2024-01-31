@@ -74,9 +74,10 @@ bool OEngine::Initialize()
 
 void OEngine::PostInitialize()
 {
+	UIManager = make_unique<OUIManager>();
+
 	BuildFilters();
 	BuildOffscreenRT();
-	InitUIManager();
 	BuildShadersAndInputLayouts();
 	BuildDefaultRootSignature();
 	BuildPostProcessRootSignature();
@@ -130,8 +131,7 @@ uint32_t OEngine::GetTextureNum()
 
 void OEngine::InitUIManager()
 {
-	UIManager = make_unique<OUIManager>();
-	UIManager->InitContext(Device.Get(), Window->GetHWND(), SRenderConstants::NumFrameResources, GetSRVHeap().Get());
+	UIManager->InitContext(Device.Get(), Window->GetHWND(), SRenderConstants::NumFrameResources, GetSRVHeap().Get(), SRVDescriptor);
 }
 
 shared_ptr<OWindow> OEngine::GetWindow() const
@@ -164,6 +164,9 @@ int OEngine::InitTests(shared_ptr<OTest> Test)
 void OEngine::PostTestInit()
 {
 	BuildFrameResource(2);
+	BuildDescriptorHeap();
+	InitUIManager();
+
 	HasInitializedTests = true;
 }
 
@@ -209,8 +212,6 @@ void OEngine::OnPreRender()
 {
 	if (SRVDescriptorHeap)
 	{
-		UIManager->PreRender();
-
 		const auto allocator = GetCommandQueue()->GetCommandAllocator();
 		const auto commandList = GetCommandQueue()->GetCommandList();
 
@@ -260,7 +261,6 @@ void OEngine::Render(const UpdateEventArgs& Args)
 {
 	TickTimer = Args.Timer;
 	OnPreRender();
-	UIManager->Render();
 	for (const auto val : Tests | std::views::values)
 	{
 		val->OnRender(Args);
@@ -295,14 +295,9 @@ void OEngine::PostProcess(HWND Handler)
 	                       D3D12_RESOURCE_STATE_RENDER_TARGET,
 	                       D3D12_RESOURCE_STATE_GENERIC_READ);
 
-	SobelFilter->Execute(PostProcessRootSignature.Get(),
-	                     PSOs[SPSOType::SobelFilter].Get(),
-	                     OffscreenRT->GetSRV());
-
-	Utils::ResourceBarrier(commandList.Get(),
-	                       OffscreenRT->GetResource(),
-	                       D3D12_RESOURCE_STATE_COPY_DEST,
-	                       D3D12_RESOURCE_STATE_GENERIC_READ);
+	GetSobelFilter()->Execute(PostProcessRootSignature.Get(),
+	                          PSOs[SPSOType::SobelFilter].Get(),
+	                          OffscreenRT->GetSRV());
 
 	Utils::ResourceBarrier(commandList.Get(),
 	                       backBuffer,
@@ -316,25 +311,30 @@ void OEngine::PostProcess(HWND Handler)
 	commandList->SetGraphicsRootSignature(PostProcessRootSignature.Get());
 	SetPipelineState(SPSOType::Composite);
 	commandList->SetGraphicsRootDescriptorTable(0, OffscreenRT->GetSRV());
-	commandList->SetGraphicsRootDescriptorTable(1, SobelFilter->OutputSRV());
+	commandList->SetGraphicsRootDescriptorTable(1, GetSobelFilter()->OutputSRV());
 	DrawFullScreenQuad();
 
-	BlurFilter->Execute(BlurRootSignature.Get(),
-	                    PSOs[SPSOType::HorizontalBlur].Get(),
-	                    PSOs[SPSOType::VerticalBlur].Get(),
-	                    backBuffer,
-	                    SGlobalSettings::BlurRadius);
-
-	BlurFilter->OutputTo(backBuffer);
-
-	BilateralFilter->Execute(BilateralBlurRootSignature.Get(),
-	                         PSOs[SPSOType::BilateralBlur].Get(),
+	GetBlurFilter()->Execute(BlurRootSignature.Get(),
+	                         PSOs[SPSOType::HorizontalBlur].Get(),
+	                         PSOs[SPSOType::VerticalBlur].Get(),
 	                         backBuffer,
-	                         SGlobalSettings::BilateralBlurSpatialSigma,
-	                         SGlobalSettings::BilateralBlurIntensitySigma,
-	                         SGlobalSettings::BilateralBlurCount);
+	                         SGlobalSettings::BlurRadius);
 
-	BilateralFilter->OutputTo(backBuffer);
+	GetBlurFilter()->OutputTo(backBuffer);
+
+	GetBilateralBlurFilter()->Execute(BilateralBlurRootSignature.Get(),
+	                                  PSOs[SPSOType::BilateralBlur].Get(),
+	                                  backBuffer,
+	                                  SGlobalSettings::BilateralBlurSpatialSigma,
+	                                  SGlobalSettings::BilateralBlurIntensitySigma,
+	                                  SGlobalSettings::BilateralBlurCount);
+
+	GetBilateralBlurFilter()->OutputTo(backBuffer);
+
+	Utils::ResourceBarrier(commandList.Get(),
+	                       backBuffer,
+	                       D3D12_RESOURCE_STATE_COPY_DEST,
+	                       D3D12_RESOURCE_STATE_RENDER_TARGET);
 }
 
 void OEngine::OnPostRender()
@@ -342,8 +342,10 @@ void OEngine::OnPostRender()
 	const auto commandList = GetCommandQueue()->GetCommandList();
 	const auto backBuffer = Window->GetCurrentBackBuffer().Get();
 
-	UIManager->PostRender(commandList.Get());
 	PostProcess(Window->GetHWND());
+
+	UIManager->Render();
+	UIManager->PostRender(commandList.Get());
 
 	Utils::ResourceBarrier(commandList.Get(),
 	                       backBuffer,
@@ -413,6 +415,7 @@ void OEngine::OnMouseMoved(MouseMotionEventArgs& Args)
 void OEngine::OnMouseButtonPressed(MouseButtonEventArgs& Args)
 {
 	LOG(Log, "Engine::OnMouseButtonPressed")
+	UIManager->OnMouseButtonPressed(Args);
 	if (const auto window = GetWindowByHWND(Args.WindowHandle))
 	{
 		if (const auto test = GetTestByHWND(Args.WindowHandle))
@@ -426,6 +429,7 @@ void OEngine::OnMouseButtonPressed(MouseButtonEventArgs& Args)
 void OEngine::OnMouseButtonReleased(MouseButtonEventArgs& Args)
 {
 	LOG(Log, "Engine::OnMouseButtonReleased")
+	UIManager->OnMouseButtonReleased(Args);
 	if (const auto window = GetWindowByHWND(Args.WindowHandle))
 	{
 		if (const auto test = GetTestByHWND(Args.WindowHandle))
@@ -456,19 +460,25 @@ void OEngine::OnResizeRequest(HWND& WindowHandle)
 	ResizeEventArgs args = { window->GetWidth(), window->GetHeight(), WindowHandle };
 
 	window->OnResize(args);
+
 	if (const auto test = GetTestByHWND(WindowHandle))
 	{
 		test->OnResize(args);
 	}
 
-	if (BlurFilter)
+	if (UIManager)
 	{
-		BlurFilter->OnResize(args.Width, args.Height);
+		UIManager->OnResize(args);
 	}
 
-	if (SobelFilter)
+	if (const auto blurFilter = GetBlurFilter())
 	{
-		SobelFilter->OnResize(args.Width, args.Height);
+		blurFilter->OnResize(args.Width, args.Height);
+	}
+
+	if (const auto sobel = GetSobelFilter())
+	{
+		sobel->OnResize(args.Width, args.Height);
 	}
 
 	if (OffscreenRT)
@@ -476,9 +486,9 @@ void OEngine::OnResizeRequest(HWND& WindowHandle)
 		OffscreenRT->OnResize(args.Width, args.Height);
 	}
 
-	if (BilateralFilter)
+	if (const auto bilateralFilter = GetBilateralBlurFilter())
 	{
-		BilateralFilter->OnResize(args.Width, args.Height);
+		bilateralFilter->OnResize(args.Width, args.Height);
 	}
 }
 
@@ -714,7 +724,8 @@ void OEngine::BuildDescriptorHeap()
 		    return acc + renderObject->GetNumDescriptors();
 	    });
 
-	auto totalDescriptors = texturesNum + renderObjectDescCount + GetNumOffscrenRT();
+	auto totalDescriptors = texturesNum + renderObjectDescCount + GetNumOffscrenRT() + UIManager->GetNumDescriptors();
+	auto numBackBuffers = OWindow::BuffersCount;
 
 	// create srv heap counting all the textures in it
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
@@ -731,20 +742,23 @@ void OEngine::BuildDescriptorHeap()
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.MipLevels = -1;
 
+	//Textures, SRV offset only
 	for (const auto& texture : Textures | std::views::values)
 	{
 		srvDesc.Format = texture->Resource->GetDesc().Format;
 		Device->CreateShaderResourceView(texture->Resource.Get(), &srvDesc, hDescriptor);
 		hDescriptor.Offset(1, CBVSRVUAVDescriptorSize);
 	}
-	uint32_t offset = texturesNum;
-	auto desc = GetObjectDescriptor();
-	desc.OffsetAll(offset);
 
-	for (const auto rObject : RenderObjects | std::views::values)
+	//All the other objcts, SRVs, UAVs and RTVs
+	SRVDescriptor = GetObjectDescriptor();
+	SRVDescriptor.OffsetSRV(texturesNum);
+	SRVDescriptor.RTVCPUOffset(numBackBuffers);
+
+	for (const auto& rObject : RenderObjects | std::views::values)
 	{
-		rObject->BuildDescriptors(&desc);
-		desc.OffsetAll(rObject->GetNumDescriptors());
+		rObject->BuildDescriptors(&SRVDescriptor);
+		rObject->UpdateDescriptors(SRVDescriptor);
 	}
 }
 
@@ -1002,28 +1016,17 @@ void OEngine::SetPipelineState(string PSOName)
 
 OBlurFilter* OEngine::GetBlurFilter()
 {
-	return BlurFilter.get();
+	return GetObjectByUUID<OBlurFilter>(BlurFilterUUID);
 }
 
 OBilateralBlurFilter* OEngine::GetBilateralBlurFilter()
 {
-	return BilateralFilter.get();
+	return GetObjectByUUID<OBilateralBlurFilter>(BilateralFilterUUID);
 }
 
 OSobelFilter* OEngine::GetSobelFilter()
 {
-	return SobelFilter.get();
-}
-
-IRenderObject* OEngine::GetObjectByUUID(TUUID UUID)
-{
-	if (!RenderObjects.contains(UUID))
-	{
-		LOG(Error, "Render object not found!");
-		return nullptr;
-	}
-
-	return RenderObjects[UUID].get();
+	return GetObjectByUUID<OSobelFilter>(SobelFilterUUID);
 }
 
 SRenderObjectDescriptor OEngine::GetObjectDescriptor()

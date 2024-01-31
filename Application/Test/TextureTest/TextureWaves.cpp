@@ -743,7 +743,7 @@ void OTextureWaves::BuildBoxGeometryBuffers()
 
 void OTextureWaves::BuildDescriptorHeap()
 {
-	auto rtvOffset = OWindow::BuffersCount;
+	/*auto rtvOffset = OWindow::BuffersCount;
 	auto engine = Engine.lock();
 	auto device = engine->GetDevice();
 	auto& srv = engine->GetSRVHeap();
@@ -827,7 +827,7 @@ void OTextureWaves::BuildDescriptorHeap()
 	GetEngine()->GetBilateralBlurFilter()->BuildDescriptors(
 	    CD3DX12_CPU_DESCRIPTOR_HANDLE(srvCPUStart, bilblurOffset, dsvsrvuavDescSize),
 	    CD3DX12_GPU_DESCRIPTOR_HANDLE(srvGPUStart, bilblurOffset, dsvsrvuavDescSize),
-	    dsvsrvuavDescSize);
+	    dsvsrvuavDescSize);*/
 }
 
 void OTextureWaves::BuildRenderItems()

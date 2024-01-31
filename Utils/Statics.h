@@ -4,7 +4,7 @@
 #include <boost/uuid/uuid_io.hpp>
 
 template<typename T>
-T* Cast(void* Ptr)
+T* Cast(auto* Ptr)
 {
 	auto casted = dynamic_cast<T*>(Ptr);
 	if (casted != nullptr)

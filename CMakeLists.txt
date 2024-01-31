@@ -143,4 +143,4 @@ target_include_directories(DXRenderer PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Types/DirectX)
 
 # Link necessary libraries
-target_link_libraries(DXRenderer d3d12.lib dxgi.lib dxguid.lib d3dcompiler.lib Shlwapi.lib imgui ${Boost_LIBRARIES})
+target_link_libraries(DXRenderer d3d12.lib dxgi.lib dxguid.lib d3dcompiler.lib Shlwapi.lib imgui ${Boost_LIBRARIES} Bcrypt.lib)

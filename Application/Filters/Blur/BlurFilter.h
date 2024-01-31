@@ -26,6 +26,11 @@ public:
 		return 4;
 	}
 
+	void UpdateDescriptors(SRenderObjectDescriptor& OutDescriptor) override
+	{
+		OutDescriptor.OffsetSRV(GetNumDescriptors());
+	}
+
 private:
 	vector<float> CalcGaussWeights(float Sigma) const;
 

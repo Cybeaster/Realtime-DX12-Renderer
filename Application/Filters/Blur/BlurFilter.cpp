@@ -1,6 +1,7 @@
 #include "BlurFilter.h"
 
 #include "../../Utils/DirectX.h"
+#include "Logger.h"
 
 OBlurFilter::OBlurFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format)
     : OFilterBase(Device, List, Width, Height, Format)
