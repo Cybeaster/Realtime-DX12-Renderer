@@ -11,6 +11,7 @@
 #include "Test/TextureTest/TextureWaves.h"
 #include "Textures/DDSTextureLoader/DDSTextureLoader.h"
 #include "UI/Effects/FogWidget.h"
+#include "UI/Effects/Light/LightWidget.h"
 #include "UI/Filters/GaussianBlurWidget.h"
 
 #include <DirectXMath.h>
@@ -137,6 +138,7 @@ void OEngine::InitUIManager()
 	UIManager->MakeWidget<OBilateralBlurFilterWidget>(GetBilateralBlurFilter());
 	UIManager->MakeWidget<OGaussianBlurWidget>(GetBlurFilter());
 	UIManager->MakeWidget<OFogWidget>(this);
+	UIManager->MakeWidget<OLightWidget>(this);
 }
 
 void OEngine::SetFogColor(DirectX::XMFLOAT4 Color)
@@ -1310,6 +1312,21 @@ uint32_t OEngine::GetNumOffscrenRT() const
 	return 1;
 }
 
+void OEngine::SetLightSources(const vector<SLight>& Lights)
+{
+	for (int32_t i = 0; i < Lights.size(); i++)
+	{
+		if (SRenderConstants::MaxLights > i)
+		{
+			MainPassCB.Lights[i] = Lights[i];
+		}
+	}
+}
+void OEngine::SetAmbientLight(const DirectX::XMFLOAT4& Color)
+{
+	MainPassCB.AmbientLight = Color;
+}
+
 void OEngine::UpdateMainPass(const STimer& Timer)
 {
 	const XMMATRIX view = XMLoadFloat4x4(&Window->ViewMatrix);
@@ -1338,14 +1355,6 @@ void OEngine::UpdateMainPass(const STimer& Timer)
 	MainPassCB.FarZ = 1000.0f;
 	MainPassCB.TotalTime = Timer.GetTime();
 	MainPassCB.DeltaTime = Timer.GetDeltaTime();
-
-	MainPassCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
-	MainPassCB.Lights[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
-	MainPassCB.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
-	MainPassCB.Lights[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
-	MainPassCB.Lights[1].Strength = { 0.3f, 0.3f, 0.3f };
-	MainPassCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
-	MainPassCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
 
 	const auto currPassCB = CurrentFrameResources->PassCB.get();
 	currPassCB->CopyData(0, MainPassCB);

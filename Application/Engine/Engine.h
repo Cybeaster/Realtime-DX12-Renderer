@@ -194,6 +194,8 @@ public:
 	T* GetObjectByUUID(TUUID UUID, bool Checked = false);
 
 	SRenderObjectDescriptor GetObjectDescriptor();
+	void SetLightSources(const vector<SLight>& Lights);
+	void SetAmbientLight(const DirectX::XMFLOAT4& Color);
 
 protected:
 	template<typename T, typename... Args>
@@ -269,6 +271,8 @@ private:
 	unique_ptr<OUIManager> UIManager;
 
 	map<TUUID, unique_ptr<IRenderObject>> RenderObjects;
+
+	int32_t LightCount = 0;
 };
 
 template<typename T, typename... Args>
