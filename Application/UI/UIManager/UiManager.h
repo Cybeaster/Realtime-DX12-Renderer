@@ -26,7 +26,9 @@ public:
 	template<typename WidgetType, typename... Params>
 	void MakeWidget(Params&&... Args)
 	{
-		Widgets.push_back(make_unique<WidgetType>(std::forward<Params>(Args))...);
+		auto newWidget = make_unique<WidgetType>(std::forward<Params>(Args)...);
+		newWidget->Init();
+		Widgets.push_back(move(newWidget));
 	}
 
 	uint32_t GetNumDescriptors() const override
