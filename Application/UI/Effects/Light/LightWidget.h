@@ -27,6 +27,5 @@ private:
 	DirectX::XMFLOAT4 AmbientColor = { 0.0f, 0.0f, 0.0f, 0.0f };
 	map<int32_t, SWidgetLight> Lights;
 	int32_t SelectedLightIdx = -1;
-	bool bEnable = false;
 	OEngine* Engine = nullptr;
 };

@@ -9,8 +9,6 @@ void OLightWidget::Draw()
 {
 	if (ImGui::CollapsingHeader("Light"))
 	{
-		ImGui::Checkbox("Enable Light", &bEnable);
-
 		ImGui::SeparatorText("Ambient Light");
 		ImGui::ColorEdit4("Ambient Color", &AmbientColor.x);
 
@@ -30,23 +28,25 @@ void OLightWidget::Draw()
 		{
 			Lights[SelectedLightIdx] = {};
 			SelectedLightIdx -= 1;
+			if (SelectedLightIdx < 0)
+			{
+				SelectedLightIdx = 0;
+			}
 		}
 
 		if (ImGui::BeginListBox("Light list"))
 		{
-			if (SelectedLightIdx >= 0)
+			for (auto& val : Lights | std::views::values)
 			{
-				for (auto& val : Lights | std::views::values)
+				if (val.Index != -1)
 				{
-					if (val.Index != -1)
+					if (ImGui::Selectable(val.Name.c_str(), SelectedLightIdx == val.Index))
 					{
-						if (ImGui::Selectable(val.Name.c_str(), SelectedLightIdx == val.Index))
-						{
-							SelectedLightIdx = val.Index;
-						}
+						SelectedLightIdx = val.Index;
 					}
 				}
 			}
+
 			ImGui::EndListBox();
 		}
 
