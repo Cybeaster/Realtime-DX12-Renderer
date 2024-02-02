@@ -46,7 +46,7 @@ bool OTextureWaves::Initialize()
 
 	engine->SetFog({ 0.7f, 0.7f, 0.7f, 1.0f }, 50.0f, 150.0f);
 	CreateTexture();
-	BuildDescriptorHeap();
+	BuildQuadPatchGeometry();
 	BuildShadersAndInputLayout();
 	BuildLandGeometry();
 	BuildTreeSpriteGeometry();
@@ -58,6 +58,7 @@ bool OTextureWaves::Initialize()
 
 	BuildPSOTreeSprites();
 	BuildPSOGeosphere();
+	BuildTesselationPSO();
 	THROW_IF_FAILED(queue->GetCommandList()->Close());
 
 	ID3D12CommandList* cmdsLists[] = { queue->GetCommandList().Get() };
@@ -316,6 +317,55 @@ void OTextureWaves::BuildTreeSpriteGeometry()
 	geometry->SetGeometry("Points", submesh);
 	GetEngine()->SetSceneGeometry(std::move(geometry));
 }
+void OTextureWaves::BuildQuadPatchGeometry()
+{
+	std::array<XMFLOAT3, 4> vertices = {
+		XMFLOAT3(-10.0f, 0.0f, +10.0f),
+		XMFLOAT3(+10.0f, 0.0f, +10.0f),
+		XMFLOAT3(-10.0f, 0.0f, -10.0f),
+		XMFLOAT3(+10.0f, 0.0f, -10.0f)
+	};
+
+	std::array<std::int16_t, 4> indices = { 0, 1, 2, 3 };
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(SVertex);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+	auto commandList = Engine.lock()->GetCommandQueue()->GetCommandList();
+	auto device = Engine.lock()->GetDevice();
+	auto geo = std::make_unique<SMeshGeometry>();
+	geo->Name = "QuadPatch";
+
+	THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->VertexBufferGPU = Utils::CreateDefaultBuffer(device.Get(),
+	                                                  commandList.Get(),
+	                                                  vertices.data(),
+	                                                  vbByteSize,
+	                                                  geo->VertexBufferUploader);
+
+	geo->IndexBufferGPU = Utils::CreateDefaultBuffer(device.Get(),
+	                                                 commandList.Get(),
+	                                                 indices.data(),
+	                                                 ibByteSize,
+	                                                 geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(XMFLOAT3);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	SSubmeshGeometry quadSubmesh;
+	quadSubmesh.IndexCount = 4;
+	quadSubmesh.StartIndexLocation = 0;
+	quadSubmesh.BaseVertexLocation = 0;
+
+	geo->SetGeometry("QuadPatch", quadSubmesh);
+	GetEngine()->SetSceneGeometry(std::move(geo));
+}
 
 void OTextureWaves::CreateTexture()
 {
@@ -324,6 +374,30 @@ void OTextureWaves::CreateTexture()
 	GetEngine()->CreateTexture("Fence", L"Resources/Textures/WireFence.dds");
 	GetEngine()->CreateTexture("FireBall", L"Resources/Textures/Fireball.dds");
 	GetEngine()->CreateTexture("TreeArray", L"Resources/Textures/treeArray2.dds");
+	GetEngine()->CreateTexture("White", L"Resources/Textures/white1x1.dds");
+}
+
+void OTextureWaves::BuildTesselationPSO()
+{
+	auto engine = Engine.lock();
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc = engine->GetOpaquePSODesc();
+	opaquePsoDesc.VS = { reinterpret_cast<BYTE*>(engine->GetShader(SShaderTypes::VSTesselation)->GetBufferPointer()),
+		                 engine->GetShader(SShaderTypes::VSTesselation)->GetBufferSize() };
+	opaquePsoDesc.HS = { reinterpret_cast<BYTE*>(engine->GetShader(SShaderTypes::HSTesselation)->GetBufferPointer()),
+		                 engine->GetShader(SShaderTypes::HSTesselation)->GetBufferSize() };
+	opaquePsoDesc.DS = { reinterpret_cast<BYTE*>(engine->GetShader(SShaderTypes::DSTesselation)->GetBufferPointer()),
+		                 engine->GetShader(SShaderTypes::DSTesselation)->GetBufferSize() };
+	opaquePsoDesc.PS = { reinterpret_cast<BYTE*>(engine->GetShader(SShaderTypes::PSTesselation)->GetBufferPointer()),
+		                 engine->GetShader(SShaderTypes::PSTesselation)->GetBufferSize() };
+	opaquePsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	opaquePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	opaquePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	opaquePsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	opaquePsoDesc.SampleMask = UINT_MAX;
+	opaquePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
+	opaquePsoDesc.NumRenderTargets = 1;
+	engine->CreatePSO(SPSOType::Tesselation, opaquePsoDesc);
 }
 
 void OTextureWaves::OnRender(const UpdateEventArgs& Event)
@@ -339,6 +413,9 @@ void OTextureWaves::OnRender(const UpdateEventArgs& Event)
 
 	GetEngine()->SetPipelineState(SPSOType::Opaque);
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Opaque));
+
+	GetEngine()->SetPipelineState(SPSOType::Tesselation);
+	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Tesselation));
 
 	GetEngine()->SetPipelineState(SPSOType::AlphaTested);
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::AlphaTested));
@@ -430,11 +507,11 @@ void OTextureWaves::BuildPSOGeosphere()
 void OTextureWaves::BuildMaterials()
 {
 	GetEngine()->CreateMaterial("Grass", 0, 0, { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.01f, 0.01f, 0.01f), 0.125f });
-
 	GetEngine()->CreateMaterial("Water", 1, 1, { XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.0f });
 	GetEngine()->CreateMaterial("WireFence", 2, 2, { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.25f });
 	GetEngine()->CreateMaterial("FireBall", 3, 3, { XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.25f });
 	GetEngine()->CreateMaterial("TreeSprite", 4, 4, { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.125f });
+	GetEngine()->CreateMaterial("White", 5, 5, { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.5f });
 }
 
 void OTextureWaves::UpdateMaterialCB()
@@ -748,95 +825,6 @@ void OTextureWaves::BuildBoxGeometryBuffers()
 	GetEngine()->SetSceneGeometry(std::move(geo));
 }
 
-void OTextureWaves::BuildDescriptorHeap()
-{
-	/*auto rtvOffset = OWindow::BuffersCount;
-	auto engine = Engine.lock();
-	auto device = engine->GetDevice();
-	auto& srv = engine->GetSRVHeap();
-
-	// Create offsets for each bunch of textures
-	auto wavesOffset = engine->GetTextureNum();
-	auto sobelOffset = wavesOffset + Waves->GetDescriptorCount();
-	auto offscreenOffset = sobelOffset + engine->GetSobelFilter()->GetDescriptorCount();
-	auto blurOffset = offscreenOffset + 1;
-	auto bilblurOffset = blurOffset + 4;
-	auto blurDescriptors = 4;
-	auto bilblurDescriptors = 4;
-
-	// create srv heap counting all the textures in it
-	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = engine->GetTextureNum() + Waves->GetDescriptorCount() + engine->GetSobelFilter()->GetDescriptorCount() + 1 + blurDescriptors + bilblurDescriptors;
-	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	THROW_IF_FAILED(device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&srv)));
-
-	// Fill out the heap with actual descriptors.
-	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(srv->GetCPUDescriptorHandleForHeapStart());
-	auto grassTex = GetEngine()->FindTexture("Grass")->Resource;
-	auto waterTex = GetEngine()->FindTexture("Water")->Resource;
-	auto fenceTex = GetEngine()->FindTexture("Fence")->Resource;
-	auto fireballTex = GetEngine()->FindTexture("FireBall")->Resource;
-	auto treeArray = GetEngine()->FindTexture("TreeArray")->Resource;
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = grassTex->GetDesc().Format;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.MipLevels = -1;
-
-	device->CreateShaderResourceView(grassTex.Get(), &srvDesc, hDescriptor);
-	auto dsvsrvuavDescSize = GetEngine()->CBVSRVUAVDescriptorSize;
-	// next descriptor
-	hDescriptor.Offset(1, dsvsrvuavDescSize);
-
-	srvDesc.Format = waterTex->GetDesc().Format;
-	device->CreateShaderResourceView(waterTex.Get(), &srvDesc, hDescriptor);
-
-	// next descriptor
-	hDescriptor.Offset(1, dsvsrvuavDescSize);
-
-	srvDesc.Format = fenceTex->GetDesc().Format;
-	device->CreateShaderResourceView(fenceTex.Get(), &srvDesc, hDescriptor);
-
-	hDescriptor.Offset(1, dsvsrvuavDescSize);
-
-	srvDesc.Format = fireballTex->GetDesc().Format;
-	device->CreateShaderResourceView(fireballTex.Get(), &srvDesc, hDescriptor);
-
-	hDescriptor.Offset(1, dsvsrvuavDescSize);
-
-	auto srvCPUStart = srv->GetCPUDescriptorHandleForHeapStart();
-	auto srvGPUStart = srv->GetGPUDescriptorHandleForHeapStart();
-	auto rtvCPUStart = Window.lock()->RTVHeap->GetCPUDescriptorHandleForHeapStart();
-
-	// Add descriptors of waves and post process
-	Waves->BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE(srvCPUStart, wavesOffset, dsvsrvuavDescSize),
-	                        CD3DX12_GPU_DESCRIPTOR_HANDLE(srvGPUStart, wavesOffset, dsvsrvuavDescSize),
-	                        dsvsrvuavDescSize);
-
-	GetEngine()->GetSobelFilter()->BuildDescriptors(
-	    CD3DX12_CPU_DESCRIPTOR_HANDLE(srvCPUStart, sobelOffset, dsvsrvuavDescSize),
-	    CD3DX12_GPU_DESCRIPTOR_HANDLE(srvGPUStart, sobelOffset, dsvsrvuavDescSize),
-	    dsvsrvuavDescSize);
-
-	GetEngine()->GetOffscreenRT()->BuildDescriptors(
-	    CD3DX12_CPU_DESCRIPTOR_HANDLE(srvCPUStart, offscreenOffset, dsvsrvuavDescSize),
-	    CD3DX12_GPU_DESCRIPTOR_HANDLE(srvGPUStart, offscreenOffset, dsvsrvuavDescSize),
-	    CD3DX12_CPU_DESCRIPTOR_HANDLE(rtvCPUStart, rtvOffset, GetEngine()->RTVDescriptorSize));
-
-	GetEngine()->GetBlurFilter()->BuildDescriptors(
-	    CD3DX12_CPU_DESCRIPTOR_HANDLE(srvCPUStart, blurOffset, dsvsrvuavDescSize),
-	    CD3DX12_GPU_DESCRIPTOR_HANDLE(srvGPUStart, blurOffset, dsvsrvuavDescSize),
-	    dsvsrvuavDescSize);
-
-	GetEngine()->GetBilateralBlurFilter()->BuildDescriptors(
-	    CD3DX12_CPU_DESCRIPTOR_HANDLE(srvCPUStart, bilblurOffset, dsvsrvuavDescSize),
-	    CD3DX12_GPU_DESCRIPTOR_HANDLE(srvGPUStart, bilblurOffset, dsvsrvuavDescSize),
-	    dsvsrvuavDescSize);*/
-}
-
 void OTextureWaves::BuildRenderItems()
 {
 	auto wavesRenderItem = make_unique<SRenderItem>();
@@ -904,6 +892,22 @@ void OTextureWaves::BuildRenderItems()
 	icosahedronRenderItem->StartIndexLocation = geometry.StartIndexLocation;
 	icosahedronRenderItem->BaseVertexLocation = geometry.BaseVertexLocation;
 	GetEngine()->AddRenderItem(SRenderLayer::IcosahedronLODs, std::move(icosahedronRenderItem));
+
+	auto quadPatchRitem = std::make_unique<SRenderItem>();
+
+	XMStoreFloat4x4(&quadPatchRitem->World, XMMatrixScaling(2.0f, 1.0f, 2.0f) * XMMatrixTranslation(0.0f, 15.0f, 0.f));
+
+
+	quadPatchRitem->TexTransform = Utils::Math::Identity4x4();
+	quadPatchRitem->ObjectCBIndex = 5;
+	quadPatchRitem->Material = GetEngine()->FindMaterial("White");
+	quadPatchRitem->Geometry = GetEngine()->FindSceneGeometry("QuadPatch");
+	quadPatchRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST;
+	auto submesh = quadPatchRitem->Geometry->FindSubmeshGeomentry("QuadPatch");
+	quadPatchRitem->IndexCount = submesh.IndexCount;
+	quadPatchRitem->StartIndexLocation = submesh.StartIndexLocation;
+	quadPatchRitem->BaseVertexLocation = submesh.BaseVertexLocation;
+	GetEngine()->AddRenderItem(SRenderLayer::Tesselation, std::move(quadPatchRitem));
 }
 
 float OTextureWaves::GetHillsHeight(float X, float Z) const

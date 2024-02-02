@@ -24,7 +24,7 @@ public:
 
 private:
 	static inline char LightBuffer[256] = {};
-	DirectX::XMFLOAT4 AmbientColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+	DirectX::XMFLOAT3 AmbientColor = { 0.0f, 0.0f, 0.0f };
 	map<int32_t, SWidgetLight> Lights;
 	int32_t SelectedLightIdx = -1;
 	OEngine* Engine = nullptr;

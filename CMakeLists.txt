@@ -110,6 +110,8 @@ set(SRC_FILES
         Application/UI/Filters/GaussianBlurWidget.h
         Application/UI/Effects/Light/LightWidget.cpp
         Application/UI/Effects/Light/LightWidget.h
+        Application/UI/Filters/SobelFilterWidget.cpp
+        Application/UI/Filters/SobelFilterWidget.h
 )
 
 file(GLOB IMGUI_SOURCES Externals/imgui/*.cpp Externals/imgui/*.h)

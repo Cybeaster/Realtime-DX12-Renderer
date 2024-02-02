@@ -21,6 +21,7 @@ struct SRenderLayer
 	inline static const string AlphaTestedTreeSprites = "AlphaTestedTreeSprites";
 	inline static const string IcosahedronLODs = "IcosahedronLODs";
 	inline static const string Waves = "Waves";
+	inline static const string Tesselation = "Tesselation";
 };
 
 struct SPSOType
@@ -44,6 +45,7 @@ struct SPSOType
 	inline static const string WavesUpdate = "WavesUpdate";
 
 	inline static const string BilateralBlur = "BilateralBlur";
+	inline static const string Tesselation = "Tesselation";
 };
 
 struct SShaderTypes
@@ -75,4 +77,8 @@ struct SShaderTypes
 	inline static const string VSWaves = "PSWaves";
 
 	inline static const string CSSobelFilter = "CSSobelFilter";
+	inline static const string VSTesselation = "VSTesselation";
+	inline static const string HSTesselation = "HSTesselation";
+	inline static const string DSTesselation = "DSTesselation";
+	inline static const string PSTesselation = "PSTesselation";
 };

@@ -13,6 +13,7 @@
 #include "UI/Effects/FogWidget.h"
 #include "UI/Effects/Light/LightWidget.h"
 #include "UI/Filters/GaussianBlurWidget.h"
+#include "UI/Filters/SobelFilterWidget.h"
 
 #include <DirectXMath.h>
 
@@ -139,6 +140,7 @@ void OEngine::InitUIManager()
 	UIManager->MakeWidget<OGaussianBlurWidget>(GetBlurFilter());
 	UIManager->MakeWidget<OFogWidget>(this);
 	UIManager->MakeWidget<OLightWidget>(this);
+	UIManager->MakeWidget<OSobelFilterWidget>(GetSobelFilter());
 }
 
 void OEngine::SetFogColor(DirectX::XMFLOAT4 Color)
@@ -904,6 +906,10 @@ void OEngine::BuildShadersAndInputLayouts()
 
 	BuildShader(L"Shaders/BilateralBlur.hlsl", SShaderTypes::CSBilateralBlur, EShaderLevel::ComputeShader, "BilateralBlur");
 
+	BuildShader(L"Shaders/Tesselation.hlsl", SShaderTypes::VSTesselation, EShaderLevel::VertexShader);
+	BuildShader(L"Shaders/Tesselation.hlsl", SShaderTypes::HSTesselation, EShaderLevel::HullShader);
+	BuildShader(L"Shaders/Tesselation.hlsl", SShaderTypes::DSTesselation, EShaderLevel::DomainShader);
+	BuildShader(L"Shaders/Tesselation.hlsl", SShaderTypes::PSTesselation, EShaderLevel::PixelShader);
 	InputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -1322,9 +1328,9 @@ void OEngine::SetLightSources(const vector<SLight>& Lights)
 		}
 	}
 }
-void OEngine::SetAmbientLight(const DirectX::XMFLOAT4& Color)
+void OEngine::SetAmbientLight(const DirectX::XMFLOAT3& Color)
 {
-	MainPassCB.AmbientLight = Color;
+	MainPassCB.AmbientLight = XMFLOAT4(Color.x, Color.y, Color.z, 1);
 }
 
 void OEngine::UpdateMainPass(const STimer& Timer)

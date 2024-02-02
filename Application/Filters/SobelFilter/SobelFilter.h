@@ -26,6 +26,11 @@ public:
 		OutDescriptor.OffsetSRV(GetNumDescriptors());
 	}
 
+	void SetIsEnabled(bool bIsEnabled)
+	{
+		bEnabled = bIsEnabled;
+	}
+
 private:
 	CD3DX12_CPU_DESCRIPTOR_HANDLE CPUSRV;
 	CD3DX12_CPU_DESCRIPTOR_HANDLE CPUUAV;
@@ -34,4 +39,5 @@ private:
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GPUUAV;
 
 	ComPtr<ID3D12Resource> Output = nullptr;
+	bool bEnabled = true;
 };

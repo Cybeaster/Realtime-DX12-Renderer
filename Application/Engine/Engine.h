@@ -195,7 +195,7 @@ public:
 
 	SRenderObjectDescriptor GetObjectDescriptor();
 	void SetLightSources(const vector<SLight>& Lights);
-	void SetAmbientLight(const DirectX::XMFLOAT4& Color);
+	void SetAmbientLight(const DirectX::XMFLOAT3& Color);
 
 protected:
 	template<typename T, typename... Args>

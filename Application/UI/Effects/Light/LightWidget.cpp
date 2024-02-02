@@ -10,7 +10,7 @@ void OLightWidget::Draw()
 	if (ImGui::CollapsingHeader("Light"))
 	{
 		ImGui::SeparatorText("Ambient Light");
-		ImGui::ColorEdit4("Ambient Color", &AmbientColor.x);
+		ImGui::ColorEdit3("Ambient Color", &AmbientColor.x);
 
 		ImGui::SeparatorText("Light List");
 

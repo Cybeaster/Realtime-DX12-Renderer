@@ -49,9 +49,9 @@ public:
 
 private:
 	void BuildTreeSpriteGeometry();
-
+	void BuildQuadPatchGeometry();
 	void CreateTexture();
-
+	void BuildTesselationPSO();
 	void BuildPSOTreeSprites();
 
 	void BuildPSOGeosphere();
@@ -61,17 +61,10 @@ private:
 	void UpdateMaterialCB();
 
 	void BuildShadersAndInputLayout();
-
 	void BuildLandGeometry();
-
 	void BuildWavesGeometryBuffers();
-
 	void BuildBoxGeometryBuffers();
-
-	void BuildDescriptorHeap();
-
 	void BuildRenderItems();
-
 	void BuildIcosahedronGeometry();
 
 	float GetHillsHeight(float X, float Z) const;

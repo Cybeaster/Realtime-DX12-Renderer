@@ -57,6 +57,11 @@ void OSobelFilter::BuildResource()
 
 void OSobelFilter::Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO, CD3DX12_GPU_DESCRIPTOR_HANDLE Input) const
 {
+	if (!bEnabled)
+	{
+		return;
+	}
+
 	CMDList->SetComputeRootSignature(RootSignature);
 	CMDList->SetPipelineState(PSO);
 
