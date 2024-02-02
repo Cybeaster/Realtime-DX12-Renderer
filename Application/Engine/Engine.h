@@ -196,6 +196,7 @@ public:
 	SRenderObjectDescriptor GetObjectDescriptor();
 	void SetLightSources(const vector<SLight>& Lights);
 	void SetAmbientLight(const DirectX::XMFLOAT3& Color);
+	void RebuildGeometry(string Name);
 
 protected:
 	template<typename T, typename... Args>

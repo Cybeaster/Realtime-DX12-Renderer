@@ -589,9 +589,9 @@ void OLitWaves::BuildRenderItems()
 	wavesRenderItem->Material = GetEngine()->FindMaterial("Water");
 
 	wavesRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	wavesRenderItem->IndexCount = wavesRenderItem->Geometry->FindSubmeshGeomentry("grid").IndexCount;
-	wavesRenderItem->StartIndexLocation = wavesRenderItem->Geometry->FindSubmeshGeomentry("grid").StartIndexLocation;
-	wavesRenderItem->BaseVertexLocation = wavesRenderItem->Geometry->FindSubmeshGeomentry("grid").BaseVertexLocation;
+	wavesRenderItem->IndexCount = wavesRenderItem->Geometry->FindSubmeshGeomentry("grid")->IndexCount;
+	wavesRenderItem->StartIndexLocation = wavesRenderItem->Geometry->FindSubmeshGeomentry("grid")->StartIndexLocation;
+	wavesRenderItem->BaseVertexLocation = wavesRenderItem->Geometry->FindSubmeshGeomentry("grid")->BaseVertexLocation;
 	wavesRenderItem->NumFramesDirty = SRenderConstants::NumFrameResources;
 
 	WavesRenderItem = wavesRenderItem.get();
@@ -603,9 +603,9 @@ void OLitWaves::BuildRenderItems()
 	gridRenderItem->Geometry = GetEngine()->GetSceneGeometry()["LandGeo"].get();
 	gridRenderItem->Material = GetEngine()->FindMaterial("Grass");
 	gridRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	gridRenderItem->IndexCount = gridRenderItem->Geometry->FindSubmeshGeomentry("grid").IndexCount;
-	gridRenderItem->StartIndexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("grid").StartIndexLocation;
-	gridRenderItem->BaseVertexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("grid").BaseVertexLocation;
+	gridRenderItem->IndexCount = gridRenderItem->Geometry->FindSubmeshGeomentry("grid")->IndexCount;
+	gridRenderItem->StartIndexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("grid")->StartIndexLocation;
+	gridRenderItem->BaseVertexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("grid")->BaseVertexLocation;
 
 	GetEngine()->GetRenderItems(SRenderLayer::Opaque).push_back(gridRenderItem.get());
 }

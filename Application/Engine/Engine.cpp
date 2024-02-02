@@ -906,10 +906,10 @@ void OEngine::BuildShadersAndInputLayouts()
 
 	BuildShader(L"Shaders/BilateralBlur.hlsl", SShaderTypes::CSBilateralBlur, EShaderLevel::ComputeShader, "BilateralBlur");
 
-	BuildShader(L"Shaders/Tesselation.hlsl", SShaderTypes::VSTesselation, EShaderLevel::VertexShader);
-	BuildShader(L"Shaders/Tesselation.hlsl", SShaderTypes::HSTesselation, EShaderLevel::HullShader);
-	BuildShader(L"Shaders/Tesselation.hlsl", SShaderTypes::DSTesselation, EShaderLevel::DomainShader);
-	BuildShader(L"Shaders/Tesselation.hlsl", SShaderTypes::PSTesselation, EShaderLevel::PixelShader);
+	BuildShader(L"Shaders/BezierTesselation.hlsl", SShaderTypes::VSTesselation, EShaderLevel::VertexShader);
+	BuildShader(L"Shaders/BezierTesselation.hlsl", SShaderTypes::HSTesselation, EShaderLevel::HullShader);
+	BuildShader(L"Shaders/BezierTesselation.hlsl", SShaderTypes::DSTesselation, EShaderLevel::DomainShader);
+	BuildShader(L"Shaders/BezierTesselation.hlsl", SShaderTypes::PSTesselation, EShaderLevel::PixelShader);
 	InputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -1316,6 +1316,42 @@ uint32_t OEngine::GetNumOffscrenRT() const
 {
 	//TODO move RT to array
 	return 1;
+}
+
+void OEngine::RebuildGeometry(string Name)
+{
+	auto mesh = FindSceneGeometry(Name);
+	auto commandList = GetCommandQueue()->GetCommandList();
+
+	vector<XMFLOAT3> vertices;
+	vector<std::uint16_t> indices;
+
+	for (auto& submesh : mesh->DrawArgs)
+	{
+		vertices.insert(vertices.end(), submesh.second.Vertices.get()->begin(), submesh.second.Vertices.get()->end());
+		indices.insert(indices.end(), submesh.second.Indices.get()->begin(), submesh.second.Indices.get()->end());
+	}
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(SVertex);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &mesh->VertexBufferCPU));
+	CopyMemory(mesh->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &mesh->IndexBufferCPU));
+	CopyMemory(mesh->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	mesh->VertexBufferGPU = Utils::CreateDefaultBuffer(Device.Get(),
+	                                                   commandList.Get(),
+	                                                   vertices.data(),
+	                                                   vbByteSize,
+	                                                   mesh->VertexBufferUploader);
+
+	mesh->IndexBufferGPU = Utils::CreateDefaultBuffer(Device.Get(),
+	                                                  commandList.Get(),
+	                                                  indices.data(),
+	                                                  ibByteSize,
+	                                                  mesh->IndexBufferUploader);
 }
 
 void OEngine::SetLightSources(const vector<SLight>& Lights)

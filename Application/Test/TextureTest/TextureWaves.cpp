@@ -96,7 +96,6 @@ void OTextureWaves::OnUpdate(const UpdateEventArgs& Event)
 	Super::OnUpdate(Event);
 	IsInputBlocked = Event.IsWidgetInFocus;
 	UpdateCamera(Event);
-	OnKeyboardInput(Event.Timer);
 
 	auto engine = Engine.lock();
 	engine->CurrentFrameResourceIndex = (engine->CurrentFrameResourceIndex + 1) % SRenderConstants::NumFrameResources;
@@ -200,52 +199,6 @@ void OTextureWaves::UpdateCamera(const UpdateEventArgs& Event)
 	}
 }
 
-void OTextureWaves::OnKeyboardInput(const STimer& Timer)
-{
-	if (GetAsyncKeyState('W') & 0x8000)
-	{
-		if (SGlobalSettings::BilateralBlurSpatialSigma == 0)
-		{
-			return;
-		}
-
-		SGlobalSettings::BilateralBlurSpatialSigma -= 1;
-	}
-
-	if (GetAsyncKeyState('S') & 0x8000)
-	{
-		SGlobalSettings::BilateralBlurSpatialSigma += 1;
-	}
-
-	if (GetAsyncKeyState('A') & 0x8000)
-	{
-		SGlobalSettings::BilateralBlurCount += 1;
-	}
-
-	if (GetAsyncKeyState('D') & 0x8000)
-	{
-		if (SGlobalSettings::BilateralBlurCount == 0)
-		{
-			return;
-		}
-		SGlobalSettings::BilateralBlurCount -= 1;
-	}
-
-	if (GetAsyncKeyState('Q') & 0x8000)
-	{
-		if (SGlobalSettings::BilateralBlurIntensitySigma == 0)
-		{
-			return;
-		}
-		SGlobalSettings::BilateralBlurIntensitySigma -= 1;
-	}
-
-	if (GetAsyncKeyState('E') & 0x8000)
-	{
-		SGlobalSettings::BilateralBlurIntensitySigma += 1;
-	}
-}
-
 void OTextureWaves::OnMouseWheel(const MouseWheelEventArgs& Args)
 {
 	OTest::OnMouseWheel(Args);
@@ -319,19 +272,42 @@ void OTextureWaves::BuildTreeSpriteGeometry()
 }
 void OTextureWaves::BuildQuadPatchGeometry()
 {
-	std::array<XMFLOAT3, 4> vertices = {
-		XMFLOAT3(-10.0f, 0.0f, +10.0f),
-		XMFLOAT3(+10.0f, 0.0f, +10.0f),
-		XMFLOAT3(-10.0f, 0.0f, -10.0f),
-		XMFLOAT3(+10.0f, 0.0f, -10.0f)
+	std::vector<XMFLOAT3> vertices = {
+		// Row 0
+		XMFLOAT3(-5.0f, -5.0f, +10.0f),
+		XMFLOAT3(-0.0f, 0.0f, +15.0f),
+		XMFLOAT3(+5.0f, 0.0f, +15.0f),
+		XMFLOAT3(+10.0f, 0.0f, +15.0f),
+
+		// Row 1
+		XMFLOAT3(-15.0f, 0.0f, +5.0f),
+		XMFLOAT3(-5.0f, 0.0f, +5.0f),
+		XMFLOAT3(+5.0f, 20.0f, +5.0f),
+		XMFLOAT3(+15.0f, 0.0f, +5.0f),
+
+		// Row 2
+		XMFLOAT3(-15.0f, 0.0f, -5.0f),
+		XMFLOAT3(-5.0f, 0.0f, -5.0f),
+		XMFLOAT3(+5.0f, 0.0f, -5.0f),
+		XMFLOAT3(+15.0f, 0.0f, -5.0f),
+
+		// Row 3
+		XMFLOAT3(-10.0f, 10.0f, -15.0f),
+		XMFLOAT3(-5.0f, 0.0f, -15.0f),
+		XMFLOAT3(+5.0f, 0.0f, -15.0f),
+		XMFLOAT3(+25.0f, 10.0f, -15.0f)
 	};
 
-	std::array<std::int16_t, 4> indices = { 0, 1, 2, 3 };
+	vector<std::int16_t> indices = {
+		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+	};
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(SVertex);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
 	auto commandList = Engine.lock()->GetCommandQueue()->GetCommandList();
 	auto device = Engine.lock()->GetDevice();
+
 	auto geo = std::make_unique<SMeshGeometry>();
 	geo->Name = "QuadPatch";
 
@@ -359,11 +335,14 @@ void OTextureWaves::BuildQuadPatchGeometry()
 	geo->IndexBufferByteSize = ibByteSize;
 
 	SSubmeshGeometry quadSubmesh;
-	quadSubmesh.IndexCount = 4;
+	quadSubmesh.IndexCount = (UINT)indices.size();
 	quadSubmesh.StartIndexLocation = 0;
 	quadSubmesh.BaseVertexLocation = 0;
+	quadSubmesh.Indices = make_unique<vector<int16_t>>(indices);
+	quadSubmesh.Vertices = make_unique<vector<XMFLOAT3>>(vertices);
 
 	geo->SetGeometry("QuadPatch", quadSubmesh);
+
 	GetEngine()->SetSceneGeometry(std::move(geo));
 }
 
@@ -535,28 +514,6 @@ void OTextureWaves::UpdateMaterialCB()
 				material->NumFramesDirty--;
 			}
 		}
-	}
-}
-
-void OTextureWaves::OnKeyPressed(const KeyEventArgs& Event)
-{
-	OTest::OnKeyPressed(Event);
-
-	switch (Event.Key)
-	{
-	case KeyCode::Escape:
-		OApplication::Get()->Quit(0);
-		break;
-	case KeyCode::Enter:
-		if (Event.Alt)
-		{
-		case KeyCode::F11:
-			Engine.lock()->GetWindow()->ToggleFullscreen();
-			break;
-		}
-	case KeyCode::V:
-		Engine.lock()->GetWindow()->ToggleVSync();
-		break;
 	}
 }
 
@@ -837,9 +794,9 @@ void OTextureWaves::BuildRenderItems()
 	wavesRenderItem->Geometry = GetEngine()->GetSceneGeometry()["WaterGeometry"].get();
 	wavesRenderItem->Material = GetEngine()->FindMaterial("Water");
 	wavesRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	wavesRenderItem->IndexCount = wavesRenderItem->Geometry->FindSubmeshGeomentry("Grid").IndexCount;
-	wavesRenderItem->StartIndexLocation = wavesRenderItem->Geometry->FindSubmeshGeomentry("Grid").StartIndexLocation;
-	wavesRenderItem->BaseVertexLocation = wavesRenderItem->Geometry->FindSubmeshGeomentry("Grid").BaseVertexLocation;
+	wavesRenderItem->IndexCount = wavesRenderItem->Geometry->FindSubmeshGeomentry("Grid")->IndexCount;
+	wavesRenderItem->StartIndexLocation = wavesRenderItem->Geometry->FindSubmeshGeomentry("Grid")->StartIndexLocation;
+	wavesRenderItem->BaseVertexLocation = wavesRenderItem->Geometry->FindSubmeshGeomentry("Grid")->BaseVertexLocation;
 
 	WavesRenderItem = wavesRenderItem.get();
 	GetEngine()->AddRenderItem(SRenderLayer::Waves, std::move(wavesRenderItem));
@@ -851,9 +808,9 @@ void OTextureWaves::BuildRenderItems()
 	gridRenderItem->Geometry = GetEngine()->GetSceneGeometry()["LandGeo"].get();
 	gridRenderItem->Material = GetEngine()->FindMaterial("Grass");
 	gridRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	gridRenderItem->IndexCount = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid").IndexCount;
-	gridRenderItem->StartIndexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid").StartIndexLocation;
-	gridRenderItem->BaseVertexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid").BaseVertexLocation;
+	gridRenderItem->IndexCount = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid")->IndexCount;
+	gridRenderItem->StartIndexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid")->StartIndexLocation;
+	gridRenderItem->BaseVertexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid")->BaseVertexLocation;
 	XMStoreFloat4x4(&gridRenderItem->TexTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f));
 
 	GetEngine()->AddRenderItem(SRenderLayer::Opaque, std::move(gridRenderItem));
@@ -864,9 +821,9 @@ void OTextureWaves::BuildRenderItems()
 	boxRenderItem->Geometry = GetEngine()->GetSceneGeometry()["BoxGeometry"].get();
 	boxRenderItem->Material = GetEngine()->FindMaterial("WireFence");
 	boxRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	boxRenderItem->IndexCount = boxRenderItem->Geometry->FindSubmeshGeomentry("Box").IndexCount;
-	boxRenderItem->StartIndexLocation = boxRenderItem->Geometry->FindSubmeshGeomentry("Box").StartIndexLocation;
-	boxRenderItem->BaseVertexLocation = boxRenderItem->Geometry->FindSubmeshGeomentry("Box").BaseVertexLocation;
+	boxRenderItem->IndexCount = boxRenderItem->Geometry->FindSubmeshGeomentry("Box")->IndexCount;
+	boxRenderItem->StartIndexLocation = boxRenderItem->Geometry->FindSubmeshGeomentry("Box")->StartIndexLocation;
+	boxRenderItem->BaseVertexLocation = boxRenderItem->Geometry->FindSubmeshGeomentry("Box")->BaseVertexLocation;
 
 	GetEngine()->AddRenderItem(SRenderLayer::AlphaTested, std::move(boxRenderItem));
 
@@ -876,9 +833,9 @@ void OTextureWaves::BuildRenderItems()
 	treeRenderItem->Geometry = GetEngine()->FindSceneGeometry("TreeSprites");
 	treeRenderItem->Material = GetEngine()->FindMaterial("TreeSprite");
 	treeRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_POINTLIST;
-	treeRenderItem->IndexCount = treeRenderItem->Geometry->FindSubmeshGeomentry("Points").IndexCount;
-	treeRenderItem->StartIndexLocation = treeRenderItem->Geometry->FindSubmeshGeomentry("Points").StartIndexLocation;
-	treeRenderItem->BaseVertexLocation = treeRenderItem->Geometry->FindSubmeshGeomentry("Points").BaseVertexLocation;
+	treeRenderItem->IndexCount = treeRenderItem->Geometry->FindSubmeshGeomentry("Points")->IndexCount;
+	treeRenderItem->StartIndexLocation = treeRenderItem->Geometry->FindSubmeshGeomentry("Points")->StartIndexLocation;
+	treeRenderItem->BaseVertexLocation = treeRenderItem->Geometry->FindSubmeshGeomentry("Points")->BaseVertexLocation;
 	GetEngine()->AddRenderItem(SRenderLayer::AlphaTestedTreeSprites, std::move(treeRenderItem));
 
 	auto icosahedronRenderItem = make_unique<SRenderItem>();
@@ -888,15 +845,14 @@ void OTextureWaves::BuildRenderItems()
 	icosahedronRenderItem->Material = GetEngine()->FindMaterial("FireBall");
 	icosahedronRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	auto geometry = icosahedronRenderItem->Geometry->FindSubmeshGeomentry("Icosahedron");
-	icosahedronRenderItem->IndexCount = geometry.IndexCount;
-	icosahedronRenderItem->StartIndexLocation = geometry.StartIndexLocation;
-	icosahedronRenderItem->BaseVertexLocation = geometry.BaseVertexLocation;
+	icosahedronRenderItem->IndexCount = geometry->IndexCount;
+	icosahedronRenderItem->StartIndexLocation = geometry->StartIndexLocation;
+	icosahedronRenderItem->BaseVertexLocation = geometry->BaseVertexLocation;
 	GetEngine()->AddRenderItem(SRenderLayer::IcosahedronLODs, std::move(icosahedronRenderItem));
 
-	auto quadPatchRitem = std::make_unique<SRenderItem>();
+	/*auto quadPatchRitem = std::make_unique<SRenderItem>();
 
 	XMStoreFloat4x4(&quadPatchRitem->World, XMMatrixScaling(2.0f, 1.0f, 2.0f) * XMMatrixTranslation(0.0f, 15.0f, 0.f));
-
 
 	quadPatchRitem->TexTransform = Utils::Math::Identity4x4();
 	quadPatchRitem->ObjectCBIndex = 5;
@@ -907,7 +863,20 @@ void OTextureWaves::BuildRenderItems()
 	quadPatchRitem->IndexCount = submesh.IndexCount;
 	quadPatchRitem->StartIndexLocation = submesh.StartIndexLocation;
 	quadPatchRitem->BaseVertexLocation = submesh.BaseVertexLocation;
-	GetEngine()->AddRenderItem(SRenderLayer::Tesselation, std::move(quadPatchRitem));
+	GetEngine()->AddRenderItem(SRenderLayer::Tesselation, std::move(quadPatchRitem));*/
+
+	auto bquadPatchRitem = std::make_unique<SRenderItem>();
+	XMStoreFloat4x4(&bquadPatchRitem->World, XMMatrixScaling(2.0f, 1.0f, 2.0f) * XMMatrixTranslation(0.0f, 15.0f, 0.f));
+	bquadPatchRitem->TexTransform = Utils::Math::Identity4x4();
+	bquadPatchRitem->ObjectCBIndex = 5;
+	bquadPatchRitem->Material = Engine.lock()->FindMaterial("White");
+	bquadPatchRitem->Geometry = Engine.lock()->FindSceneGeometry("QuadPatch");
+	bquadPatchRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_16_CONTROL_POINT_PATCHLIST;
+	auto submesh = bquadPatchRitem->Geometry->FindSubmeshGeomentry("QuadPatch");
+	bquadPatchRitem->IndexCount = submesh->IndexCount;
+	bquadPatchRitem->StartIndexLocation = submesh->StartIndexLocation;
+	bquadPatchRitem->BaseVertexLocation = submesh->BaseVertexLocation;
+	GetEngine()->AddRenderItem(SRenderLayer::Tesselation, std::move(bquadPatchRitem));
 }
 
 float OTextureWaves::GetHillsHeight(float X, float Z) const

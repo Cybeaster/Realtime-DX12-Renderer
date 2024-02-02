@@ -112,6 +112,10 @@ set(SRC_FILES
         Application/UI/Effects/Light/LightWidget.h
         Application/UI/Filters/SobelFilterWidget.cpp
         Application/UI/Filters/SobelFilterWidget.h
+        Application/UI/Geometry/GeometryEntity/GeometryEntityWidget.cpp
+        Application/UI/Geometry/GeometryEntity/GeometryEntityWidget.h
+        Application/UI/Geometry/GeometryManager.cpp
+        Application/UI/Geometry/GeometryManager.h
 )
 
 file(GLOB IMGUI_SOURCES Externals/imgui/*.cpp Externals/imgui/*.h)

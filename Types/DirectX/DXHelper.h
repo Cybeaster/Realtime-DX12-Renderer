@@ -69,6 +69,9 @@ struct SSubmeshGeometry
 	UINT StartIndexLocation = 0;
 	INT BaseVertexLocation = 0;
 	DirectX::BoundingBox Bounds;
+
+	unique_ptr<vector<DirectX::XMFLOAT3>> Vertices = nullptr;
+	unique_ptr<vector<int16_t>> Indices = nullptr;
 };
 
 struct SMeshGeometry
@@ -88,22 +91,22 @@ struct SMeshGeometry
 	DXGI_FORMAT IndexFormat = DXGI_FORMAT_R16_UINT;
 	UINT IndexBufferByteSize = 0;
 
-	SSubmeshGeometry& FindSubmeshGeomentry(const string& SubmeshName)
+	SSubmeshGeometry* FindSubmeshGeomentry(const string& SubmeshName)
 	{
 		if (!DrawArgs.contains(SubmeshName))
 		{
 			throw std::runtime_error("Submesh not found!");
 		}
-		return DrawArgs.at(SubmeshName);
+		return &DrawArgs.at(SubmeshName);
 	}
 
-	SSubmeshGeometry& SetGeometry(const string& SubmeshName, const SSubmeshGeometry& Geometry)
+	SSubmeshGeometry& SetGeometry(const string& SubmeshName, SSubmeshGeometry& Geometry)
 	{
 		if (DrawArgs.contains(SubmeshName))
 		{
 			throw std::runtime_error("Submesh is already exists!");
 		}
-		DrawArgs[SubmeshName] = Geometry;
+		DrawArgs[SubmeshName] = std::move(Geometry);
 		return DrawArgs.at(SubmeshName);
 	}
 
@@ -131,6 +134,5 @@ struct SMeshGeometry
 		IndexBufferUploader = nullptr;
 	}
 
-private:
 	std::unordered_map<string, SSubmeshGeometry> DrawArgs;
 };

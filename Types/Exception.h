@@ -40,11 +40,13 @@ public:
 	}
 #endif
 
-#define CHECK(condition, Message)          \
+#define CHECK_MSG(condition, Message)      \
 	if (!(condition))                      \
 	{                                      \
 		throw std::runtime_error(Message); \
 	}
+
+#define CHECK(condition) CHECK_MSG(condition, "Condition failed")
 
 #define ENSURE(condition) \
 	if (!(condition))     \

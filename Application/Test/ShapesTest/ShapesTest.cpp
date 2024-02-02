@@ -627,18 +627,18 @@ void OShapesTest::BuildRenderItems()
 	boxRenderItem->ObjectCBIndex = 0;
 	boxRenderItem->Geometry = GetEngine()->GetSceneGeometry()["shapeGeo"].get();
 	boxRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	boxRenderItem->IndexCount = boxRenderItem->Geometry->FindSubmeshGeomentry("Box").IndexCount;
-	boxRenderItem->StartIndexLocation = boxRenderItem->Geometry->FindSubmeshGeomentry("Box").StartIndexLocation;
-	boxRenderItem->BaseVertexLocation = boxRenderItem->Geometry->FindSubmeshGeomentry("Box").BaseVertexLocation;
+	boxRenderItem->IndexCount = boxRenderItem->Geometry->FindSubmeshGeomentry("Box")->IndexCount;
+	boxRenderItem->StartIndexLocation = boxRenderItem->Geometry->FindSubmeshGeomentry("Box")->StartIndexLocation;
+	boxRenderItem->BaseVertexLocation = boxRenderItem->Geometry->FindSubmeshGeomentry("Box")->BaseVertexLocation;
 
 	auto gridRenderItem = make_unique<SRenderItem>();
 	gridRenderItem->World = Utils::Math::Identity4x4();
 	gridRenderItem->ObjectCBIndex = 1;
 	gridRenderItem->Geometry = GetEngine()->GetSceneGeometry()["shapeGeo"].get();
 	gridRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	gridRenderItem->IndexCount = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid").IndexCount;
-	gridRenderItem->StartIndexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid").StartIndexLocation;
-	gridRenderItem->BaseVertexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid").BaseVertexLocation;
+	gridRenderItem->IndexCount = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid")->IndexCount;
+	gridRenderItem->StartIndexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid")->StartIndexLocation;
+	gridRenderItem->BaseVertexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid")->BaseVertexLocation;
 
 	// Build the columns and spheres in rows as in Figure 7.6.
 	UINT objCBIndex = 2;
@@ -658,33 +658,33 @@ void OShapesTest::BuildRenderItems()
 		leftCylinderRenderItem->ObjectCBIndex = objCBIndex++;
 		leftCylinderRenderItem->Geometry = GetEngine()->GetSceneGeometry()["shapeGeo"].get();
 		leftCylinderRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		leftCylinderRenderItem->IndexCount = leftCylinderRenderItem->Geometry->FindSubmeshGeomentry("Cylinder").IndexCount;
-		leftCylinderRenderItem->StartIndexLocation = leftCylinderRenderItem->Geometry->FindSubmeshGeomentry("Cylinder").StartIndexLocation;
-		leftCylinderRenderItem->BaseVertexLocation = leftCylinderRenderItem->Geometry->FindSubmeshGeomentry("Cylinder").BaseVertexLocation;
+		leftCylinderRenderItem->IndexCount = leftCylinderRenderItem->Geometry->FindSubmeshGeomentry("Cylinder")->IndexCount;
+		leftCylinderRenderItem->StartIndexLocation = leftCylinderRenderItem->Geometry->FindSubmeshGeomentry("Cylinder")->StartIndexLocation;
+		leftCylinderRenderItem->BaseVertexLocation = leftCylinderRenderItem->Geometry->FindSubmeshGeomentry("Cylinder")->BaseVertexLocation;
 
 		XMStoreFloat4x4(&rightCylinderRenderItem->World, leftCylinderWorld);
 		rightCylinderRenderItem->ObjectCBIndex = objCBIndex++;
 		rightCylinderRenderItem->Geometry = GetEngine()->GetSceneGeometry()["shapeGeo"].get();
 		rightCylinderRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		rightCylinderRenderItem->IndexCount = rightCylinderRenderItem->Geometry->FindSubmeshGeomentry("Cylinder").IndexCount;
-		rightCylinderRenderItem->StartIndexLocation = rightCylinderRenderItem->Geometry->FindSubmeshGeomentry("Cylinder").StartIndexLocation;
-		rightCylinderRenderItem->BaseVertexLocation = rightCylinderRenderItem->Geometry->FindSubmeshGeomentry("Cylinder").BaseVertexLocation;
+		rightCylinderRenderItem->IndexCount = rightCylinderRenderItem->Geometry->FindSubmeshGeomentry("Cylinder")->IndexCount;
+		rightCylinderRenderItem->StartIndexLocation = rightCylinderRenderItem->Geometry->FindSubmeshGeomentry("Cylinder")->StartIndexLocation;
+		rightCylinderRenderItem->BaseVertexLocation = rightCylinderRenderItem->Geometry->FindSubmeshGeomentry("Cylinder")->BaseVertexLocation;
 
 		XMStoreFloat4x4(&leftSphereRenderItem->World, leftSphereWorld);
 		leftSphereRenderItem->ObjectCBIndex = objCBIndex++;
 		leftSphereRenderItem->Geometry = GetEngine()->GetSceneGeometry()["shapeGeo"].get();
 		leftSphereRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		leftSphereRenderItem->IndexCount = leftSphereRenderItem->Geometry->FindSubmeshGeomentry("Sphere").IndexCount;
-		leftSphereRenderItem->StartIndexLocation = leftSphereRenderItem->Geometry->FindSubmeshGeomentry("Sphere").StartIndexLocation;
-		leftSphereRenderItem->BaseVertexLocation = leftSphereRenderItem->Geometry->FindSubmeshGeomentry("Sphere").BaseVertexLocation;
+		leftSphereRenderItem->IndexCount = leftSphereRenderItem->Geometry->FindSubmeshGeomentry("Sphere")->IndexCount;
+		leftSphereRenderItem->StartIndexLocation = leftSphereRenderItem->Geometry->FindSubmeshGeomentry("Sphere")->StartIndexLocation;
+		leftSphereRenderItem->BaseVertexLocation = leftSphereRenderItem->Geometry->FindSubmeshGeomentry("Sphere")->BaseVertexLocation;
 
 		XMStoreFloat4x4(&rightSphereRenderItem->World, rightSphereWorld);
 		rightSphereRenderItem->ObjectCBIndex = objCBIndex++;
 		rightSphereRenderItem->Geometry = GetEngine()->GetSceneGeometry()["shapeGeo"].get();
 		rightSphereRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		rightSphereRenderItem->IndexCount = rightSphereRenderItem->Geometry->FindSubmeshGeomentry("Sphere").IndexCount;
-		rightSphereRenderItem->StartIndexLocation = rightSphereRenderItem->Geometry->FindSubmeshGeomentry("Sphere").StartIndexLocation;
-		rightSphereRenderItem->BaseVertexLocation = rightSphereRenderItem->Geometry->FindSubmeshGeomentry("Sphere").BaseVertexLocation;
+		rightSphereRenderItem->IndexCount = rightSphereRenderItem->Geometry->FindSubmeshGeomentry("Sphere")->IndexCount;
+		rightSphereRenderItem->StartIndexLocation = rightSphereRenderItem->Geometry->FindSubmeshGeomentry("Sphere")->StartIndexLocation;
+		rightSphereRenderItem->BaseVertexLocation = rightSphereRenderItem->Geometry->FindSubmeshGeomentry("Sphere")->BaseVertexLocation;
 	}
 }
 

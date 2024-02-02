@@ -32,8 +32,6 @@ public:
 
 	void OnRender(const UpdateEventArgs& Event) override;
 
-	void OnKeyPressed(const KeyEventArgs& Event) override;
-
 	void OnMouseMoved(const MouseMotionEventArgs& Args) override;
 	void UpdateObjectCBs(const STimer& Timer);
 
@@ -41,8 +39,6 @@ public:
 	                     const vector<SRenderItem*>& RenderItems) const;
 
 	void UpdateCamera(const UpdateEventArgs& Event);
-
-	void OnKeyboardInput(const STimer& Timer);
 
 	void OnMouseWheel(const MouseWheelEventArgs& Args) override;
 	OGPUWave* Waves = nullptr;
