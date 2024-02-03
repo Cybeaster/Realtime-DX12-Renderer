@@ -36,14 +36,9 @@ Microsoft::WRL::ComPtr<ID3D12CommandAllocator> OCommandQueue::GetCommandAllocato
 	return CommandAllocator;
 }
 
-uint64_t OCommandQueue::ExecuteCommandList(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> CommandList)
+uint64_t OCommandQueue::ExecuteCommandList()
 {
 	CommandList->Close();
-
-	ID3D12CommandAllocator* allocator;
-	UINT dataSize = sizeof(allocator);
-
-	THROW_IF_FAILED(CommandList->GetPrivateData(__uuidof(ID3D12CommandAllocator), &dataSize, &allocator));
 
 	ID3D12CommandList* const commandLists[] = {
 		CommandList.Get()
@@ -51,9 +46,6 @@ uint64_t OCommandQueue::ExecuteCommandList(Microsoft::WRL::ComPtr<ID3D12Graphics
 
 	CommandQueue->ExecuteCommandLists(1, commandLists);
 	uint64_t fenceValue = Signal();
-	CommandAllocatorQueue.emplace(CommandAllocatorEntry{ fenceValue, allocator });
-	CommandListQueue.push(CommandList);
-	allocator->Release();
 	return fenceValue;
 }
 
@@ -108,7 +100,7 @@ void OCommandQueue::Flush()
 
 void OCommandQueue::ResetCommandList()
 {
-	CommandList->Reset(CommandAllocator.Get(), nullptr);
+	THROW_IF_FAILED(CommandList->Reset(CommandAllocator.Get(), nullptr));
 }
 
 Microsoft::WRL::ComPtr<ID3D12Fence> OCommandQueue::GetFence() const

@@ -59,10 +59,8 @@ bool OTextureWaves::Initialize()
 	BuildPSOTreeSprites();
 	BuildPSOGeosphere();
 	BuildTesselationPSO();
-	THROW_IF_FAILED(queue->GetCommandList()->Close());
 
-	ID3D12CommandList* cmdsLists[] = { queue->GetCommandList().Get() };
-	engine->GetCommandQueue()->GetCommandQueue()->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+	engine->GetCommandQueue()->ExecuteCommandList();
 	engine->FlushGPU();
 	ContentLoaded = true;
 
@@ -338,6 +336,7 @@ void OTextureWaves::BuildQuadPatchGeometry()
 	quadSubmesh.IndexCount = (UINT)indices.size();
 	quadSubmesh.StartIndexLocation = 0;
 	quadSubmesh.BaseVertexLocation = 0;
+
 	quadSubmesh.Indices = make_unique<vector<int16_t>>(indices);
 	quadSubmesh.Vertices = make_unique<vector<XMFLOAT3>>(vertices);
 
@@ -543,7 +542,7 @@ void OTextureWaves::OnMouseMoved(const MouseMotionEventArgs& Args)
 		float dy = 0.05f * (Args.Y - window->GetLastYMousePos());
 		Radius += dx - dy;
 
-		Radius = std::clamp(Radius, 5.0f, 150.f);
+		Radius = std::clamp(Radius, 5.0f, 300.f);
 	}
 	LOG(Test, Log, "Theta: {} Phi: {} Radius: {}", Theta, Phi, Radius);
 }

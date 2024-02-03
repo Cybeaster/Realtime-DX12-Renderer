@@ -6,7 +6,7 @@
 #include "Events.h"
 #include "Filters/BilateralBlur/BilateralBlurFilter.h"
 
-class OUIManager : public IWidget
+class OUIManager : public OHierarchicalWidgetBase
     , public IRenderObject
 
 {
@@ -18,18 +18,14 @@ public:
 
 	void OnMouseButtonPressed(MouseButtonEventArgs& Args);
 	void OnMouseButtonReleased(MouseButtonEventArgs& Args);
+	void OnKeyboardKeyPressed(KeyEventArgs& Args);
+	void OnKeyboardKeyReleased(KeyEventArgs& Args);
+	void OnMouseWheel(MouseWheelEventArgs& Args);
 	void OnResize(ResizeEventArgs& Args);
 
+	void KeyMap();
 	void UpdateDescriptors(SRenderObjectDescriptor& OutDescriptor) override;
 	void BuildDescriptors(IDescriptor* Descriptor) override {}
-
-	template<typename WidgetType, typename... Params>
-	void MakeWidget(Params&&... Args)
-	{
-		auto newWidget = make_unique<WidgetType>(std::forward<Params>(Args)...);
-		newWidget->Init();
-		Widgets.push_back(move(newWidget));
-	}
 
 	uint32_t GetNumDescriptors() const override
 	{
@@ -41,7 +37,9 @@ public:
 	bool IsInFocus() override;
 
 private:
-	vector<unique_ptr<IWidget>> Widgets;
 	bool bIsInFocus = false;
 	ImGuiIO* IO = nullptr;
+
+	float MangerWidth = 400;
+	float MangerHeight = 800;
 };

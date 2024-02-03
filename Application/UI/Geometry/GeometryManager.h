@@ -4,18 +4,21 @@
 #include "UI/Widget.h"
 
 class OEngine;
-class OGeometryManagerWidget : public IWidget
+class OGeometryManagerWidget : public OHierarchicalWidgetBase
 {
 public:
 	using TEntity = unique_ptr<OGeometryEntityWidget>;
-	OGeometryManagerWidget(OEngine* _Engine, OEngine::TSceneGeometryMap* Map)
-	    : Engine(_Engine), GeometryMap(Map) {}
+	OGeometryManagerWidget(OEngine* _Engine, OEngine::TRenderLayer* Map)
+	    : Engine(_Engine), RenderLayers(Map) {}
 
 	void Draw() override;
 	void Update() override;
+	void Init() override;
+	void RebuildRequest();
 
 private:
-	OEngine::TSceneGeometryMap* GeometryMap = nullptr;
-	vector<TEntity> GeometryEntities;
+	OEngine::TRenderLayer* RenderLayers = nullptr;
 	OEngine* Engine = nullptr;
+	string SelectedGeometry = "";
+	bool bRebuildRequested = false;
 };

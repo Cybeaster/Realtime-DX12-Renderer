@@ -24,7 +24,7 @@ void OWindowTest::OnRender(const UpdateEventArgs& Arg)
 	list->OMSetRenderTargets(1, &rtv, true, &descHeapStart);
 
 	window->TransitionResource(list, window->GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-	engine->GetCommandQueue()->ExecuteCommandList(list);
+	engine->GetCommandQueue()->ExecuteCommandList();
 	window->Present();
 	engine->FlushGPU();
 }

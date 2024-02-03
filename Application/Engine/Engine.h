@@ -27,7 +27,7 @@ public:
 	using TMaterialsMap = std::unordered_map<string, unique_ptr<SMaterial>>;
 	using TTexturesMap = std::unordered_map<string, unique_ptr<STexture>>;
 	using TSceneGeometryMap = std::unordered_map<string, unique_ptr<SMeshGeometry>>;
-
+	using TRenderLayer = map<string, vector<SRenderItem*>>;
 	vector<unique_ptr<SFrameResource>> FrameResources;
 	SFrameResource* CurrentFrameResources = nullptr;
 	UINT CurrentFrameResourceIndex = 0;
@@ -78,7 +78,7 @@ public:
 
 	void OnPostRender();
 	void PostProcess(HWND Handler);
-
+	void DrawCompositeShader(CD3DX12_GPU_DESCRIPTOR_HANDLE Input);
 	void OnKeyPressed(KeyEventArgs& Args);
 	void OnKeyReleased(KeyEventArgs& Args);
 	void OnMouseMoved(class MouseMotionEventArgs& Args);
@@ -238,7 +238,7 @@ private:
 	map<HWND, shared_ptr<OTest>> Tests;
 	ComPtr<IDXGIFactory4> Factory;
 
-	map<string, vector<SRenderItem*>> RenderItems;
+	TRenderLayer RenderLayers;
 	vector<unique_ptr<SRenderItem>> AllRenderItems;
 
 	std::unordered_map<string, ComPtr<ID3DBlob>> Shaders;

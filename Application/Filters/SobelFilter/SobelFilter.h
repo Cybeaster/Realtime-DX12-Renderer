@@ -18,9 +18,8 @@ public:
 	void BuildDescriptors() const override;
 	void BuildResource() override;
 
-	void Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO, CD3DX12_GPU_DESCRIPTOR_HANDLE Input) const;
+	std::pair<bool, CD3DX12_GPU_DESCRIPTOR_HANDLE> Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO, CD3DX12_GPU_DESCRIPTOR_HANDLE Input) const;
 	void BuildDescriptors(IDescriptor* Descriptor) override;
-
 	void UpdateDescriptors(SRenderObjectDescriptor& OutDescriptor) override
 	{
 		OutDescriptor.OffsetSRV(GetNumDescriptors());

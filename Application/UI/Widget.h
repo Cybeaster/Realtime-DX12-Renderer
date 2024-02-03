@@ -18,3 +18,41 @@ public:
 	virtual void OnMouseButtonPressed(MouseButtonEventArgs& Args) {}
 	virtual void OnMouseButtonReleased(MouseButtonEventArgs& Args) {}
 };
+
+class OHierarchicalWidgetBase : public IWidget
+{
+public:
+	template<typename WidgetType, typename... Params>
+	WidgetType* MakeWidget(Params&&... Args)
+	{
+		auto newWidget = make_unique<WidgetType>(std::forward<Params>(Args)...);
+		newWidget->Init();
+		auto result = newWidget.get();
+		Widgets.push_back(move(newWidget));
+		return result;
+	}
+
+	void Draw() override
+	{
+		for (const auto& widget : GetWidgets())
+		{
+			widget->Draw();
+		}
+	}
+
+	void Update() override
+	{
+		for (const auto& widget : GetWidgets())
+		{
+			widget->Update();
+		}
+	}
+
+	vector<unique_ptr<IWidget>>& GetWidgets()
+	{
+		return Widgets;
+	}
+
+private:
+	vector<unique_ptr<IWidget>> Widgets;
+};

@@ -17,7 +17,7 @@ public:
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> GetCommandAllocator();
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> GetCommandQueue();
 
-	uint64_t ExecuteCommandList(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> CommandList);
+	uint64_t ExecuteCommandList();
 	uint64_t Signal();
 
 	bool IsFenceComplete(uint64_t FenceValue) const;

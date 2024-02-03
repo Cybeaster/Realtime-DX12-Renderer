@@ -7,7 +7,11 @@
 struct SRenderItem
 {
 	SRenderItem() = default;
-
+	void UpdateWorldMatrix(const DirectX::XMMATRIX& WorldMatrix)
+	{
+		DirectX::XMStoreFloat4x4(&World, WorldMatrix);
+		NumFramesDirty = SRenderConstants::NumFrameResources;
+	}
 	// World matrix of the shape that describes the object’s local space
 	// relative to the world space, which defines the position,
 	// orientation, and scale of the object in the world.

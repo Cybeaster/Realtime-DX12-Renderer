@@ -116,6 +116,8 @@ set(SRC_FILES
         Application/UI/Geometry/GeometryEntity/GeometryEntityWidget.h
         Application/UI/Geometry/GeometryManager.cpp
         Application/UI/Geometry/GeometryManager.h
+        Application/UI/Geometry/GeometryEntity/GeometryTransform.h
+        Application/UI/Geometry/GeometryEntity/GeometryTransform.cpp
 )
 
 file(GLOB IMGUI_SOURCES Externals/imgui/*.cpp Externals/imgui/*.h)

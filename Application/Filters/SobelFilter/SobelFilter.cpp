@@ -1,6 +1,7 @@
 #include "SobelFilter.h"
 
 #include "../../../Utils/DirectX.h"
+#include "RenderConstants.h"
 
 OSobelFilter::OSobelFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format)
     : OFilterBase(Device, List, Width, Height, Format)
@@ -55,11 +56,11 @@ void OSobelFilter::BuildResource()
 	                                                IID_PPV_ARGS(Output.GetAddressOf())));
 }
 
-void OSobelFilter::Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO, CD3DX12_GPU_DESCRIPTOR_HANDLE Input) const
+std::pair<bool, CD3DX12_GPU_DESCRIPTOR_HANDLE> OSobelFilter::Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO, CD3DX12_GPU_DESCRIPTOR_HANDLE Input) const
 {
 	if (!bEnabled)
 	{
-		return;
+		return { false, CD3DX12_GPU_DESCRIPTOR_HANDLE() };
 	}
 
 	CMDList->SetComputeRootSignature(RootSignature);
@@ -75,6 +76,7 @@ void OSobelFilter::Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineSta
 	CMDList->Dispatch(numGroupsX, numGroupsY, 1);
 
 	Utils::ResourceBarrier(CMDList, Output.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
+	return { true, GPUSRV };
 }
 
 void OSobelFilter::BuildDescriptors(IDescriptor* Descriptor)

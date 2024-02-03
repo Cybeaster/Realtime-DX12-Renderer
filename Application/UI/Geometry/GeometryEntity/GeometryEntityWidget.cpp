@@ -6,14 +6,21 @@
 
 #include "DXHelper.h"
 #include "Engine/Engine.h"
-
+#include "UI/Geometry/GeometryManager.h"
 void OGeometryEntityWidget::Draw()
 {
-	if (ImGui::CollapsingHeader(Geometry->Name.c_str()))
+	const ImVec2 submeshWindowPos = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y);
+	ImGui::SetNextWindowPos(submeshWindowPos);
+	ImGui::SetNextWindowSize(ImVec2(SliderWidth, 500));
+
+	if (ImGui::Begin("Submesh parameters")) // Begin new window for Submesh parameters
 	{
-		if (ImGui::BeginListBox("Submeshes"))
+		OHierarchicalWidgetBase::Draw();
+
+		ImGui::SeparatorText("Submeshes");
+		if (ImGui::BeginListBox("#Submeshes"))
 		{
-			for (auto& Submesh : Geometry->DrawArgs)
+			for (auto& Submesh : GetGeometry()->DrawArgs)
 			{
 				auto name = Submesh.first.c_str();
 
@@ -25,44 +32,92 @@ void OGeometryEntityWidget::Draw()
 			ImGui::EndListBox();
 		}
 
-		if (SelectedSubmesh != "" && Geometry->DrawArgs.contains(SelectedSubmesh))
+		if (SelectedSubmesh != "" && GetGeometry()->DrawArgs.contains(SelectedSubmesh))
 		{
-			auto& Submesh = Geometry->DrawArgs[SelectedSubmesh];
-			ImGui::SeparatorText("Submesh parameters");
-			ImGui::Text("Submesh %s", SelectedSubmesh.c_str());
-			if (ImGui::BeginListBox("Vertices"))
+			const auto& Submesh = GetGeometry()->DrawArgs[SelectedSubmesh];
+			const auto formattedName = "Submesh " + SelectedSubmesh;
+			ImGui::SeparatorText(formattedName.c_str());
+			if (Submesh.Vertices)
 			{
-				for (auto& Vertex : *Submesh.Vertices)
+				ImGui::SetNextItemWidth(SliderWidth - 50);
+				ImGui::Text("Vertices & Indices");
+				if (ImGui::BeginListBox("##Vertices & Indices"))
 				{
-					ImGui::SliderFloat3("Vertex", &Vertex.x, -1000.0f, 1000.0f);
-				}
-				ImGui::EndListBox();
-			}
+					int32_t counter = 0;
+					for (auto& vertex : *Submesh.Vertices)
+					{
+						string vertexName = "##Vertex: " + std::to_string(counter);
+						DirectX::XMFLOAT3 newVertex = vertex;
+						if (ImGui::SliderFloat3(vertexName.c_str(), &newVertex.x, -100.0f, 100.0f))
+						{
+							DirectX::XMStoreFloat3(&vertex, DirectX::XMVectorLerp(DirectX::XMLoadFloat3(&vertex), DirectX::XMLoadFloat3(&newVertex), 0.1f));
+							RebuildRequest();
+						}
 
-			if (ImGui::BeginListBox("Indices"))
-			{
-				for (auto& index : *Submesh.Indices)
-				{
-					int32_t idx = 0;
-					ImGui::SliderInt("Index", &idx, std::numeric_limits<int16_t>().min(), std::numeric_limits<int16_t>().max());
-					index = static_cast<int16_t>(idx);
+						ImGui::SameLine();
+
+						string idxName = "##Index: " + std::to_string(counter);
+						int32_t idx = counter;
+						if (ImGui::InputInt(idxName.c_str(), &idx))
+						{
+							Submesh.Indices->at(counter) = idx;
+							RebuildRequest();
+						}
+
+						counter++;
+					}
+					ImGui::EndListBox();
 				}
 			}
-		}
-
-		if (ImGui::Button("Rebuild geometry"))
-		{
-			bRebuildRequested = true;
 		}
 	}
+	ImGui::End(); // End Submesh parameters window
 }
 
 void OGeometryEntityWidget::Update()
 {
-	IWidget::Update();
+	using namespace DirectX;
+	OHierarchicalWidgetBase::Update();
 
-	if (bRebuildRequested)
+	if (TransformWidget->SatisfyUpdateRequest())
 	{
-		Engine->RebuildGeometry(Geometry->Name);
+		// Convert to XMVECTOR for operations
+		const XMVECTOR vPosition = XMLoadFloat3(&Position);
+		const XMVECTOR vRotation = XMLoadFloat3(&Rotation);
+		const XMVECTOR vScale = XMLoadFloat3(&Scale);
+
+		// Create individual transform matrices
+		const XMMATRIX matScale = XMMatrixScalingFromVector(vScale);
+		const XMMATRIX matRotation = XMMatrixRotationRollPitchYawFromVector(vRotation);
+		const XMMATRIX matTranslation = XMMatrixTranslationFromVector(vPosition);
+
+		// Combine into a single transform matrix
+		const XMMATRIX transformMatrix = matScale * matRotation * matTranslation;
+		RenderItem->UpdateWorldMatrix(transformMatrix);
 	}
+}
+
+void OGeometryEntityWidget::Init()
+{
+	IWidget::Init();
+	// Variables to store the decomposed components
+	DirectX::XMVECTOR scale, rotation, translation;
+	if (DirectX::XMMatrixDecompose(&scale, &rotation, &translation, DirectX::XMLoadFloat4x4(&RenderItem->World)))
+	{
+		// If the decompose fails, set the default values
+		Position = { 0, 0, 0 };
+		Rotation = { 0, 0, 0 };
+		Scale = { 1, 1, 1 };
+	}
+
+	DirectX::XMStoreFloat3(&Position, translation);
+	DirectX::XMStoreFloat3(&Rotation, rotation);
+	DirectX::XMStoreFloat3(&Scale, scale);
+
+	TransformWidget = MakeWidget<OGeometryTransformWidget>(&Position, &Rotation, &Scale);
+}
+
+void OGeometryEntityWidget::RebuildRequest()
+{
+	Manager->RebuildRequest();
 }

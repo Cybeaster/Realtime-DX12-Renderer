@@ -4,9 +4,9 @@
 
 void OFogWidget::Draw()
 {
-	if (ImGui::CollapsingHeader("Fog"))
+	bEnabled = ImGui::CollapsingHeader("Fog");
+	if (bEnabled)
 	{
-		ImGui::Checkbox("Is Fog Enabled", &bEnabled);
 		ImGui::SliderFloat("Fog Start", &FogStart, 0.0f, 200.0f);
 		ImGui::SliderFloat("Fog Range", &FogRange, 0.0f, 200.0f);
 		ImGui::ColorEdit3("Fog Color", &FogColor.x, ImGuiColorEditFlags_Float);

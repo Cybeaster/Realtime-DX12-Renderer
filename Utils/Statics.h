@@ -17,6 +17,13 @@ T* Cast(auto* Ptr)
 		return nullptr;
 	}
 }
+
+template<typename T>
+T* SCast(auto* Ptr)
+{
+	return static_cast<T*>(Ptr);
+}
+
 using TUUID = boost::uuids::uuid;
 inline TUUID GenerateUUID()
 {

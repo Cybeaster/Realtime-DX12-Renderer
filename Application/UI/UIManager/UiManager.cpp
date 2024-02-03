@@ -21,6 +21,7 @@ void OUIManager::InitContext(ID3D12Device2* Device, HWND Hwnd, UINT NumFramesInL
 
 	ImGui::StyleColorsDark();
 	UpdateDescriptors(OutDescriptor);
+	KeyMap();
 }
 
 void OUIManager::Draw()
@@ -30,15 +31,13 @@ void OUIManager::Draw()
 	ImGui_ImplDX12_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	ImGui::SetNextWindowSize(ImVec2(MangerWidth, MangerHeight));
 	ImGui::Begin("Main Menu");
-	for (const auto& widget : Widgets)
-	{
-		widget->Update();
-		widget->Draw();
-	}
-	ImGui::End();
 
-	ImGui::ShowDemoWindow();
+	OHierarchicalWidgetBase::Draw();
+
+	ImGui::End();
 
 	ImGui::Render();
 }
@@ -92,11 +91,83 @@ void OUIManager::OnMouseButtonReleased(MouseButtonEventArgs& Args)
 	}
 }
 
+void OUIManager::OnKeyboardKeyPressed(KeyEventArgs& Args)
+{
+	IO->KeysDown[Args.Key] = true;
+	IO->AddInputCharacter(Args.Char);
+}
+
+void OUIManager::OnKeyboardKeyReleased(KeyEventArgs& Args)
+{
+	IO->KeysDown[Args.Key] = false;
+}
+
+void OUIManager::OnMouseWheel(MouseWheelEventArgs& Args)
+{
+	IO->MouseWheel += Args.WheelDelta;
+}
+
 void OUIManager::OnResize(ResizeEventArgs& Args)
 {
 	if (IO)
 	{
 		IO->DisplaySize = ImVec2(static_cast<float>(Args.Width), static_cast<float>(Args.Height));
+	}
+}
+
+void OUIManager::KeyMap()
+{
+	ImGuiIO& io = ImGui::GetIO();
+
+	// Modifier keys
+	io.KeyMap[ImGuiKey_ModCtrl] = KeyCode::ControlKey; // Ctrl key
+	io.KeyMap[ImGuiKey_ModShift] = KeyCode::ShiftKey; // Shift key
+	io.KeyMap[ImGuiKey_ModAlt] = KeyCode::AltKey; // Alt key
+	io.KeyMap[ImGuiKey_ModSuper] = KeyCode::LWin; // Super key (Windows key)
+
+	// Arrow keys
+	io.KeyMap[ImGuiKey_LeftArrow] = KeyCode::Left;
+	io.KeyMap[ImGuiKey_RightArrow] = KeyCode::Right;
+	io.KeyMap[ImGuiKey_UpArrow] = KeyCode::Up;
+	io.KeyMap[ImGuiKey_DownArrow] = KeyCode::Down;
+
+	// Navigation keys
+	io.KeyMap[ImGuiKey_PageUp] = KeyCode::PageUp;
+	io.KeyMap[ImGuiKey_PageDown] = KeyCode::PageDown;
+	io.KeyMap[ImGuiKey_Home] = KeyCode::Home;
+	io.KeyMap[ImGuiKey_End] = KeyCode::End;
+	io.KeyMap[ImGuiKey_Insert] = KeyCode::Insert;
+	io.KeyMap[ImGuiKey_Delete] = KeyCode::Delete;
+	io.KeyMap[ImGuiKey_Backspace] = KeyCode::Back;
+	io.KeyMap[ImGuiKey_Space] = KeyCode::Space;
+	io.KeyMap[ImGuiKey_Enter] = KeyCode::Enter;
+	io.KeyMap[ImGuiKey_Escape] = KeyCode::Escape;
+	io.KeyMap[ImGuiKey_Tab] = KeyCode::Tab;
+
+	// Function keys
+	io.KeyMap[ImGuiKey_F1] = KeyCode::F1;
+	io.KeyMap[ImGuiKey_F2] = KeyCode::F2;
+	io.KeyMap[ImGuiKey_F3] = KeyCode::F3;
+	io.KeyMap[ImGuiKey_F4] = KeyCode::F4;
+	io.KeyMap[ImGuiKey_F5] = KeyCode::F5;
+	io.KeyMap[ImGuiKey_F6] = KeyCode::F6;
+	io.KeyMap[ImGuiKey_F7] = KeyCode::F7;
+	io.KeyMap[ImGuiKey_F8] = KeyCode::F8;
+	io.KeyMap[ImGuiKey_F9] = KeyCode::F9;
+	io.KeyMap[ImGuiKey_F10] = KeyCode::F10;
+	io.KeyMap[ImGuiKey_F11] = KeyCode::F11;
+	io.KeyMap[ImGuiKey_F12] = KeyCode::F12;
+	// Add additional function keys if needed
+
+	// Alpha-numeric keys (A-Z, 0-9)
+	// ImGui does not differentiate between upper and lower case keys for mapping.
+	for (int i = 0; i < 26; ++i)
+	{ // Map A-Z
+		io.KeyMap[ImGuiKey_A + i] = KeyCode::A + i;
+	}
+	for (int i = 0; i < 10; ++i)
+	{ // Map 0-9
+		io.KeyMap[ImGuiKey_0 + i] = KeyCode::D0 + i;
 	}
 }
 
@@ -108,7 +179,6 @@ void OUIManager::UpdateDescriptors(SRenderObjectDescriptor& OutDescriptor)
 void OUIManager::PostInputUpdate()
 {
 	bIsInFocus = ImGui::IsAnyItemFocused() || ImGui::IsAnyItemActive() || ImGui::IsItemClicked();
-	LOG(Widget, Log, "IsInFocus: {}", bIsInFocus);
 }
 bool OUIManager::IsInFocus()
 {

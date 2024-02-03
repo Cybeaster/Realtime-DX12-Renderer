@@ -14,6 +14,7 @@
 #include "UI/Effects/Light/LightWidget.h"
 #include "UI/Filters/GaussianBlurWidget.h"
 #include "UI/Filters/SobelFilterWidget.h"
+#include "UI/Geometry/GeometryManager.h"
 
 #include <DirectXMath.h>
 
@@ -141,6 +142,7 @@ void OEngine::InitUIManager()
 	UIManager->MakeWidget<OFogWidget>(this);
 	UIManager->MakeWidget<OLightWidget>(this);
 	UIManager->MakeWidget<OSobelFilterWidget>(GetSobelFilter());
+	UIManager->MakeWidget<OGeometryManagerWidget>(this, &RenderLayers);
 }
 
 void OEngine::SetFogColor(DirectX::XMFLOAT4 Color)
@@ -239,13 +241,7 @@ void OEngine::OnPreRender()
 		const auto allocator = GetCommandQueue()->GetCommandAllocator();
 		const auto commandList = GetCommandQueue()->GetCommandList();
 
-		// Reuse the memory associated with command recording.
-		// We can only reset when the associated command lists have finished execution on the GPU.
-		THROW_IF_FAILED(allocator->Reset());
-
-		// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
-		// Reusing the command list reuses memory.
-		THROW_IF_FAILED(commandList->Reset(allocator.Get(), GetPSO(SPSOType::Opaque).Get()));
+		GetCommandQueue()->ResetCommandList();
 
 		ID3D12DescriptorHeap* heaps[] = { SRVDescriptorHeap.Get() };
 		commandList->SetDescriptorHeaps(_countof(heaps), heaps);
@@ -306,6 +302,11 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 	{
 		UpdateMainPass(Args.Timer);
 	}
+
+	if (UIManager)
+	{
+		UIManager->Update();
+	}
 }
 
 void OEngine::PostProcess(HWND Handler)
@@ -318,10 +319,6 @@ void OEngine::PostProcess(HWND Handler)
 	                       D3D12_RESOURCE_STATE_RENDER_TARGET,
 	                       D3D12_RESOURCE_STATE_GENERIC_READ);
 
-	GetSobelFilter()->Execute(PostProcessRootSignature.Get(),
-	                          PSOs[SPSOType::SobelFilter].Get(),
-	                          OffscreenRT->GetSRV());
-
 	Utils::ResourceBarrier(commandList.Get(),
 	                       backBuffer,
 	                       D3D12_RESOURCE_STATE_PRESENT,
@@ -329,13 +326,27 @@ void OEngine::PostProcess(HWND Handler)
 
 	auto rtv = Window->CurrentBackBufferView();
 	auto dsv = Window->GetDepthStensilView();
-
 	commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
-	commandList->SetGraphicsRootSignature(PostProcessRootSignature.Get());
-	SetPipelineState(SPSOType::Composite);
-	commandList->SetGraphicsRootDescriptorTable(0, OffscreenRT->GetSRV());
-	commandList->SetGraphicsRootDescriptorTable(1, GetSobelFilter()->OutputSRV());
-	DrawFullScreenQuad();
+
+	if (auto [executed, srv] = GetSobelFilter()->Execute(PostProcessRootSignature.Get(),
+	                                                     PSOs[SPSOType::SobelFilter].Get(),
+	                                                     OffscreenRT->GetSRV());
+	    executed)
+	{
+		DrawCompositeShader(srv);
+	}
+	else
+	{
+		Utils::ResourceBarrier(commandList.Get(),
+		                       backBuffer,
+		                       D3D12_RESOURCE_STATE_RENDER_TARGET,
+		                       D3D12_RESOURCE_STATE_COPY_DEST);
+		commandList->CopyResource(backBuffer, OffscreenRT->GetResource());
+		Utils::ResourceBarrier(commandList.Get(),
+		                       backBuffer,
+		                       D3D12_RESOURCE_STATE_COPY_DEST,
+		                       D3D12_RESOURCE_STATE_RENDER_TARGET);
+	}
 
 	GetBlurFilter()->Execute(BlurRootSignature.Get(),
 	                         PSOs[SPSOType::HorizontalBlur].Get(),
@@ -356,6 +367,17 @@ void OEngine::PostProcess(HWND Handler)
 	                       D3D12_RESOURCE_STATE_RENDER_TARGET);
 }
 
+void OEngine::DrawCompositeShader(CD3DX12_GPU_DESCRIPTOR_HANDLE Input)
+
+{
+	const auto commandList = GetCommandQueue()->GetCommandList();
+	commandList->SetGraphicsRootSignature(PostProcessRootSignature.Get());
+	SetPipelineState(SPSOType::Composite);
+	commandList->SetGraphicsRootDescriptorTable(0, OffscreenRT->GetSRV());
+	commandList->SetGraphicsRootDescriptorTable(1, Input);
+	DrawFullScreenQuad();
+}
+
 void OEngine::OnPostRender()
 {
 	const auto commandList = GetCommandQueue()->GetCommandList();
@@ -371,12 +393,7 @@ void OEngine::OnPostRender()
 	                       D3D12_RESOURCE_STATE_RENDER_TARGET,
 	                       D3D12_RESOURCE_STATE_PRESENT);
 
-	// Done recording commands.
-	THROW_IF_FAILED(commandList->Close());
-
-	// Add the command list to the queue for execution.
-	ID3D12CommandList* cmdsLists[] = { commandList.Get() };
-	GetCommandQueue()->GetCommandQueue()->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+	GetCommandQueue()->ExecuteCommandList();
 
 	THROW_IF_FAILED(Window->GetSwapChain()->Present(0, 0));
 	Window->MoveToNextFrame();
@@ -409,12 +426,18 @@ bool OEngine::IsTearingSupported() const
 
 void OEngine::OnKeyPressed(KeyEventArgs& Args)
 {
-	// By default, do nothing.
+	if (UIManager)
+	{
+		UIManager->OnKeyboardKeyPressed(Args);
+	}
 }
 
 void OEngine::OnKeyReleased(KeyEventArgs& Args)
 {
-	// By default, do nothing.
+	if (UIManager)
+	{
+		UIManager->OnKeyboardKeyReleased(Args);
+	}
 }
 
 void OEngine::OnMouseMoved(MouseMotionEventArgs& Args)
@@ -458,6 +481,7 @@ void OEngine::OnMouseButtonReleased(MouseButtonEventArgs& Args)
 void OEngine::OnMouseWheel(MouseWheelEventArgs& Args)
 {
 	LOG(Engine, Log, "Engine::OnMouseWheel")
+	UIManager->OnMouseWheel(Args);
 	if (const auto window = GetWindowByHWND(Args.WindowHandle))
 	{
 		if (const auto test = GetTestByHWND(Args.WindowHandle))
@@ -935,7 +959,7 @@ D3D12_RENDER_TARGET_BLEND_DESC OEngine::GetTransparentBlendState()
 
 vector<SRenderItem*>& OEngine::GetRenderItems(const string& Type)
 {
-	return RenderItems[Type];
+	return RenderLayers[Type];
 }
 
 ComPtr<IDXGIFactory2> OEngine::GetFactory() const
@@ -1010,7 +1034,7 @@ STexture* OEngine::FindTexture(string Name) const
 
 void OEngine::AddRenderItem(string Category, unique_ptr<SRenderItem> RenderItem)
 {
-	RenderItems[Category].push_back(RenderItem.get());
+	RenderLayers[Category].push_back(RenderItem.get());
 	AllRenderItems.push_back(move(RenderItem));
 }
 
@@ -1018,7 +1042,7 @@ void OEngine::AddRenderItem(const vector<string>& Categories, unique_ptr<SRender
 {
 	for (auto category : Categories)
 	{
-		RenderItems[category].push_back(RenderItem.get());
+		RenderLayers[category].push_back(RenderItem.get());
 	}
 	AllRenderItems.push_back(move(RenderItem));
 }
@@ -1320,6 +1344,8 @@ uint32_t OEngine::GetNumOffscrenRT() const
 
 void OEngine::RebuildGeometry(string Name)
 {
+	GetCommandQueue()->ResetCommandList();
+
 	auto mesh = FindSceneGeometry(Name);
 	auto commandList = GetCommandQueue()->GetCommandList();
 
@@ -1352,6 +1378,8 @@ void OEngine::RebuildGeometry(string Name)
 	                                                  indices.data(),
 	                                                  ibByteSize,
 	                                                  mesh->IndexBufferUploader);
+
+	GetCommandQueue()->WaitForFenceValue(GetCommandQueue()->ExecuteCommandList());
 }
 
 void OEngine::SetLightSources(const vector<SLight>& Lights)
