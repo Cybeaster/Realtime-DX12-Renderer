@@ -136,3 +136,8 @@ struct SMeshGeometry
 
 	std::unordered_map<string, SSubmeshGeometry> DrawArgs;
 };
+
+inline bool IsKeyPressed(const char Key)
+{
+	return GetAsyncKeyState(Key) & 0x8000;
+}

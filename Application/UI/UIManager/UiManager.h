@@ -6,16 +6,17 @@
 #include "Events.h"
 #include "Filters/BilateralBlur/BilateralBlurFilter.h"
 
+class OEngine;
 class OUIManager : public OHierarchicalWidgetBase
     , public IRenderObject
 
 {
 public:
-	void InitContext(ID3D12Device2* Device, HWND Hwnd, UINT NumFramesInLight, ID3D12DescriptorHeap* SRVDescriptorHeap, SRenderObjectDescriptor& OutDescriptor);
+	void InitContext(ID3D12Device2* Device, HWND Hwnd, UINT NumFramesInLight, ID3D12DescriptorHeap* SRVDescriptorHeap, SRenderObjectDescriptor& OutDescriptor, OEngine* Engine);
 	void Draw() override;
 	void PostRender(ID3D12GraphicsCommandList* List);
 	void Destroy();
-
+	void InitWidgets(OEngine* Engine);
 	void OnMouseButtonPressed(MouseButtonEventArgs& Args);
 	void OnMouseButtonReleased(MouseButtonEventArgs& Args);
 	void OnKeyboardKeyPressed(KeyEventArgs& Args);

@@ -5,12 +5,13 @@
 #include "Logger.h"
 void OBilateralBlurFilterWidget::Draw()
 {
-	bEnabled = ImGui::CollapsingHeader("Bilateral Blur");
+	bEnabled = ImGui::TreeNode("Bilateral Blur");
 	if (bEnabled)
 	{
 		ImGui::SliderFloat("Bilateral Spatial Sigma", &SpatialSigma, 0.0f, 50.0f);
 		ImGui::SliderFloat("Bilateral Intensity Sigma", &IntensitySigma, 0.0f, 25.0f);
 		ImGui::SliderInt("Bilateral Blur Count", &BlurCount, 0, 15);
+		ImGui::TreePop();
 	}
 }
 
@@ -30,6 +31,6 @@ void OBilateralBlurFilterWidget::Update()
 	}
 	else
 	{
-		//Filter->SetBlurCount(0);
+		Filter->SetBlurCount(0);
 	}
 }

@@ -4,6 +4,7 @@
 #include "../Application.h"
 #include "../Test/Test.h"
 #include "../Window/Window.h"
+#include "Camera/Camera.h"
 #include "Exception.h"
 #include "Filters/BilateralBlur/BilateralBlurFilter.h"
 #include "Logger.h"
@@ -12,6 +13,7 @@
 #include "Textures/DDSTextureLoader/DDSTextureLoader.h"
 #include "UI/Effects/FogWidget.h"
 #include "UI/Effects/Light/LightWidget.h"
+#include "UI/Filters/FilterManager.h"
 #include "UI/Filters/GaussianBlurWidget.h"
 #include "UI/Filters/SobelFilterWidget.h"
 #include "UI/Geometry/GeometryManager.h"
@@ -136,13 +138,7 @@ uint32_t OEngine::GetTextureNum()
 
 void OEngine::InitUIManager()
 {
-	UIManager->InitContext(Device.Get(), Window->GetHWND(), SRenderConstants::NumFrameResources, GetSRVHeap().Get(), SRVDescriptor);
-	UIManager->MakeWidget<OBilateralBlurFilterWidget>(GetBilateralBlurFilter());
-	UIManager->MakeWidget<OGaussianBlurWidget>(GetBlurFilter());
-	UIManager->MakeWidget<OFogWidget>(this);
-	UIManager->MakeWidget<OLightWidget>(this);
-	UIManager->MakeWidget<OSobelFilterWidget>(GetSobelFilter());
-	UIManager->MakeWidget<OGeometryManagerWidget>(this, &RenderLayers);
+	UIManager->InitContext(Device.Get(), Window->GetHWND(), SRenderConstants::NumFrameResources, GetSRVHeap().Get(), SRVDescriptor, this);
 }
 
 void OEngine::SetFogColor(DirectX::XMFLOAT4 Color)
@@ -277,6 +273,8 @@ void OEngine::Draw(UpdateEventArgs& Args)
 
 void OEngine::Render(UpdateEventArgs& Args)
 {
+	Args.IsUIInfocus = UIManager->IsInFocus();
+
 	TickTimer = Args.Timer;
 	OnPreRender();
 	for (const auto val : Tests | std::views::values)
@@ -288,7 +286,7 @@ void OEngine::Render(UpdateEventArgs& Args)
 
 void OEngine::Update(UpdateEventArgs& Args)
 {
-	Args.IsWidgetInFocus = UIManager->IsInFocus();
+	Args.IsUIInfocus = UIManager->IsInFocus();
 	OnUpdate(Args);
 	for (const auto val : Tests | std::views::values)
 	{
@@ -298,6 +296,8 @@ void OEngine::Update(UpdateEventArgs& Args)
 
 void OEngine::OnUpdate(UpdateEventArgs& Args)
 {
+	GetWindow()->OnUpdate(Args);
+
 	if (CurrentFrameResources)
 	{
 		UpdateMainPass(Args.Timer);
@@ -426,6 +426,12 @@ bool OEngine::IsTearingSupported() const
 
 void OEngine::OnKeyPressed(KeyEventArgs& Args)
 {
+	Args.IsUIInfocus = UIManager->IsInFocus();
+	if (auto window = GetWindowByHWND(Args.WindowHandle))
+	{
+		window->OnKeyPressed(Args);
+	}
+
 	if (UIManager)
 	{
 		UIManager->OnKeyboardKeyPressed(Args);
@@ -434,6 +440,12 @@ void OEngine::OnKeyPressed(KeyEventArgs& Args)
 
 void OEngine::OnKeyReleased(KeyEventArgs& Args)
 {
+	Args.IsUIInfocus = UIManager->IsInFocus();
+	if (auto window = GetWindowByHWND(Args.WindowHandle))
+	{
+		window->OnKeyReleased(Args);
+	}
+
 	if (UIManager)
 	{
 		UIManager->OnKeyboardKeyReleased(Args);
@@ -1342,6 +1354,16 @@ uint32_t OEngine::GetNumOffscrenRT() const
 	return 1;
 }
 
+float OEngine::GetDeltaTime() const
+{
+	return TickTimer.GetDeltaTime();
+}
+
+OEngine::TRenderLayer& OEngine::GetRenderLayers()
+{
+	return RenderLayers;
+}
+
 void OEngine::RebuildGeometry(string Name)
 {
 	GetCommandQueue()->ResetCommandList();
@@ -1399,8 +1421,8 @@ void OEngine::SetAmbientLight(const DirectX::XMFLOAT3& Color)
 
 void OEngine::UpdateMainPass(const STimer& Timer)
 {
-	const XMMATRIX view = XMLoadFloat4x4(&Window->ViewMatrix);
-	const XMMATRIX proj = XMLoadFloat4x4(&Window->ProjectionMatrix);
+	const XMMATRIX view = Window->GetCamera()->GetView();
+	const XMMATRIX proj = Window->GetCamera()->GetProj();
 	const XMMATRIX viewProj = XMMatrixMultiply(view, proj);
 
 	auto viewDet = XMMatrixDeterminant(view);
@@ -1418,7 +1440,7 @@ void OEngine::UpdateMainPass(const STimer& Timer)
 	XMStoreFloat4x4(&MainPassCB.ViewProj, XMMatrixTranspose(viewProj));
 	XMStoreFloat4x4(&MainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
 
-	MainPassCB.EyePosW = Window->EyePos;
+	MainPassCB.EyePosW = Window->GetCamera()->GetPosition3f();
 	MainPassCB.RenderTargetSize = XMFLOAT2(static_cast<float>(Window->GetWidth()), static_cast<float>(Window->GetHeight()));
 	MainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / Window->GetWidth(), 1.0f / Window->GetHeight());
 	MainPassCB.NearZ = 1.0f;

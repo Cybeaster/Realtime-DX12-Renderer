@@ -16,15 +16,20 @@
 #pragma optimize("", off)
 using namespace Microsoft::WRL;
 
-OWindow::OWindow(shared_ptr<OEngine> _Engine, HWND hWnd, const SWindowInfo& _WindowInfo, const shared_ptr<OCamera>& _Camera)
+OWindow::OWindow(shared_ptr<OEngine> _Engine, HWND hWnd, const SWindowInfo& _WindowInfo)
     : Hwnd(hWnd)
     , Engine(_Engine)
     , WindowInfo{ _WindowInfo }
-    , Camera(_Camera)
 {
+}
+
+void OWindow::Init()
+{
+	Camera = make_shared<OCamera>(shared_from_this());
+	auto engine = Engine.lock();
 	SwapChain = CreateSwapChain();
-	RTVHeap = _Engine->CreateDescriptorHeap(BuffersCount + 1, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	RTVDescriptorSize = _Engine->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	RTVHeap = engine->CreateDescriptorHeap(BuffersCount + 1, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	RTVDescriptorSize = engine->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
 	dsvHeapDesc.NumDescriptors = 1;
@@ -193,10 +198,34 @@ void OWindow::OnRender(const UpdateEventArgs& Event)
 
 void OWindow::OnUpdate(const UpdateEventArgs& Event)
 {
+	if (Event.IsUIInfocus)
+	{
+		return;
+	}
+
+	const auto time = Event.Timer.GetDeltaTime();
+	if (IsKeyPressed(KeyCode::W))
+	{
+		Camera->MoveToTarget(time);
+	}
+	if (IsKeyPressed(KeyCode::S))
+	{
+		Camera->MoveToTarget(-time);
+	}
+	if (IsKeyPressed(KeyCode::A))
+	{
+		Camera->Strafe(-time);
+	}
+	if (IsKeyPressed(KeyCode::D))
+	{
+		Camera->Strafe(time);
+	}
+	Camera->UpdateViewMatrix();
 }
 
 void OWindow::OnKeyPressed(KeyEventArgs& Event)
 {
+	LOG(Input, Log, "Key Pressed: {}, new camera position: {}", TO_STRING(Event.Key), TO_STRING(Camera->GetPosition3f()));
 }
 
 void OWindow::OnKeyReleased(KeyEventArgs& Event)
@@ -205,6 +234,25 @@ void OWindow::OnKeyReleased(KeyEventArgs& Event)
 
 void OWindow::OnMouseMoved(MouseMotionEventArgs& Event)
 {
+	if (Event.IsUIInfocus)
+	{
+		return;
+	}
+
+	if (Event.RightButton)
+	{
+		const float dx = DirectX::XMConvertToRadians(0.25f * static_cast<float>(Event.X - LastMouseXPos));
+		const float dy = DirectX::XMConvertToRadians(0.25f * static_cast<float>(Event.Y - LastMouseYPos));
+		Camera->Pitch(dy);
+		Camera->RotateY(dx);
+	}
+
+	if (Event.LeftButton)
+	{
+		const float dx = 0.1 * static_cast<float>(Event.X - LastMouseXPos);
+		Camera->MoveToTarget(dx * Engine.lock()->GetDeltaTime());
+	}
+
 	LastMouseXPos = Event.X;
 	LastMouseYPos = Event.Y;
 }
@@ -223,6 +271,7 @@ void OWindow::OnMouseButtonReleased(MouseButtonEventArgs& Event)
 
 void OWindow::OnMouseWheel(MouseWheelEventArgs& Event)
 {
+	Camera->UpdateCameraSpeed(Event.WheelDelta);
 }
 
 void OWindow::MoveToNextFrame()
@@ -259,6 +308,7 @@ void OWindow::OnUpdateWindowSize(ResizeEventArgs& Event)
 
 void OWindow::OnResize(ResizeEventArgs& Event)
 {
+	Camera->SetLens(0.25 * DirectX::XM_PI, GetAspectRatio(), 1.0f, 1000.0f);
 	const auto engine = Engine.lock();
 	engine->FlushGPU();
 	engine->GetCommandQueue()->ResetCommandList();
@@ -284,7 +334,6 @@ void OWindow::OnResize(ResizeEventArgs& Event)
 
 	Viewport = D3D12_VIEWPORT(0.0f, 0.0f, static_cast<float>(WindowInfo.ClientWidth), static_cast<float>(WindowInfo.ClientHeight), 0.0f, 1.0f);
 	ScissorRect = CD3DX12_RECT(0, 0, WindowInfo.ClientWidth, WindowInfo.ClientHeight);
-	XMStoreFloat4x4(&ProjectionMatrix, DirectX::XMMatrixPerspectiveFovLH(0.25f * DirectX::XM_PI, GetAspectRatio(), 1.0f, 1000.0f));
 }
 
 float OWindow::GetLastXMousePos() const

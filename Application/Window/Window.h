@@ -34,8 +34,8 @@ public:
 
 	OWindow() = default;
 
-	OWindow(shared_ptr<OEngine> _Engine, HWND hWnd, const SWindowInfo& _WindowInfo, const shared_ptr<OCamera>& _Camera);
-
+	OWindow(shared_ptr<OEngine> _Engine, HWND hWnd, const SWindowInfo& _WindowInfo);
+	void Init();
 	const wstring& GetName() const;
 	uint32_t GetWidth() const;
 	uint32_t GetHeight() const;
@@ -131,10 +131,6 @@ public:
 	float GetLastXMousePos() const;
 	float GetLastYMousePos() const;
 	shared_ptr<OCamera> GetCamera();
-
-	DirectX::XMFLOAT3 EyePos = { 0, 0, 0 };
-	DirectX::XMFLOAT4X4 ViewMatrix = Utils::Math::Identity4x4();
-	DirectX::XMFLOAT4X4 ProjectionMatrix = Utils::Math::Identity4x4();
 
 protected:
 	// The Window procedure needs to call protected methods of this class.

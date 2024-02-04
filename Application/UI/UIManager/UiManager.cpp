@@ -1,9 +1,15 @@
 #include "UiManager.h"
 
+#include "Engine/Engine.h"
 #include "Logger.h"
 #include "RenderConstants.h"
+#include "UI/Effects/FogWidget.h"
+#include "UI/Effects/Light/LightWidget.h"
+#include "UI/Engine/Camera.h"
+#include "UI/Filters/FilterManager.h"
+#include "UI/Geometry/GeometryManager.h"
 
-void OUIManager::InitContext(ID3D12Device2* Device, HWND Hwnd, UINT NumFramesInLight, ID3D12DescriptorHeap* SRVDescriptorHeap, SRenderObjectDescriptor& OutDescriptor)
+void OUIManager::InitContext(ID3D12Device2* Device, HWND Hwnd, UINT NumFramesInLight, ID3D12DescriptorHeap* SRVDescriptorHeap, SRenderObjectDescriptor& OutDescriptor, OEngine* Engine)
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -21,6 +27,7 @@ void OUIManager::InitContext(ID3D12Device2* Device, HWND Hwnd, UINT NumFramesInL
 
 	ImGui::StyleColorsDark();
 	UpdateDescriptors(OutDescriptor);
+	InitWidgets(Engine);
 	KeyMap();
 }
 
@@ -38,7 +45,7 @@ void OUIManager::Draw()
 	OHierarchicalWidgetBase::Draw();
 
 	ImGui::End();
-
+	ImGui::ShowDemoWindow();
 	ImGui::Render();
 }
 
@@ -53,6 +60,15 @@ void OUIManager::Destroy()
 	ImGui_ImplWin32_Shutdown();
 
 	ImGui::DestroyContext();
+}
+
+void OUIManager::InitWidgets(OEngine* Engine)
+{
+	MakeWidget<OFilterManagerWidget>(Engine);
+	MakeWidget<OFogWidget>(Engine);
+	MakeWidget<OLightWidget>(Engine);
+	MakeWidget<OCameraWidget>(Engine->GetWindow()->GetCamera());
+	MakeWidget<OGeometryManagerWidget>(Engine, &Engine->GetRenderLayers());
 }
 
 void OUIManager::OnMouseButtonPressed(MouseButtonEventArgs& Args)

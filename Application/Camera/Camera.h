@@ -2,21 +2,89 @@
 #include "Types.h"
 
 #include <DirectXMath.h>
+
+class OWindow;
 class OCamera
 {
 public:
-	OCamera(DirectX::XMVECTOR _Position, DirectX::XMVECTOR _Target, shared_ptr<class OWindow> _Window);
-	OCamera(const shared_ptr<OWindow>& _Window);
-	OCamera() = default;
+	OCamera(const weak_ptr<OWindow>& _Window);
+	OCamera();
+	const float MaxCameraSpeed = 300;
 
-	void Init(const shared_ptr<OWindow>& _Window);
-	DirectX::XMVECTOR Position = DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-	DirectX::XMVECTOR Target = DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-	DirectX::XMVECTOR Up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
-	DirectX::XMFLOAT4X4 ViewMatrix;
-	DirectX::XMMATRIX ProjectionMatrix;
+	// Get/Set world camera position.
+	DirectX::XMVECTOR GetPosition() const;
+	DirectX::XMFLOAT3 GetPosition3f() const;
+
+	void SetPosition(float x, float y, float z);
+	void SetPosition(const DirectX::XMFLOAT3& v);
+
+	// Get camera basis vectors.
+	DirectX::XMVECTOR GetRight() const;
+	DirectX::XMFLOAT3 GetRight3f() const;
+
+	DirectX::XMVECTOR GetUp() const;
+	DirectX::XMFLOAT3 GetUp3f() const;
+	DirectX::XMVECTOR GetLook() const;
+	DirectX::XMFLOAT3 GetLook3f() const;
+
+	// Get frustum properties.
+	float GetNearZ() const;
+	float GetFarZ() const;
+	float GetAspect() const;
+	float GetFovY() const;
+	float GetFovX() const;
+
+	// Get near and far plane dimensions in view space coordinates.
+	float GetNearWindowWidth() const;
+	float GetNearWindowHeight() const;
+	float GetFarWindowWidth() const;
+	float GetFarWindowHeight() const;
+
+	void LookAt(DirectX::FXMVECTOR Pos, DirectX::FXMVECTOR Target, DirectX::FXMVECTOR Up);
+	void LookAt(const DirectX::XMFLOAT3& Pos, const DirectX::XMFLOAT3& Target, const DirectX::XMFLOAT3& Up);
+
+	DirectX::XMFLOAT4X4 GetView4x4f() const;
+	DirectX::XMMATRIX GetView() const;
+
+	DirectX::XMFLOAT4X4 GetProj4x4f() const;
+	DirectX::XMMATRIX GetProj() const;
+	// Set frustum.
+	void SetLens(float FovY, float Aspect, float Zn, float Zf);
+
+	void Strafe(float D);
+	void MoveToTarget(float D);
+
+	void Pitch(float Angle);
+	void RotateY(float Angle);
+
+	void UpdateViewMatrix();
+	void UpdateCameraSpeed(float Delta);
+
+	void SetCameraSpeed(float Speed) { CameraSpeed = Speed; }
+	void SetCameraSensivity(float Sensetivity) { CameraSensivity = Sensetivity; }
+	float GetCameraSpeed() const { return CameraSpeed; }
+	float GetCameraSensivity() const { return CameraSensivity; }
 
 private:
+	DirectX::XMFLOAT3 Position = { 0.0f, 0.0f, 0.0f };
+	DirectX::XMFLOAT3 Target = { 0.0f, 0.0f, 1.0f };
+	DirectX::XMFLOAT3 Up = { 0.0f, 1.0f, 0.0f };
+	DirectX::XMFLOAT3 Right = { 1.0, 0.0, 1.0 };
+
+	float CameraSpeed = 100.f;
+	float CameraSensivity = 0.5f;
+
+	float NearZ = 0.0f;
+	float FarZ = 0.0f;
+	float Aspect = 0.0f;
+	float FovY = 0.0f;
+	float NearWindowHeight = 0.0f;
+	float FarWindowHeight = 0.0f;
+
+	DirectX::XMFLOAT4X4 ViewMatrix;
+	DirectX::XMFLOAT4X4 ProjectionMatrix;
+
+	bool bViewDirty = true;
 	weak_ptr<class OWindow> Window;
 };

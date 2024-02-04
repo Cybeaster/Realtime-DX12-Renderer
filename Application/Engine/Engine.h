@@ -197,6 +197,8 @@ public:
 	void SetLightSources(const vector<SLight>& Lights);
 	void SetAmbientLight(const DirectX::XMFLOAT3& Color);
 	void RebuildGeometry(string Name);
+	float GetDeltaTime() const;
+	TRenderLayer& GetRenderLayers();
 
 protected:
 	template<typename T, typename... Args>

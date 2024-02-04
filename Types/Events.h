@@ -15,6 +15,12 @@ public:
 	{
 	}
 
+	EventArgs(HWND Handle, bool IsInFocuse)
+	    : WindowHandle(Handle), IsUIInfocus(IsInFocuse)
+	{
+	}
+
+	bool IsUIInfocus = false;
 	HWND WindowHandle;
 };
 
@@ -138,7 +144,6 @@ public:
 	{
 	}
 	const STimer& Timer;
-	bool IsWidgetInFocus = false;
 };
 
 class UserEventArgs : public EventArgs

@@ -7,12 +7,15 @@
 #include "Filters/Blur/BlurFilter.h"
 void OGaussianBlurWidget::Draw()
 {
-	bEnabled = ImGui::CollapsingHeader("Gaussian Blur");
+	bEnabled = ImGui::TreeNode("Gaussian Blur");
 	if (bEnabled)
 	{
 		ImGui::SliderFloat("Gaussian Sigma", &Sigma, 0.0f, 50.0f);
 		ImGui::SliderInt("Gaussian Blur Count", &BlurCount, 1, 15);
+		ImGui::TreePop();
+
 	}
+
 }
 
 void OGaussianBlurWidget::Update()

@@ -2,7 +2,9 @@
 #include "Exception.h"
 #include "Types.h"
 
+#include <DirectXMath.h>
 #include <Windows.h>
+#include <dxgi1_3.h>
 
 #include <format>
 #include <iostream>
@@ -27,14 +29,16 @@ enum class ELogType
 	Critical
 };
 
+#define LOG_CATEGORY inline static const std::string
 struct SLogCategories
 {
-	inline static const std::string Default = "Default";
-	inline static const std::string Render = "Render";
-	inline static const std::string Widget = "Widgets";
-	inline static const std::string Debug = "Debug";
-	inline static const std::string Engine = "Engine";
-	inline static const std::string Test = "Test";
+	LOG_CATEGORY Default = "Default";
+	LOG_CATEGORY Render = "Render";
+	LOG_CATEGORY Widget = "Widgets";
+	LOG_CATEGORY Debug = "Debug";
+	LOG_CATEGORY Engine = "Engine";
+	LOG_CATEGORY Test = "Test";
+	LOG_CATEGORY Input = "Input";
 };
 
 #define LOG(Category, LogType, String, ...) \
@@ -54,7 +58,8 @@ struct SLogUtils
 		{ SLogCategories::Widget, true },
 		{ SLogCategories::Debug, false },
 		{ SLogCategories::Test, false },
-		{ SLogCategories::Engine, true }
+		{ SLogCategories::Engine, true },
+		{ SLogCategories::Input, true }
 	};
 
 	static void AddCategory(string Category)
@@ -135,6 +140,21 @@ struct SLogUtils
 	static std::string ToString(int Argument) noexcept
 	{
 		return std::to_string(Argument);
+	}
+
+	static std::string ToString(float Argument) noexcept
+	{
+		return std::to_string(Argument);
+	}
+
+	static std::string ToString(double Argument) noexcept
+	{
+		return std::to_string(Argument);
+	}
+
+	static std::string ToString(DirectX::XMFLOAT3 Argument) noexcept
+	{
+		return "[ X: " + std::to_string(Argument.x) + " Y: " + std::to_string(Argument.y) + " Z: " + std::to_string(Argument.z) + " ]";
 	}
 };
 

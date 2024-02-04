@@ -32,13 +32,10 @@ public:
 
 	void OnRender(const UpdateEventArgs& Event) override;
 
-	void OnMouseMoved(const MouseMotionEventArgs& Args) override;
 	void UpdateObjectCBs(const STimer& Timer);
 
 	void DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList,
 	                     const vector<SRenderItem*>& RenderItems) const;
-
-	void UpdateCamera(const UpdateEventArgs& Event);
 
 	void OnMouseWheel(const MouseWheelEventArgs& Args) override;
 	OGPUWave* Waves = nullptr;

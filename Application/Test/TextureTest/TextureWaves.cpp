@@ -92,8 +92,7 @@ void OTextureWaves::UpdateWave(const STimer& Timer) const
 void OTextureWaves::OnUpdate(const UpdateEventArgs& Event)
 {
 	Super::OnUpdate(Event);
-	IsInputBlocked = Event.IsWidgetInFocus;
-	UpdateCamera(Event);
+	IsInputBlocked = Event.IsUIInfocus;
 
 	auto engine = Engine.lock();
 	engine->CurrentFrameResourceIndex = (engine->CurrentFrameResourceIndex + 1) % SRenderConstants::NumFrameResources;
@@ -174,26 +173,6 @@ void OTextureWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandLis
 		CommandList->SetGraphicsRootConstantBufferView(3, matCBAddress);
 
 		CommandList->DrawIndexedInstanced(renderItem->IndexCount, 1, renderItem->StartIndexLocation, renderItem->BaseVertexLocation, 0);
-	}
-}
-
-void OTextureWaves::UpdateCamera(const UpdateEventArgs& Event)
-{
-	if (!IsInputBlocked)
-	{
-		auto window = Window.lock();
-		// Convert Spherical to Cartesian coordinates.
-		window->EyePos.x = Radius * sinf(Phi) * cosf(Theta);
-		window->EyePos.z = Radius * sinf(Phi) * sinf(Theta);
-		window->EyePos.y = Radius * cosf(Phi);
-
-		// Build the view matrix.
-		XMVECTOR pos = XMVectorSet(GetWindow()->EyePos.x, window->EyePos.y, window->EyePos.z, 1.0f);
-		XMVECTOR target = XMVectorZero();
-		XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-
-		XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
-		XMStoreFloat4x4(&window->ViewMatrix, view);
 	}
 }
 
@@ -514,37 +493,6 @@ void OTextureWaves::UpdateMaterialCB()
 			}
 		}
 	}
-}
-
-void OTextureWaves::OnMouseMoved(const MouseMotionEventArgs& Args)
-{
-	if (IsInputBlocked)
-	{
-		return;
-	}
-	OTest::OnMouseMoved(Args);
-	auto window = Window.lock();
-
-	if (Args.LeftButton)
-	{
-		float dx = XMConvertToRadians(0.25f * (Args.X - window->GetLastXMousePos()));
-		float dy = XMConvertToRadians(0.25f * (Args.Y - window->GetLastYMousePos()));
-
-		Theta += dx;
-		Phi += dy;
-
-		Phi = std::clamp(Phi, 0.1f, XM_PI - 0.1f);
-	}
-
-	else if (Args.RightButton)
-	{
-		float dx = 0.05f * (Args.X - window->GetLastXMousePos());
-		float dy = 0.05f * (Args.Y - window->GetLastYMousePos());
-		Radius += dx - dy;
-
-		Radius = std::clamp(Radius, 5.0f, 300.f);
-	}
-	LOG(Test, Log, "Theta: {} Phi: {} Radius: {}", Theta, Phi, Radius);
 }
 
 void OTextureWaves::BuildShadersAndInputLayout()

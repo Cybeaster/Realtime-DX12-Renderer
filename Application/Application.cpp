@@ -50,9 +50,8 @@ shared_ptr<OWindow> OApplication::CreateWindow()
 		MessageBoxA(NULL, "Failed to create window.", "Error", MB_OK | MB_ICONERROR);
 		return nullptr;
 	}
-	auto camera = make_shared<OCamera>();
-	auto window = make_shared<OWindow>(Engine, hWnd, DefaultWindowInfo, camera);
-	camera->Init(window);
+	auto window = make_shared<OWindow>(Engine, hWnd, DefaultWindowInfo);
+	window->Init();
 	return window;
 }
 
