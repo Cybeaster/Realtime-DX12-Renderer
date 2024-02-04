@@ -18,7 +18,7 @@ void OGeometryEntityWidget::Draw()
 		OHierarchicalWidgetBase::Draw();
 
 		ImGui::SeparatorText("Submeshes");
-		if (ImGui::BeginListBox("#Submeshes"))
+		if (ImGui::BeginListBox("##Submeshes"))
 		{
 			for (auto& Submesh : GetGeometry()->DrawArgs)
 			{
