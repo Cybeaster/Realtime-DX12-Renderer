@@ -87,7 +87,7 @@ struct HullOut
 	float3 PosL : POSITION;
 };
 
-PatchTess ConstantHS(InputPatch<VertexOut, 16> Patch, uint PatchID
+PatchTess ConstantHS(InputPatch<VertexOut, 9> Patch, uint PatchID
                      : SV_PrimitiveID)
 {
 	PatchTess pt;
@@ -107,12 +107,12 @@ PatchTess ConstantHS(InputPatch<VertexOut, 16> Patch, uint PatchID
 [domain("quad")]
     [partitioning("integer")]
     [outputtopology("triangle_cw")]
-    [outputcontrolpoints(16)]
+    [outputcontrolpoints(9)]
     [patchconstantfunc("ConstantHS")]
     [maxtessfactor(64.0f)]
 
     HullOut
-    HS(InputPatch<VertexOut, 16> Patch,
+    HS(InputPatch<VertexOut, 9> Patch,
        uint PointId
        : SV_OutputControlPointID,
          uint PatchId
@@ -129,9 +129,6 @@ PatchTess ConstantHS(InputPatch<VertexOut, 16> Patch, uint PatchID
 struct DomainOut
 {
 	float4 PosH : SV_POSITION;
-	float3 PosW : POSITION;
-	float3 Normal : NORMAL;
-	float2 TexC : TEXCOORD0;
 };
 
 float4 BernsteinBasis(float t)
@@ -143,13 +140,23 @@ float4 BernsteinBasis(float t)
 	              t * t * t);
 }
 
-float3 CubicBezierSum(const OutputPatch<HullOut, 16> bezpatch, float4 basisU, float4 basisV)
+float3 QuadraticBernsteinBasis(float t)
+{
+	float u = t; // Parameter for the curve
+	float invU = 1.0f - u; // Inverse of the parameter
+	return float3(invU * invU, 2 * invU * u, u * u);
+}
+
+float3 QuadraticBezierSum(const OutputPatch<HullOut, 9> patch, float3 basisU, float3 basisV)
 {
 	float3 sum = float3(0.0f, 0.0f, 0.0f);
-	sum = basisV.x * (basisU.x * bezpatch[0].PosL + basisU.y * bezpatch[1].PosL + basisU.z * bezpatch[2].PosL + basisU.w * bezpatch[3].PosL);
-	sum += basisV.y * (basisU.x * bezpatch[4].PosL + basisU.y * bezpatch[5].PosL + basisU.z * bezpatch[6].PosL + basisU.w * bezpatch[7].PosL);
-	sum += basisV.z * (basisU.x * bezpatch[8].PosL + basisU.y * bezpatch[9].PosL + basisU.z * bezpatch[10].PosL + basisU.w * bezpatch[11].PosL);
-	sum += basisV.w * (basisU.x * bezpatch[12].PosL + basisU.y * bezpatch[13].PosL + basisU.z * bezpatch[14].PosL + basisU.w * bezpatch[15].PosL);
+
+	// Row 1
+	sum += basisV.x * (basisU.x * patch[0].PosL + basisU.y * patch[1].PosL + basisU.z * patch[2].PosL);
+	// Row 2
+	sum += basisV.y * (basisU.x * patch[3].PosL + basisU.y * patch[4].PosL + basisU.z * patch[5].PosL);
+	// Row 3
+	sum += basisV.z * (basisU.x * patch[6].PosL + basisU.y * patch[7].PosL + basisU.z * patch[8].PosL);
 
 	return sum;
 }
@@ -163,54 +170,26 @@ float4 DBernsteinBasis(float t)
 	              3 * t * t);
 }
 
-[domain("quad")] DomainOut
-DS(PatchTess patchTess, float2 uv
-   : SV_DomainLocation,
-     const OutputPatch<HullOut, 16> quad) {
+[domain("quad")] DomainOut DS(PatchTess patchTess, float2 uv
+                              : SV_DomainLocation, const OutputPatch<HullOut, 9> quad) {
 	DomainOut dout;
 
-	// Bilinear interpolation.
-	float4 basisU = BernsteinBasis(uv.x);
-	float4 dBasisU = DBernsteinBasis(uv.x);
-	float4 basisV = BernsteinBasis(uv.y);
-	float4 dBasisV = DBernsteinBasis(uv.y);
+	// Compute the quadratic Bernstein basis functions for u and v.
+	float3 basisU = QuadraticBernsteinBasis(uv.x);
+	float3 basisV = QuadraticBernsteinBasis(uv.y);
 
-	float3 p = CubicBezierSum(quad, basisU, basisV);
+	// Compute the position on the quadratic Bézier surface.
+	float3 p = QuadraticBezierSum(quad, basisU, basisV);
 
-	float3 dpdu = CubicBezierSum(quad, dBasisU, basisV);
-	float3 dpdv = CubicBezierSum(quad, basisU, dBasisV);
+	// Transform to world space and then to homogeneous clip space.
+	float4 posW = mul(float4(p, 1.0f), World);
+	dout.PosH = mul(posW, ViewProj);
 
-	float3 normal = normalize(cross(dpdu, dpdv));
-
-	dout.PosW = mul(float4(p, 1.0f), World);
-	dout.PosH = mul(dout.PosW, ViewProj);
-	dout.Normal = mul(normal, (float3x3)World);
-	dout.TexC = uv;
 	return dout;
 }
 
 float4 PS(DomainOut pin)
     : SV_Target
 {
-	float4 diffuseAlbedo = DiffuseMap.Sample(SampAnisotropicWrap, pin.TexC) * DiffuseAlbedo;
-
-	float3 normal = normalize(pin.Normal);
-
-	// Vector from point being lit to eye.
-	float3 toEyeW = EyePosW - pin.PosH;
-	float distToEye = length(toEyeW);
-	toEyeW /= distToEye; // normalize
-	float4 ambient = AmbientLight * diffuseAlbedo;
-
-	const float shininess = 1.0f - Roughness;
-	Material mat = { diffuseAlbedo, FresnelR0, shininess };
-	float3 shadowFactor = 1.0f;
-	float4 directLight = ComputeLighting(Lights, mat, pin.PosW, pin.Normal, toEyeW, shadowFactor);
-	float4 litColor = ambient + directLight;
-
-	float fogAmount = saturate((distToEye - FogStart) / FogRange);
-	litColor = lerp(litColor, FogColor, fogAmount);
-	litColor.a = diffuseAlbedo.a;
-
-	return litColor;
+	return float4(1.0f, 1.0f, 1.0f, 1.0f);
 }
