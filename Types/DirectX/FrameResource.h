@@ -1,7 +1,7 @@
 #pragma once
 #include "Engine/UploadBuffer/UploadBuffer.h"
 #include "Logger.h"
-#include "MaterialConstants.h"
+#include "MaterialData.h"
 #include "ObjectConstants.h"
 
 #include <Types.h>
@@ -42,7 +42,7 @@ struct SFrameResource
 
 	unique_ptr<OUploadBuffer<SPassConstants>> PassCB = nullptr;
 	unique_ptr<OUploadBuffer<SObjectConstants>> ObjectCB = nullptr;
-	unique_ptr<OUploadBuffer<SMaterialConstants>> MaterialCB = nullptr;
+	unique_ptr<OUploadBuffer<SMaterialData>> MaterialBuffer = nullptr;
 
 	// Fence value to mark commands up to this fence point. This lets us
 	// check if these frame resources are still in use by the GPU.
@@ -57,7 +57,7 @@ inline SFrameResource::SFrameResource(ID3D12Device* Device, UINT PassCount, UINT
 	ObjectCB = make_unique<OUploadBuffer<SObjectConstants>>(Device, ObjectCount, true);
 	if (MaterialCount > 0)
 	{
-		MaterialCB = make_unique<OUploadBuffer<SMaterialConstants>>(Device, MaterialCount, true);
+		MaterialBuffer = make_unique<OUploadBuffer<SMaterialData>>(Device, MaterialCount, true);
 	}
 	else
 	{

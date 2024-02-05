@@ -130,8 +130,7 @@ void OTextureWaves::UpdateObjectCBs(const STimer& Timer)
 			SObjectConstants objConstants;
 			XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
 			XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
-			objConstants.DisplacementMapTexelSize = item->DisplacementMapTexelSize;
-			objConstants.GridSpatialStep = item->GridSpatialStep;
+			objConstants.MaterialIndex = item->Material->MaterialCBIndex;
 			currentObjectCB->CopyData(item->ObjectCBIndex, objConstants);
 
 			// Next FrameResource need to ber updated too
@@ -142,12 +141,7 @@ void OTextureWaves::UpdateObjectCBs(const STimer& Timer)
 
 void OTextureWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList, const vector<SRenderItem*>& RenderItems) const
 {
-	const auto engine = Engine.lock();
-	const auto matCBByteSize = Utils::CalcBufferByteSize(sizeof(SMaterialConstants));
-	const auto objectCBByteSize = Utils::CalcBufferByteSize(sizeof(SObjectConstants));
-	const auto srv = engine->GetSRVHeap();
-	const auto objectCB = engine->CurrentFrameResources->ObjectCB->GetResource();
-	const auto materialCB = engine->CurrentFrameResources->MaterialCB->GetResource();
+	const auto objectCB = Engine.lock()->CurrentFrameResources->ObjectCB->GetResource();
 	for (size_t i = 0; i < RenderItems.size(); i++)
 	{
 		const auto renderItem = RenderItems[i];
@@ -159,19 +153,11 @@ void OTextureWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandLis
 		CommandList->IASetIndexBuffer(&indexView);
 		CommandList->IASetPrimitiveTopology(renderItem->PrimitiveType);
 
-		CD3DX12_GPU_DESCRIPTOR_HANDLE texDef(srv->GetGPUDescriptorHandleForHeapStart());
-		texDef.Offset(renderItem->Material->DiffuseSRVHeapIndex, engine->CBVSRVUAVDescriptorSize);
-
 		// Offset to the CBV in the descriptor heap for this object and
 		// for this frame resource.
 
-		const auto cbAddress = objectCB->GetGPUVirtualAddress() + renderItem->ObjectCBIndex * objectCBByteSize;
-		const auto matCBAddress = materialCB->GetGPUVirtualAddress() + renderItem->Material->MaterialCBIndex * matCBByteSize;
-
-		CommandList->SetGraphicsRootDescriptorTable(0, texDef);
-		CommandList->SetGraphicsRootConstantBufferView(1, cbAddress);
-		CommandList->SetGraphicsRootConstantBufferView(3, matCBAddress);
-
+		const auto cbAddress = objectCB->GetGPUVirtualAddress() + renderItem->ObjectCBIndex * Utils::CalcBufferByteSize(sizeof(SObjectConstants));
+		CommandList->SetGraphicsRootConstantBufferView(0, cbAddress);
 		CommandList->DrawIndexedInstanced(renderItem->IndexCount, 1, renderItem->StartIndexLocation, renderItem->BaseVertexLocation, 0);
 	}
 }
@@ -364,9 +350,11 @@ void OTextureWaves::OnRender(const UpdateEventArgs& Event)
 
 	const auto passCB = engine->CurrentFrameResources->PassCB->GetResource();
 	commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
-
+	const auto srv = engine->GetSRVHeap();
 	UpdateWave(Event.Timer);
-	commandList->SetGraphicsRootDescriptorTable(4, Waves->GetDisplacementMap());
+	commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(2, engine->CurrentFrameResources->MaterialBuffer->GetResource()->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootDescriptorTable(3, srv->GetGPUDescriptorHandleForHeapStart());
 
 	GetEngine()->SetPipelineState(SPSOType::Opaque);
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Opaque));
@@ -473,7 +461,7 @@ void OTextureWaves::BuildMaterials()
 
 void OTextureWaves::UpdateMaterialCB()
 {
-	const auto currentMaterialCB = Engine.lock()->CurrentFrameResources->MaterialCB.get();
+	const auto currentMaterialCB = Engine.lock()->CurrentFrameResources->MaterialBuffer.get();
 	for (auto& materials = Engine.lock()->GetMaterials(); const auto& val : materials | std::views::values)
 	{
 		if (const auto material = val.get())
@@ -482,7 +470,7 @@ void OTextureWaves::UpdateMaterialCB()
 			{
 				const auto matTransform = XMLoadFloat4x4(&material->MaterialConsatnts.MatTransform);
 
-				SMaterialConstants matConstants;
+				SMaterialData matConstants;
 				matConstants.DiffuseAlbedo = material->MaterialConsatnts.DiffuseAlbedo;
 				matConstants.FresnelR0 = material->MaterialConsatnts.FresnelR0;
 				matConstants.Roughness = material->MaterialConsatnts.Roughness;

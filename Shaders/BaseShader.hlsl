@@ -23,9 +23,6 @@
 // Include structures and functions for lighting.
 #include "LightingUtils.hlsl"
 
-Texture2D gDiffuseMap : register(t0);
-Texture2D gDisplacementMap : register(t1);
-
 SamplerState gsamPointWrap : register(s0);
 SamplerState gsamPointClamp : register(s1);
 SamplerState gsamLinearWrap : register(s2);
@@ -40,7 +37,7 @@ cbuffer cbPerObject : register(b0)
 	float4x4 gTexTransform;
 	float2 gDisplacementMapTexelSize;
 	float gGridSpatialStep;
-	float cbPerObjectPad1;
+	uint gMaterialIndex;
 };
 
 // Constant data that varies per material.
@@ -78,13 +75,22 @@ cbuffer cbPass : register(b1)
 	Light gLights[MaxLights];
 };
 
-cbuffer cbMaterial : register(b2)
+struct MaterialData
 {
-	float4 gDiffuseAlbedo;
-	float3 gFresnelR0;
-	float gRoughness;
-	float4x4 gMatTransform;
+	float4 DiffuseAlbedo;
+	float3 FresnelR0;
+	float Roughness;
+	float4x4 MatTransform;
+	uint DiffuseMapIndex;
+	uint MatPad0;
+	uint MatPad1;
+	uint MatPad2;
 };
+Texture2D gDiffuseMap[4] : register(t0);
+// Put in space1, so the texture array does not overlap with these resources.
+// The texture array will occupy registers t0, t1, ..., t3 in space0.
+StructuredBuffer<MaterialData> gMaterialData : register(t0, space1);
+Texture2D gDisplacementMap : register(t0, space2);
 
 struct VertexIn
 {
@@ -105,6 +111,7 @@ VertexOut VS(VertexIn vin)
 {
 	VertexOut vout = (VertexOut)0.0f;
 
+	MaterialData matData = gMaterialData[gMaterialIndex];
 #ifdef DISPLACEMENT_MAP
 	// Sample the displacement map using non-transformed [0,1]^2 tex-coords.
 	vin.PosL.y += gDisplacementMap.SampleLevel(gsamLinearWrap, vin.TexC, 1.0f).r;
@@ -135,7 +142,7 @@ VertexOut VS(VertexIn vin)
 
 	// Output vertex attributes for interpolation across triangle.
 	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gTexTransform);
-	vout.TexC = mul(texC, gMatTransform).xy;
+	vout.TexC = mul(texC, matData.MatTransform).xy;
 
 	return vout;
 }
@@ -143,7 +150,12 @@ VertexOut VS(VertexIn vin)
 float4 PS(VertexOut pin)
     : SV_Target
 {
-	float4 diffuseAlbedo = gDiffuseMap.Sample(gsamAnisotropicWrap, pin.TexC) * gDiffuseAlbedo;
+	MaterialData matData = gMaterialData[gMaterialIndex];
+	float4 diffuseAlbedo = matData.DiffuseAlbedo;
+	float3 fresnelR0 = matData.FresnelR0;
+	float roughness = matData.Roughness;
+	uint diffuseTexIndex = matData.DiffuseMapIndex;
+	diffuseAlbedo *= gDiffuseMap[diffuseTexIndex].Sample(gsamLinearWrap, pin.TexC);
 
 #ifdef ALPHA_TEST
 	// Discard pixel if texture alpha < 0.1.  We do this test as soon
@@ -165,8 +177,8 @@ float4 PS(VertexOut pin)
 
 	float4 ambient = gAmbientLight * diffuseAlbedo;
 
-	const float shininess = 1.0f - gRoughness;
-	Material mat = { diffuseAlbedo, gFresnelR0, shininess };
+	const float shininess = 1.0f - roughness;
+	Material mat = { diffuseAlbedo, fresnelR0, shininess };
 	float3 shadowFactor = 1.0f;
 	float4 directLight = ComputeLighting(gLights, mat, pin.PosW, pin.NormalW, toEyeW, shadowFactor);
 

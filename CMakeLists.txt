@@ -68,8 +68,8 @@ set(SRC_FILES
         Materials/Material.h
         Application/Test/LitWaves/LitWaves.h
         Application/Test/LitWaves/LitWaves.cpp
-        Types/DirectX/MaterialConstants.h
-        Types/DirectX/MaterialConstants.h
+        Types/DirectX/MaterialData.h
+        Types/DirectX/MaterialData.h
         Types/DirectX/Light/Light.h
         Application/Textures/DDSTextureLoader/DDSTextureLoader.cpp
         Application/Textures/DDSTextureLoader/DDSTextureLoader.h

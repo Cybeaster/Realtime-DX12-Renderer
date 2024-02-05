@@ -161,11 +161,11 @@ void OStencilingTest::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandL
 {
 	const auto engine = Engine.lock();
 
-	auto matCBByteSize = Utils::CalcBufferByteSize(sizeof(SMaterialConstants));
+	auto matCBByteSize = Utils::CalcBufferByteSize(sizeof(SMaterialData));
 	const auto objectCBByteSize = Utils::CalcBufferByteSize(sizeof(SObjectConstants));
 
 	const auto objectCB = engine->CurrentFrameResources->ObjectCB->GetResource();
-	const auto materialCB = engine->CurrentFrameResources->MaterialCB->GetResource();
+	const auto materialCB = engine->CurrentFrameResources->MaterialBuffer->GetResource();
 	for (size_t i = 0; i < RenderItems.size(); i++)
 	{
 		const auto renderItem = RenderItems[i];
@@ -386,7 +386,7 @@ void OStencilingTest::BuildMaterials()
 
 void OStencilingTest::UpdateMaterialCB()
 {
-	const auto currentMaterialCB = Engine.lock()->CurrentFrameResources->MaterialCB.get();
+	const auto currentMaterialCB = Engine.lock()->CurrentFrameResources->MaterialBuffer.get();
 	for (auto& materials = Engine.lock()->GetMaterials(); const auto& val : materials | std::views::values)
 	{
 		if (const auto material = val.get())
@@ -395,7 +395,7 @@ void OStencilingTest::UpdateMaterialCB()
 			{
 				const auto matTransform = XMLoadFloat4x4(&material->MaterialConsatnts.MatTransform);
 
-				SMaterialConstants matConstants;
+				SMaterialData matConstants;
 				matConstants.DiffuseAlbedo = material->MaterialConsatnts.DiffuseAlbedo;
 				matConstants.FresnelR0 = material->MaterialConsatnts.FresnelR0;
 				matConstants.Roughness = material->MaterialConsatnts.Roughness;

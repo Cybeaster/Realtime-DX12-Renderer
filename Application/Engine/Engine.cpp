@@ -989,7 +989,7 @@ void OEngine::AddMaterial(string Name, unique_ptr<SMaterial>& Material)
 	Materials[Name] = move(Material);
 }
 
-void OEngine::CreateMaterial(const string& Name, const int32_t CBIndex, const int32_t HeapIdx, const SMaterialConstants& Constants)
+void OEngine::CreateMaterial(const string& Name, const int32_t CBIndex, const int32_t HeapIdx, const SMaterialData& Constants)
 {
 	auto mat = make_unique<SMaterial>();
 	mat->Name = Name;
@@ -1256,7 +1256,7 @@ void OEngine::BuildPostProcessRootSignature()
 void OEngine::BuildDefaultRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0, 0);
 
 	CD3DX12_DESCRIPTOR_RANGE displacementMapTable;
 	displacementMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
@@ -1264,11 +1264,11 @@ void OEngine::BuildDefaultRootSignature()
 	constexpr auto size = 5;
 	CD3DX12_ROOT_PARAMETER slotRootParameter[size];
 
-	slotRootParameter[0].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_ALL);
-	slotRootParameter[1].InitAsConstantBufferView(0);
-	slotRootParameter[2].InitAsConstantBufferView(1);
-	slotRootParameter[3].InitAsConstantBufferView(2);
-	slotRootParameter[4].InitAsDescriptorTable(1, &displacementMapTable, D3D12_SHADER_VISIBILITY_ALL);
+	slotRootParameter[0].InitAsConstantBufferView(0);
+	slotRootParameter[1].InitAsConstantBufferView(1);
+	slotRootParameter[2].InitAsConstantBufferView(0, 1);
+	slotRootParameter[3].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[4].InitAsDescriptorTable(1, &displacementMapTable, D3D12_SHADER_VISIBILITY_VERTEX);
 
 	const auto staticSamples = Utils::GetStaticSamplers();
 	const CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(size, slotRootParameter, staticSamples.size(), staticSamples.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);

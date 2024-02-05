@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MaterialConstants.h"
+#include "MaterialData.h"
 #include "RenderConstants.h"
 
 struct SMaterial
@@ -23,5 +23,5 @@ struct SMaterial
 	int NumFramesDirty = SRenderConstants::NumFrameResources;
 
 	// Material constant buffer data used for shading.
-	SMaterialConstants MaterialConsatnts;
+	SMaterialData MaterialConsatnts;
 };

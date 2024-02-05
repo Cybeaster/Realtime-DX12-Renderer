@@ -149,7 +149,7 @@ public:
 	ComPtr<ID3D12PipelineState> GetPSO(const string& PSOName);
 
 	void AddMaterial(string Name, unique_ptr<SMaterial>& Material);
-	void CreateMaterial(const string& Name, int32_t CBIndex, int32_t DiffuseSRVHeapIdx, const SMaterialConstants& Constants);
+	void CreateMaterial(const string& Name, int32_t CBIndex, int32_t DiffuseSRVHeapIdx, const SMaterialData& Constants);
 	const TMaterialsMap& GetMaterials() const;
 	SMaterial* FindMaterial(const string& Name) const;
 

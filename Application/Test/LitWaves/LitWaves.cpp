@@ -153,11 +153,11 @@ void OLitWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList, c
 {
 	const auto engine = Engine.lock();
 
-	auto matCBByteSize = Utils::CalcBufferByteSize(sizeof(SMaterialConstants));
+	auto matCBByteSize = Utils::CalcBufferByteSize(sizeof(SMaterialData));
 	const auto objectCBByteSize = Utils::CalcBufferByteSize(sizeof(SObjectConstants));
 
 	const auto objectCB = engine->CurrentFrameResources->ObjectCB->GetResource();
-	const auto materialCB = engine->CurrentFrameResources->MaterialCB->GetResource();
+	const auto materialCB = engine->CurrentFrameResources->MaterialBuffer->GetResource();
 
 	for (size_t i = 0; i < RenderItems.size(); i++)
 	{
@@ -354,7 +354,7 @@ void OLitWaves::BuildMaterials()
 
 void OLitWaves::UpdateMaterialCB()
 {
-	const auto currentMaterialCB = Engine.lock()->CurrentFrameResources->MaterialCB.get();
+	const auto currentMaterialCB = Engine.lock()->CurrentFrameResources->MaterialBuffer.get();
 	for (auto& materials = Engine.lock()->GetMaterials(); auto& elem : materials)
 	{
 		if (const auto material = elem.second.get())
@@ -363,7 +363,7 @@ void OLitWaves::UpdateMaterialCB()
 			{
 				XMLoadFloat4x4(&material->MaterialConsatnts.MatTransform);
 
-				SMaterialConstants matConstants;
+				SMaterialData matConstants;
 				matConstants.DiffuseAlbedo = material->MaterialConsatnts.DiffuseAlbedo;
 				matConstants.FresnelR0 = material->MaterialConsatnts.FresnelR0;
 				matConstants.Roughness = material->MaterialConsatnts.Roughness;

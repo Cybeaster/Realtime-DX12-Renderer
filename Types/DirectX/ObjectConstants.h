@@ -9,9 +9,10 @@ struct SObjectConstants
 {
 	DirectX::XMFLOAT4X4 World = Utils::Math::Identity4x4();
 	DirectX::XMFLOAT4X4 TexTransform = Utils::Math::Identity4x4();
-	DirectX::XMFLOAT2 DisplacementMapTexelSize = { 1.0f, 1.0f };
-	float GridSpatialStep = 1.0f;
-	float Pad;
+	UINT MaterialIndex;
+	UINT ObjPad0;
+	UINT ObjPad1;
+	UINT ObjPad2;
 };
 
 struct SPassConstants
