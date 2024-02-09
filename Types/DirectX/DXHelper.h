@@ -69,9 +69,9 @@ struct SSubmeshGeometry
 	UINT StartIndexLocation = 0;
 	INT BaseVertexLocation = 0;
 	DirectX::BoundingBox Bounds;
-
+	string Name;
 	unique_ptr<vector<DirectX::XMFLOAT3>> Vertices = nullptr;
-	unique_ptr<vector<int16_t>> Indices = nullptr;
+	unique_ptr<vector<uint32_t>> Indices = nullptr;
 };
 
 struct SMeshGeometry
@@ -108,6 +108,11 @@ struct SMeshGeometry
 		}
 		DrawArgs[SubmeshName] = std::move(Geometry);
 		return DrawArgs.at(SubmeshName);
+	}
+
+	const std::unordered_map<string, SSubmeshGeometry>& GetDrawArgs()
+	{
+		return DrawArgs;
 	}
 
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView() const

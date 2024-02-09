@@ -84,7 +84,6 @@ void OStencilingTest::OnUpdate(const UpdateEventArgs& Event)
 	}
 
 	AnimateMaterials(Event.Timer);
-	UpdateObjectCBs(Event.Timer);
 	UpdateMaterialCB();
 	UpdateMainPass(Event.Timer);
 }
@@ -131,34 +130,8 @@ void OStencilingTest::UpdateMainPass(const STimer& Timer)
 	currPassCB->CopyData(0, MainPassCB);
 }
 
-void OStencilingTest::UpdateObjectCBs(const STimer& Timer)
-{
-	const auto engine = Engine.lock();
-	const auto currentObjectCB = engine->CurrentFrameResources->ObjectCB.get();
-
-	for (const auto& item : engine->GetAllRenderItems())
-	{
-		// Only update the cbuffer data if the constants have changed.
-		// This needs to be tracked per frame resource.
-
-		if (item->NumFramesDirty > 0)
-		{
-			auto world = XMLoadFloat4x4(&item->World);
-			auto texTransform = XMLoadFloat4x4(&item->TexTransform);
-
-			SObjectConstants objConstants;
-			XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
-			XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
-			currentObjectCB->CopyData(item->ObjectCBIndex, objConstants);
-
-			// Next FrameResource need to ber updated too
-			item->NumFramesDirty--;
-		}
-	}
-}
-
 void OStencilingTest::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList, const vector<SRenderItem*>& RenderItems) const
-{
+{ /*
 	const auto engine = Engine.lock();
 
 	auto matCBByteSize = Utils::CalcBufferByteSize(sizeof(SMaterialData));
@@ -191,7 +164,7 @@ void OStencilingTest::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandL
 		CommandList->SetGraphicsRootConstantBufferView(3, matCBAddress);
 
 		CommandList->DrawIndexedInstanced(renderItem->IndexCount, 1, renderItem->StartIndexLocation, renderItem->BaseVertexLocation, 0);
-	}
+	}*/
 }
 
 void OStencilingTest::UpdateCamera()

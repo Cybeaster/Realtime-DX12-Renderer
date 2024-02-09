@@ -2,24 +2,43 @@
 #include "../../Materials/Material.h"
 #include "..\..\Utils\Math.h"
 #include "DXHelper.h"
+#include "InstanceData.h"
+#include "Logger.h"
 #include "RenderConstants.h"
 
 struct SRenderItem
 {
 	SRenderItem() = default;
+	SRenderItem(SRenderItem&&) = default;
+	SRenderItem(const SRenderItem&) = default;
 	void UpdateWorldMatrix(const DirectX::XMMATRIX& WorldMatrix)
 	{
-		DirectX::XMStoreFloat4x4(&World, WorldMatrix);
+		XMStoreFloat4x4(&World, WorldMatrix);
 		NumFramesDirty = SRenderConstants::NumFrameResources;
 	}
+
+	bool IsValid() const
+	{
+		return RenderLayer != "NONE";
+	}
+
+	bool IsValidChecked() const
+	{
+		const bool bIsValid = IsValid();
+		CWIN_LOG(!bIsValid, Geometry, Error, "RenderLayer is NONE");
+		return bIsValid;
+	}
+
+	string RenderLayer = "NONE";
+
 	// World matrix of the shape that describes the object’s local space
 	// relative to the world space, which defines the position,
 	// orientation, and scale of the object in the world.
 	DirectX::XMFLOAT4X4 World = Utils::Math::Identity4x4();
 	DirectX::XMFLOAT4X4 TexTransform = Utils::Math::Identity4x4();
 
-	DirectX::XMFLOAT2 DisplacementMapTexelSize = { 1.0f, 1.0f };
-	float GridSpatialStep = 1.0f;
+	/*DirectX::XMFLOAT2 DisplacementMapTexelSize = { 1.0f, 1.0f };
+	float GridSpatialStep = 1.0f;*/
 
 	// Dirty flag indicating the object data has changed and we need
 	// to update the constant buffer. Because we have an object
@@ -39,8 +58,12 @@ struct SRenderItem
 
 	D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
+	DirectX::BoundingBox Bounds;
+	vector<SInstanceData> Instances;
+
 	// DrawIndexedInstanced parameters.
 	UINT IndexCount = 0;
+	UINT VisibleInstanceCount = 0;
 	UINT StartIndexLocation = 0;
 	int BaseVertexLocation = 0;
 };

@@ -10,6 +10,14 @@ public:
 	    : Position(OutPosition), Rotation(OutRotation), Scale(OutScale){};
 
 	void Draw() override;
+
+	void SetInstanceParameters(DirectX::XMFLOAT3* OutPosition, DirectX::XMFLOAT3* OutRotation, DirectX::XMFLOAT3* OutScale)
+	{
+		Position = OutPosition;
+		Rotation = OutRotation;
+		Scale = OutScale;
+	}
+
 	bool SatisfyUpdateRequest()
 	{
 		if (HasTransformUpdateRequest)
@@ -22,6 +30,7 @@ public:
 
 private:
 	bool HasTransformUpdateRequest = false;
+
 	DirectX::XMFLOAT3* Position = nullptr;
 	DirectX::XMFLOAT3* Rotation = nullptr;
 	DirectX::XMFLOAT3* Scale = nullptr;

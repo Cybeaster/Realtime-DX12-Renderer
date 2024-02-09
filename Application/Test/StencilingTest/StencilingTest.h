@@ -1,12 +1,12 @@
 #pragma once
 
-#include "..\..\..\Utils\DirectX.h"
-#include "..\..\..\Utils\Math.h"
+#include "../../../Objects/Geometry/Wave/Waves.h"
 #include "../../Window/Window.h"
 #include "../Test.h"
+#include "..\..\..\Utils\DirectX.h"
+#include "..\..\..\Utils\Math.h"
 #include "Engine/UploadBuffer/UploadBuffer.h"
 #include "Events.h"
-#include "../../../Objects/Geometry/Wave/Waves.h"
 #include "Textures/Texture.h"
 
 #include <DirectXMath.h>
@@ -44,9 +44,6 @@ public:
 	void OnMouseMoved(const MouseMotionEventArgs& Args) override;
 
 	void UpdateMainPass(const STimer& Timer);
-
-	void UpdateObjectCBs(const STimer& Timer);
-
 	void DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList,
 	                     const vector<SRenderItem*>& RenderItems) const;
 
@@ -79,9 +76,7 @@ private:
 
 	DirectX::XMFLOAT3 GetHillsNormal(float X, float Z) const;
 
-
 	ComPtr<ID3D12RootSignature> RootSignature;
-
 
 	SPassConstants MainPassCB;
 

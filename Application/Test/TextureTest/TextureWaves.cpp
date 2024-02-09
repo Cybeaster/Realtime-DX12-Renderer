@@ -18,7 +18,7 @@
 #include <filesystem>
 #include <iostream>
 #include <ranges>
-
+#pragma optimize("", off)
 using namespace Microsoft::WRL;
 
 using namespace DirectX;
@@ -35,31 +35,26 @@ bool OTextureWaves::Initialize()
 	const auto queue = engine->GetCommandQueue();
 	queue->ResetCommandList();
 
-	Waves = engine->BuildRenderObject<OGPUWave>(engine->GetDevice().Get(),
+	/*Waves = engine->BuildRenderObject<OGPUWave>(engine->GetDevice().Get(),
 	                                            queue->GetCommandList().Get(),
 	                                            256,
 	                                            256,
 	                                            0.25f,
 	                                            0.03f,
 	                                            2.0f,
-	                                            0.2f);
+	                                            0.2f);*/
+	OGeometryGenerator geoGen;
+
+	const auto grid = geoGen.CreateGrid(160.0f, 160.0f, 50, 50);
+	auto box = geoGen.CreateBox(2.0f, 1.0f, 2.0f, 3);
+	auto sphere = geoGen.CreateSphere(0.5f, 20, 20);
 
 	engine->SetFog({ 0.7f, 0.7f, 0.7f, 1.0f }, 50.0f, 150.0f);
+
 	CreateTexture();
-	BuildQuadPatchGeometry();
-	BuildShadersAndInputLayout();
-	BuildLandGeometry();
-	BuildTreeSpriteGeometry();
-	BuildIcosahedronGeometry();
-	BuildWavesGeometryBuffers();
-	BuildBoxGeometryBuffers();
 	BuildMaterials();
+	BuildShadersAndInputLayout();
 	BuildRenderItems();
-
-	BuildPSOTreeSprites();
-	BuildPSOGeosphere();
-	BuildTesselationPSO();
-
 	engine->GetCommandQueue()->ExecuteCommandList();
 	engine->FlushGPU();
 	ContentLoaded = true;
@@ -108,57 +103,38 @@ void OTextureWaves::OnUpdate(const UpdateEventArgs& Event)
 	}
 
 	AnimateMaterials(Event.Timer);
-	UpdateObjectCBs(Event.Timer);
 	UpdateMaterialCB();
-}
-
-void OTextureWaves::UpdateObjectCBs(const STimer& Timer)
-{
-	const auto engine = Engine.lock();
-	const auto currentObjectCB = engine->CurrentFrameResources->ObjectCB.get();
-
-	for (const auto& item : engine->GetAllRenderItems())
-	{
-		// Only update the cbuffer data if the constants have changed.
-		// This needs to be tracked per frame resource.
-
-		if (item->NumFramesDirty > 0)
-		{
-			auto world = XMLoadFloat4x4(&item->World);
-			auto texTransform = XMLoadFloat4x4(&item->TexTransform);
-
-			SObjectConstants objConstants;
-			XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
-			XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
-			objConstants.MaterialIndex = item->Material->MaterialCBIndex;
-			currentObjectCB->CopyData(item->ObjectCBIndex, objConstants);
-
-			// Next FrameResource need to ber updated too
-			item->NumFramesDirty--;
-		}
-	}
 }
 
 void OTextureWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList, const vector<SRenderItem*>& RenderItems) const
 {
-	const auto objectCB = Engine.lock()->CurrentFrameResources->ObjectCB->GetResource();
 	for (size_t i = 0; i < RenderItems.size(); i++)
 	{
 		const auto renderItem = RenderItems[i];
+		if (!renderItem->IsValidChecked())
+		{
+			continue;
+		}
+		if (renderItem->Instances.size() > 0)
+		{
+			auto vertexView = renderItem->Geometry->VertexBufferView();
+			auto indexView = renderItem->Geometry->IndexBufferView();
 
-		auto vertexView = renderItem->Geometry->VertexBufferView();
-		auto indexView = renderItem->Geometry->IndexBufferView();
+			CommandList->IASetVertexBuffers(0, 1, &vertexView);
+			CommandList->IASetIndexBuffer(&indexView);
+			CommandList->IASetPrimitiveTopology(renderItem->PrimitiveType);
 
-		CommandList->IASetVertexBuffers(0, 1, &vertexView);
-		CommandList->IASetIndexBuffer(&indexView);
-		CommandList->IASetPrimitiveTopology(renderItem->PrimitiveType);
-
-		// Offset to the CBV in the descriptor heap for this object and
-		// for this frame resource.
-
-		const auto cbAddress = objectCB->GetGPUVirtualAddress() + renderItem->ObjectCBIndex * Utils::CalcBufferByteSize(sizeof(SObjectConstants));
-		CommandList->SetGraphicsRootConstantBufferView(0, cbAddress);
-		CommandList->DrawIndexedInstanced(renderItem->IndexCount, 1, renderItem->StartIndexLocation, renderItem->BaseVertexLocation, 0);
+			// Offset to the CBV in the descriptor heap for this object and
+			// for this frame resource.
+			auto instanceBuffer = Engine.lock()->CurrentFrameResources->InstanceBuffer->GetResource();
+			CommandList->SetGraphicsRootShaderResourceView(0, instanceBuffer->GetGPUVirtualAddress());
+			CommandList->DrawIndexedInstanced(
+			    renderItem->IndexCount,
+			    renderItem->VisibleInstanceCount,
+			    renderItem->StartIndexLocation,
+			    renderItem->BaseVertexLocation,
+			    0);
+		}
 	}
 }
 
@@ -302,8 +278,8 @@ void OTextureWaves::BuildQuadPatchGeometry()
 	quadSubmesh.StartIndexLocation = 0;
 	quadSubmesh.BaseVertexLocation = 0;
 
-	quadSubmesh.Indices = make_unique<vector<int16_t>>(indices);
-	quadSubmesh.Vertices = make_unique<vector<XMFLOAT3>>(vertices);
+	/*quadSubmesh.Indices = make_unique<vector<int16_t>>(indices);
+	quadSubmesh.Vertices = make_unique<vector<XMFLOAT3>>(vertices);*/
 
 	geo->SetGeometry("QuadPatch", quadSubmesh);
 
@@ -348,25 +324,15 @@ void OTextureWaves::OnRender(const UpdateEventArgs& Event)
 	const auto engine = Engine.lock();
 	const auto commandList = engine->GetCommandQueue()->GetCommandList();
 
-	const auto passCB = engine->CurrentFrameResources->PassCB->GetResource();
-	commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
-	const auto srv = engine->GetSRVHeap();
-	UpdateWave(Event.Timer);
-	commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
-	commandList->SetGraphicsRootConstantBufferView(2, engine->CurrentFrameResources->MaterialBuffer->GetResource()->GetGPUVirtualAddress());
-	commandList->SetGraphicsRootDescriptorTable(3, srv->GetGPUDescriptorHandleForHeapStart());
-
 	GetEngine()->SetPipelineState(SPSOType::Opaque);
-	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Opaque));
+	commandList->SetGraphicsRootShaderResourceView(1, engine->CurrentFrameResources->MaterialBuffer->GetResource()->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(2, engine->CurrentFrameResources->PassCB->GetResource()->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootDescriptorTable(3, engine->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart());
 
-	GetEngine()->SetPipelineState(SPSOType::Tesselation);
-	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Tesselation));
+	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Opaque));
 
 	GetEngine()->SetPipelineState(SPSOType::AlphaTested);
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::AlphaTested));
-
-	// GetEngine()->SetPipelineState(SPSOType::TreeSprites);
-	// DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::AlphaTestedTreeSprites));
 
 	GetEngine()->SetPipelineState(SPSOType::Transparent);
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Transparent));
@@ -474,6 +440,8 @@ void OTextureWaves::UpdateMaterialCB()
 				matConstants.DiffuseAlbedo = material->MaterialConsatnts.DiffuseAlbedo;
 				matConstants.FresnelR0 = material->MaterialConsatnts.FresnelR0;
 				matConstants.Roughness = material->MaterialConsatnts.Roughness;
+				matConstants.DiffuseMapIndex = material->DiffuseSRVHeapIndex;
+
 				XMStoreFloat4x4(&matConstants.MatTransform, XMMatrixTranspose(matTransform));
 
 				currentMaterialCB->CopyData(material->MaterialCBIndex, matConstants);
@@ -506,8 +474,8 @@ void OTextureWaves::BuildLandGeometry()
 	for (size_t i = 0; i < grid.Vertices.size(); ++i)
 	{
 		auto& p = grid.Vertices[i].Position;
-		vertices[i].Pos = p;
-		vertices[i].Pos.y = GetHillsHeight(p.x, p.z);
+		vertices[i].Position = p;
+		vertices[i].Position.y = GetHillsHeight(p.x, p.z);
 		vertices[i].Normal = GetHillsNormal(p.x, p.z);
 		vertices[i].TexC = grid.Vertices[i].TexC;
 	}
@@ -558,9 +526,10 @@ void OTextureWaves::BuildWavesGeometryBuffers()
 	auto device = Engine.lock()->GetDevice();
 	auto commandList = Engine.lock()->GetCommandQueue()->GetCommandList();
 	std::vector<SVertex> vertices(grid.Vertices.size());
+
 	for (size_t i = 0; i < grid.Vertices.size(); ++i)
 	{
-		vertices[i].Pos = grid.Vertices[i].Position;
+		vertices[i].Position = grid.Vertices[i].Position;
 		vertices[i].Normal = grid.Vertices[i].Normal;
 		vertices[i].TexC = grid.Vertices[i].TexC;
 	}
@@ -617,7 +586,7 @@ void OTextureWaves::BuildIcosahedronGeometry()
 	for (size_t i = 0; i < ico.Vertices.size(); ++i)
 	{
 		auto& p = ico.Vertices[i].Position;
-		vertices[i].Pos = p;
+		vertices[i].Position = p;
 		vertices[i].Normal = ico.Vertices[i].Normal;
 		vertices[i].TexC = ico.Vertices[i].TexC;
 	}
@@ -672,7 +641,7 @@ void OTextureWaves::BuildBoxGeometryBuffers()
 	for (size_t i = 0; i < box.Vertices.size(); ++i)
 	{
 		auto& p = box.Vertices[i].Position;
-		vertices[i].Pos = p;
+		vertices[i].Position = p;
 		vertices[i].Normal = box.Vertices[i].Normal;
 		vertices[i].TexC = box.Vertices[i].TexC;
 	}
@@ -719,12 +688,14 @@ void OTextureWaves::BuildBoxGeometryBuffers()
 
 void OTextureWaves::BuildRenderItems()
 {
-	auto wavesRenderItem = make_unique<SRenderItem>();
+	/*auto wavesRenderItem = make_unique<SRenderItem>();
 	wavesRenderItem->World = Utils::Math::Identity4x4();
 	XMStoreFloat4x4(&wavesRenderItem->TexTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f));
-	wavesRenderItem->DisplacementMapTexelSize.x = 1.0f / Waves->GetColumnCount();
+
+	/*wavesRenderItem->DisplacementMapTexelSize.x = 1.0f / Waves->GetColumnCount();
 	wavesRenderItem->DisplacementMapTexelSize.y = 1.0f / Waves->GetRowCount();
-	wavesRenderItem->GridSpatialStep = Waves->GetSpatialStep();
+	wavesRenderItem->GridSpatialStep = Waves->GetSpatialStep();#1#
+
 	wavesRenderItem->ObjectCBIndex = 0;
 	wavesRenderItem->Geometry = GetEngine()->GetSceneGeometry()["WaterGeometry"].get();
 	wavesRenderItem->Material = GetEngine()->FindMaterial("Water");
@@ -732,7 +703,7 @@ void OTextureWaves::BuildRenderItems()
 	wavesRenderItem->IndexCount = wavesRenderItem->Geometry->FindSubmeshGeomentry("Grid")->IndexCount;
 	wavesRenderItem->StartIndexLocation = wavesRenderItem->Geometry->FindSubmeshGeomentry("Grid")->StartIndexLocation;
 	wavesRenderItem->BaseVertexLocation = wavesRenderItem->Geometry->FindSubmeshGeomentry("Grid")->BaseVertexLocation;
-
+	wavesRenderItem->VisibleInstanceCount = 1;
 	WavesRenderItem = wavesRenderItem.get();
 	GetEngine()->AddRenderItem(SRenderLayer::Waves, std::move(wavesRenderItem));
 
@@ -785,7 +756,7 @@ void OTextureWaves::BuildRenderItems()
 	icosahedronRenderItem->BaseVertexLocation = geometry->BaseVertexLocation;
 	GetEngine()->AddRenderItem(SRenderLayer::IcosahedronLODs, std::move(icosahedronRenderItem));
 
-	/*auto quadPatchRitem = std::make_unique<SRenderItem>();
+	auto quadPatchRitem = std::make_unique<SRenderItem>();
 
 	XMStoreFloat4x4(&quadPatchRitem->World, XMMatrixScaling(2.0f, 1.0f, 2.0f) * XMMatrixTranslation(0.0f, 15.0f, 0.f));
 
@@ -795,10 +766,10 @@ void OTextureWaves::BuildRenderItems()
 	quadPatchRitem->Geometry = GetEngine()->FindSceneGeometry("QuadPatch");
 	quadPatchRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST;
 	auto submesh = quadPatchRitem->Geometry->FindSubmeshGeomentry("QuadPatch");
-	quadPatchRitem->IndexCount = submesh.IndexCount;
-	quadPatchRitem->StartIndexLocation = submesh.StartIndexLocation;
-	quadPatchRitem->BaseVertexLocation = submesh.BaseVertexLocation;
-	GetEngine()->AddRenderItem(SRenderLayer::Tesselation, std::move(quadPatchRitem));*/
+	quadPatchRitem->IndexCount = submesh->IndexCount;
+	quadPatchRitem->StartIndexLocation = submesh->StartIndexLocation;
+	quadPatchRitem->BaseVertexLocation = submesh->BaseVertexLocation;
+	//GetEngine()->AddRenderItem(SRenderLayer::Tesselation, std::move(quadPatchRitem));
 
 	auto bquadPatchRitem = std::make_unique<SRenderItem>();
 	XMStoreFloat4x4(&bquadPatchRitem->World, XMMatrixScaling(2.0f, 1.0f, 2.0f) * XMMatrixTranslation(0.0f, 15.0f, 0.f));
@@ -807,11 +778,47 @@ void OTextureWaves::BuildRenderItems()
 	bquadPatchRitem->Material = Engine.lock()->FindMaterial("White");
 	bquadPatchRitem->Geometry = Engine.lock()->FindSceneGeometry("QuadPatch");
 	bquadPatchRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_16_CONTROL_POINT_PATCHLIST;
-	auto submesh = bquadPatchRitem->Geometry->FindSubmeshGeomentry("QuadPatch");
+	submesh = bquadPatchRitem->Geometry->FindSubmeshGeomentry("QuadPatch");
 	bquadPatchRitem->IndexCount = submesh->IndexCount;
 	bquadPatchRitem->StartIndexLocation = submesh->StartIndexLocation;
 	bquadPatchRitem->BaseVertexLocation = submesh->BaseVertexLocation;
-	GetEngine()->AddRenderItem(SRenderLayer::Tesselation, std::move(bquadPatchRitem));
+	GetEngine()->AddRenderItem(SRenderLayer::Tesselation, std::move(bquadPatchRitem));*/
+
+	const auto engine = Engine.lock();
+	constexpr size_t n = 5;
+	auto& instances = engine->BuildRenderItemFromMesh(SRenderLayer::Opaque,
+	                                                  "Skull",
+	                                                  "Resources/Models/skull.txt",
+	                                                  EParserType::Custom,
+	                                                  ETextureMapType::Spherical,
+	                                                  n * n * n);
+
+	float width = 200.0f;
+	float height = 200.0f;
+	float depth = 200.0f;
+
+	float x = -0.5f * width;
+	float y = -0.5f * height;
+	float z = -0.5f * depth;
+	float dx = width / (n - 1);
+	float dy = height / (n - 1);
+	float dz = depth / (n - 1);
+	for (int k = 0; k < n; ++k)
+	{
+		for (int i = 0; i < n; ++i)
+		{
+			for (int j = 0; j < n; ++j)
+			{
+				const int idx = k * n * n + i * n + j;
+				instances[idx].World = XMFLOAT4X4(
+				    1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, x + j * dx, y + i * dy, z + k * dz, 1.0f);
+
+				XMStoreFloat4x4(&instances[idx].TexTransform, XMMatrixScaling(2.0f, 2.0f, 1.0f));
+				const auto nextMatIdx = idx % Engine.lock()->GetMaterials().size();
+				instances[idx].MaterialIndex = nextMatIdx;
+			}
+		}
+	}
 }
 
 float OTextureWaves::GetHillsHeight(float X, float Z) const

@@ -1,11 +1,16 @@
 #include "GeometryGenerator.h"
 
-using namespace DirectX;
+#include "../../Utils/Path.h"
+#include "Logger.h"
 
+#include <fstream>
+
+using namespace DirectX;
+using namespace Utils::Math;
 OGeometryGenerator::SMeshData OGeometryGenerator::CreateBox(float Width, float Height, float Depth, uint32_t NumSubdivisions)
 {
 	SMeshData data;
-	SVertex v[24];
+	SGeometryExtendedVertex v[24];
 
 	const float w2 = 0.5f * Width;
 	const float h2 = 0.5f * Height;
@@ -14,40 +19,40 @@ OGeometryGenerator::SMeshData OGeometryGenerator::CreateBox(float Width, float H
 	//clang-format off
 
 	// Fill in the front face vertex data.
-	v[0] = SVertex(-w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-	v[1] = SVertex(-w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-	v[2] = SVertex(+w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
-	v[3] = SVertex(+w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+	v[0] = SGeometryExtendedVertex(-w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	v[1] = SGeometryExtendedVertex(-w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	v[2] = SGeometryExtendedVertex(+w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	v[3] = SGeometryExtendedVertex(+w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
 
 	// Fill in the back face vertex data.
-	v[4] = SVertex(-w2, -h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
-	v[5] = SVertex(+w2, -h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-	v[6] = SVertex(+w2, +h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-	v[7] = SVertex(-w2, +h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	v[4] = SGeometryExtendedVertex(-w2, -h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+	v[5] = SGeometryExtendedVertex(+w2, -h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	v[6] = SGeometryExtendedVertex(+w2, +h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	v[7] = SGeometryExtendedVertex(-w2, +h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
 
 	// Fill in the top face vertex data.
-	v[8]  = SVertex(-w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-	v[9]  = SVertex(-w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-	v[10] = SVertex(+w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
-	v[11] = SVertex(+w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+	v[8] = SGeometryExtendedVertex(-w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	v[9] = SGeometryExtendedVertex(-w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	v[10] = SGeometryExtendedVertex(+w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	v[11] = SGeometryExtendedVertex(+w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
 
 	// Fill in the bottom face vertex data.
-	v[12] = SVertex(-w2, -h2, -d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
-	v[13] = SVertex(+w2, -h2, -d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-	v[14] = SVertex(+w2, -h2, +d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-	v[15] = SVertex(-w2, -h2, +d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	v[12] = SGeometryExtendedVertex(-w2, -h2, -d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+	v[13] = SGeometryExtendedVertex(+w2, -h2, -d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	v[14] = SGeometryExtendedVertex(+w2, -h2, +d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	v[15] = SGeometryExtendedVertex(-w2, -h2, +d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
 
 	// Fill in the left face vertex data.
-	v[16] = SVertex(-w2, -h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f);
-	v[17] = SVertex(-w2, +h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f);
-	v[18] = SVertex(-w2, +h2, -d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f);
-	v[19] = SVertex(-w2, -h2, -d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f);
+	v[16] = SGeometryExtendedVertex(-w2, -h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f);
+	v[17] = SGeometryExtendedVertex(-w2, +h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f);
+	v[18] = SGeometryExtendedVertex(-w2, +h2, -d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f);
+	v[19] = SGeometryExtendedVertex(-w2, -h2, -d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f);
 
 	// Fill in the right face vertex data.
-	v[20] = SVertex(+w2, -h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-	v[21] = SVertex(+w2, +h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-	v[22] = SVertex(+w2, +h2, +d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
-	v[23] = SVertex(+w2, -h2, +d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
+	v[20] = SGeometryExtendedVertex(+w2, -h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+	v[21] = SGeometryExtendedVertex(+w2, +h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+	v[22] = SGeometryExtendedVertex(+w2, +h2, +d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
+	v[23] = SGeometryExtendedVertex(+w2, -h2, +d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
 
 	data.Vertices.assign(&v[0], &v[24]);
 
@@ -58,28 +63,52 @@ OGeometryGenerator::SMeshData OGeometryGenerator::CreateBox(float Width, float H
 	uint32_t i[36];
 
 	// Fill in the front face index data
-	i[0] = 0; i[1] = 1; i[2] = 2;
-	i[3] = 0; i[4] = 2; i[5] = 3;
+	i[0] = 0;
+	i[1] = 1;
+	i[2] = 2;
+	i[3] = 0;
+	i[4] = 2;
+	i[5] = 3;
 
 	// Fill in the back face index data
-	i[6] = 4; i[7]  = 5; i[8]  = 6;
-	i[9] = 4; i[10] = 6; i[11] = 7;
+	i[6] = 4;
+	i[7] = 5;
+	i[8] = 6;
+	i[9] = 4;
+	i[10] = 6;
+	i[11] = 7;
 
 	// Fill in the top face index data
-	i[12] = 8; i[13] =  9; i[14] = 10;
-	i[15] = 8; i[16] = 10; i[17] = 11;
+	i[12] = 8;
+	i[13] = 9;
+	i[14] = 10;
+	i[15] = 8;
+	i[16] = 10;
+	i[17] = 11;
 
 	// Fill in the bottom face index data
-	i[18] = 12; i[19] = 13; i[20] = 14;
-	i[21] = 12; i[22] = 14; i[23] = 15;
+	i[18] = 12;
+	i[19] = 13;
+	i[20] = 14;
+	i[21] = 12;
+	i[22] = 14;
+	i[23] = 15;
 
 	// Fill in the left face index data
-	i[24] = 16; i[25] = 17; i[26] = 18;
-	i[27] = 16; i[28] = 18; i[29] = 19;
+	i[24] = 16;
+	i[25] = 17;
+	i[26] = 18;
+	i[27] = 16;
+	i[28] = 18;
+	i[29] = 19;
 
 	// Fill in the right face index data
-	i[30] = 20; i[31] = 21; i[32] = 22;
-	i[33] = 20; i[34] = 22; i[35] = 23;
+	i[30] = 20;
+	i[31] = 21;
+	i[32] = 22;
+	i[33] = 20;
+	i[34] = 22;
+	i[35] = 23;
 
 	//clang-format on
 
@@ -104,8 +133,8 @@ OGeometryGenerator::SMeshData OGeometryGenerator::CreateSphere(float Radius, uin
 	// Poles: note that there will be texture coordinate distortion as there is
 	// not a unique point on the texture map to assign to the pole when mapping
 	// a rectangular texture onto a sphere.
-	SVertex topVertex(0.0f, +Radius, 0.0f, 0.0f, 1.0f, 0.0f, 1.0, 0.0f, 0.0f, 1.0f, 0.0f);
-	SVertex bottomVertex(0.0f, -Radius, 0.0f, 0.0f, -1.0f, 0.0f, 1.0, 1.0f, 0.0f, 1.0f, 0.0f);
+	SGeometryExtendedVertex topVertex(0.0f, +Radius, 0.0f, 0.0f, 1.0f, 0.0f, 1.0, 0.0f, 0.0f, 1.0f, 0.0f);
+	SGeometryExtendedVertex bottomVertex(0.0f, -Radius, 0.0f, 0.0f, -1.0f, 0.0f, 1.0, 1.0f, 0.0f, 1.0f, 0.0f);
 
 	meshData.Vertices.push_back(topVertex);
 
@@ -120,7 +149,7 @@ OGeometryGenerator::SMeshData OGeometryGenerator::CreateSphere(float Radius, uin
 		{
 			const float theta = j * thetaStep;
 
-			SVertex vertex;
+			SGeometryExtendedVertex vertex;
 
 			vertex.Position.x = Radius * sinf(phi) * cosf(theta);
 			vertex.Position.y = Radius * cosf(phi);
@@ -211,22 +240,12 @@ OGeometryGenerator::SMeshData OGeometryGenerator::CreateGeosphere(float Radius, 
 	//clang-format off
 
 	// Create 12 vertices of a icosahedron.
-	const XMFLOAT3 positions[12] =
-	{
-		XMFLOAT3(-X, 0.0f, Z), XMFLOAT3(X, 0.0f, Z),
-		XMFLOAT3(-X, 0.0f, -Z), XMFLOAT3(X, 0.0f, -Z),
-		XMFLOAT3(0.0f, Z, X), XMFLOAT3(0.0f, Z, -X),
-		XMFLOAT3(0.0f, -Z, X), XMFLOAT3(0.0f, -Z, -X),
-		XMFLOAT3(Z, X, 0.0f), XMFLOAT3(-Z, X, 0.0f),
-		XMFLOAT3(Z, -X, 0.0f), XMFLOAT3(-Z, -X, 0.0f)
+	const XMFLOAT3 positions[12] = {
+		XMFLOAT3(-X, 0.0f, Z), XMFLOAT3(X, 0.0f, Z), XMFLOAT3(-X, 0.0f, -Z), XMFLOAT3(X, 0.0f, -Z), XMFLOAT3(0.0f, Z, X), XMFLOAT3(0.0f, Z, -X), XMFLOAT3(0.0f, -Z, X), XMFLOAT3(0.0f, -Z, -X), XMFLOAT3(Z, X, 0.0f), XMFLOAT3(-Z, X, 0.0f), XMFLOAT3(Z, -X, 0.0f), XMFLOAT3(-Z, -X, 0.0f)
 	};
 
-	uint32_t k[60] =
-	{
-		1,4,0, 4,9,0, 4,5,9, 8,5,4, 1,8,4,
-		1,10,8, 10,3,8, 8,3,5, 3,2,5, 3,7,2,
-		3,10,7, 10,6,7, 6,11,7, 6,0,11, 6,1,0,
-		10,1,6, 11,0,9, 2,11,9, 5,2,9, 11,2,7
+	uint32_t k[60] = {
+		1, 4, 0, 4, 9, 0, 4, 5, 9, 8, 5, 4, 1, 8, 4, 1, 10, 8, 10, 3, 8, 8, 3, 5, 3, 2, 5, 3, 7, 2, 3, 10, 7, 10, 6, 7, 6, 11, 7, 6, 0, 11, 6, 1, 0, 10, 1, 6, 11, 0, 9, 2, 11, 9, 5, 2, 9, 11, 2, 7
 	};
 	//clang-format on
 
@@ -292,7 +311,7 @@ OGeometryGenerator::SMeshData OGeometryGenerator::CreateCylinder(float BottomRad
 		const float dTheta = 2.0f * XM_PI / SliceCount;
 		for (uint32_t j = 0; j <= SliceCount; j++)
 		{
-			SVertex vertex;
+			SGeometryExtendedVertex vertex;
 
 			const float c = cosf(j * dTheta);
 			const float s = sinf(j * dTheta);
@@ -411,11 +430,11 @@ void OGeometryGenerator::BuildCylinderBottomCap(float BottomRadius, float TopRad
 		const float u = x / Height + 0.5f;
 		const float v = z / Height + 0.5f;
 
-		meshData.Vertices.push_back(SVertex(x, y, z, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u, v));
+		meshData.Vertices.push_back(SGeometryExtendedVertex(x, y, z, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u, v));
 	}
 
 	// Cap center vertex.
-	meshData.Vertices.push_back(SVertex(0.0f, y, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f));
+	meshData.Vertices.push_back(SGeometryExtendedVertex(0.0f, y, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f));
 
 	// Cache the index of center vertex.
 	const uint32_t centerIndex = static_cast<uint32_t>(meshData.Vertices.size()) - 1;
@@ -433,7 +452,6 @@ void OGeometryGenerator::Subdivide(SMeshData& MeshData)
 	// Save a copy of the input geometry.
 	SMeshData inputCopy = MeshData;
 
-
 	MeshData.Vertices.resize(0);
 	MeshData.Indices32.resize(0);
 
@@ -447,20 +465,20 @@ void OGeometryGenerator::Subdivide(SMeshData& MeshData)
 	// *-----*-----*
 	// v0    m2     v2
 
-	uint32_t numTris = (uint32_t)inputCopy.Indices32.size()/3;
-	for(uint32_t i = 0; i < numTris; ++i)
+	uint32_t numTris = (uint32_t)inputCopy.Indices32.size() / 3;
+	for (uint32_t i = 0; i < numTris; ++i)
 	{
-		SVertex v0 = inputCopy.Vertices[ inputCopy.Indices32[i*3+0] ];
-		SVertex v1 = inputCopy.Vertices[ inputCopy.Indices32[i*3+1] ];
-		SVertex v2 = inputCopy.Vertices[ inputCopy.Indices32[i*3+2] ];
+		SGeometryExtendedVertex v0 = inputCopy.Vertices[inputCopy.Indices32[i * 3 + 0]];
+		SGeometryExtendedVertex v1 = inputCopy.Vertices[inputCopy.Indices32[i * 3 + 1]];
+		SGeometryExtendedVertex v2 = inputCopy.Vertices[inputCopy.Indices32[i * 3 + 2]];
 
 		//
 		// Generate the midpoints.
 		//
 
-		SVertex m0 = MidPoint(v0, v1);
-		SVertex m1 = MidPoint(v1, v2);
-		SVertex m2 = MidPoint(v0, v2);
+		SGeometryExtendedVertex m0 = MidPoint(v0, v1);
+		SGeometryExtendedVertex m1 = MidPoint(v1, v2);
+		SGeometryExtendedVertex m2 = MidPoint(v0, v2);
 
 		//
 		// Add new geometry.
@@ -473,25 +491,25 @@ void OGeometryGenerator::Subdivide(SMeshData& MeshData)
 		MeshData.Vertices.push_back(m1); // 4
 		MeshData.Vertices.push_back(m2); // 5
 
-		MeshData.Indices32.push_back(i*6+0);
-		MeshData.Indices32.push_back(i*6+3);
-		MeshData.Indices32.push_back(i*6+5);
+		MeshData.Indices32.push_back(i * 6 + 0);
+		MeshData.Indices32.push_back(i * 6 + 3);
+		MeshData.Indices32.push_back(i * 6 + 5);
 
-		MeshData.Indices32.push_back(i*6+3);
-		MeshData.Indices32.push_back(i*6+4);
-		MeshData.Indices32.push_back(i*6+5);
+		MeshData.Indices32.push_back(i * 6 + 3);
+		MeshData.Indices32.push_back(i * 6 + 4);
+		MeshData.Indices32.push_back(i * 6 + 5);
 
-		MeshData.Indices32.push_back(i*6+5);
-		MeshData.Indices32.push_back(i*6+4);
-		MeshData.Indices32.push_back(i*6+2);
+		MeshData.Indices32.push_back(i * 6 + 5);
+		MeshData.Indices32.push_back(i * 6 + 4);
+		MeshData.Indices32.push_back(i * 6 + 2);
 
-		MeshData.Indices32.push_back(i*6+3);
-		MeshData.Indices32.push_back(i*6+1);
-		MeshData.Indices32.push_back(i*6+4);
+		MeshData.Indices32.push_back(i * 6 + 3);
+		MeshData.Indices32.push_back(i * 6 + 1);
+		MeshData.Indices32.push_back(i * 6 + 4);
 	}
 }
 
-OGeometryGenerator::SVertex OGeometryGenerator::MidPoint(const SVertex& V0, const SVertex& V1)
+OGeometryGenerator::SGeometryExtendedVertex OGeometryGenerator::MidPoint(const SGeometryExtendedVertex& V0, const SGeometryExtendedVertex& V1)
 {
 	XMVECTOR p0 = XMLoadFloat3(&V0.Position);
 	XMVECTOR p1 = XMLoadFloat3(&V1.Position);
@@ -507,12 +525,12 @@ OGeometryGenerator::SVertex OGeometryGenerator::MidPoint(const SVertex& V0, cons
 
 	// Compute the midpoints of all the attributes.  Vectors need to be normalized
 	// since linear interpolating can make them not unit length.
-	XMVECTOR pos = 0.5f*(p0 + p1);
-	XMVECTOR normal = XMVector3Normalize(0.5f*(n0 + n1));
-	XMVECTOR tangent = XMVector3Normalize(0.5f*(tan0+tan1));
-	XMVECTOR tex = 0.5f*(tex0 + tex1);
+	XMVECTOR pos = 0.5f * (p0 + p1);
+	XMVECTOR normal = XMVector3Normalize(0.5f * (n0 + n1));
+	XMVECTOR tangent = XMVector3Normalize(0.5f * (tan0 + tan1));
+	XMVECTOR tex = 0.5f * (tex0 + tex1);
 
-	SVertex v;
+	SGeometryExtendedVertex v;
 	XMStoreFloat3(&v.Position, pos);
 	XMStoreFloat3(&v.Normal, normal);
 	XMStoreFloat3(&v.TangentU, tangent);
@@ -588,25 +606,25 @@ OGeometryGenerator::SMeshData OGeometryGenerator::CreateQuad(float X, float Y, f
 	// clang-format off
 
 	// Position coordinates specified in NDC space.
-	meshData.Vertices[0] = SVertex(
+	meshData.Vertices[0] = SGeometryExtendedVertex(
 		X, Y - Height, Depth,
 		0.0f, 0.0f, -1.0f,
 		1.0f, 0.0f, 0.0f,
 		0.0f, 1.0f);
 
-	meshData.Vertices[1] = SVertex(
+	meshData.Vertices[1] = SGeometryExtendedVertex(
 		X, Y, Depth,
 		0.0f, 0.0f, -1.0f,
 		1.0f, 0.0f, 0.0f,
 		0.0f, 0.0f);
 
-	meshData.Vertices[2] = SVertex(
+	meshData.Vertices[2] = SGeometryExtendedVertex(
 		X+Width, Y, Depth,
 		0.0f, 0.0f, -1.0f,
 		1.0f, 0.0f, 0.0f,
 		1.0f, 0.0f);
 
-	meshData.Vertices[3] = SVertex(
+	meshData.Vertices[3] = SGeometryExtendedVertex(
 		X+Width, Y-Height, Depth,
 		0.0f, 0.0f, -1.0f,
 		1.0f, 0.0f, 0.0f,
@@ -622,4 +640,179 @@ OGeometryGenerator::SMeshData OGeometryGenerator::CreateQuad(float X, float Y, f
 	meshData.Indices32[5] = 3;
 
 	return meshData;
+}
+
+unique_ptr<SMeshGeometry> OGeometryGenerator::CreateSkullGeometry(string PathToModel, ID3D12Device* Device, ID3D12GraphicsCommandList* CommandList, OEngine* Engine)
+{
+	std::ifstream fin(PathToModel);
+	using namespace Utils::Math;
+	CWIN_LOG(!fin, Geometry, Warning, "Could not open the file: {}", TO_STRING(PathToModel));
+
+	UINT vcount = 0;
+	UINT tcount = 0;
+	std::string ignore;
+
+	fin >> ignore >> vcount;
+	fin >> ignore >> tcount;
+	fin >> ignore >> ignore >> ignore >> ignore;
+
+	XMFLOAT3 vMinf3(+Infinity, +Infinity, +Infinity);
+	XMFLOAT3 vMaxf3(-Infinity, -Infinity, -Infinity);
+	XMVECTOR vMin = XMLoadFloat3(&vMinf3);
+	XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
+
+	std::vector<SVertex> vertices(vcount);
+	std::vector<XMFLOAT3> positions(vcount);
+
+	for (UINT i = 0; i < vcount; ++i)
+	{
+		fin >> vertices[i].Position.x >> vertices[i].Position.y >> vertices[i].Position.z;
+		fin >> vertices[i].Normal.x >> vertices[i].Normal.y >> vertices[i].Normal.z;
+
+		XMVECTOR P = XMLoadFloat3(&vertices[i].Position);
+		positions[i] = vertices[i].Position;
+		// Project point onto unit sphere and generate spherical texture coordinates.
+		XMFLOAT3 spherePos;
+		XMStoreFloat3(&spherePos, XMVector3Normalize(P));
+
+		float theta = atan2f(spherePos.z, spherePos.x);
+		if (theta < 0.0f)
+			theta += XM_2PI;
+
+		float phi = acosf(spherePos.y);
+
+		float u = theta / (2.0f * XM_PI);
+		float v = phi / XM_PI;
+
+		vertices[i].TexC = { u, v };
+
+		vMin = XMVectorMin(vMin, P);
+		vMax = XMVectorMax(vMax, P);
+	}
+
+	BoundingBox bounds;
+	XMStoreFloat3(&bounds.Center, 0.5f * (vMin + vMax));
+	XMStoreFloat3(&bounds.Extents, 0.5f * (vMax - vMin));
+
+	fin >> ignore;
+	fin >> ignore;
+	fin >> ignore;
+
+	std::vector<uint32_t> indices(3 * tcount);
+	for (UINT i = 0; i < tcount; ++i)
+	{
+		fin >> indices[i * 3 + 0] >> indices[i * 3 + 1] >> indices[i * 3 + 2];
+	}
+	fin.close();
+
+	//
+	// Pack the indices of all the meshes into one index buffer.
+	//
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(SVertex);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(int32_t);
+
+	auto geometry = std::make_unique<SMeshGeometry>();
+	geometry->Name = "Skull";
+
+	THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &geometry->VertexBufferCPU));
+	CopyMemory(geometry->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geometry->IndexBufferCPU));
+	CopyMemory(geometry->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geometry->VertexBufferGPU = Utils::CreateDefaultBuffer(
+	    Device,
+	    CommandList,
+	    vertices.data(),
+	    vbByteSize,
+	    geometry->VertexBufferUploader);
+
+	geometry->IndexBufferGPU = Utils::CreateDefaultBuffer(
+	    Device,
+	    CommandList,
+	    indices.data(),
+	    ibByteSize,
+	    geometry->IndexBufferUploader);
+
+	geometry->VertexByteStride = sizeof(SVertex);
+	geometry->VertexBufferByteSize = vbByteSize;
+	geometry->IndexFormat = DXGI_FORMAT_R32_UINT;
+	geometry->IndexBufferByteSize = ibByteSize;
+
+	SSubmeshGeometry submesh;
+	submesh.IndexCount = (UINT)indices.size();
+	submesh.StartIndexLocation = 0;
+	submesh.BaseVertexLocation = 0;
+	submesh.Bounds = bounds;
+
+	submesh.Vertices = make_unique<vector<XMFLOAT3>>(std::move(positions));
+	submesh.Indices = make_unique<vector<uint32_t>>(std::move(indices));
+
+	geometry->SetGeometry(geometry->Name, submesh);
+	return std::move(geometry);
+}
+
+unique_ptr<SMeshGeometry> OGeometryGenerator::CreateWaterGeometry(float Width, float Depth, uint32_t RowCount, uint32_t ColumnCount, ID3D12Device* Device, ID3D12GraphicsCommandList* CommandList, size_t VertexCount)
+{
+	SMeshData grid = CreateGrid(Width, Depth, RowCount, ColumnCount);
+	std::vector<SVertex> vertices(grid.Vertices.size());
+	XMFLOAT3 vMinf3(+Infinity, +Infinity, +Infinity);
+	XMFLOAT3 vMaxf3(-Infinity, -Infinity, -Infinity);
+	XMVECTOR vMin = XMLoadFloat3(&vMinf3);
+	XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
+
+	for (size_t i = 0; i < grid.Vertices.size(); ++i)
+	{
+		vertices[i].Position = grid.Vertices[i].Position;
+		vertices[i].Normal = grid.Vertices[i].Normal;
+		vertices[i].TexC = grid.Vertices[i].TexC;
+		auto pos = XMLoadFloat3(&vertices[i].Position);
+
+		vMax = XMVectorMax(vMax, pos);
+		vMin = XMVectorMin(vMin, pos);
+	}
+	BoundingBox bounds;
+	XMStoreFloat3(&bounds.Center, 0.5f * (vMin + vMax));
+	XMStoreFloat3(&bounds.Extents, 0.5f * (vMax - vMin));
+
+	std::vector<std::uint32_t> indices = grid.Indices32;
+
+	UINT vbByteSize = VertexCount * sizeof(SVertex);
+	UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint32_t);
+
+	auto geo = std::make_unique<SMeshGeometry>();
+	geo->Name = "WaterGeometry";
+
+	THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->VertexBufferGPU = Utils::CreateDefaultBuffer(Device,
+	                                                  CommandList,
+	                                                  vertices.data(),
+	                                                  vbByteSize,
+	                                                  geo->VertexBufferUploader);
+
+	geo->IndexBufferGPU = Utils::CreateDefaultBuffer(Device,
+	                                                 CommandList,
+	                                                 indices.data(),
+	                                                 ibByteSize,
+	                                                 geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(SVertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	SSubmeshGeometry submesh;
+	submesh.IndexCount = (UINT)indices.size();
+	submesh.StartIndexLocation = 0;
+	submesh.BaseVertexLocation = 0;
+	submesh.Bounds = bounds;
+
+	geo->SetGeometry("Grid", submesh);
+	return move(geo);
 }

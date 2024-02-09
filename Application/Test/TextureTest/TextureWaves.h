@@ -32,8 +32,6 @@ public:
 
 	void OnRender(const UpdateEventArgs& Event) override;
 
-	void UpdateObjectCBs(const STimer& Timer);
-
 	void DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList,
 	                     const vector<SRenderItem*>& RenderItems) const;
 

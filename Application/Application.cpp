@@ -3,7 +3,6 @@
 #include "Camera/Camera.h"
 #include "Engine/Engine.h"
 #include "Exception.h"
-#include "Test/SimpleCubeTest/SimpleCubeTest.h"
 
 #include <DirectXMath.h>
 #include <Windowsx.h>

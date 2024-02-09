@@ -29,20 +29,33 @@ enum class ELogType
 	Critical
 };
 
-#define LOG_CATEGORY inline static const std::string
+#define LOG_CATEGORY inline static const std::wstring
 struct SLogCategories
 {
-	LOG_CATEGORY Default = "Default";
-	LOG_CATEGORY Render = "Render";
-	LOG_CATEGORY Widget = "Widgets";
-	LOG_CATEGORY Debug = "Debug";
-	LOG_CATEGORY Engine = "Engine";
-	LOG_CATEGORY Test = "Test";
-	LOG_CATEGORY Input = "Input";
+	LOG_CATEGORY Default = L"Default";
+	LOG_CATEGORY Render = L"Render";
+	LOG_CATEGORY Widget = L"Widgets";
+	LOG_CATEGORY Debug = L"Debug";
+	LOG_CATEGORY Engine = L"Engine";
+	LOG_CATEGORY Test = L"Test";
+	LOG_CATEGORY Input = L"Input";
+	LOG_CATEGORY Geometry = L"Geometry";
 };
+#define CWIN_LOG(Condition, Category, LogType, String, ...)                           \
+	if (Condition)                                                                    \
+	{                                                                                 \
+		wstring _string_ = SLogUtils::Format(L##String, __VA_ARGS__);                 \
+		SLogUtils::Log(SLogCategories::Category, _string_, ELogType::LogType, false); \
+		MessageBox(0, _string_.c_str(), SLogCategories::Category.c_str(), 0);         \
+	}
+
+#define WIN_LOG(Category, LogType, String, ...)                                   \
+	wstring _string_ = SLogUtils::Format(L##String, __VA_ARGS__);                 \
+	SLogUtils::Log(SLogCategories::Category, _string_, ELogType::LogType, false); \
+	MessageBox(0, _string_.c_str(), SLogCategories::Category.c_str(), 0);
 
 #define LOG(Category, LogType, String, ...) \
-	SLogUtils::Log(SLogCategories::Category, SLogUtils::Format(String, ##__VA_ARGS__), ELogType::LogType, false);
+	SLogUtils::Log(SLogCategories::Category, SLogUtils::Format(L##String, ##__VA_ARGS__), ELogType::LogType, false);
 
 #define DLOG(LogType, String, ...) \
 	SLogUtils::Log(SLogUtils::Format(String, ##__VA_ARGS__), ELogType::LogType, true);
@@ -52,7 +65,7 @@ struct SLogCategories
 
 struct SLogUtils
 {
-	static inline map<string, bool> LogCategories = {
+	static inline map<wstring, bool> LogCategories = {
 		{ SLogCategories::Default, true },
 		{ SLogCategories::Render, true },
 		{ SLogCategories::Widget, true },
@@ -62,14 +75,18 @@ struct SLogUtils
 		{ SLogCategories::Input, true }
 	};
 
-	static void AddCategory(string Category)
+	static void AddCategory(wstring Category)
 	{
 		LogCategories.insert({ Category, true });
 	}
 
-	template<typename Object>
-	static void Log(string Category, const Object& String, ELogType Type = ELogType::Log, const bool Debug = false) noexcept
+	static void Log(wstring Category, const wstring& String, ELogType Type = ELogType::Log, const bool Debug = false) noexcept
 	{
+		if (!LogCategories.contains(Category))
+		{
+			LogCategories.insert({ Category, true });
+		}
+
 		if ((DEBUG == false && Debug == true) || LogCategories[Category] == false)
 		{
 			return;
@@ -78,24 +95,24 @@ struct SLogUtils
 		switch (Type)
 		{
 		case ELogType::Log:
-			std::cout << "\n"
-			          << "Log: " << String << std::endl;
+			std::wcout << "\n"
+			           << L"Log: " << String.c_str() << std::endl;
 			break;
 
 		case ELogType::Warning:
-			std::clog << "\n"
-			          << "Warning: " << String << std::endl;
+			std::wcout << "\n"
+			           << L"Warning: " << String.c_str() << std::endl;
 			break;
 
 		case ELogType::Error:
-			std::clog << "\n \t \t"
-			          << "Error: " << String << std::endl;
+			std::wcout << "\n \t \t"
+			           << L"Error: " << String.c_str() << std::endl;
 			__debugbreak();
 			break;
 
 		case ELogType::Critical:
-			std::clog << "\n \t \t"
-			          << "Critical: " << String << std::endl;
+			std::wcout << "\n \t \t"
+			           << L"Critical: " << String.c_str() << std::endl;
 			assert(false);
 			break;
 		}
@@ -119,42 +136,34 @@ struct SLogUtils
 	}
 
 	template<typename... ArgTypes>
-	static std::string Format(std::string_view Str, ArgTypes&&... Args)
-	{
-		try
-		{
-			return std::vformat(Str, std::make_format_args(std::forward<ArgTypes>(Args)...));
-		}
-		catch (const std::format_error& error)
-		{
-			return std::string(error.what()) + std::string(Str);
-		}
-	}
-
-	template<typename... ArgTypes>
 	static void Printf(const std::string& Str, ArgTypes&&... Args) noexcept
 	{
 		std::printf(Str.c_str(), ToCString(Args)...);
 	}
 
-	static std::string ToString(int Argument) noexcept
+	static std::wstring ToString(int Argument) noexcept
 	{
-		return std::to_string(Argument);
+		return std::to_wstring(Argument);
 	}
 
-	static std::string ToString(float Argument) noexcept
+	static std::wstring ToString(float Argument) noexcept
 	{
-		return std::to_string(Argument);
+		return std::to_wstring(Argument);
 	}
 
-	static std::string ToString(double Argument) noexcept
+	static std::wstring ToString(double Argument) noexcept
 	{
-		return std::to_string(Argument);
+		return std::to_wstring(Argument);
 	}
 
-	static std::string ToString(DirectX::XMFLOAT3 Argument) noexcept
+	static std::wstring ToString(DirectX::XMFLOAT3 Argument) noexcept
 	{
-		return "[ X: " + std::to_string(Argument.x) + " Y: " + std::to_string(Argument.y) + " Z: " + std::to_string(Argument.z) + " ]";
+		return L"[ X: " + std::to_wstring(Argument.x) + L" Y: " + std::to_wstring(Argument.y) + L" Z: " + std::to_wstring(Argument.z) + L" ]";
+	}
+
+	static std::wstring ToString(string Argument) noexcept
+	{
+		return std::wstring(Argument.begin(), Argument.end());
 	}
 };
 

@@ -2,47 +2,43 @@
 #include <DirectX/DXHelper.h>
 #include <Types.h>
 
+class OEngine;
 class OGeometryGenerator
 {
 public:
-	struct SVertex;
+	struct SGeometryExtendedVertex;
 	struct SMeshData;
 
 	SMeshData CreateBox(float Width, float Height, float Depth, uint32_t NumSubdivisions);
-
 	SMeshData CreateSphere(float Radius, uint32_t SliceCount, uint32_t StackCount);
-
 	SMeshData CreateGeosphere(float Radius, uint32_t NumSubdivisions);
-
 	SMeshData CreateCylinder(float BottomRadius, float TopRadius, float Height, uint32_t SliceCount,
 	                         uint32_t StackCount);
-
 	SMeshData CreateGrid(float Width, float Depth, uint32_t M, uint32_t N);
-
 	SMeshData CreateQuad(float X, float Y, float Width, float Height, float Depth);
+
+	unique_ptr<SMeshGeometry> CreateSkullGeometry(string PathToModel, ID3D12Device* Device, ID3D12GraphicsCommandList* CommandList, OEngine* Engine);
+	unique_ptr<SMeshGeometry> CreateWaterGeometry(float Width, float Depth, uint32_t RowCount, uint32_t ColumnCount, ID3D12Device* Device, ID3D12GraphicsCommandList* CommandList, size_t VertexCount);
 
 private:
 	void BuildCylinderTopCap(float BottomRadius, float TopRadius, float Height, uint32_t SliceCount, uint32_t StackCount, SMeshData& MeshData);
-
 	void BuildCylinderBottomCap(float BottomRadius, float TopRadius, float Height, uint32_t SliceCount, uint32_t StackCount, SMeshData& meshData);
-
 	void Subdivide(SMeshData& MeshData);
-
-	SVertex MidPoint(const SVertex& V0, const SVertex& V1);
+	SGeometryExtendedVertex MidPoint(const SGeometryExtendedVertex& V0, const SGeometryExtendedVertex& V1);
 };
 
-struct OGeometryGenerator::SVertex
+struct OGeometryGenerator::SGeometryExtendedVertex
 {
-	SVertex() = default;
+	SGeometryExtendedVertex() = default;
 
-	SVertex(float X, float Y, float Z,
-	        float NX, float NY, float NZ,
-	        float TX, float TY, float TZ,
-	        float U, float V)
-		: Position(X, Y, Z)
-		, Normal(NX, NY, NZ)
-		, TangentU(TX, TY, TZ)
-		, TexC(U, V)
+	SGeometryExtendedVertex(float X, float Y, float Z,
+	                        float NX, float NY, float NZ,
+	                        float TX, float TY, float TZ,
+	                        float U, float V)
+	    : Position(X, Y, Z)
+	    , Normal(NX, NY, NZ)
+	    , TangentU(TX, TY, TZ)
+	    , TexC(U, V)
 
 	{
 	}
@@ -55,7 +51,7 @@ struct OGeometryGenerator::SVertex
 
 struct OGeometryGenerator::SMeshData
 {
-	vector<SVertex> Vertices;
+	vector<SGeometryExtendedVertex> Vertices;
 	vector<uint32_t> Indices32;
 
 	const vector<uint16_t>& GetIndices16()

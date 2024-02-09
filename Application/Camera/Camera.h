@@ -2,6 +2,7 @@
 #include "Types.h"
 
 #include <DirectXMath.h>
+#include <directxcollision.h>
 
 class OWindow;
 class OCamera
@@ -10,7 +11,6 @@ public:
 	OCamera(const weak_ptr<OWindow>& _Window);
 	OCamera();
 	const float MaxCameraSpeed = 300;
-
 
 	// Get/Set world camera position.
 	DirectX::XMVECTOR GetPosition() const;
@@ -65,6 +65,7 @@ public:
 	void SetCameraSensivity(float Sensetivity) { CameraSensivity = Sensetivity; }
 	float GetCameraSpeed() const { return CameraSpeed; }
 	float GetCameraSensivity() const { return CameraSensivity; }
+	DirectX::BoundingFrustum& GetFrustrum() { return Frustum; };
 
 private:
 	DirectX::XMFLOAT3 Position = { 0.0f, 0.0f, 0.0f };
@@ -87,4 +88,6 @@ private:
 
 	bool bViewDirty = true;
 	weak_ptr<class OWindow> Window;
+
+	DirectX::BoundingFrustum Frustum;
 };

@@ -36,8 +36,6 @@ set(SRC_FILES
         Application/Engine/Engine.cpp
         Application/Window/Window.h
         Application/Test/Test.h
-        Application/Test/SimpleCubeTest/SimpleCubeTest.h
-        Application/Test/SimpleCubeTest/SimpleCubeTest.cpp
         Types/Events.h
         Types/DirectX/DXHelper.h
         Application/Test/Test.cpp
@@ -56,18 +54,12 @@ set(SRC_FILES
         Types/DirectX/RenderItem.h
         Types/DirectX/RenderConstants.h
         Types/DirectX/RenderConstants.h
-        Application/Test/ShapesTest/ShapesTest.cpp
-        Application/Test/ShapesTest/ShapesTest.h
         Objects/GeomertryGenerator/GeometryGenerator.h
         Objects/GeomertryGenerator/GeometryGenerator.cpp
         Objects/GeomertryGenerator/GeometryGenerator.cpp
-        Application/Test/LandTest/LandTest.h
-        Application/Test/LandTest/LandTest.cpp
         Objects/Geometry/Wave/Waves.cpp
         Objects/Geometry/Wave/Waves.h
         Materials/Material.h
-        Application/Test/LitWaves/LitWaves.h
-        Application/Test/LitWaves/LitWaves.cpp
         Types/DirectX/MaterialData.h
         Types/DirectX/MaterialData.h
         Types/DirectX/Light/Light.h
@@ -121,6 +113,12 @@ set(SRC_FILES
         Application/UI/Filters/FilterManager.h
         Application/UI/Engine/Camera.h
         Application/UI/Engine/Camera.cpp
+        Types/DirectX/InstanceData.h
+        Types/DirectX/Vertex.h
+        Objects/MeshGenerator/MeshGenerator.cpp
+        Objects/MeshGenerator/MeshGenerator.h
+        Objects/MeshParser.cpp
+        Objects/MeshParser.h
 )
 
 file(GLOB IMGUI_SOURCES Externals/imgui/*.cpp Externals/imgui/*.h)

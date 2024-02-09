@@ -9,14 +9,14 @@
 #include "UI/Geometry/GeometryManager.h"
 void OGeometryEntityWidget::Draw()
 {
-	const ImVec2 submeshWindowPos = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y);
-	ImGui::SetNextWindowPos(submeshWindowPos);
+	auto setNextWindowPos = []() {
+		ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y));
+	};
+	setNextWindowPos();
 	ImGui::SetNextWindowSize(ImVec2(SliderWidth, 500));
 
 	if (ImGui::Begin("Submesh parameters")) // Begin new window for Submesh parameters
 	{
-		OHierarchicalWidgetBase::Draw();
-
 		ImGui::SeparatorText("Submeshes");
 		if (ImGui::BeginListBox("##Submeshes"))
 		{
@@ -26,7 +26,14 @@ void OGeometryEntityWidget::Draw()
 
 				if (ImGui::Selectable(name, SelectedSubmesh == name))
 				{
-					SelectedSubmesh = name;
+					if (SelectedSubmesh != name)
+					{
+						SelectedSubmesh = name;
+					}
+					else
+					{
+						SelectedSubmesh = "";
+					}
 				}
 			}
 			ImGui::EndListBox();
@@ -70,8 +77,40 @@ void OGeometryEntityWidget::Draw()
 				}
 			}
 		}
+
+		ImGui::SeparatorText("Object Instances");
+		if (ImGui::BeginListBox("##Object Instances"))
+		{
+			size_t counter = 1;
+			for (auto& Instance : RenderItem->Instances)
+			{
+				auto name = "Instance: " + std::to_string(counter);
+
+				if (ImGui::Selectable(name.c_str(), SelectedInstance == name))
+				{
+					if (SelectedInstance != name)
+					{
+						SelectedInstanceData = &Instance;
+						SelectedInstance = name;
+					}
+					else
+					{
+						SelectedInstanceData = nullptr;
+						SelectedInstance = "";
+					}
+				}
+				counter++;
+			}
+			ImGui::EndListBox();
+			ImGui::SameLine();
+			if (SelectedInstance != "")
+			{
+				OHierarchicalWidgetBase::Draw();
+			}
+		}
+
+		ImGui::End();
 	}
-	ImGui::End(); // End Submesh parameters window
 }
 
 void OGeometryEntityWidget::Update()
@@ -79,7 +118,7 @@ void OGeometryEntityWidget::Update()
 	using namespace DirectX;
 	OHierarchicalWidgetBase::Update();
 
-	if (TransformWidget->SatisfyUpdateRequest())
+	if (TransformWidget->SatisfyUpdateRequest() && SelectedInstanceData != nullptr)
 	{
 		// Convert to XMVECTOR for operations
 		const XMVECTOR vPosition = XMLoadFloat3(&Position);
@@ -93,7 +132,7 @@ void OGeometryEntityWidget::Update()
 
 		// Combine into a single transform matrix
 		const XMMATRIX transformMatrix = matScale * matRotation * matTranslation;
-		RenderItem->UpdateWorldMatrix(transformMatrix);
+		XMStoreFloat4x4(&SelectedInstanceData->World, transformMatrix);
 	}
 }
 

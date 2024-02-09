@@ -119,6 +119,7 @@ void OCamera::SetLens(float _FovY, float _Aspect, float Zn, float Zf)
 	NearWindowHeight = 2.0f * NearZ * tanf(0.5f * FovY);
 	const DirectX::XMMATRIX Proj = DirectX::XMMatrixPerspectiveFovLH(FovY, Aspect, NearZ, FarZ);
 	DirectX::XMStoreFloat4x4(&ProjectionMatrix, Proj);
+	BoundingFrustum::CreateFromMatrix(Frustum, Proj);
 }
 
 void OCamera::Strafe(float D)

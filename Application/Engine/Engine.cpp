@@ -74,6 +74,7 @@ bool OEngine::Initialize()
 	}
 
 	bIsTearingSupported = CheckTearingSupport();
+	MeshGenerator = make_unique<OMeshGenerator>();
 	CreateWindow();
 	PostInitialize();
 	return true;
@@ -185,7 +186,7 @@ int OEngine::InitTests(shared_ptr<OTest> Test)
 
 void OEngine::PostTestInit()
 {
-	BuildFrameResource(2);
+	BuildFrameResource(1);
 	BuildDescriptorHeap();
 	InitUIManager();
 
@@ -225,7 +226,7 @@ void OEngine::BuildFrameResource(uint32_t PassCount)
 		FrameResources.push_back(make_unique<SFrameResource>(
 		    Device.Get(),
 		    PassCount,
-		    AllRenderItems.size(),
+		    GetTotalNumberOfInstances(),
 		    Materials.size()));
 	}
 }
@@ -234,7 +235,6 @@ void OEngine::OnPreRender()
 {
 	if (SRVDescriptorHeap)
 	{
-		const auto allocator = GetCommandQueue()->GetCommandAllocator();
 		const auto commandList = GetCommandQueue()->GetCommandList();
 
 		GetCommandQueue()->ResetCommandList();
@@ -247,12 +247,12 @@ void OEngine::OnPreRender()
 		commandList->RSSetScissorRects(1, &window->ScissorRect);
 
 		const auto dsv = window->GetDepthStensilView();
-		const auto rtv = OffscreenRT->GetRTV();
+		const auto rtv = window->CurrentBackBufferView();
 
-		Utils::ResourceBarrier(commandList.Get(), OffscreenRT->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		Utils::ResourceBarrier(commandList.Get(), window->GetCurrentBackBuffer().Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 		// Clear the back buffer and depth buffer.
-		commandList->ClearRenderTargetView(OffscreenRT->GetRTV(), reinterpret_cast<float*>(&MainPassCB.FogColor), 0, nullptr);
+		commandList->ClearRenderTargetView(rtv, reinterpret_cast<float*>(&MainPassCB.FogColor), 0, nullptr);
 		commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 		// Specify the buffers we are going to render to.
@@ -297,7 +297,7 @@ void OEngine::Update(UpdateEventArgs& Args)
 void OEngine::OnUpdate(UpdateEventArgs& Args)
 {
 	GetWindow()->OnUpdate(Args);
-
+	PerformFrustrumCulling();
 	if (CurrentFrameResources)
 	{
 		UpdateMainPass(Args.Timer);
@@ -314,7 +314,7 @@ void OEngine::PostProcess(HWND Handler)
 	const auto commandList = GetCommandQueue()->GetCommandList();
 	const auto backBuffer = GetWindowByHWND(Handler)->GetCurrentBackBuffer().Get();
 
-	Utils::ResourceBarrier(commandList.Get(),
+	/*Utils::ResourceBarrier(commandList.Get(),
 	                       OffscreenRT->GetResource(),
 	                       D3D12_RESOURCE_STATE_RENDER_TARGET,
 	                       D3D12_RESOURCE_STATE_GENERIC_READ);
@@ -322,22 +322,22 @@ void OEngine::PostProcess(HWND Handler)
 	Utils::ResourceBarrier(commandList.Get(),
 	                       backBuffer,
 	                       D3D12_RESOURCE_STATE_PRESENT,
-	                       D3D12_RESOURCE_STATE_RENDER_TARGET);
+	                       D3D12_RESOURCE_STATE_RENDER_TARGET);*/
 
 	auto rtv = Window->CurrentBackBufferView();
 	auto dsv = Window->GetDepthStensilView();
 	commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
 
-	if (auto [executed, srv] = GetSobelFilter()->Execute(PostProcessRootSignature.Get(),
+	/*if (auto [executed, srv] = GetSobelFilter()->Execute(PostProcessRootSignature.Get(),
 	                                                     PSOs[SPSOType::SobelFilter].Get(),
 	                                                     OffscreenRT->GetSRV());
 	    executed)
 	{
 		DrawCompositeShader(srv);
 	}
-	else
+	else*/
 	{
-		Utils::ResourceBarrier(commandList.Get(),
+		/*Utils::ResourceBarrier(commandList.Get(),
 		                       backBuffer,
 		                       D3D12_RESOURCE_STATE_RENDER_TARGET,
 		                       D3D12_RESOURCE_STATE_COPY_DEST);
@@ -345,10 +345,10 @@ void OEngine::PostProcess(HWND Handler)
 		Utils::ResourceBarrier(commandList.Get(),
 		                       backBuffer,
 		                       D3D12_RESOURCE_STATE_COPY_DEST,
-		                       D3D12_RESOURCE_STATE_RENDER_TARGET);
+		                       D3D12_RESOURCE_STATE_RENDER_TARGET);*/
 	}
 
-	GetBlurFilter()->Execute(BlurRootSignature.Get(),
+	/*GetBlurFilter()->Execute(BlurRootSignature.Get(),
 	                         PSOs[SPSOType::HorizontalBlur].Get(),
 	                         PSOs[SPSOType::VerticalBlur].Get(),
 	                         backBuffer);
@@ -359,7 +359,7 @@ void OEngine::PostProcess(HWND Handler)
 	                                  PSOs[SPSOType::BilateralBlur].Get(),
 	                                  backBuffer);
 
-	GetBilateralBlurFilter()->OutputTo(backBuffer);
+	GetBilateralBlurFilter()->OutputTo(backBuffer);*/
 
 	Utils::ResourceBarrier(commandList.Get(),
 	                       backBuffer,
@@ -380,16 +380,13 @@ void OEngine::DrawCompositeShader(CD3DX12_GPU_DESCRIPTOR_HANDLE Input)
 
 void OEngine::OnPostRender()
 {
-	const auto commandList = GetCommandQueue()->GetCommandList();
-	const auto backBuffer = Window->GetCurrentBackBuffer().Get();
-
 	PostProcess(Window->GetHWND());
 
 	UIManager->Draw();
-	UIManager->PostRender(commandList.Get());
+	UIManager->PostRender(GetCommandQueue()->GetCommandList().Get());
 
-	Utils::ResourceBarrier(commandList.Get(),
-	                       backBuffer,
+	Utils::ResourceBarrier(GetCommandQueue()->GetCommandList().Get(),
+	                       Window->GetCurrentBackBuffer().Get(),
 	                       D3D12_RESOURCE_STATE_RENDER_TARGET,
 	                       D3D12_RESOURCE_STATE_PRESENT);
 
@@ -903,7 +900,7 @@ void OEngine::BuildBlurPSO()
 
 void OEngine::BuildShadersAndInputLayouts()
 {
-	constexpr D3D_SHADER_MACRO fogDefines[] = {
+	/*constexpr D3D_SHADER_MACRO fogDefines[] = {
 		"FOG", "1", NULL, NULL
 	};
 
@@ -913,21 +910,21 @@ void OEngine::BuildShadersAndInputLayouts()
 
 	constexpr D3D_SHADER_MACRO wavesDefines[] = {
 		"DISPLACEMENT_MAP", "1", NULL, NULL
-	};
+	};*/
 
 	BuildGSShader(L"Shaders/Geosphere.hlsl", SShaderTypes::GSIcosahedron);
-	BuildPSShader(L"Shaders/Geosphere.hlsl", SShaderTypes::PSIcosahedron, fogDefines);
+	BuildPSShader(L"Shaders/Geosphere.hlsl", SShaderTypes::PSIcosahedron);
 	BuildVSShader(L"Shaders/Geosphere.hlsl", SShaderTypes::VSIcosahedron);
 
 	BuildVSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::VSBaseShader);
-	BuildPSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::PSOpaque, fogDefines);
-	BuildPSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::PSAlphaTested, alphaTestDefines);
+	BuildPSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::PSOpaque);
+	BuildPSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::PSAlphaTested);
 
-	BuildShader(L"Shaders/BaseShader.hlsl", SShaderTypes::VSWaves, EShaderLevel::VertexShader, "VS", wavesDefines);
+	BuildShader(L"Shaders/BaseShader.hlsl", SShaderTypes::VSWaves, EShaderLevel::VertexShader, "VS");
 
 	BuildVSShader(L"Shaders/TreeSprite.hlsl", SShaderTypes::VSTreeSprite);
 	BuildGSShader(L"Shaders/TreeSprite.hlsl", SShaderTypes::GSTreeSprite);
-	BuildPSShader(L"Shaders/TreeSprite.hlsl", SShaderTypes::PSTreeSprite, alphaTestDefines);
+	BuildPSShader(L"Shaders/TreeSprite.hlsl", SShaderTypes::PSTreeSprite);
 
 	BuildShader(L"Shaders/Blur.hlsl", SShaderTypes::CSHorizontalBlur, EShaderLevel::ComputeShader, "HorzBlurCS");
 	BuildShader(L"Shaders/Blur.hlsl", SShaderTypes::CSVerticalBlur, EShaderLevel::ComputeShader, "VertBlurCS");
@@ -1066,6 +1063,12 @@ const vector<unique_ptr<SRenderItem>>& OEngine::GetAllRenderItems()
 
 void OEngine::SetPipelineState(string PSOName)
 {
+	if (PSOs.contains(PSOName) == false)
+	{
+		LOG(Engine, Error, "PSO not found!");
+		return;
+	}
+
 	GetCommandQueue()->GetCommandList()->SetPipelineState(PSOs[PSOName].Get());
 }
 
@@ -1256,21 +1259,18 @@ void OEngine::BuildPostProcessRootSignature()
 void OEngine::BuildDefaultRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0, 0);
+	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 7, 0, 0);
 
-	CD3DX12_DESCRIPTOR_RANGE displacementMapTable;
-	displacementMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
-
-	constexpr auto size = 5;
+	constexpr auto size = 4;
 	CD3DX12_ROOT_PARAMETER slotRootParameter[size];
 
-	slotRootParameter[0].InitAsConstantBufferView(0);
-	slotRootParameter[1].InitAsConstantBufferView(1);
-	slotRootParameter[2].InitAsConstantBufferView(0, 1);
+	slotRootParameter[0].InitAsShaderResourceView(0, 1);
+	slotRootParameter[1].InitAsShaderResourceView(1, 1);
+	slotRootParameter[2].InitAsConstantBufferView(0);
 	slotRootParameter[3].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[4].InitAsDescriptorTable(1, &displacementMapTable, D3D12_SHADER_VISIBILITY_VERTEX);
 
-	const auto staticSamples = Utils::GetStaticSamplers();
+	const auto staticSamples
+	    = Utils::GetStaticSamplers();
 	const CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(size, slotRootParameter, staticSamples.size(), staticSamples.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	Utils::BuildRootSignature(Device.Get(), DefaultRootSignature, rootSigDesc);
@@ -1354,6 +1354,11 @@ uint32_t OEngine::GetNumOffscrenRT() const
 	return 1;
 }
 
+OMeshGenerator* OEngine::GetMeshGenerator() const
+{
+	return MeshGenerator.get();
+}
+
 float OEngine::GetDeltaTime() const
 {
 	return TickTimer.GetDeltaTime();
@@ -1362,6 +1367,63 @@ float OEngine::GetDeltaTime() const
 OEngine::TRenderLayer& OEngine::GetRenderLayers()
 {
 	return RenderLayers;
+}
+
+void OEngine::PerformFrustrumCulling()
+{
+	if (CurrentFrameResources == nullptr)
+	{
+		return;
+	}
+
+	const auto view = Window->GetCamera()->GetView();
+	auto det = XMMatrixDeterminant(view);
+	const auto invView = XMMatrixInverse(&det, view);
+	const auto camera = Window->GetCamera();
+	auto currentInstanceBuffer = CurrentFrameResources->InstanceBuffer.get();
+	for (auto& e : AllRenderItems)
+	{
+		const auto& instData = e->Instances;
+		if (e->Instances.size() == 0)
+		{
+			continue;
+		}
+
+		size_t visibleInstanceCount = 0;
+		for (size_t i = 0; i < instData.size(); i++)
+		{
+			auto world = XMLoadFloat4x4(&instData[i].World);
+			auto textTransform = XMLoadFloat4x4(&instData[i].TexTransform);
+			det = XMMatrixDeterminant(world);
+			auto invWorld = XMMatrixInverse(&det, world);
+
+			auto viewToLocal = XMMatrixMultiply(invView, invWorld);
+			BoundingFrustum localSpaceFrustum;
+			camera->GetFrustrum().Transform(localSpaceFrustum, viewToLocal);
+
+			// Perform the box/frustum intersection test in local space.
+			if (localSpaceFrustum.Contains(e->Bounds) != DirectX::DISJOINT || !FrustrumCullingEnabled)
+			{
+				SInstanceData data;
+				XMStoreFloat4x4(&data.World, XMMatrixTranspose(world));
+				XMStoreFloat4x4(&data.TexTransform, XMMatrixTranspose(textTransform));
+				data.MaterialIndex = instData[i].MaterialIndex;
+				currentInstanceBuffer->CopyData(visibleInstanceCount++, data);
+			}
+		}
+		e->VisibleInstanceCount = visibleInstanceCount;
+		LOG(Render, Log, "Number of visible instances of object {} out of {}", visibleInstanceCount, e->Instances.size());
+	}
+}
+
+uint32_t OEngine::GetTotalNumberOfInstances() const
+{
+	uint32_t totalInstances = 0;
+	for (const auto& e : AllRenderItems)
+	{
+		totalInstances += e->Instances.size();
+	}
+	return totalInstances;
 }
 
 void OEngine::RebuildGeometry(string Name)
@@ -1460,6 +1522,85 @@ std::unordered_map<string, unique_ptr<SMeshGeometry>>& OEngine::GetSceneGeometry
 void OEngine::SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry)
 {
 	SceneGeometry[Geometry->Name] = move(Geometry);
+}
+
+void OEngine::BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, std::vector<SMaterial*>* InstanceMaterialArray)
+{
+	SRenderItem newItem;
+	newItem.World = Utils::Math::Identity4x4();
+	newItem.TexTransform = Utils::Math::Identity4x4();
+	newItem.ObjectCBIndex = AllRenderItems.size();
+	newItem.PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	if (InstanceMaterialArray != nullptr)
+	{
+		newItem.Instances.resize(InstanceMaterialArray->size());
+		size_t counter = 0;
+		for (const auto& material : *InstanceMaterialArray)
+		{
+			SInstanceData data = {};
+			data.MaterialIndex = material->MaterialCBIndex;
+			newItem.Instances[counter] = data;
+			counter++;
+		}
+	}
+	else
+	{
+		SInstanceData data = {};
+		data.MaterialIndex = 0;
+		newItem.Instances.push_back(data);
+	}
+
+	for (auto& subMesh : Mesh->GetDrawArgs() | std::views::values)
+	{
+		newItem.IndexCount = subMesh.IndexCount;
+		newItem.StartIndexLocation = subMesh.StartIndexLocation;
+		newItem.BaseVertexLocation = subMesh.BaseVertexLocation;
+		newItem.Bounds = subMesh.Bounds;
+		auto item = make_unique<SRenderItem>(newItem);
+		AddRenderItem(Category, std::move(item));
+	}
+}
+vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(string Category, SMeshGeometry* Mesh, size_t NumberOfInstances, string Submesh)
+{
+	auto newItem = make_unique<SRenderItem>();
+	newItem->World = Utils::Math::Identity4x4();
+	newItem->TexTransform = Utils::Math::Identity4x4();
+	newItem->ObjectCBIndex = AllRenderItems.size();
+	newItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	newItem->Instances.resize(NumberOfInstances);
+	newItem->RenderLayer = Category;
+	newItem->Geometry = Mesh;
+	const auto itemptr = newItem.get();
+
+	if (Submesh == "")
+	{
+		Submesh = Mesh->GetDrawArgs().begin()->first;
+	}
+	const auto& chosenSubmesh = *Mesh->FindSubmeshGeomentry(Submesh);
+	newItem->IndexCount = chosenSubmesh.IndexCount;
+	newItem->StartIndexLocation = chosenSubmesh.StartIndexLocation;
+	newItem->BaseVertexLocation = chosenSubmesh.BaseVertexLocation;
+	newItem->Bounds = chosenSubmesh.Bounds;
+	AddRenderItem(Category, std::move(newItem));
+	return itemptr->Instances;
+}
+vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, size_t NumberOfInstances)
+{
+	auto mesh = MeshGenerator->CreateMesh(Name, Path, Parser, GenTexels, Device.Get(), GetCommandQueue()->GetCommandList().Get());
+	const auto meshptr = mesh.get();
+	SetSceneGeometry(std::move(mesh));
+	return BuildRenderItemFromMesh(Category, meshptr, NumberOfInstances, {});
+}
+
+unique_ptr<SMeshGeometry> OEngine::CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels)
+{
+	return MeshGenerator->CreateMesh(Name, Path, Parser, GenTexels, Device.Get(), GetCommandQueue()->GetCommandList().Get());
+}
+
+unique_ptr<SMeshGeometry> OEngine::CreateMesh(const string& Name, const OGeometryGenerator::SMeshData& Data)
+{
+	return MeshGenerator->CreateMesh(Name, Data, Device.Get(), GetCommandQueue()->GetCommandList().Get());
 }
 
 SMeshGeometry* OEngine::FindSceneGeometry(const string& Name) const

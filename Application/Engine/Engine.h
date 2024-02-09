@@ -1,6 +1,7 @@
 #pragma once
 #include "../../Materials/Material.h"
 #include "../../Objects/Geometry/Wave/Waves.h"
+#include "../../Objects/MeshGenerator/MeshGenerator.h"
 #include "../CommandQueue/CommandQueue.h"
 #include "../Types/Types.h"
 #include "../Window/Window.h"
@@ -109,20 +110,17 @@ public:
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetTreeSpritePSODesc();
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetIcosahedronPSODesc();
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetWavesRenderPSODesc();
-
 	D3D12_COMPUTE_PIPELINE_STATE_DESC GetBilateralBlurPSODesc();
 	D3D12_COMPUTE_PIPELINE_STATE_DESC GetWavesDisturbPSODesc();
 	D3D12_COMPUTE_PIPELINE_STATE_DESC GetWavesUpdatePSODesc();
-
 	D3D12_COMPUTE_PIPELINE_STATE_DESC GetSobelPSODesc();
+	D3D12_RENDER_TARGET_BLEND_DESC GetTransparentBlendState();
 
 	void BuildDescriptorHeap();
 	void BuildPSOs();
 	void BuildBlurPSO();
-
 	void BuildShadersAndInputLayouts();
 
-	D3D12_RENDER_TARGET_BLEND_DESC GetTransparentBlendState();
 	ComPtr<IDXGIFactory2> GetFactory() const;
 
 	UINT RTVDescriptorSize = 0;
@@ -131,6 +129,15 @@ public:
 
 	std::unordered_map<string, unique_ptr<SMeshGeometry>>& GetSceneGeometry();
 	void SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry);
+	void BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, std::vector<SMaterial*>* InstanceMaterialArray = nullptr);
+
+	vector<SInstanceData>& BuildRenderItemFromMesh(string Category, SMeshGeometry* Mesh, size_t NumberOfInstances = 1, string Submesh = {});
+	vector<SInstanceData>& BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, size_t NumberOfInstances = 1);
+	vector<SInstanceData>& BuildRenderItemFromMesh(string Category, const string& Name, const OGeometryGenerator::SMeshData& Data, size_t NumberOfInstances = 1);
+
+	unique_ptr<SMeshGeometry> CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels);
+	unique_ptr<SMeshGeometry> CreateMesh(const string& Name, const OGeometryGenerator::SMeshData& Data);
+
 	SMeshGeometry* FindSceneGeometry(const string& Name) const;
 
 	void BuildShaders(const wstring& ShaderPath, const string& VSShaderName, const string& PSShaderName,
@@ -200,6 +207,9 @@ public:
 	float GetDeltaTime() const;
 	TRenderLayer& GetRenderLayers();
 
+	void PerformFrustrumCulling();
+	uint32_t GetTotalNumberOfInstances() const;
+
 protected:
 	template<typename T, typename... Args>
 	TUUID BuildRenderObjectImpl(Args&&... Params);
@@ -218,11 +228,12 @@ protected:
 	void BuildWavesRootSignature();
 	void BuildBilateralBlurRootSignature();
 
-	ComPtr<ID3D12Resource> GetBackBuffer() const;
 	uint32_t GetNumOffscrenRT() const;
+	OMeshGenerator* GetMeshGenerator() const;
 
 private:
-	void UpdateMainPass(const STimer& Timer);
+	void
+	UpdateMainPass(const STimer& Timer);
 	SPassConstants MainPassCB;
 
 	ComPtr<IDXGIAdapter4> Adapter;
@@ -267,15 +278,14 @@ private:
 	SRenderObjectDescriptor SRVDescriptor;
 
 	bool HasInitializedTests = false;
-
 	STimer TickTimer;
-
 	ORenderTarget* OffscreenRT = nullptr;
 	unique_ptr<OUIManager> UIManager;
-
 	map<TUUID, unique_ptr<IRenderObject>> RenderObjects;
-
 	int32_t LightCount = 0;
+	bool FrustrumCullingEnabled = true;
+
+	unique_ptr<OMeshGenerator> MeshGenerator;
 };
 
 template<typename T, typename... Args>

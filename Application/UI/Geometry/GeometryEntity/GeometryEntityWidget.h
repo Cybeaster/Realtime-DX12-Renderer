@@ -29,11 +29,18 @@ private:
 	OGeometryManagerWidget* Manager = nullptr;
 	SRenderItem* RenderItem = nullptr;
 	OEngine* Engine = nullptr;
+
 	string SelectedSubmesh = "";
+	string SelectedInstance = "";
+
+	SInstanceData* SelectedInstanceData = nullptr;
+
 
 	DirectX::XMFLOAT3 Position;
 	DirectX::XMFLOAT3 Rotation;
 	DirectX::XMFLOAT3 Scale;
+
+
 
 	OGeometryTransformWidget* TransformWidget = nullptr;
 };

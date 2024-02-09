@@ -5,6 +5,8 @@
 
 namespace Utils::Math
 {
+constexpr float Infinity = FLT_MAX;
+
 template<typename T>
 T Clamp(const T& x, const T& Low, const T& High)
 {
@@ -15,12 +17,7 @@ T Clamp(const T& x, const T& Low, const T& High)
 inline DirectX::XMFLOAT4X4 Identity4x4()
 {
 	static DirectX::XMFLOAT4X4 I(
-		1.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f,
-		0.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 0.0f,
-		1.0f);
+	    1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 
 	return I;
 }
@@ -80,9 +77,9 @@ inline DirectX::XMMATRIX InverseTranspose(DirectX::CXMMATRIX Matrix)
 inline DirectX::XMVECTOR SphericalToCartesian(float Radius, float Theta, float Phi)
 {
 	return DirectX::XMVectorSet(
-		Radius * cosf(Theta) * sinf(Phi),
-		Radius * cosf(Phi),
-		Radius * sinf(Theta) * sinf(Phi),
-		1.0f);
+	    Radius * cosf(Theta) * sinf(Phi),
+	    Radius * cosf(Phi),
+	    Radius * sinf(Theta) * sinf(Phi),
+	    1.0f);
 }
-}
+} // namespace Utils::Math
