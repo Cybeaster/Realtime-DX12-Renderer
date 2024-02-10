@@ -1,5 +1,7 @@
 #include "CommandQueue.h"
 
+#include "Logger.h"
+
 #include <Exception.h>
 
 OCommandQueue::OCommandQueue(Microsoft::WRL::ComPtr<ID3D12Device2> Device, D3D12_COMMAND_LIST_TYPE Type)
@@ -19,6 +21,7 @@ OCommandQueue::OCommandQueue(Microsoft::WRL::ComPtr<ID3D12Device2> Device, D3D12
 	CHECK(FenceEvent, "Failed to create fence event handle.");
 
 	CommandList->Close();
+	IsReset = false;
 	THROW_IF_FAILED(Device->CreateFence(FenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&Fence)));
 }
 
@@ -38,8 +41,14 @@ Microsoft::WRL::ComPtr<ID3D12CommandAllocator> OCommandQueue::GetCommandAllocato
 
 uint64_t OCommandQueue::ExecuteCommandList()
 {
-	CommandList->Close();
+	if (!IsReset)
+	{
+		LOG(Engine, Warning, "Command list has to be reset before closing!");
+		return 0;
+	}
 
+	IsReset = false;
+	CommandList->Close();
 	ID3D12CommandList* const commandLists[] = {
 		CommandList.Get()
 	};
@@ -47,6 +56,11 @@ uint64_t OCommandQueue::ExecuteCommandList()
 	CommandQueue->ExecuteCommandLists(1, commandLists);
 	uint64_t fenceValue = Signal();
 	return fenceValue;
+}
+
+void OCommandQueue::ExecuteCommandListAndWait()
+{
+	WaitForFenceValue(ExecuteCommandList());
 }
 
 /*
@@ -98,8 +112,14 @@ void OCommandQueue::Flush()
 	WaitForFenceValue(Signal());
 }
 
-void OCommandQueue::ResetCommandList()
+void OCommandQueue::TryResetCommandList()
 {
+	if (IsReset)
+	{
+		LOG(Engine, Warning, "Command list is already reset!");
+		return;
+	}
+	IsReset = true;
 	THROW_IF_FAILED(CommandList->Reset(CommandAllocator.Get(), nullptr));
 }
 

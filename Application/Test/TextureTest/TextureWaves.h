@@ -8,7 +8,6 @@
 #include "..\..\..\Utils\Math.h"
 #include "Engine/UploadBuffer/UploadBuffer.h"
 #include "Events.h"
-#include "Textures/Texture.h"
 
 #include <DirectXMath.h>
 #include <d3d12.h>
@@ -20,7 +19,7 @@ class OTextureWaves : public OTest
 	using Super = OTest;
 
 public:
-	OTextureWaves(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window);
+	OTextureWaves(const shared_ptr<OWindow>& _Window);
 
 	bool Initialize() override;
 
@@ -41,7 +40,6 @@ public:
 private:
 	void BuildTreeSpriteGeometry();
 	void BuildQuadPatchGeometry();
-	void CreateTexture();
 	void BuildTesselationPSO();
 	void BuildPSOTreeSprites();
 

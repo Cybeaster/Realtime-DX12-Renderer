@@ -19,6 +19,10 @@ public:
 	float GetSpatialStep() const { return SpatialStep; }
 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GetDisplacementMap() const { return CurrSolSrv; }
+	auto GetDiplacementMapTexelSize() const
+	{
+		return DirectX::XMFLOAT2(1.0f / NumCols, 1.0f / NumRows);
+	}
 
 	uint32_t GetNumDescriptors() const override
 	{

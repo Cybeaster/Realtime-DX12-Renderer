@@ -4,7 +4,6 @@
 #define _DEBUG
 #endif
 
-#include "Test/StencilingTest/StencilingTest.h"
 #include "Test/TextureTest/TextureWaves.h"
 
 #include <Application.h>

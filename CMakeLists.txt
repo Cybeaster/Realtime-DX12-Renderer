@@ -41,8 +41,6 @@ set(SRC_FILES
         Application/Test/Test.cpp
         main.cpp
         Types/Timer/Timer.h
-        Application/Test/WindowTest/WindowTest.cpp
-        Application/Test/WindowTest/WindowTest.h
         Application/Camera/Camera.cpp
         Application/Camera/Camera.h
         Application/Engine/UploadBuffer/UploadBuffer.cpp
@@ -63,15 +61,12 @@ set(SRC_FILES
         Types/DirectX/MaterialData.h
         Types/DirectX/MaterialData.h
         Types/DirectX/Light/Light.h
-        Application/Textures/DDSTextureLoader/DDSTextureLoader.cpp
-        Application/Textures/DDSTextureLoader/DDSTextureLoader.h
-        Application/Textures/Texture.h
+        Textures/DDSTextureLoader/DDSTextureLoader.cpp
+        Textures/DDSTextureLoader/DDSTextureLoader.h
+        Textures/Texture.h
         Application/Test/TextureTest/TextureWaves.cpp
         Application/Test/TextureTest/TextureWaves.h
         Utils/Path.h
-        Application/Test/StencilingTest/StencilingTest.h
-        Application/Test/StencilingTest/StencilingTest.h
-        Application/Test/StencilingTest/StencilingTest.cpp
         Application/Filters/Blur/BlurFilter.cpp
         Application/Filters/Blur/BlurFilter.h
         Types/DirectX/ShaderTypes.h
@@ -119,6 +114,12 @@ set(SRC_FILES
         Objects/MeshGenerator/MeshGenerator.h
         Objects/MeshParser.cpp
         Objects/MeshParser.h
+        Types/TextureConstants.h
+        Materials/MaterialManager/MaterialManager.cpp
+        Materials/MaterialManager/MaterialManager.h
+        Textures/TextureManager/TextureManager.cpp
+        Textures/TextureManager/TextureManager.h
+        Utils/EngineHelper.h
 )
 
 file(GLOB IMGUI_SOURCES Externals/imgui/*.cpp Externals/imgui/*.h)

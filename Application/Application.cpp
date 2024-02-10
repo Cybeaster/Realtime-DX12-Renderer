@@ -49,7 +49,7 @@ shared_ptr<OWindow> OApplication::CreateWindow()
 		MessageBoxA(NULL, "Failed to create window.", "Error", MB_OK | MB_ICONERROR);
 		return nullptr;
 	}
-	auto window = make_shared<OWindow>(Engine, hWnd, DefaultWindowInfo);
+	auto window = make_shared<OWindow>(hWnd, DefaultWindowInfo);
 	window->Init();
 	return window;
 }
@@ -69,7 +69,7 @@ void OApplication::InitApplication(HINSTANCE hInstance)
 #endif
 
 	InitWindowClass();
-	Engine = make_shared<OEngine>();
+	Engine = OEngine::Get();
 	Engine->Initialize();
 }
 
@@ -165,8 +165,8 @@ static MouseButtonEventArgs::MouseButton DecodeMouseButton(UINT messageID)
 LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	auto app = Get();
-
-	if (Engine)
+	auto engine = OEngine::Get();
+	if (engine)
 	{
 		bool lButton = (wParam & MK_LBUTTON) != 0;
 		bool rButton = (wParam & MK_RBUTTON) != 0;
@@ -217,7 +217,7 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 			bool alt = (GetAsyncKeyState(VK_MENU) & 0x8000) != 0;
 			KeyCode::Key key = static_cast<KeyCode::Key>(wParam);
 			KeyEventArgs keyEventArgs(key, c, KeyEventArgs::Pressed, asyncShift, asyncControl, alt, hwnd);
-			Engine->OnKeyPressed(keyEventArgs);
+			engine->OnKeyPressed(keyEventArgs);
 		}
 		break;
 		case WM_SYSKEYUP:
@@ -241,7 +241,7 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 			}
 
 			KeyEventArgs keyEventArgs(key, c, KeyEventArgs::Released, asyncControl, asyncShift, alt, hwnd);
-			Engine->OnKeyReleased(keyEventArgs);
+			engine->OnKeyReleased(keyEventArgs);
 		}
 		break;
 		// The default window procedure will play a system notification sound
@@ -252,7 +252,7 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 		case WM_MOUSEMOVE:
 		{
 			MouseMotionEventArgs mouseMotionEventArgs(lButton, mButton, rButton, control, shift, x, y, hwnd);
-			Engine->OnMouseMoved(mouseMotionEventArgs);
+			engine->OnMouseMoved(mouseMotionEventArgs);
 		}
 		break;
 		case WM_LBUTTONDOWN:
@@ -260,7 +260,7 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 		case WM_MBUTTONDOWN:
 		{
 			MouseButtonEventArgs mouseButtonEventArgs(DecodeMouseButton(message), MouseButtonEventArgs::Pressed, lButton, mButton, rButton, control, shift, x, y, hwnd);
-			Engine->OnMouseButtonPressed(mouseButtonEventArgs);
+			engine->OnMouseButtonPressed(mouseButtonEventArgs);
 		}
 		break;
 		case WM_LBUTTONUP:
@@ -268,7 +268,7 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 		case WM_MBUTTONUP:
 		{
 			MouseButtonEventArgs mouseButtonEventArgs(DecodeMouseButton(message), MouseButtonEventArgs::Released, lButton, mButton, rButton, control, shift, x, y, hwnd);
-			Engine->OnMouseButtonReleased(mouseButtonEventArgs);
+			engine->OnMouseButtonReleased(mouseButtonEventArgs);
 		}
 		break;
 		case WM_MOUSEWHEEL:
@@ -285,13 +285,13 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 			ScreenToClient(hwnd, &clientToScreenPoint);
 
 			MouseWheelEventArgs mouseWheelEventArgs(zDelta, lButton, mButton, rButton, control, shift, static_cast<int>(clientToScreenPoint.x), static_cast<int>(clientToScreenPoint.y), hwnd);
-			Engine->OnMouseWheel(mouseWheelEventArgs);
+			engine->OnMouseWheel(mouseWheelEventArgs);
 		}
 		break;
 		case WM_SIZE:
 		{
 			ResizeEventArgs resizeEventArgs(width, height, hwnd);
-			Engine->OnUpdateWindowSize(resizeEventArgs);
+			engine->OnUpdateWindowSize(resizeEventArgs);
 			if (wParam == SIZE_MINIMIZED)
 			{
 				Application->bIsAppPaused = true;
@@ -303,7 +303,7 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 				Application->bIsAppPaused = false;
 				Application->bIsAppMinimized = false;
 				Application->bIsAppMaximized = true;
-				Engine->OnResizeRequest(hwnd);
+				engine->OnResizeRequest(hwnd);
 			}
 			else if (wParam == SIZE_RESTORED)
 			{
@@ -312,7 +312,7 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 				{
 					Application->SetAppPaused(false);
 					Application->bIsAppMinimized = false;
-					Engine->OnResizeRequest(hwnd);
+					engine->OnResizeRequest(hwnd);
 				}
 
 				// Restoring from maximized state?
@@ -320,7 +320,7 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 				{
 					Application->bIsAppPaused = false;
 					Application->bIsAppMaximized = false;
-					Engine->OnResizeRequest(hwnd);
+					engine->OnResizeRequest(hwnd);
 				}
 				else if (Application->bIsResizing)
 				{
@@ -335,7 +335,7 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 				}
 				else // API call such as SetWindowPos or mSwapChain->SetFullscreenState.
 				{
-					Engine->OnResizeRequest(hwnd);
+					engine->OnResizeRequest(hwnd);
 				}
 			}
 		}
@@ -365,7 +365,7 @@ LRESULT CALLBACK OApplication::WndProc(HWND hwnd, UINT message, WPARAM wParam, L
 			app->bIsAppPaused = false;
 			app->bIsResizing = false;
 			app->Timer.Start();
-			Engine->OnResizeRequest(hwnd);
+			engine->OnResizeRequest(hwnd);
 			break;
 		}
 		case WM_MENUCHAR:

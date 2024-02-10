@@ -18,12 +18,14 @@ public:
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> GetCommandQueue();
 
 	uint64_t ExecuteCommandList();
+	void ExecuteCommandListAndWait();
+
 	uint64_t Signal();
 
 	bool IsFenceComplete(uint64_t FenceValue) const;
 	void WaitForFenceValue(uint64_t FenceValue);
 	void Flush();
-	void ResetCommandList();
+	void TryResetCommandList();
 	Microsoft::WRL::ComPtr<ID3D12Fence> GetFence() const;
 
 protected:
@@ -52,4 +54,6 @@ private:
 
 	TCommandAllocatorQueue CommandAllocatorQueue;
 	TCommandListQueue CommandListQueue;
+
+	bool IsReset = false;
 };

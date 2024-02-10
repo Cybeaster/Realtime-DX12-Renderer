@@ -11,9 +11,9 @@ struct SMaterial
 	int32_t MaterialCBIndex = -1;
 
 	// Index into SRV heap for diffuse texture
-	int DiffuseSRVHeapIndex = -1;
+	UINT DiffuseSRVHeapIndex = -1;
 
-	int NormalSrvHeapIndex = -1;
+	UINT NormalSrvHeapIndex = -1;
 
 	// Dirty flag indicating the material has changed and we need to
 	// update the constant buffer. Because we have a material constant
@@ -25,5 +25,7 @@ struct SMaterial
 	int NumFramesDirty = SRenderConstants::NumFrameResources;
 
 	// Material constant buffer data used for shading.
-	SMaterialData MaterialConsatnts;
+	SMaterialSurface MaterialSurface;
+	// Used in texture mapping.
+	DirectX::XMFLOAT4X4 MatTransform = Utils::Math::Identity4x4();
 };

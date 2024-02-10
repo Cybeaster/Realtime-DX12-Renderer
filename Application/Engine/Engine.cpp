@@ -10,7 +10,7 @@
 #include "Logger.h"
 #include "Settings.h"
 #include "Test/TextureTest/TextureWaves.h"
-#include "Textures/DDSTextureLoader/DDSTextureLoader.h"
+#include "TextureConstants.h"
 #include "UI/Effects/FogWidget.h"
 #include "UI/Effects/Light/LightWidget.h"
 #include "UI/Filters/FilterManager.h"
@@ -74,10 +74,18 @@ bool OEngine::Initialize()
 	}
 
 	bIsTearingSupported = CheckTearingSupport();
-	MeshGenerator = make_unique<OMeshGenerator>();
+	InitManagers();
 	CreateWindow();
 	PostInitialize();
 	return true;
+}
+
+void OEngine::InitManagers()
+{
+	MeshGenerator = make_unique<OMeshGenerator>();
+	TextureManager = make_unique<OTextureManager>(Device.Get(), GetCommandQueue().get());
+	MaterialManager = make_unique<OMaterialManager>();
+	MaterialManager->BuildDefaultMaterials(TextureManager->GetTextures());
 }
 
 void OEngine::PostInitialize()
@@ -130,11 +138,6 @@ void OEngine::DrawFullScreenQuad()
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	commandList->DrawInstanced(6, 1, 0, 0);
-}
-
-uint32_t OEngine::GetTextureNum()
-{
-	return static_cast<uint32_t>(Textures.size());
 }
 
 void OEngine::InitUIManager()
@@ -227,7 +230,7 @@ void OEngine::BuildFrameResource(uint32_t PassCount)
 		    Device.Get(),
 		    PassCount,
 		    GetTotalNumberOfInstances(),
-		    Materials.size()));
+		    MaterialManager->GetNumMaterials()));
 	}
 }
 
@@ -237,7 +240,7 @@ void OEngine::OnPreRender()
 	{
 		const auto commandList = GetCommandQueue()->GetCommandList();
 
-		GetCommandQueue()->ResetCommandList();
+		GetCommandQueue()->TryResetCommandList();
 
 		ID3D12DescriptorHeap* heaps[] = { SRVDescriptorHeap.Get() };
 		commandList->SetDescriptorHeaps(_countof(heaps), heaps);
@@ -565,7 +568,7 @@ void OEngine::CreateWindow()
 	Window = OApplication::Get()->CreateWindow();
 	WindowsMap[Window->GetHWND()] = Window;
 
-	Window->RegsterWindow(shared_from_this());
+	Window->RegsterWindow();
 }
 
 void OEngine::CheckMSAAQualitySupport()
@@ -763,7 +766,7 @@ D3D12_COMPUTE_PIPELINE_STATE_DESC OEngine::GetSobelPSODesc()
 
 void OEngine::BuildDescriptorHeap()
 {
-	auto texturesNum = GetTextureNum();
+	auto texturesNum = GetTextureManager()->GetNumTextures();
 	auto renderObjectDescCount = std::accumulate(
 	    std::views::values(RenderObjects).begin(),
 	    std::views::values(RenderObjects).end(),
@@ -791,7 +794,7 @@ void OEngine::BuildDescriptorHeap()
 	srvDesc.Texture2D.MipLevels = -1;
 
 	//Textures, SRV offset only
-	for (const auto& texture : Textures | std::views::values)
+	for (const auto& texture : TextureManager->GetTextures() | std::views::values)
 	{
 		srvDesc.Format = texture->Resource->GetDesc().Format;
 		Device->CreateShaderResourceView(texture->Resource.Get(), &srvDesc, hDescriptor);
@@ -974,71 +977,6 @@ vector<SRenderItem*>& OEngine::GetRenderItems(const string& Type)
 ComPtr<IDXGIFactory2> OEngine::GetFactory() const
 {
 	return Factory;
-}
-
-void OEngine::AddMaterial(string Name, unique_ptr<SMaterial>& Material)
-{
-	if (Materials.contains(Name))
-	{
-		LOG(Engine, Error, "Material with this name already exists!");
-		return;
-	}
-	Materials[Name] = move(Material);
-}
-
-void OEngine::CreateMaterial(const string& Name, const int32_t CBIndex, const int32_t HeapIdx, const SMaterialData& Constants)
-{
-	auto mat = make_unique<SMaterial>();
-	mat->Name = Name;
-	mat->MaterialCBIndex = CBIndex;
-	mat->DiffuseSRVHeapIndex = HeapIdx;
-	mat->MaterialConsatnts = Constants;
-	AddMaterial(Name, mat);
-}
-
-const OEngine::TMaterialsMap& OEngine::GetMaterials() const
-{
-	return Materials;
-}
-
-SMaterial* OEngine::FindMaterial(const string& Name) const
-{
-	if (!Materials.contains(Name))
-	{
-		LOG(Engine, Error, "Material not found!");
-		return nullptr;
-	}
-	return Materials.at(Name).get();
-}
-
-STexture* OEngine::CreateTexture(string Name, wstring FileName)
-{
-	if (Textures.contains(Name))
-	{
-		LOG(Engine, Error, "Texture with this name already exists!");
-		return nullptr;
-	}
-	auto texture = make_unique<STexture>(Name, FileName);
-	texture->Name = Name;
-	texture->FileName = FileName;
-
-	THROW_IF_FAILED(DirectX::CreateDDSTextureFromFile12(GetDevice().Get(),
-	                                                    GetCommandQueue()->GetCommandList().Get(),
-	                                                    texture->FileName.c_str(),
-	                                                    texture->Resource,
-	                                                    texture->UploadHeap));
-	Textures[Name] = move(texture);
-	return Textures[Name].get();
-}
-
-STexture* OEngine::FindTexture(string Name) const
-{
-	if (!Textures.contains(Name))
-	{
-		LOG(Engine, Error, "Texture not found!");
-		return nullptr;
-	}
-	return Textures.at(Name).get();
 }
 
 void OEngine::AddRenderItem(string Category, unique_ptr<SRenderItem> RenderItem)
@@ -1414,6 +1352,8 @@ void OEngine::PerformFrustrumCulling()
 				XMStoreFloat4x4(&data.World, XMMatrixTranspose(world));
 				XMStoreFloat4x4(&data.TexTransform, XMMatrixTranspose(textTransform));
 				data.MaterialIndex = instData[i].MaterialIndex;
+				data.GridSpatialStep = instData[i].GridSpatialStep;
+				data.DisplacementMapTexelSize = instData[i].DisplacementMapTexelSize;
 				currentInstanceBuffer->CopyData(visibleInstanceCount++, data);
 			}
 		}
@@ -1434,7 +1374,7 @@ uint32_t OEngine::GetTotalNumberOfInstances() const
 
 void OEngine::RebuildGeometry(string Name)
 {
-	GetCommandQueue()->ResetCommandList();
+	GetCommandQueue()->TryResetCommandList();
 
 	auto mesh = FindSceneGeometry(Name);
 	auto commandList = GetCommandQueue()->GetCommandList();
@@ -1530,7 +1470,7 @@ void OEngine::SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry)
 	SceneGeometry[Geometry->Name] = move(Geometry);
 }
 
-void OEngine::BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, std::vector<SMaterial*>* InstanceMaterialArray)
+void OEngine::BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, std::vector<SMaterialDisplacementParams>* InstanceMaterialArray)
 {
 	SRenderItem newItem;
 	newItem.World = Utils::Math::Identity4x4();
@@ -1545,7 +1485,9 @@ void OEngine::BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry>
 		for (const auto& material : *InstanceMaterialArray)
 		{
 			SInstanceData data = {};
-			data.MaterialIndex = material->MaterialCBIndex;
+			data.MaterialIndex = material.Material->DiffuseSRVHeapIndex;
+			data.GridSpatialStep = material.GridSpatialStep;
+			data.DisplacementMapTexelSize = material.DisplacementMapTexelSize;
 			newItem.Instances[counter] = data;
 			counter++;
 		}
@@ -1567,16 +1509,23 @@ void OEngine::BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry>
 		AddRenderItem(Category, std::move(item));
 	}
 }
-vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(string Category, SMeshGeometry* Mesh, size_t NumberOfInstances, string Submesh)
+vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, size_t NumberOfInstances, const SMaterialDisplacementParams& Params, string Submesh)
 {
 	auto newItem = make_unique<SRenderItem>();
 	newItem->World = Utils::Math::Identity4x4();
 	newItem->TexTransform = Utils::Math::Identity4x4();
 	newItem->ObjectCBIndex = AllRenderItems.size();
 	newItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	newItem->Instances.resize(NumberOfInstances);
+
+	SInstanceData defaultInstance;
+	defaultInstance.MaterialIndex = Params.Material != nullptr ? Params.Material->MaterialCBIndex : MaterialManager->GetMaterialCBIndex(STextureConstants::Debug);
+	defaultInstance.GridSpatialStep = Params.GridSpatialStep;
+	defaultInstance.DisplacementMapTexelSize = Params.DisplacementMapTexelSize;
+
+	newItem->Instances.resize(NumberOfInstances, defaultInstance);
 	newItem->RenderLayer = Category;
 	newItem->Geometry = Mesh;
+
 	const auto itemptr = newItem.get();
 
 	if (Submesh == "")
@@ -1591,12 +1540,12 @@ vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(string Category, SMeshGe
 	AddRenderItem(Category, std::move(newItem));
 	return itemptr->Instances;
 }
-vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, size_t NumberOfInstances)
+vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, const SMaterialDisplacementParams& Params, size_t NumberOfInstances)
 {
 	auto mesh = MeshGenerator->CreateMesh(Name, Path, Parser, GenTexels, Device.Get(), GetCommandQueue()->GetCommandList().Get());
 	const auto meshptr = mesh.get();
 	SetSceneGeometry(std::move(mesh));
-	return BuildRenderItemFromMesh(Category, meshptr, NumberOfInstances, {});
+	return BuildRenderItemFromMesh(Category, meshptr, NumberOfInstances, Params, {});
 }
 
 unique_ptr<SMeshGeometry> OEngine::CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels)

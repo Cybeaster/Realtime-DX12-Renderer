@@ -40,7 +40,7 @@ private:
 	inline static OApplication* Application = nullptr;
 	HINSTANCE AppInstance = nullptr;
 
-	inline static shared_ptr<OEngine> Engine = nullptr;
+	OEngine* Engine = nullptr;
 	vector<shared_ptr<OTest>> Tests;
 
 	STimer Timer;
@@ -55,7 +55,7 @@ private:
 template<typename TestType>
 int OApplication::Run()
 {
-	auto test = make_shared<TestType>(Engine, Engine->GetWindow());
+	auto test = make_shared<TestType>(Engine->GetWindow());
 	Engine->InitTests(test);
 
 	Timer.Reset();

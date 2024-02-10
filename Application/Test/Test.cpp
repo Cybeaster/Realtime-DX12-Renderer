@@ -4,12 +4,10 @@
 
 void OTest::Destroy()
 {
-	Engine.lock()->DestroyWindow();
+	Engine->DestroyWindow();
 }
 
 void OTest::OnWindowDestroyed()
 {
 	UnloadContent();
 }
-
-

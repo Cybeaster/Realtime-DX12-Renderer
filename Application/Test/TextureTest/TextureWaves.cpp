@@ -2,6 +2,7 @@
 
 #include "../../../Materials/Material.h"
 #include "../../../Objects/GeomertryGenerator/GeometryGenerator.h"
+#include "../../../Utils/EngineHelper.h"
 #include "../../Engine/Engine.h"
 #include "../../Window/Window.h"
 #include "Application.h"
@@ -9,7 +10,6 @@
 #include "RenderConstants.h"
 #include "RenderItem.h"
 #include "Settings.h"
-#include "Textures/DDSTextureLoader/DDSTextureLoader.h"
 
 #include <DXHelper.h>
 #include <Timer/Timer.h>
@@ -23,26 +23,26 @@ using namespace Microsoft::WRL;
 
 using namespace DirectX;
 
-OTextureWaves::OTextureWaves(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window)
-    : OTest(_Engine, _Window)
+OTextureWaves::OTextureWaves(const shared_ptr<OWindow>& _Window)
+    : OTest(_Window)
 {
 }
 
 bool OTextureWaves::Initialize()
 {
-	const auto engine = Engine.lock();
+	const auto engine = Engine;
 	assert(engine->GetCommandQueue()->GetCommandQueue());
 	const auto queue = engine->GetCommandQueue();
-	queue->ResetCommandList();
+	queue->TryResetCommandList();
 
-	/*Waves = engine->BuildRenderObject<OGPUWave>(engine->GetDevice().Get(),
+	Waves = engine->BuildRenderObject<OGPUWave>(engine->GetDevice().Get(),
 	                                            queue->GetCommandList().Get(),
 	                                            256,
 	                                            256,
 	                                            0.25f,
 	                                            0.03f,
 	                                            2.0f,
-	                                            0.2f);*/
+	                                            0.2f);
 	OGeometryGenerator geoGen;
 
 	const auto grid = geoGen.CreateGrid(160.0f, 160.0f, 50, 50);
@@ -51,7 +51,6 @@ bool OTextureWaves::Initialize()
 
 	engine->SetFog({ 0.7f, 0.7f, 0.7f, 1.0f }, 50.0f, 150.0f);
 
-	CreateTexture();
 	BuildMaterials();
 	BuildShadersAndInputLayout();
 	BuildRenderItems();
@@ -69,8 +68,8 @@ void OTextureWaves::UnloadContent()
 
 void OTextureWaves::UpdateWave(const STimer& Timer) const
 {
-	auto commandList = Engine.lock()->GetCommandQueue()->GetCommandList();
-	const auto wavesRootSignature = Engine.lock()->GetWavesRootSignature();
+	auto commandList = Engine->GetCommandQueue()->GetCommandList();
+	const auto wavesRootSignature = Engine->GetWavesRootSignature();
 	static float tBase = 0.0f;
 	if (Timer.GetTime() - tBase >= 0.25)
 	{
@@ -79,9 +78,9 @@ void OTextureWaves::UpdateWave(const STimer& Timer) const
 		int j = Utils::Math::Random(4, Waves->GetColumnCount() - 5);
 		float r = Utils::Math::Random(1.f, 2.f);
 
-		Waves->Disturb(wavesRootSignature, Engine.lock()->GetPSO(SPSOType::WavesDisturb).Get(), i, j, r);
+		Waves->Disturb(wavesRootSignature, Engine->GetPSO(SPSOType::WavesDisturb).Get(), i, j, r);
 	}
-	Waves->Update(Timer, wavesRootSignature, Engine.lock()->GetPSO(SPSOType::WavesUpdate).Get());
+	Waves->Update(Timer, wavesRootSignature, Engine->GetPSO(SPSOType::WavesUpdate).Get());
 }
 
 void OTextureWaves::OnUpdate(const UpdateEventArgs& Event)
@@ -89,7 +88,7 @@ void OTextureWaves::OnUpdate(const UpdateEventArgs& Event)
 	Super::OnUpdate(Event);
 	IsInputBlocked = Event.IsUIInfocus;
 
-	auto engine = Engine.lock();
+	auto engine = Engine;
 	engine->CurrentFrameResourceIndex = (engine->CurrentFrameResourceIndex + 1) % SRenderConstants::NumFrameResources;
 	engine->CurrentFrameResources = engine->FrameResources[engine->CurrentFrameResourceIndex].get();
 
@@ -126,7 +125,7 @@ void OTextureWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandLis
 
 			// Offset to the CBV in the descriptor heap for this object and
 			// for this frame resource.
-			auto instanceBuffer = Engine.lock()->CurrentFrameResources->InstanceBuffer->GetResource();
+			auto instanceBuffer = Engine->CurrentFrameResources->InstanceBuffer->GetResource();
 			CommandList->SetGraphicsRootShaderResourceView(0, instanceBuffer->GetGPUVirtualAddress());
 			CommandList->DrawIndexedInstanced(
 			    renderItem->IndexCount,
@@ -184,14 +183,14 @@ void OTextureWaves::BuildTreeSpriteGeometry()
 	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geometry->IndexBufferCPU));
 	CopyMemory(geometry->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
-	geometry->VertexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
-	                                                       Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
+	geometry->VertexBufferGPU = Utils::CreateDefaultBuffer(Engine->GetDevice().Get(),
+	                                                       Engine->GetCommandQueue()->GetCommandList().Get(),
 	                                                       vertices.data(),
 	                                                       vbByteSize,
 	                                                       geometry->VertexBufferUploader);
 
-	geometry->IndexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
-	                                                      Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
+	geometry->IndexBufferGPU = Utils::CreateDefaultBuffer(Engine->GetDevice().Get(),
+	                                                      Engine->GetCommandQueue()->GetCommandList().Get(),
 	                                                      indices.data(),
 	                                                      ibByteSize,
 	                                                      geometry->IndexBufferUploader);
@@ -244,8 +243,8 @@ void OTextureWaves::BuildQuadPatchGeometry()
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(SVertex);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
-	auto commandList = Engine.lock()->GetCommandQueue()->GetCommandList();
-	auto device = Engine.lock()->GetDevice();
+	auto commandList = Engine->GetCommandQueue()->GetCommandList();
+	auto device = Engine->GetDevice();
 
 	auto geo = std::make_unique<SMeshGeometry>();
 	geo->Name = "QuadPatch";
@@ -286,19 +285,9 @@ void OTextureWaves::BuildQuadPatchGeometry()
 	GetEngine()->SetSceneGeometry(std::move(geo));
 }
 
-void OTextureWaves::CreateTexture()
-{
-	GetEngine()->CreateTexture("Grass", L"Resources/Textures/grass.dds");
-	GetEngine()->CreateTexture("Water", L"Resources/Textures/water1.dds");
-	GetEngine()->CreateTexture("Fence", L"Resources/Textures/WireFence.dds");
-	GetEngine()->CreateTexture("FireBall", L"Resources/Textures/Fireball.dds");
-	GetEngine()->CreateTexture("TreeArray", L"Resources/Textures/treeArray2.dds");
-	GetEngine()->CreateTexture("White", L"Resources/Textures/white1x1.dds");
-}
-
 void OTextureWaves::BuildTesselationPSO()
 {
-	auto engine = Engine.lock();
+	auto engine = Engine;
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc = engine->GetOpaquePSODesc();
 	opaquePsoDesc.VS = { reinterpret_cast<BYTE*>(engine->GetShader(SShaderTypes::VSTesselation)->GetBufferPointer()),
@@ -321,7 +310,7 @@ void OTextureWaves::BuildTesselationPSO()
 
 void OTextureWaves::OnRender(const UpdateEventArgs& Event)
 {
-	const auto engine = Engine.lock();
+	const auto engine = Engine;
 	const auto commandList = engine->GetCommandQueue()->GetCommandList();
 
 	GetEngine()->SetPipelineState(SPSOType::Opaque);
@@ -331,14 +320,6 @@ void OTextureWaves::OnRender(const UpdateEventArgs& Event)
 
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Opaque));
 
-	GetEngine()->SetPipelineState(SPSOType::AlphaTested);
-	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::AlphaTested));
-
-	GetEngine()->SetPipelineState(SPSOType::Transparent);
-	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Transparent));
-
-	GetEngine()->SetPipelineState(SPSOType::WavesRender);
-	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Waves));
 }
 
 void OTextureWaves::BuildPSOTreeSprites()
@@ -417,29 +398,29 @@ void OTextureWaves::BuildPSOGeosphere()
 
 void OTextureWaves::BuildMaterials()
 {
-	GetEngine()->CreateMaterial("Grass", 0, 0, { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.01f, 0.01f, 0.01f), 0.125f });
+	/*GetEngine()->CreateMaterial("Grass", 0, 0, { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.01f, 0.01f, 0.01f), 0.125f });
 	GetEngine()->CreateMaterial("Water", 1, 1, { XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.0f });
 	GetEngine()->CreateMaterial("WireFence", 2, 2, { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.25f });
 	GetEngine()->CreateMaterial("FireBall", 3, 3, { XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.25f });
 	GetEngine()->CreateMaterial("TreeSprite", 4, 4, { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.125f });
-	GetEngine()->CreateMaterial("White", 5, 5, { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.5f });
+	GetEngine()->CreateMaterial("White", 5, 5, { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.5f });*/
 }
 
 void OTextureWaves::UpdateMaterialCB()
 {
-	const auto currentMaterialCB = Engine.lock()->CurrentFrameResources->MaterialBuffer.get();
-	for (auto& materials = Engine.lock()->GetMaterials(); const auto& val : materials | std::views::values)
+	const auto currentMaterialCB = Engine->CurrentFrameResources->MaterialBuffer.get();
+	for (auto& materials = GetMaterials(); const auto& val : materials | std::views::values)
 	{
 		if (const auto material = val.get())
 		{
 			if (material->NumFramesDirty > 0)
 			{
-				const auto matTransform = XMLoadFloat4x4(&material->MaterialConsatnts.MatTransform);
+				const auto matTransform = XMLoadFloat4x4(&material->MatTransform);
 
 				SMaterialData matConstants;
-				matConstants.DiffuseAlbedo = material->MaterialConsatnts.DiffuseAlbedo;
-				matConstants.FresnelR0 = material->MaterialConsatnts.FresnelR0;
-				matConstants.Roughness = material->MaterialConsatnts.Roughness;
+				matConstants.MaterialSurface.DiffuseAlbedo = material->MaterialSurface.DiffuseAlbedo;
+				matConstants.MaterialSurface.FresnelR0 = material->MaterialSurface.FresnelR0;
+				matConstants.MaterialSurface.Roughness = material->MaterialSurface.Roughness;
 				matConstants.DiffuseMapIndex = material->DiffuseSRVHeapIndex;
 
 				XMStoreFloat4x4(&matConstants.MatTransform, XMMatrixTranspose(matTransform));
@@ -493,14 +474,14 @@ void OTextureWaves::BuildLandGeometry()
 	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
 	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
-	geo->VertexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
-	                                                  Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
+	geo->VertexBufferGPU = Utils::CreateDefaultBuffer(Engine->GetDevice().Get(),
+	                                                  Engine->GetCommandQueue()->GetCommandList().Get(),
 	                                                  vertices.data(),
 	                                                  vbByteSize,
 	                                                  geo->VertexBufferUploader);
 
-	geo->IndexBufferGPU = Utils::CreateDefaultBuffer(Engine.lock()->GetDevice().Get(),
-	                                                 Engine.lock()->GetCommandQueue()->GetCommandList().Get(),
+	geo->IndexBufferGPU = Utils::CreateDefaultBuffer(Engine->GetDevice().Get(),
+	                                                 Engine->GetCommandQueue()->GetCommandList().Get(),
 	                                                 indices.data(),
 	                                                 ibByteSize,
 	                                                 geo->IndexBufferUploader);
@@ -523,8 +504,8 @@ void OTextureWaves::BuildWavesGeometryBuffers()
 {
 	OGeometryGenerator geoGen;
 	OGeometryGenerator::SMeshData grid = geoGen.CreateGrid(160.0f, 160.0f, Waves->GetRowCount(), Waves->GetColumnCount());
-	auto device = Engine.lock()->GetDevice();
-	auto commandList = Engine.lock()->GetCommandQueue()->GetCommandList();
+	auto device = Engine->GetDevice();
+	auto commandList = Engine->GetCommandQueue()->GetCommandList();
 	std::vector<SVertex> vertices(grid.Vertices.size());
 
 	for (size_t i = 0; i < grid.Vertices.size(); ++i)
@@ -579,8 +560,8 @@ void OTextureWaves::BuildIcosahedronGeometry()
 {
 	OGeometryGenerator geoGen;
 	OGeometryGenerator::SMeshData ico = geoGen.CreateGeosphere(10, 0);
-	auto device = Engine.lock()->GetDevice();
-	auto commandList = Engine.lock()->GetCommandQueue()->GetCommandList();
+	auto device = Engine->GetDevice();
+	auto commandList = Engine->GetCommandQueue()->GetCommandList();
 
 	std::vector<SVertex> vertices(ico.Vertices.size());
 	for (size_t i = 0; i < ico.Vertices.size(); ++i)
@@ -635,8 +616,8 @@ void OTextureWaves::BuildBoxGeometryBuffers()
 {
 	OGeometryGenerator geoGen;
 	OGeometryGenerator::SMeshData box = geoGen.CreateBox(8.0f, 8.0f, 8.0f, 3);
-	auto device = Engine.lock()->GetDevice();
-	auto commandList = Engine.lock()->GetCommandQueue()->GetCommandList();
+	auto device = Engine->GetDevice();
+	auto commandList = Engine->GetCommandQueue()->GetCommandList();
 	std::vector<SVertex> vertices(box.Vertices.size());
 	for (size_t i = 0; i < box.Vertices.size(); ++i)
 	{
@@ -775,8 +756,8 @@ void OTextureWaves::BuildRenderItems()
 	XMStoreFloat4x4(&bquadPatchRitem->World, XMMatrixScaling(2.0f, 1.0f, 2.0f) * XMMatrixTranslation(0.0f, 15.0f, 0.f));
 	bquadPatchRitem->TexTransform = Utils::Math::Identity4x4();
 	bquadPatchRitem->ObjectCBIndex = 5;
-	bquadPatchRitem->Material = Engine.lock()->FindMaterial("White");
-	bquadPatchRitem->Geometry = Engine.lock()->FindSceneGeometry("QuadPatch");
+	bquadPatchRitem->Material = Engine->FindMaterial("White");
+	bquadPatchRitem->Geometry = Engine->FindSceneGeometry("QuadPatch");
 	bquadPatchRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_16_CONTROL_POINT_PATCHLIST;
 	submesh = bquadPatchRitem->Geometry->FindSubmeshGeomentry("QuadPatch");
 	bquadPatchRitem->IndexCount = submesh->IndexCount;
@@ -784,13 +765,14 @@ void OTextureWaves::BuildRenderItems()
 	bquadPatchRitem->BaseVertexLocation = submesh->BaseVertexLocation;
 	GetEngine()->AddRenderItem(SRenderLayer::Tesselation, std::move(bquadPatchRitem));*/
 
-	const auto engine = Engine.lock();
+	const auto engine = Engine;
 	constexpr size_t n = 5;
 	auto& instances = engine->BuildRenderItemFromMesh(SRenderLayer::Opaque,
 	                                                  "Skull",
 	                                                  "Resources/Models/skull.txt",
 	                                                  EParserType::Custom,
 	                                                  ETextureMapType::Spherical,
+	                                                  { FindMaterial(STextureConstants::White) },
 	                                                  n * n * n);
 
 	float width = 200.0f;
@@ -814,7 +796,7 @@ void OTextureWaves::BuildRenderItems()
 				    1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, x + j * dx, y + i * dy, z + k * dz, 1.0f);
 
 				XMStoreFloat4x4(&instances[idx].TexTransform, XMMatrixScaling(2.0f, 2.0f, 1.0f));
-				const auto nextMatIdx = idx % Engine.lock()->GetMaterials().size();
+				const auto nextMatIdx = idx % GetMaterials().size();
 				instances[idx].MaterialIndex = nextMatIdx;
 			}
 		}
@@ -828,10 +810,10 @@ float OTextureWaves::GetHillsHeight(float X, float Z) const
 
 void OTextureWaves::AnimateMaterials(const STimer& Timer)
 {
-	auto waterMaterial = GetEngine()->FindMaterial("Water");
+	const auto waterMaterial = FindMaterial(STextureConstants::Water);
 
-	float& tu = waterMaterial->MaterialConsatnts.MatTransform(3, 0);
-	float& tv = waterMaterial->MaterialConsatnts.MatTransform(3, 1);
+	float& tu = waterMaterial->MatTransform(3, 0);
+	float& tv = waterMaterial->MatTransform(3, 1);
 
 	tu += 0.1f * Timer.GetDeltaTime();
 	tv += 0.02f * Timer.GetDeltaTime();
@@ -846,8 +828,8 @@ void OTextureWaves::AnimateMaterials(const STimer& Timer)
 		tv -= 1.0f;
 	}
 
-	waterMaterial->MaterialConsatnts.MatTransform(3, 0) = tu;
-	waterMaterial->MaterialConsatnts.MatTransform(3, 1) = tv;
+	waterMaterial->MatTransform(3, 0) = tu;
+	waterMaterial->MatTransform(3, 1) = tv;
 
 	waterMaterial->NumFramesDirty = SRenderConstants::NumFrameResources;
 }

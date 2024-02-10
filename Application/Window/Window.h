@@ -34,7 +34,7 @@ public:
 
 	OWindow() = default;
 
-	OWindow(shared_ptr<OEngine> _Engine, HWND hWnd, const SWindowInfo& _WindowInfo);
+	OWindow(HWND hWnd, const SWindowInfo& _WindowInfo);
 	void Init();
 	const wstring& GetName() const;
 	uint32_t GetWidth() const;
@@ -85,7 +85,7 @@ public:
 	 * Hide the window.
 	 */
 	void Hide();
-	void RegsterWindow(shared_ptr<OEngine> Engine);
+	void RegsterWindow();
 	void Destroy();
 
 	HWND GetHWND() const;
@@ -145,8 +145,6 @@ protected:
 
 private:
 	shared_ptr<OInputHandler> InputHandler;
-
-	weak_ptr<OEngine> Engine;
 	shared_ptr<OCamera> Camera;
 
 	HWND Hwnd = nullptr;

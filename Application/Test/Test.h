@@ -13,9 +13,9 @@ public:
 
 	OTest() = default;
 
-	explicit OTest(const shared_ptr<OEngine>& _Engine, const shared_ptr<OWindow>& _Window)
-		: Engine(_Engine)
-		, Window(_Window)
+	explicit OTest(const shared_ptr<OWindow>& _Window)
+	    : Engine(OEngine::Get())
+	    , Window(_Window)
 	{
 	}
 
@@ -65,8 +65,8 @@ public:
 	}
 
 protected:
-	shared_ptr<OEngine> GetEngine() const { return Engine.lock(); }
+	OEngine* GetEngine() const { return Engine; }
 
-	weak_ptr<OEngine> Engine;
+	OEngine* Engine;
 	weak_ptr<OWindow> Window;
 };

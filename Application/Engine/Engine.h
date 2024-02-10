@@ -1,7 +1,9 @@
 #pragma once
 #include "../../Materials/Material.h"
+#include "../../Materials/MaterialManager/MaterialManager.h"
 #include "../../Objects/Geometry/Wave/Waves.h"
 #include "../../Objects/MeshGenerator/MeshGenerator.h"
+#include "../../Textures/TextureManager/TextureManager.h"
 #include "../CommandQueue/CommandQueue.h"
 #include "../Types/Types.h"
 #include "../Window/Window.h"
@@ -12,12 +14,18 @@
 #include "RenderItem.h"
 #include "RenderTarget/RenderTarget.h"
 #include "ShaderTypes.h"
-#include "Textures/Texture.h"
 #include "UI/UIManager/UiManager.h"
 
 #include <dxgi1_6.h>
 
 #include <map>
+
+struct SMaterialDisplacementParams
+{
+	SMaterial* Material = nullptr;
+	DirectX::XMFLOAT2 DisplacementMapTexelSize = { 1, 1 };
+	float GridSpatialStep = 1.0f;
+};
 
 class OEngine : public std::enable_shared_from_this<OEngine>
 {
@@ -25,8 +33,6 @@ public:
 	using TWindowPtr = std::shared_ptr<OWindow>;
 	using TWindowMap = std::map<HWND, TWindowPtr>;
 	using WindowNameMap = std::map<std::wstring, TWindowPtr>;
-	using TMaterialsMap = std::unordered_map<string, unique_ptr<SMaterial>>;
-	using TTexturesMap = std::unordered_map<string, unique_ptr<STexture>>;
 	using TSceneGeometryMap = std::unordered_map<string, unique_ptr<SMeshGeometry>>;
 	using TRenderLayer = map<string, vector<SRenderItem*>>;
 	vector<unique_ptr<SFrameResource>> FrameResources;
@@ -37,11 +43,19 @@ public:
 
 	static void RemoveWindow(HWND Hwnd);
 
+	static OEngine* Get()
+	{
+		if (Engine == nullptr)
+		{
+			Engine = new OEngine();
+		}
+		return Engine;
+	}
+
 	virtual ~OEngine();
 
-	OEngine() = default;
-
 	virtual bool Initialize();
+	void InitManagers();
 	void PostInitialize();
 	void InitUIManager();
 
@@ -129,10 +143,10 @@ public:
 
 	std::unordered_map<string, unique_ptr<SMeshGeometry>>& GetSceneGeometry();
 	void SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry);
-	void BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, std::vector<SMaterial*>* InstanceMaterialArray = nullptr);
+	void BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, std::vector<SMaterialDisplacementParams>* InstanceMaterialArray = nullptr);
 
-	vector<SInstanceData>& BuildRenderItemFromMesh(string Category, SMeshGeometry* Mesh, size_t NumberOfInstances = 1, string Submesh = {});
-	vector<SInstanceData>& BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, size_t NumberOfInstances = 1);
+	vector<SInstanceData>& BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, size_t NumberOfInstances = 1, const SMaterialDisplacementParams& Params = {}, string Submesh = {});
+	vector<SInstanceData>& BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, const SMaterialDisplacementParams& Params, size_t NumberOfInstances = 1);
 	vector<SInstanceData>& BuildRenderItemFromMesh(string Category, const string& Name, const OGeometryGenerator::SMeshData& Data, size_t NumberOfInstances = 1);
 
 	unique_ptr<SMeshGeometry> CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels);
@@ -154,14 +168,6 @@ public:
 	void CreatePSO(const string& PSOName, const D3D12_GRAPHICS_PIPELINE_STATE_DESC& PSODesc);
 	void CreatePSO(const string& PSOName, const D3D12_COMPUTE_PIPELINE_STATE_DESC& PSODesc);
 	ComPtr<ID3D12PipelineState> GetPSO(const string& PSOName);
-
-	void AddMaterial(string Name, unique_ptr<SMaterial>& Material);
-	void CreateMaterial(const string& Name, int32_t CBIndex, int32_t DiffuseSRVHeapIdx, const SMaterialData& Constants);
-	const TMaterialsMap& GetMaterials() const;
-	SMaterial* FindMaterial(const string& Name) const;
-
-	STexture* CreateTexture(string Name, wstring FileName);
-	STexture* FindTexture(string Name) const;
 
 	void AddRenderItem(string Category, unique_ptr<SRenderItem> RenderItem);
 	void AddRenderItem(const vector<string>& Categories, unique_ptr<SRenderItem> RenderItem);
@@ -192,7 +198,6 @@ public:
 	void BuildOffscreenRT();
 	ORenderTarget* GetOffscreenRT() const;
 	void DrawFullScreenQuad();
-	uint32_t GetTextureNum();
 
 	template<typename T>
 	TUUID AddFilter();
@@ -209,6 +214,16 @@ public:
 
 	void PerformFrustrumCulling();
 	uint32_t GetTotalNumberOfInstances() const;
+
+	OMaterialManager* GetMaterialManager() const
+	{
+		return MaterialManager.get();
+	}
+
+	OTextureManager* GetTextureManager() const
+	{
+		return TextureManager.get();
+	}
 
 protected:
 	template<typename T, typename... Args>
@@ -232,8 +247,8 @@ protected:
 	OMeshGenerator* GetMeshGenerator() const;
 
 private:
-	void
-	UpdateMainPass(const STimer& Timer);
+	OEngine() = default;
+	void UpdateMainPass(const STimer& Timer);
 	SPassConstants MainPassCB;
 
 	ComPtr<IDXGIAdapter4> Adapter;
@@ -258,8 +273,6 @@ private:
 	std::unordered_map<string, ComPtr<ID3D12PipelineState>> PSOs;
 
 	TSceneGeometryMap SceneGeometry;
-	TTexturesMap Textures;
-	TMaterialsMap Materials;
 
 	ComPtr<ID3D12RootSignature> PostProcessRootSignature = nullptr;
 	ComPtr<ID3D12RootSignature> WavesRootSignature = nullptr;
@@ -286,6 +299,10 @@ private:
 	bool FrustrumCullingEnabled = true;
 
 	unique_ptr<OMeshGenerator> MeshGenerator;
+	unique_ptr<OTextureManager> TextureManager;
+	unique_ptr<OMaterialManager> MaterialManager;
+
+	inline static OEngine* Engine = nullptr;
 };
 
 template<typename T, typename... Args>

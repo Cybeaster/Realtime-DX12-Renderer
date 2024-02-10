@@ -16,6 +16,7 @@ OGPUWave::OGPUWave(ID3D12Device* _Device, ID3D12GraphicsCommandList* _List, int3
 
 void OGPUWave::BuildResources()
 {
+
 	// All the textures for the wave simulation will be bound as a shader resource and
 	// unordered access view at some point since we ping-pong the buffers.
 

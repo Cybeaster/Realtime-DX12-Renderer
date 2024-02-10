@@ -2,7 +2,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include "Types.h"
 #include "comdef.h"
-
+#include <iostream>
 #include <exception>
 #include <string>
 struct SDXException
@@ -34,6 +34,7 @@ public:
 		if (FAILED(hr))                                                               \
 		{                                                                             \
 			auto __exception = SDXException(hr, L#hr, __FILEW__, __LINE__);           \
+			std::cerr << hr << std::endl;                         \
 			MessageBox(nullptr, __exception.ToString().c_str(), L"HR Failed", MB_OK); \
 			throw __exception;                                                        \
 		}                                                                             \

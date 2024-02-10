@@ -16,9 +16,8 @@
 #pragma optimize("", off)
 using namespace Microsoft::WRL;
 
-OWindow::OWindow(shared_ptr<OEngine> _Engine, HWND hWnd, const SWindowInfo& _WindowInfo)
+OWindow::OWindow(HWND hWnd, const SWindowInfo& _WindowInfo)
     : Hwnd(hWnd)
-    , Engine(_Engine)
     , WindowInfo{ _WindowInfo }
 {
 }
@@ -26,7 +25,7 @@ OWindow::OWindow(shared_ptr<OEngine> _Engine, HWND hWnd, const SWindowInfo& _Win
 void OWindow::Init()
 {
 	Camera = make_shared<OCamera>(shared_from_this());
-	auto engine = Engine.lock();
+	const auto engine = OEngine::Get();
 	SwapChain = CreateSwapChain();
 	RTVHeap = engine->CreateDescriptorHeap(BuffersCount + 1, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	RTVDescriptorSize = engine->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -36,7 +35,7 @@ void OWindow::Init()
 	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	dsvHeapDesc.NodeMask = 0;
-	THROW_IF_FAILED(Engine.lock()->GetDevice()->CreateDescriptorHeap(
+	THROW_IF_FAILED(engine->GetDevice()->CreateDescriptorHeap(
 	    &dsvHeapDesc, IID_PPV_ARGS(DSVHeap.GetAddressOf())));
 
 	UpdateRenderTargetViews();
@@ -172,16 +171,15 @@ void OWindow::Hide()
 	::ShowWindow(Hwnd, SW_HIDE);
 }
 
-void OWindow::RegsterWindow(shared_ptr<OEngine> Other)
+void OWindow::RegsterWindow()
 {
-	Engine = Other;
 	Show();
 	UpdateWindow(Hwnd);
 }
 
 void OWindow::Destroy()
 {
-	if (const auto engine = Engine.lock())
+	if (const auto engine = OEngine::Get())
 	{
 		engine->OnWindowDestroyed();
 	}
@@ -250,7 +248,7 @@ void OWindow::OnMouseMoved(MouseMotionEventArgs& Event)
 	if (Event.LeftButton)
 	{
 		const float dx = 0.1 * static_cast<float>(Event.X - LastMouseXPos);
-		Camera->MoveToTarget(dx * Engine.lock()->GetDeltaTime());
+		Camera->MoveToTarget(dx * OEngine::Get()->GetDeltaTime());
 	}
 
 	LastMouseXPos = Event.X;
@@ -309,9 +307,9 @@ void OWindow::OnUpdateWindowSize(ResizeEventArgs& Event)
 void OWindow::OnResize(ResizeEventArgs& Event)
 {
 	Camera->SetLens(0.25 * DirectX::XM_PI, GetAspectRatio(), 1.0f, 1000.0f);
-	const auto engine = Engine.lock();
+	const auto engine = OEngine::Get();
 	engine->FlushGPU();
-	engine->GetCommandQueue()->ResetCommandList();
+	engine->GetCommandQueue()->TryResetCommandList();
 
 	for (int i = 0; i < BuffersCount; ++i)
 	{
@@ -326,12 +324,7 @@ void OWindow::OnResize(ResizeEventArgs& Event)
 	UpdateRenderTargetViews();
 	ResizeDepthBuffer();
 
-	auto list = engine->GetCommandQueue()->GetCommandList();
-	list->Close();
-	ID3D12CommandList* cmdsLists[] = { list.Get() };
-	engine->GetCommandQueue()->GetCommandQueue()->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
-	engine->FlushGPU();
-
+	engine->GetCommandQueue()->ExecuteCommandListAndWait();
 	Viewport = D3D12_VIEWPORT(0.0f, 0.0f, static_cast<float>(WindowInfo.ClientWidth), static_cast<float>(WindowInfo.ClientHeight), 0.0f, 1.0f);
 	ScissorRect = CD3DX12_RECT(0, 0, WindowInfo.ClientWidth, WindowInfo.ClientHeight);
 }
@@ -353,7 +346,7 @@ shared_ptr<OCamera> OWindow::GetCamera()
 
 ComPtr<IDXGISwapChain4> OWindow::CreateSwapChain()
 {
-	const auto engine = Engine.lock();
+	const auto engine = OEngine::Get();
 	ComPtr<IDXGISwapChain4> swapChain4;
 	UINT msaaQuality;
 	const bool msaaState = engine->GetMSAAState(msaaQuality);
@@ -394,7 +387,7 @@ ComPtr<IDXGISwapChain4> OWindow::CreateSwapChain()
 
 void OWindow::UpdateRenderTargetViews()
 {
-	const auto device = Engine.lock()->GetDevice();
+	const auto device = OEngine::Get()->GetDevice();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(RTVHeap->GetCPUDescriptorHandleForHeapStart());
 
 	for (int i = 0; i < BuffersCount; i++)
@@ -408,7 +401,7 @@ void OWindow::UpdateRenderTargetViews()
 void OWindow::ResizeDepthBuffer()
 {
 	// Flush any GPU commands that might be referencing the depth buffer.
-	const auto engine = Engine.lock();
+	const auto engine = OEngine::Get();
 	engine->FlushGPU();
 
 	auto list = engine->GetCommandQueue()->GetCommandList();
