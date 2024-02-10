@@ -900,7 +900,7 @@ void OEngine::BuildBlurPSO()
 
 void OEngine::BuildShadersAndInputLayouts()
 {
-	/*constexpr D3D_SHADER_MACRO fogDefines[] = {
+	constexpr D3D_SHADER_MACRO fogDefines[] = {
 		"FOG", "1", NULL, NULL
 	};
 
@@ -910,17 +910,17 @@ void OEngine::BuildShadersAndInputLayouts()
 
 	constexpr D3D_SHADER_MACRO wavesDefines[] = {
 		"DISPLACEMENT_MAP", "1", NULL, NULL
-	};*/
+	};
 
 	BuildGSShader(L"Shaders/Geosphere.hlsl", SShaderTypes::GSIcosahedron);
 	BuildPSShader(L"Shaders/Geosphere.hlsl", SShaderTypes::PSIcosahedron);
 	BuildVSShader(L"Shaders/Geosphere.hlsl", SShaderTypes::VSIcosahedron);
 
 	BuildVSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::VSBaseShader);
-	BuildPSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::PSOpaque);
-	BuildPSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::PSAlphaTested);
+	BuildPSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::PSOpaque, fogDefines);
+	BuildPSShader(L"Shaders/BaseShader.hlsl", SShaderTypes::PSAlphaTested, alphaTestDefines);
 
-	BuildShader(L"Shaders/BaseShader.hlsl", SShaderTypes::VSWaves, EShaderLevel::VertexShader, "VS");
+	BuildShader(L"Shaders/BaseShader.hlsl", SShaderTypes::VSWaves, EShaderLevel::VertexShader, "VS", wavesDefines);
 
 	BuildVSShader(L"Shaders/TreeSprite.hlsl", SShaderTypes::VSTreeSprite);
 	BuildGSShader(L"Shaders/TreeSprite.hlsl", SShaderTypes::GSTreeSprite);
@@ -1261,13 +1261,19 @@ void OEngine::BuildDefaultRootSignature()
 	CD3DX12_DESCRIPTOR_RANGE texTable;
 	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 7, 0, 0);
 
-	constexpr auto size = 4;
+	CD3DX12_DESCRIPTOR_RANGE displacementTable;
+	displacementTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 7, 0);
+
+	constexpr auto size = 5;
 	CD3DX12_ROOT_PARAMETER slotRootParameter[size];
 
 	slotRootParameter[0].InitAsShaderResourceView(0, 1);
 	slotRootParameter[1].InitAsShaderResourceView(1, 1);
+
 	slotRootParameter[2].InitAsConstantBufferView(0);
+
 	slotRootParameter[3].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[4].InitAsDescriptorTable(1, &displacementTable, D3D12_SHADER_VISIBILITY_VERTEX);
 
 	const auto staticSamples
 	    = Utils::GetStaticSamplers();

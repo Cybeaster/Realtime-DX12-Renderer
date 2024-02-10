@@ -28,9 +28,10 @@ struct InstanceData
 	float4x4 World;
 	float4x4 TexTransform;
 	uint MaterialIndex;
-	uint Pad0;
-	uint Pad1;
-	uint Pad2;
+#ifdef DISPLACEMENT_MAP
+	float2 DisplacementMapTexelSize;
+	float GridSpatialStep;
+#endif
 };
 
 struct MaterialData
@@ -46,6 +47,8 @@ struct MaterialData
 };
 
 Texture2D gDiffuseMap[7] : register(t0);
+Texture2D gDisplacementMap : register(t7);
+
 StructuredBuffer<InstanceData> gInstanceData : register(t0, space1);
 // Put in space1, so the texture array does not overlap with these resources.
 // The texture array will occupy registers t0, t1, ..., t3 in space0.
@@ -122,20 +125,19 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	vout.MaterialIndex = matIndex;
 	MaterialData matData = gMaterialData[matIndex];
 
-	/*#ifdef DISPLACEMENT_MAP
+#ifdef DISPLACEMENT_MAP
 	// Sample the displacement map using non-transformed [0,1]^2 tex-coords.
 	Vin.PosL.y += gDisplacementMap.SampleLevel(gsamLinearWrap, Vin.TexC, 1.0f).r;
 
 	// Estimate normal using finite difference.
-	float du = gDisplacementMapTexelSize.x;
-	float dv = gDisplacementMapTexelSize.y;
+	float du = inst.DisplacementMapTexelSize.x;
+	float dv = inst.DisplacementMapTexelSize.y;
 	float l = gDisplacementMap.SampleLevel(gsamPointClamp, Vin.TexC - float2(du, 0.0f), 0.0f).r;
 	float r = gDisplacementMap.SampleLevel(gsamPointClamp, Vin.TexC + float2(du, 0.0f), 0.0f).r;
 	float t = gDisplacementMap.SampleLevel(gsamPointClamp, Vin.TexC - float2(0.0f, dv), 0.0f).r;
 	float b = gDisplacementMap.SampleLevel(gsamPointClamp, Vin.TexC + float2(0.0f, dv), 0.0f).r;
-	Vin.NormalL = normalize(float3(-r + l, 2.0f * gGridSpatialStep, b - t));
-
-#endif*/
+	Vin.NormalL = normalize(float3(-r + l, 2.0f * inst.GridSpatialStep, b - t));
+#endif
 
 	// Transform to world space.
 
