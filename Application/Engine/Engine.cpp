@@ -82,7 +82,7 @@ bool OEngine::Initialize()
 
 void OEngine::InitManagers()
 {
-	MeshGenerator = make_unique<OMeshGenerator>();
+	MeshGenerator = make_unique<OMeshGenerator>(Device.Get(), GetCommandQueue().get());
 	TextureManager = make_unique<OTextureManager>(Device.Get(), GetCommandQueue().get());
 	MaterialManager = make_unique<OMaterialManager>();
 	MaterialManager->BuildDefaultMaterials(TextureManager->GetTextures());
@@ -250,9 +250,9 @@ void OEngine::OnPreRender()
 		commandList->RSSetScissorRects(1, &window->ScissorRect);
 
 		const auto dsv = window->GetDepthStensilView();
-		const auto rtv = window->CurrentBackBufferView();
+		const auto rtv = OffscreenRT->GetRTV();
 
-		Utils::ResourceBarrier(commandList.Get(), window->GetCurrentBackBuffer().Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		Utils::ResourceBarrier(commandList.Get(), OffscreenRT->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 		// Clear the back buffer and depth buffer.
 		commandList->ClearRenderTargetView(rtv, reinterpret_cast<float*>(&MainPassCB.FogColor), 0, nullptr);
@@ -317,7 +317,7 @@ void OEngine::PostProcess(HWND Handler)
 	const auto commandList = GetCommandQueue()->GetCommandList();
 	const auto backBuffer = GetWindowByHWND(Handler)->GetCurrentBackBuffer().Get();
 
-	/*Utils::ResourceBarrier(commandList.Get(),
+	Utils::ResourceBarrier(commandList.Get(),
 	                       OffscreenRT->GetResource(),
 	                       D3D12_RESOURCE_STATE_RENDER_TARGET,
 	                       D3D12_RESOURCE_STATE_GENERIC_READ);
@@ -325,22 +325,22 @@ void OEngine::PostProcess(HWND Handler)
 	Utils::ResourceBarrier(commandList.Get(),
 	                       backBuffer,
 	                       D3D12_RESOURCE_STATE_PRESENT,
-	                       D3D12_RESOURCE_STATE_RENDER_TARGET);*/
+	                       D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 	auto rtv = Window->CurrentBackBufferView();
 	auto dsv = Window->GetDepthStensilView();
 	commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
 
-	/*if (auto [executed, srv] = GetSobelFilter()->Execute(PostProcessRootSignature.Get(),
+	if (auto [executed, srv] = GetSobelFilter()->Execute(PostProcessRootSignature.Get(),
 	                                                     PSOs[SPSOType::SobelFilter].Get(),
 	                                                     OffscreenRT->GetSRV());
 	    executed)
 	{
 		DrawCompositeShader(srv);
 	}
-	else*/
+	else
 	{
-		/*Utils::ResourceBarrier(commandList.Get(),
+		Utils::ResourceBarrier(commandList.Get(),
 		                       backBuffer,
 		                       D3D12_RESOURCE_STATE_RENDER_TARGET,
 		                       D3D12_RESOURCE_STATE_COPY_DEST);
@@ -348,10 +348,10 @@ void OEngine::PostProcess(HWND Handler)
 		Utils::ResourceBarrier(commandList.Get(),
 		                       backBuffer,
 		                       D3D12_RESOURCE_STATE_COPY_DEST,
-		                       D3D12_RESOURCE_STATE_RENDER_TARGET);*/
+		                       D3D12_RESOURCE_STATE_RENDER_TARGET);
 	}
 
-	/*GetBlurFilter()->Execute(BlurRootSignature.Get(),
+	GetBlurFilter()->Execute(BlurRootSignature.Get(),
 	                         PSOs[SPSOType::HorizontalBlur].Get(),
 	                         PSOs[SPSOType::VerticalBlur].Get(),
 	                         backBuffer);
@@ -362,7 +362,7 @@ void OEngine::PostProcess(HWND Handler)
 	                                  PSOs[SPSOType::BilateralBlur].Get(),
 	                                  backBuffer);
 
-	GetBilateralBlurFilter()->OutputTo(backBuffer);*/
+	GetBilateralBlurFilter()->OutputTo(backBuffer);
 
 	Utils::ResourceBarrier(commandList.Get(),
 	                       backBuffer,
@@ -725,7 +725,7 @@ D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetMirrorPSODesc()
 
 D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetDebugPSODesc()
 {
-	//wireframe debug
+	// wireframe debug
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaqueWireframePsoDesc = GetOpaquePSODesc();
 	opaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	return opaqueWireframePsoDesc;
@@ -793,7 +793,7 @@ void OEngine::BuildDescriptorHeap()
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.MipLevels = -1;
 
-	//Textures, SRV offset only
+	// Textures, SRV offset only
 	for (const auto& texture : TextureManager->GetTextures() | std::views::values)
 	{
 		srvDesc.Format = texture->Resource->GetDesc().Format;
@@ -801,7 +801,7 @@ void OEngine::BuildDescriptorHeap()
 		hDescriptor.Offset(1, CBVSRVUAVDescriptorSize);
 	}
 
-	//All the other objcts, SRVs, UAVs and RTVs
+	// All the other objcts, SRVs, UAVs and RTVs
 	SRVDescriptor = GetObjectDescriptor();
 	SRVDescriptor.OffsetSRV(texturesNum);
 	SRVDescriptor.RTVCPUOffset(numBackBuffers);
@@ -1177,7 +1177,7 @@ void OEngine::BuildPostProcessRootSignature()
 	CD3DX12_DESCRIPTOR_RANGE uavTable0;
 	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
 
-	//Order from most frequent to least frequent.
+	// Order from most frequent to least frequent.
 	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
 	slotRootParameter[0].InitAsDescriptorTable(1, &srvTable0);
 	slotRootParameter[1].InitAsDescriptorTable(1, &srvTable1);
@@ -1294,7 +1294,7 @@ void OEngine::BuildWavesRootSignature()
 
 uint32_t OEngine::GetNumOffscrenRT() const
 {
-	//TODO move RT to array
+	// TODO move RT to array
 	return 1;
 }
 
@@ -1465,50 +1465,18 @@ std::unordered_map<string, unique_ptr<SMeshGeometry>>& OEngine::GetSceneGeometry
 	return SceneGeometry;
 }
 
-void OEngine::SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry)
+SMeshGeometry* OEngine::SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry)
 {
+	auto geo = Geometry.get();
 	SceneGeometry[Geometry->Name] = move(Geometry);
+	return geo;
 }
 
-void OEngine::BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, std::vector<SMaterialDisplacementParams>* InstanceMaterialArray)
+vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, size_t NumberOfInstances, const SMaterialDisplacementParams& Params, string Submesh)
 {
-	SRenderItem newItem;
-	newItem.World = Utils::Math::Identity4x4();
-	newItem.TexTransform = Utils::Math::Identity4x4();
-	newItem.ObjectCBIndex = AllRenderItems.size();
-	newItem.PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-
-	if (InstanceMaterialArray != nullptr)
-	{
-		newItem.Instances.resize(InstanceMaterialArray->size());
-		size_t counter = 0;
-		for (const auto& material : *InstanceMaterialArray)
-		{
-			SInstanceData data = {};
-			data.MaterialIndex = material.Material->DiffuseSRVHeapIndex;
-			data.GridSpatialStep = material.GridSpatialStep;
-			data.DisplacementMapTexelSize = material.DisplacementMapTexelSize;
-			newItem.Instances[counter] = data;
-			counter++;
-		}
-	}
-	else
-	{
-		SInstanceData data = {};
-		data.MaterialIndex = 0;
-		newItem.Instances.push_back(data);
-	}
-
-	for (auto& subMesh : Mesh->GetDrawArgs() | std::views::values)
-	{
-		newItem.IndexCount = subMesh.IndexCount;
-		newItem.StartIndexLocation = subMesh.StartIndexLocation;
-		newItem.BaseVertexLocation = subMesh.BaseVertexLocation;
-		newItem.Bounds = subMesh.Bounds;
-		auto item = make_unique<SRenderItem>(newItem);
-		AddRenderItem(Category, std::move(item));
-	}
+	return BuildRenderItemFromMesh(Category, SetSceneGeometry(move(Mesh)), NumberOfInstances, Params, Submesh);
 }
+
 vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, size_t NumberOfInstances, const SMaterialDisplacementParams& Params, string Submesh)
 {
 	auto newItem = make_unique<SRenderItem>();
@@ -1518,7 +1486,7 @@ vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, 
 	newItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
 	SInstanceData defaultInstance;
-	defaultInstance.MaterialIndex = Params.Material != nullptr ? Params.Material->MaterialCBIndex : MaterialManager->GetMaterialCBIndex(STextureConstants::Debug);
+	defaultInstance.MaterialIndex = Params.Material != nullptr ? Params.Material->MaterialCBIndex : MaterialManager->GetMaterialCBIndex(STextureNames::Debug);
 	defaultInstance.GridSpatialStep = Params.GridSpatialStep;
 	defaultInstance.DisplacementMapTexelSize = Params.DisplacementMapTexelSize;
 
@@ -1542,7 +1510,7 @@ vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, 
 }
 vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, const SMaterialDisplacementParams& Params, size_t NumberOfInstances)
 {
-	auto mesh = MeshGenerator->CreateMesh(Name, Path, Parser, GenTexels, Device.Get(), GetCommandQueue()->GetCommandList().Get());
+	auto mesh = MeshGenerator->CreateMesh(Name, Path, Parser, GenTexels);
 	const auto meshptr = mesh.get();
 	SetSceneGeometry(std::move(mesh));
 	return BuildRenderItemFromMesh(Category, meshptr, NumberOfInstances, Params, {});
@@ -1550,12 +1518,12 @@ vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, 
 
 unique_ptr<SMeshGeometry> OEngine::CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels)
 {
-	return MeshGenerator->CreateMesh(Name, Path, Parser, GenTexels, Device.Get(), GetCommandQueue()->GetCommandList().Get());
+	return MeshGenerator->CreateMesh(Name, Path, Parser, GenTexels);
 }
 
 unique_ptr<SMeshGeometry> OEngine::CreateMesh(const string& Name, const OGeometryGenerator::SMeshData& Data)
 {
-	return MeshGenerator->CreateMesh(Name, Data, Device.Get(), GetCommandQueue()->GetCommandList().Get());
+	return MeshGenerator->CreateMesh(Name, Data);
 }
 
 SMeshGeometry* OEngine::FindSceneGeometry(const string& Name) const

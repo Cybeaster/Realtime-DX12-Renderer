@@ -15,6 +15,7 @@ void OUIManager::InitContext(ID3D12Device2* Device, HWND Hwnd, UINT NumFramesInL
 	ImGui::CreateContext();
 	IO = &ImGui::GetIO();
 	IO->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	KeyMap();
 
 	ImGui_ImplWin32_Init(Hwnd);
 	ImGui_ImplDX12_Init(
@@ -28,7 +29,6 @@ void OUIManager::InitContext(ID3D12Device2* Device, HWND Hwnd, UINT NumFramesInL
 	ImGui::StyleColorsDark();
 	UpdateDescriptors(OutDescriptor);
 	InitWidgets(Engine);
-	KeyMap();
 }
 
 void OUIManager::Draw()
@@ -139,7 +139,6 @@ void OUIManager::KeyMap()
 	io.KeyMap[ImGuiKey_ModCtrl] = KeyCode::ControlKey; // Ctrl key
 	io.KeyMap[ImGuiKey_ModShift] = KeyCode::ShiftKey; // Shift key
 	io.KeyMap[ImGuiKey_ModAlt] = KeyCode::AltKey; // Alt key
-	io.KeyMap[ImGuiKey_ModSuper] = KeyCode::LWin; // Super key (Windows key)
 
 	// Arrow keys
 	io.KeyMap[ImGuiKey_LeftArrow] = KeyCode::Left;

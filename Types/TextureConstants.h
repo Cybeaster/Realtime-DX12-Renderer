@@ -2,12 +2,12 @@
 #include "MaterialData.h"
 #include "Types.h"
 
-struct STextureConstants
+struct STextureNames
 {
 	inline static const string Default = "white1x1";
-	inline static const string Debug = "Fireball";
+	inline static const string Debug = "debug";
 	inline static const string White = "white1x1";
-	inline static const string Water = "water1";
+	inline static const string Water = "debug";
 };
 
 struct SMaterialSurfaces

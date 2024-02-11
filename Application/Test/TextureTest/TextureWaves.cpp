@@ -18,7 +18,6 @@
 #include <filesystem>
 #include <iostream>
 #include <ranges>
-#pragma optimize("", off)
 using namespace Microsoft::WRL;
 
 using namespace DirectX;
@@ -43,15 +42,7 @@ bool OTextureWaves::Initialize()
 	                                            0.03f,
 	                                            2.0f,
 	                                            0.2f);
-	OGeometryGenerator geoGen;
 
-	const auto grid = geoGen.CreateGrid(160.0f, 160.0f, 50, 50);
-	auto box = geoGen.CreateBox(2.0f, 1.0f, 2.0f, 3);
-	auto sphere = geoGen.CreateSphere(0.5f, 20, 20);
-
-	engine->SetFog({ 0.7f, 0.7f, 0.7f, 1.0f }, 50.0f, 150.0f);
-
-	BuildMaterials();
 	BuildShadersAndInputLayout();
 	BuildRenderItems();
 	engine->GetCommandQueue()->ExecuteCommandList();
@@ -114,7 +105,7 @@ void OTextureWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandLis
 		{
 			continue;
 		}
-		if (renderItem->Instances.size() > 0)
+		if (!renderItem->Instances.empty())
 		{
 			auto vertexView = renderItem->Geometry->VertexBufferView();
 			auto indexView = renderItem->Geometry->IndexBufferView();
@@ -137,12 +128,6 @@ void OTextureWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandLis
 	}
 }
 
-void OTextureWaves::OnMouseWheel(const MouseWheelEventArgs& Args)
-{
-	OTest::OnMouseWheel(Args);
-	GetEngine()->GetMainPassCB().FogStart += Args.WheelDelta;
-}
-
 void OTextureWaves::BuildTreeSpriteGeometry()
 {
 	struct STreeSpriteVertex
@@ -160,7 +145,7 @@ void OTextureWaves::BuildTreeSpriteGeometry()
 		float z = Utils::Math::Random(-45.0f, 45.0f);
 		float y = GetHillsHeight(x, z);
 
-		//move slightly above the hill height
+		// move slightly above the hill height
 		y += 10.0f;
 
 		vertices[i].Pos = XMFLOAT3(x, y, z);
@@ -319,7 +304,6 @@ void OTextureWaves::OnRender(const UpdateEventArgs& Event)
 	commandList->SetGraphicsRootDescriptorTable(3, engine->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart());
 
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Opaque));
-
 }
 
 void OTextureWaves::BuildPSOTreeSprites()
@@ -766,13 +750,14 @@ void OTextureWaves::BuildRenderItems()
 	GetEngine()->AddRenderItem(SRenderLayer::Tesselation, std::move(bquadPatchRitem));*/
 
 	const auto engine = Engine;
-	constexpr size_t n = 5;
+
+	constexpr size_t n = 2;
 	auto& instances = engine->BuildRenderItemFromMesh(SRenderLayer::Opaque,
 	                                                  "Skull",
 	                                                  "Resources/Models/skull.txt",
 	                                                  EParserType::Custom,
 	                                                  ETextureMapType::Spherical,
-	                                                  { FindMaterial(STextureConstants::White) },
+	                                                  { FindMaterial(STextureNames::Debug) },
 	                                                  n * n * n);
 
 	float width = 200.0f;
@@ -810,7 +795,7 @@ float OTextureWaves::GetHillsHeight(float X, float Z) const
 
 void OTextureWaves::AnimateMaterials(const STimer& Timer)
 {
-	const auto waterMaterial = FindMaterial(STextureConstants::Water);
+	const auto waterMaterial = FindMaterial(STextureNames::Water);
 
 	float& tu = waterMaterial->MatTransform(3, 0);
 	float& tv = waterMaterial->MatTransform(3, 1);
@@ -845,5 +830,3 @@ XMFLOAT3 OTextureWaves::GetHillsNormal(float X, float Z) const
 	XMStoreFloat3(&n, unitNormal);
 	return n;
 }
-
-#pragma optimize("", on)

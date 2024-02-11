@@ -21,7 +21,7 @@ void OMaterialManager::CreateMaterial(const string& Name, STexture* Texture, con
 	auto mat = make_unique<SMaterial>();
 	mat->Name = Name;
 	mat->MaterialCBIndex = Materials.size();
-	mat->DiffuseSRVHeapIndex = Texture ? Texture->HeapIdx : FindTexture(STextureConstants::Debug)->HeapIdx;
+	mat->DiffuseSRVHeapIndex = Texture ? Texture->HeapIdx : FindTexture(STextureNames::Debug)->HeapIdx;
 	mat->MaterialSurface = Surface;
 	AddMaterial(Name, mat);
 }
@@ -46,7 +46,7 @@ SMaterial* OMaterialManager::FindMaterial(const string& Name) const
 	if (!Materials.contains(Name))
 	{
 		LOG(Engine, Error, "Material not found!");
-		return Name != STextureConstants::Debug ? FindMaterial(STextureConstants::Debug) : nullptr;
+		return Name != STextureNames::Debug ? FindMaterial(STextureNames::Debug) : nullptr;
 		;
 	}
 	return Materials.at(Name).get();
@@ -58,16 +58,18 @@ uint32_t OMaterialManager::GetMaterialCBIndex(const string& Name) const
 	if (!material)
 	{
 		LOG(Engine, Error, "Material not found!");
-		return Name != STextureConstants::Debug ? GetMaterialCBIndex(STextureConstants::Debug) : -1;
+		return Name != STextureNames::Debug ? GetMaterialCBIndex(STextureNames::Debug) : -1;
 	}
 	return material->MaterialCBIndex;
 }
 
 void OMaterialManager::BuildDefaultMaterials(std::unordered_map<string, unique_ptr<STexture>>& Textures)
 {
-	CreateMaterial(STextureConstants::Debug, FindTexture(SConfig::DebugTexture), SMaterialSurfaces::Metallic);
+	CreateMaterial(STextureNames::Debug, FindTexture(SConfig::DebugTexture), SMaterialSurfaces::Metallic);
+	int32_t idx = 0;
 	for (const auto& [name, texture] : Textures)
 	{
-		CreateMaterial(name, texture.get(), SMaterialSurfaces::Lambertian);
+		string res = name + std::to_string(idx++);
+		CreateMaterial(res, texture.get(), SMaterialSurfaces::Lambertian);
 	}
 }

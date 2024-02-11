@@ -18,7 +18,7 @@ OCommandQueue::OCommandQueue(Microsoft::WRL::ComPtr<ID3D12Device2> Device, D3D12
 	THROW_IF_FAILED(Device->CreateCommandList(0, Type, CommandAllocator.Get(), nullptr, IID_PPV_ARGS(CommandList.GetAddressOf())));
 
 	FenceEvent = ::CreateEvent(nullptr, FALSE, FALSE, nullptr);
-	CHECK(FenceEvent, "Failed to create fence event handle.");
+	CHECK(FenceEvent);
 
 	CommandList->Close();
 	IsReset = false;

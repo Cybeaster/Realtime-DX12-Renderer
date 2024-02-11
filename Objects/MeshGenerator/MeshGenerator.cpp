@@ -7,12 +7,43 @@
 #include "../../Utils/DirectX.h"
 #include "../../Utils/Math.h"
 #include "../MeshParser.h"
+#include "CommandQueue/CommandQueue.h"
 #include "Logger.h"
 #include "Vertex.h"
 using namespace DirectX;
 using namespace Utils::Math;
 
-unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(string Name, const OGeometryGenerator::SMeshData& Data, ID3D12Device* Device, ID3D12GraphicsCommandList* CommandList)
+unique_ptr<SMeshGeometry> OMeshGenerator::CreateGridMesh(string Name, float Width, float Depth, float Row, uint32_t Column)
+{
+	return CreateMesh(Name, Generator.CreateGrid(Width, Depth, Row, Column));
+}
+
+unique_ptr<SMeshGeometry> OMeshGenerator::CreateBoxMesh(string Name, float Width, float Height, float Depth, uint32_t NumSubdivisions)
+{
+	return CreateMesh(Name, Generator.CreateBox(Width, Height, Depth, NumSubdivisions));
+}
+
+unique_ptr<SMeshGeometry> OMeshGenerator::CreateSphereMesh(string Name, float Radius, uint32_t SliceCount, uint32_t StackCount)
+{
+	return CreateMesh(Name, Generator.CreateSphere(Radius, SliceCount, StackCount));
+}
+
+unique_ptr<SMeshGeometry> OMeshGenerator::CreateCylinderMesh(string Name, float BottomRadius, float TopRadius, float Height, uint32_t SliceCount, uint32_t StackCount)
+{
+	return CreateMesh(Name, Generator.CreateCylinder(BottomRadius, TopRadius, Height, SliceCount, StackCount));
+}
+
+unique_ptr<SMeshGeometry> OMeshGenerator::CreateGeosphereMesh(string Name, float Radius, uint32_t NumSubdivisions)
+{
+	return CreateMesh(Name, Generator.CreateGeosphere(Radius, NumSubdivisions));
+}
+
+unique_ptr<SMeshGeometry> OMeshGenerator::CreateQuadMesh(string Name, float X, float Y, float Width, float Height, float Depth)
+{
+	return CreateMesh(Name, Generator.CreateQuad(X, Y, Width, Height, Depth));
+}
+
+unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(string Name, const OGeometryGenerator::SMeshData& Data) const
 {
 	std::vector<SVertex> vertices(Data.Vertices.size());
 
@@ -53,13 +84,13 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(string Name, const OGeometr
 	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
 	geo->VertexBufferGPU = Utils::CreateDefaultBuffer(Device,
-	                                                  CommandList,
+	                                                  CommandQueue->GetCommandList().Get(),
 	                                                  vertices.data(),
 	                                                  vbByteSize,
 	                                                  geo->VertexBufferUploader);
 
 	geo->IndexBufferGPU = Utils::CreateDefaultBuffer(Device,
-	                                                 CommandList,
+	                                                 CommandQueue->GetCommandList().Get(),
 	                                                 indices.data(),
 	                                                 ibByteSize,
 	                                                 geo->IndexBufferUploader);
@@ -81,7 +112,7 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(string Name, const OGeometr
 	return move(geo);
 }
 
-unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, ID3D12Device* Device, ID3D12GraphicsCommandList* CommandList)
+unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels)
 {
 	unique_ptr<IMeshParser> parser = nullptr;
 	switch (Parser)
@@ -96,7 +127,7 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const string& Name, const s
 	CWIN_LOG(!successful, Geometry, Warning, "Failed to parse the mesh: {}", TO_STRING(Path));
 	if (successful)
 	{
-		return CreateMesh(Name, data, Device, CommandList);
+		return CreateMesh(Name, data);
 	}
 	else
 	{

@@ -9,5 +9,5 @@ struct SConfig
 	inline static string TexturesFolder = "Resources/Textures/";
 	inline static string ModelsFolder = "Resources/Models/";
 
-	inline static string DebugTexture = "white1x1";
+	inline static string DebugTexture = "bricks";
 };

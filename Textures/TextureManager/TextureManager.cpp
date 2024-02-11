@@ -24,7 +24,6 @@ void OTextureManager::LoadLocalTextures()
 		LOG(Engine, Error, "Textures folder not found!");
 		return;
 	}
-
 	for (auto& entry : std::filesystem::directory_iterator(path))
 	{
 		if (is_regular_file(entry))

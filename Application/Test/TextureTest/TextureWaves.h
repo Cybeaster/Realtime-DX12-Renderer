@@ -34,7 +34,6 @@ public:
 	void DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList,
 	                     const vector<SRenderItem*>& RenderItems) const;
 
-	void OnMouseWheel(const MouseWheelEventArgs& Args) override;
 	OGPUWave* Waves = nullptr;
 
 private:

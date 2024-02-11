@@ -257,6 +257,11 @@ void OWindow::OnMouseMoved(MouseMotionEventArgs& Event)
 
 void OWindow::OnMouseButtonPressed(MouseButtonEventArgs& Event)
 {
+	if (Event.IsUIInfocus)
+	{
+		return;
+	}
+
 	LastMouseXPos = Event.X;
 	LastMouseYPos = Event.Y;
 	SetCapture(Hwnd);

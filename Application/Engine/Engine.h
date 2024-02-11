@@ -142,9 +142,9 @@ public:
 	UINT CBVSRVUAVDescriptorSize = 0;
 
 	std::unordered_map<string, unique_ptr<SMeshGeometry>>& GetSceneGeometry();
-	void SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry);
-	void BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, std::vector<SMaterialDisplacementParams>* InstanceMaterialArray = nullptr);
+	SMeshGeometry* SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry);
 
+	vector<SInstanceData>& BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, size_t NumberOfInstances, const SMaterialDisplacementParams& Params, string Submesh);
 	vector<SInstanceData>& BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, size_t NumberOfInstances = 1, const SMaterialDisplacementParams& Params = {}, string Submesh = {});
 	vector<SInstanceData>& BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, const SMaterialDisplacementParams& Params, size_t NumberOfInstances = 1);
 	vector<SInstanceData>& BuildRenderItemFromMesh(string Category, const string& Name, const OGeometryGenerator::SMeshData& Data, size_t NumberOfInstances = 1);
@@ -225,6 +225,8 @@ public:
 		return TextureManager.get();
 	}
 
+	OMeshGenerator* GetMeshGenerator() const;
+
 protected:
 	template<typename T, typename... Args>
 	TUUID BuildRenderObjectImpl(Args&&... Params);
@@ -244,7 +246,6 @@ protected:
 	void BuildBilateralBlurRootSignature();
 
 	uint32_t GetNumOffscrenRT() const;
-	OMeshGenerator* GetMeshGenerator() const;
 
 private:
 	OEngine() = default;

@@ -2,6 +2,16 @@
 #include <DirectX/DXHelper.h>
 #include <Types.h>
 
+enum class EGeometryType
+{
+	Grid,
+	Box,
+	Sphere,
+	Cylinder,
+	GeoSphere,
+	Quad
+};
+
 class OEngine;
 class OGeometryGenerator
 {
