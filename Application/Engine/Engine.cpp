@@ -1498,6 +1498,7 @@ vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, 
 
 	if (Submesh == "")
 	{
+		LOG(Geometry, Log, "Submesh not specified, using first submesh!");
 		Submesh = Mesh->GetDrawArgs().begin()->first;
 	}
 	const auto& chosenSubmesh = *Mesh->FindSubmeshGeomentry(Submesh);
