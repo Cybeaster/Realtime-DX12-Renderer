@@ -305,10 +305,12 @@ void OTextureWaves::OnRender(const UpdateEventArgs& Event)
 	commandList->SetGraphicsRootConstantBufferView(2, engine->CurrentFrameResources->PassCB->GetResource()->GetGPUVirtualAddress());
 	commandList->SetGraphicsRootDescriptorTable(3, engine->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart());
 
+	UpdateWave(Event.Timer);
+	commandList->SetGraphicsRootDescriptorTable(4, Waves->GetDisplacementMap());
+
 	GetEngine()->SetPipelineState(SPSOType::Opaque);
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Opaque));
 
-	commandList->SetGraphicsRootDescriptorTable(4, Waves->GetDisplacementMap());
 	GetEngine()->SetPipelineState(SPSOType::WavesRender);
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Waves));
 }
