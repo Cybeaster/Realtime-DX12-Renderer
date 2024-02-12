@@ -65,11 +65,9 @@ uint32_t OMaterialManager::GetMaterialCBIndex(const string& Name) const
 
 void OMaterialManager::BuildDefaultMaterials(std::unordered_map<string, unique_ptr<STexture>>& Textures)
 {
-	CreateMaterial(STextureNames::Debug, FindTexture(SConfig::DebugTexture), SMaterialSurfaces::Metallic);
-	int32_t idx = 0;
+	CreateMaterial(SMaterialNames::Debug, FindTexture(SConfig::DebugTexture), SMaterialSurfaces::Debug);
 	for (const auto& [name, texture] : Textures)
 	{
-		string res = name + std::to_string(idx++);
-		CreateMaterial(res, texture.get(), SMaterialSurfaces::Lambertian);
+		CreateMaterial(name, texture.get(), SMaterialSurfaces::Lambertian);
 	}
 }

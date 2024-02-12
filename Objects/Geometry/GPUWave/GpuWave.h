@@ -1,4 +1,6 @@
 #pragma once
+#include "../../../Materials/Material.h"
+#include "../../../Utils/EngineHelper.h"
 #include "DXHelper.h"
 #include "Engine/RenderObject/RenderObject.h"
 #include "Timer/Timer.h"
@@ -24,6 +26,24 @@ public:
 		return DirectX::XMFLOAT2(1.0f / NumCols, 1.0f / NumRows);
 	}
 
+	SMaterialDisplacementParams GetDisplacementParams() const
+	{
+		SMaterialDisplacementParams Params;
+		Params.Material = FindMaterial(SMaterialNames::Debug);
+		Params.DisplacementMapTexelSize = GetDiplacementMapTexelSize();
+		Params.GridSpatialStep = GetSpatialStep();
+		return Params;
+	}
+
+	SRenderItemParams GetRIParams()
+	{
+		SRenderItemParams params;
+		params.NumberOfInstances = 1;
+		params.bFrustrumCoolingEnabled = false;
+		params.MaterialDispalcement = GetDisplacementParams();
+		return params;
+	}
+
 	uint32_t GetNumDescriptors() const override
 	{
 		return 6;
@@ -47,7 +67,7 @@ private:
 	UINT VertexCount;
 	UINT TriangleCount;
 
-	//Simulation constants
+	// Simulation constants
 	float mK[3];
 
 	float TimeStep;

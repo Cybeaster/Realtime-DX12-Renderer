@@ -1325,6 +1325,7 @@ void OEngine::PerformFrustrumCulling()
 	const auto invView = XMMatrixInverse(&det, view);
 	const auto camera = Window->GetCamera();
 	auto currentInstanceBuffer = CurrentFrameResources->InstanceBuffer.get();
+	int32_t counter = 0;
 	for (auto& e : AllRenderItems)
 	{
 		const auto& instData = e->Instances;
@@ -1336,6 +1337,11 @@ void OEngine::PerformFrustrumCulling()
 		size_t visibleInstanceCount = 0;
 		for (size_t i = 0; i < instData.size(); i++)
 		{
+			if (visibleInstanceCount == 0)
+			{
+				e->StartInstanceLocation = counter;
+			}
+
 			auto world = XMLoadFloat4x4(&instData[i].World);
 			auto textTransform = XMLoadFloat4x4(&instData[i].TexTransform);
 			det = XMMatrixDeterminant(world);
@@ -1345,8 +1351,7 @@ void OEngine::PerformFrustrumCulling()
 			BoundingFrustum localSpaceFrustum;
 			camera->GetFrustrum().Transform(localSpaceFrustum, viewToLocal);
 
-			// Perform the box/frustum intersection test in local space.
-			if (localSpaceFrustum.Contains(e->Bounds) != DirectX::DISJOINT || !FrustrumCullingEnabled)
+			if (!FrustrumCullingEnabled || !e->bFrustrumCoolingEnabled || localSpaceFrustum.Contains(e->Bounds) != DirectX::DISJOINT)
 			{
 				SInstanceData data;
 				XMStoreFloat4x4(&data.World, XMMatrixTranspose(world));
@@ -1354,7 +1359,8 @@ void OEngine::PerformFrustrumCulling()
 				data.MaterialIndex = instData[i].MaterialIndex;
 				data.GridSpatialStep = instData[i].GridSpatialStep;
 				data.DisplacementMapTexelSize = instData[i].DisplacementMapTexelSize;
-				currentInstanceBuffer->CopyData(visibleInstanceCount++, data);
+				currentInstanceBuffer->CopyData(counter++, data);
+				visibleInstanceCount++;
 			}
 		}
 		e->VisibleInstanceCount = visibleInstanceCount;
@@ -1472,36 +1478,37 @@ SMeshGeometry* OEngine::SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry)
 	return geo;
 }
 
-vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, size_t NumberOfInstances, const SMaterialDisplacementParams& Params, string Submesh)
+vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params)
 {
-	return BuildRenderItemFromMesh(Category, SetSceneGeometry(move(Mesh)), NumberOfInstances, Params, Submesh);
+	return BuildRenderItemFromMesh(Category, SetSceneGeometry(move(Mesh)), Params);
 }
 
-vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, size_t NumberOfInstances, const SMaterialDisplacementParams& Params, string Submesh)
+vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, const SRenderItemParams& Params)
 {
 	auto newItem = make_unique<SRenderItem>();
 	newItem->World = Utils::Math::Identity4x4();
 	newItem->TexTransform = Utils::Math::Identity4x4();
 	newItem->ObjectCBIndex = AllRenderItems.size();
 	newItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	newItem->bFrustrumCoolingEnabled = Params.bFrustrumCoolingEnabled;
 
 	SInstanceData defaultInstance;
-	defaultInstance.MaterialIndex = Params.Material != nullptr ? Params.Material->MaterialCBIndex : MaterialManager->GetMaterialCBIndex(STextureNames::Debug);
-	defaultInstance.GridSpatialStep = Params.GridSpatialStep;
-	defaultInstance.DisplacementMapTexelSize = Params.DisplacementMapTexelSize;
+	defaultInstance.MaterialIndex = Params.MaterialDispalcement.Material != nullptr ? Params.MaterialDispalcement.Material->MaterialCBIndex : MaterialManager->GetMaterialCBIndex(STextureNames::Debug);
+	defaultInstance.GridSpatialStep = Params.MaterialDispalcement.GridSpatialStep;
+	defaultInstance.DisplacementMapTexelSize = Params.MaterialDispalcement.DisplacementMapTexelSize;
 
-	newItem->Instances.resize(NumberOfInstances, defaultInstance);
+	newItem->Instances.resize(Params.NumberOfInstances, defaultInstance);
 	newItem->RenderLayer = Category;
 	newItem->Geometry = Mesh;
 
 	const auto itemptr = newItem.get();
-
-	if (Submesh == "")
+	auto submesh = Params.Submesh;
+	if (submesh.empty())
 	{
 		LOG(Geometry, Log, "Submesh not specified, using first submesh!");
-		Submesh = Mesh->GetDrawArgs().begin()->first;
+		submesh = Mesh->GetDrawArgs().begin()->first;
 	}
-	const auto& chosenSubmesh = *Mesh->FindSubmeshGeomentry(Submesh);
+	const auto& chosenSubmesh = *Mesh->FindSubmeshGeomentry(submesh);
 	newItem->IndexCount = chosenSubmesh.IndexCount;
 	newItem->StartIndexLocation = chosenSubmesh.StartIndexLocation;
 	newItem->BaseVertexLocation = chosenSubmesh.BaseVertexLocation;
@@ -1509,12 +1516,12 @@ vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, 
 	AddRenderItem(Category, std::move(newItem));
 	return itemptr->Instances;
 }
-vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, const SMaterialDisplacementParams& Params, size_t NumberOfInstances)
+vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, const SRenderItemParams& Params)
 {
 	auto mesh = MeshGenerator->CreateMesh(Name, Path, Parser, GenTexels);
 	const auto meshptr = mesh.get();
 	SetSceneGeometry(std::move(mesh));
-	return BuildRenderItemFromMesh(Category, meshptr, NumberOfInstances, Params, {});
+	return BuildRenderItemFromMesh(Category, meshptr, Params);
 }
 
 unique_ptr<SMeshGeometry> OEngine::CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels)

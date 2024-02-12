@@ -13,7 +13,7 @@
 using namespace DirectX;
 using namespace Utils::Math;
 
-unique_ptr<SMeshGeometry> OMeshGenerator::CreateGridMesh(string Name, float Width, float Depth, float Row, uint32_t Column)
+unique_ptr<SMeshGeometry> OMeshGenerator::CreateGridMesh(string Name, float Width, float Depth, uint32_t Row, uint32_t Column)
 {
 	return CreateMesh(Name, Generator.CreateGrid(Width, Depth, Row, Column));
 }

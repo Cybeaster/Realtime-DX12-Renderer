@@ -92,7 +92,7 @@ void OTextureWaves::OnUpdate(const UpdateEventArgs& Event)
 		engine->GetCommandQueue()->WaitForFenceValue(engine->CurrentFrameResources->Fence);
 	}
 
-	AnimateMaterials(Event.Timer);
+	// AnimateMaterials(Event.Timer);
 	UpdateMaterialCB();
 }
 
@@ -117,7 +117,8 @@ void OTextureWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandLis
 			// Offset to the CBV in the descriptor heap for this object and
 			// for this frame resource.
 			auto instanceBuffer = Engine->CurrentFrameResources->InstanceBuffer->GetResource();
-			CommandList->SetGraphicsRootShaderResourceView(0, instanceBuffer->GetGPUVirtualAddress());
+			auto location = instanceBuffer->GetGPUVirtualAddress() + renderItem->StartInstanceLocation * sizeof(SInstanceData);
+			CommandList->SetGraphicsRootShaderResourceView(0, location);
 			CommandList->DrawIndexedInstanced(
 			    renderItem->IndexCount,
 			    renderItem->VisibleInstanceCount,
@@ -298,12 +299,18 @@ void OTextureWaves::OnRender(const UpdateEventArgs& Event)
 	const auto engine = Engine;
 	const auto commandList = engine->GetCommandQueue()->GetCommandList();
 
-	GetEngine()->SetPipelineState(SPSOType::Opaque);
+	Waves->Update(Event.Timer, engine->GetWavesRootSignature(), engine->GetPSO(SPSOType::WavesUpdate).Get());
+	// GetEngine()->SetPipelineState(SPSOType::Opaque);
 	commandList->SetGraphicsRootShaderResourceView(1, engine->CurrentFrameResources->MaterialBuffer->GetResource()->GetGPUVirtualAddress());
 	commandList->SetGraphicsRootConstantBufferView(2, engine->CurrentFrameResources->PassCB->GetResource()->GetGPUVirtualAddress());
 	commandList->SetGraphicsRootDescriptorTable(3, engine->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart());
 
+	GetEngine()->SetPipelineState(SPSOType::Opaque);
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Opaque));
+
+	commandList->SetGraphicsRootDescriptorTable(4, Waves->GetDisplacementMap());
+	GetEngine()->SetPipelineState(SPSOType::WavesRender);
+	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Waves));
 }
 
 void OTextureWaves::BuildPSOTreeSprites()
@@ -378,16 +385,6 @@ void OTextureWaves::BuildPSOGeosphere()
 	IcosahedronPSO.SampleDesc.Quality = enable ? (state - 1) : 0;
 	IcosahedronPSO.DSVFormat = SRenderConstants::DepthBufferFormat;
 	GetEngine()->CreatePSO(SPSOType::Icosahedron, IcosahedronPSO);
-}
-
-void OTextureWaves::BuildMaterials()
-{
-	/*GetEngine()->CreateMaterial("Grass", 0, 0, { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.01f, 0.01f, 0.01f), 0.125f });
-	GetEngine()->CreateMaterial("Water", 1, 1, { XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.0f });
-	GetEngine()->CreateMaterial("WireFence", 2, 2, { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.25f });
-	GetEngine()->CreateMaterial("FireBall", 3, 3, { XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.25f });
-	GetEngine()->CreateMaterial("TreeSprite", 4, 4, { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.125f });
-	GetEngine()->CreateMaterial("White", 5, 5, { XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.5f });*/
 }
 
 void OTextureWaves::UpdateMaterialCB()
@@ -484,281 +481,28 @@ void OTextureWaves::BuildLandGeometry()
 	GetEngine()->SetSceneGeometry(std::move(geo));
 }
 
-void OTextureWaves::BuildWavesGeometryBuffers()
-{
-	OGeometryGenerator geoGen;
-	OGeometryGenerator::SMeshData grid = geoGen.CreateGrid(160.0f, 160.0f, Waves->GetRowCount(), Waves->GetColumnCount());
-	auto device = Engine->GetDevice();
-	auto commandList = Engine->GetCommandQueue()->GetCommandList();
-	std::vector<SVertex> vertices(grid.Vertices.size());
-
-	for (size_t i = 0; i < grid.Vertices.size(); ++i)
-	{
-		vertices[i].Position = grid.Vertices[i].Position;
-		vertices[i].Normal = grid.Vertices[i].Normal;
-		vertices[i].TexC = grid.Vertices[i].TexC;
-	}
-
-	std::vector<std::uint32_t> indices = grid.Indices32;
-
-	UINT vbByteSize = Waves->GetVertexCount() * sizeof(SVertex);
-	UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint32_t);
-
-	auto geo = std::make_unique<SMeshGeometry>();
-	geo->Name = "WaterGeometry";
-
-	THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-
-	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-	geo->VertexBufferGPU = Utils::CreateDefaultBuffer(device.Get(),
-	                                                  commandList.Get(),
-	                                                  vertices.data(),
-	                                                  vbByteSize,
-	                                                  geo->VertexBufferUploader);
-
-	geo->IndexBufferGPU = Utils::CreateDefaultBuffer(device.Get(),
-	                                                 commandList.Get(),
-	                                                 indices.data(),
-	                                                 ibByteSize,
-	                                                 geo->IndexBufferUploader);
-
-	geo->VertexByteStride = sizeof(SVertex);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
-
-	SSubmeshGeometry submesh;
-	submesh.IndexCount = (UINT)indices.size();
-	submesh.StartIndexLocation = 0;
-	submesh.BaseVertexLocation = 0;
-
-	geo->SetGeometry("Grid", submesh);
-
-	GetEngine()->SetSceneGeometry(std::move(geo));
-}
-
-void OTextureWaves::BuildIcosahedronGeometry()
-{
-	OGeometryGenerator geoGen;
-	OGeometryGenerator::SMeshData ico = geoGen.CreateGeosphere(10, 0);
-	auto device = Engine->GetDevice();
-	auto commandList = Engine->GetCommandQueue()->GetCommandList();
-
-	std::vector<SVertex> vertices(ico.Vertices.size());
-	for (size_t i = 0; i < ico.Vertices.size(); ++i)
-	{
-		auto& p = ico.Vertices[i].Position;
-		vertices[i].Position = p;
-		vertices[i].Normal = ico.Vertices[i].Normal;
-		vertices[i].TexC = ico.Vertices[i].TexC;
-	}
-
-	auto vbByteSize = static_cast<UINT>(vertices.size() * sizeof(SVertex));
-
-	vector<uint16_t> indices = ico.GetIndices16();
-	auto ibByteSize = static_cast<UINT>(indices.size() * sizeof(uint16_t));
-
-	auto geometry = make_unique<SMeshGeometry>();
-	geometry->Name = "Icosahedron";
-
-	THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &geometry->VertexBufferCPU));
-	CopyMemory(geometry->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-
-	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geometry->IndexBufferCPU));
-	CopyMemory(geometry->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-	geometry->VertexBufferGPU = Utils::CreateDefaultBuffer(device.Get(),
-	                                                       commandList.Get(),
-	                                                       vertices.data(),
-	                                                       vbByteSize,
-	                                                       geometry->VertexBufferUploader);
-
-	geometry->IndexBufferGPU = Utils::CreateDefaultBuffer(device.Get(),
-	                                                      commandList.Get(),
-	                                                      indices.data(),
-	                                                      ibByteSize,
-	                                                      geometry->IndexBufferUploader);
-
-	geometry->VertexByteStride = sizeof(SVertex);
-	geometry->VertexBufferByteSize = vbByteSize;
-	geometry->IndexFormat = DXGI_FORMAT_R16_UINT;
-	geometry->IndexBufferByteSize = ibByteSize;
-
-	SSubmeshGeometry submesh;
-	submesh.IndexCount = (UINT)indices.size();
-	submesh.StartIndexLocation = 0;
-	submesh.BaseVertexLocation = 0;
-
-	geometry->SetGeometry("Icosahedron", submesh);
-	GetEngine()->SetSceneGeometry(std::move(geometry));
-}
-
-void OTextureWaves::BuildBoxGeometryBuffers()
-{
-	OGeometryGenerator geoGen;
-	OGeometryGenerator::SMeshData box = geoGen.CreateBox(8.0f, 8.0f, 8.0f, 3);
-	auto device = Engine->GetDevice();
-	auto commandList = Engine->GetCommandQueue()->GetCommandList();
-	std::vector<SVertex> vertices(box.Vertices.size());
-	for (size_t i = 0; i < box.Vertices.size(); ++i)
-	{
-		auto& p = box.Vertices[i].Position;
-		vertices[i].Position = p;
-		vertices[i].Normal = box.Vertices[i].Normal;
-		vertices[i].TexC = box.Vertices[i].TexC;
-	}
-
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(SVertex);
-
-	std::vector<std::uint16_t> indices = box.GetIndices16();
-	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
-
-	auto geo = std::make_unique<SMeshGeometry>();
-	geo->Name = "BoxGeometry";
-
-	THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-
-	THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-	geo->VertexBufferGPU = Utils::CreateDefaultBuffer(device.Get(),
-	                                                  commandList.Get(),
-	                                                  vertices.data(),
-	                                                  vbByteSize,
-	                                                  geo->VertexBufferUploader);
-
-	geo->IndexBufferGPU = Utils::CreateDefaultBuffer(device.Get(),
-	                                                 commandList.Get(),
-	                                                 indices.data(),
-	                                                 ibByteSize,
-	                                                 geo->IndexBufferUploader);
-
-	geo->VertexByteStride = sizeof(SVertex);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
-
-	SSubmeshGeometry submesh;
-	submesh.IndexCount = (UINT)indices.size();
-	submesh.StartIndexLocation = 0;
-	submesh.BaseVertexLocation = 0;
-
-	geo->SetGeometry("Box", submesh);
-	GetEngine()->SetSceneGeometry(std::move(geo));
-}
-
 void OTextureWaves::BuildRenderItems()
 {
-	/*auto wavesRenderItem = make_unique<SRenderItem>();
-	wavesRenderItem->World = Utils::Math::Identity4x4();
-	XMStoreFloat4x4(&wavesRenderItem->TexTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f));
-
-	/*wavesRenderItem->DisplacementMapTexelSize.x = 1.0f / Waves->GetColumnCount();
-	wavesRenderItem->DisplacementMapTexelSize.y = 1.0f / Waves->GetRowCount();
-	wavesRenderItem->GridSpatialStep = Waves->GetSpatialStep();#1#
-
-	wavesRenderItem->ObjectCBIndex = 0;
-	wavesRenderItem->Geometry = GetEngine()->GetSceneGeometry()["WaterGeometry"].get();
-	wavesRenderItem->Material = GetEngine()->FindMaterial("Water");
-	wavesRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	wavesRenderItem->IndexCount = wavesRenderItem->Geometry->FindSubmeshGeomentry("Grid")->IndexCount;
-	wavesRenderItem->StartIndexLocation = wavesRenderItem->Geometry->FindSubmeshGeomentry("Grid")->StartIndexLocation;
-	wavesRenderItem->BaseVertexLocation = wavesRenderItem->Geometry->FindSubmeshGeomentry("Grid")->BaseVertexLocation;
-	wavesRenderItem->VisibleInstanceCount = 1;
-	WavesRenderItem = wavesRenderItem.get();
-	GetEngine()->AddRenderItem(SRenderLayer::Waves, std::move(wavesRenderItem));
-
-	auto gridRenderItem = make_unique<SRenderItem>();
-	gridRenderItem->World = Utils::Math::Identity4x4();
-	XMStoreFloat4x4(&gridRenderItem->TexTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f));
-	gridRenderItem->ObjectCBIndex = 1;
-	gridRenderItem->Geometry = GetEngine()->GetSceneGeometry()["LandGeo"].get();
-	gridRenderItem->Material = GetEngine()->FindMaterial("Grass");
-	gridRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	gridRenderItem->IndexCount = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid")->IndexCount;
-	gridRenderItem->StartIndexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid")->StartIndexLocation;
-	gridRenderItem->BaseVertexLocation = gridRenderItem->Geometry->FindSubmeshGeomentry("Grid")->BaseVertexLocation;
-	XMStoreFloat4x4(&gridRenderItem->TexTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f));
-
-	GetEngine()->AddRenderItem(SRenderLayer::Opaque, std::move(gridRenderItem));
-
-	auto boxRenderItem = make_unique<SRenderItem>();
-	XMStoreFloat4x4(&boxRenderItem->World, XMMatrixTranslation(3.0f, 2.0f, -9.0f));
-	boxRenderItem->ObjectCBIndex = 2;
-	boxRenderItem->Geometry = GetEngine()->GetSceneGeometry()["BoxGeometry"].get();
-	boxRenderItem->Material = GetEngine()->FindMaterial("WireFence");
-	boxRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	boxRenderItem->IndexCount = boxRenderItem->Geometry->FindSubmeshGeomentry("Box")->IndexCount;
-	boxRenderItem->StartIndexLocation = boxRenderItem->Geometry->FindSubmeshGeomentry("Box")->StartIndexLocation;
-	boxRenderItem->BaseVertexLocation = boxRenderItem->Geometry->FindSubmeshGeomentry("Box")->BaseVertexLocation;
-
-	GetEngine()->AddRenderItem(SRenderLayer::AlphaTested, std::move(boxRenderItem));
-
-	auto treeRenderItem = make_unique<SRenderItem>();
-	treeRenderItem->World = Utils::Math::Identity4x4();
-	treeRenderItem->ObjectCBIndex = 3;
-	treeRenderItem->Geometry = GetEngine()->FindSceneGeometry("TreeSprites");
-	treeRenderItem->Material = GetEngine()->FindMaterial("TreeSprite");
-	treeRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_POINTLIST;
-	treeRenderItem->IndexCount = treeRenderItem->Geometry->FindSubmeshGeomentry("Points")->IndexCount;
-	treeRenderItem->StartIndexLocation = treeRenderItem->Geometry->FindSubmeshGeomentry("Points")->StartIndexLocation;
-	treeRenderItem->BaseVertexLocation = treeRenderItem->Geometry->FindSubmeshGeomentry("Points")->BaseVertexLocation;
-	GetEngine()->AddRenderItem(SRenderLayer::AlphaTestedTreeSprites, std::move(treeRenderItem));
-
-	auto icosahedronRenderItem = make_unique<SRenderItem>();
-	XMStoreFloat4x4(&icosahedronRenderItem->World, XMMatrixTranslation(0.0f, 10.f, 10));
-	icosahedronRenderItem->ObjectCBIndex = 4;
-	icosahedronRenderItem->Geometry = GetEngine()->FindSceneGeometry("Icosahedron");
-	icosahedronRenderItem->Material = GetEngine()->FindMaterial("FireBall");
-	icosahedronRenderItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	auto geometry = icosahedronRenderItem->Geometry->FindSubmeshGeomentry("Icosahedron");
-	icosahedronRenderItem->IndexCount = geometry->IndexCount;
-	icosahedronRenderItem->StartIndexLocation = geometry->StartIndexLocation;
-	icosahedronRenderItem->BaseVertexLocation = geometry->BaseVertexLocation;
-	GetEngine()->AddRenderItem(SRenderLayer::IcosahedronLODs, std::move(icosahedronRenderItem));
-
-	auto quadPatchRitem = std::make_unique<SRenderItem>();
-
-	XMStoreFloat4x4(&quadPatchRitem->World, XMMatrixScaling(2.0f, 1.0f, 2.0f) * XMMatrixTranslation(0.0f, 15.0f, 0.f));
-
-	quadPatchRitem->TexTransform = Utils::Math::Identity4x4();
-	quadPatchRitem->ObjectCBIndex = 5;
-	quadPatchRitem->Material = GetEngine()->FindMaterial("White");
-	quadPatchRitem->Geometry = GetEngine()->FindSceneGeometry("QuadPatch");
-	quadPatchRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST;
-	auto submesh = quadPatchRitem->Geometry->FindSubmeshGeomentry("QuadPatch");
-	quadPatchRitem->IndexCount = submesh->IndexCount;
-	quadPatchRitem->StartIndexLocation = submesh->StartIndexLocation;
-	quadPatchRitem->BaseVertexLocation = submesh->BaseVertexLocation;
-	//GetEngine()->AddRenderItem(SRenderLayer::Tesselation, std::move(quadPatchRitem));
-
-	auto bquadPatchRitem = std::make_unique<SRenderItem>();
-	XMStoreFloat4x4(&bquadPatchRitem->World, XMMatrixScaling(2.0f, 1.0f, 2.0f) * XMMatrixTranslation(0.0f, 15.0f, 0.f));
-	bquadPatchRitem->TexTransform = Utils::Math::Identity4x4();
-	bquadPatchRitem->ObjectCBIndex = 5;
-	bquadPatchRitem->Material = Engine->FindMaterial("White");
-	bquadPatchRitem->Geometry = Engine->FindSceneGeometry("QuadPatch");
-	bquadPatchRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_16_CONTROL_POINT_PATCHLIST;
-	submesh = bquadPatchRitem->Geometry->FindSubmeshGeomentry("QuadPatch");
-	bquadPatchRitem->IndexCount = submesh->IndexCount;
-	bquadPatchRitem->StartIndexLocation = submesh->StartIndexLocation;
-	bquadPatchRitem->BaseVertexLocation = submesh->BaseVertexLocation;
-	GetEngine()->AddRenderItem(SRenderLayer::Tesselation, std::move(bquadPatchRitem));*/
-
 	const auto engine = Engine;
 
+	CreateGridRenderItem(SRenderLayer::Waves,
+	                     "Water",
+	                     160,
+	                     160,
+	                     Waves->GetRowCount(),
+	                     Waves->GetColumnCount(),
+	                     Waves->GetRIParams());
+
 	constexpr size_t n = 2;
+	SRenderItemParams params;
+	params.NumberOfInstances = n * n * n;
+	params.MaterialDispalcement = { FindMaterial(SMaterialNames::Debug) };
 	auto& instances = engine->BuildRenderItemFromMesh(SRenderLayer::Opaque,
 	                                                  "Skull",
 	                                                  "Resources/Models/skull.txt",
 	                                                  EParserType::Custom,
 	                                                  ETextureMapType::Spherical,
-	                                                  { FindMaterial(STextureNames::Debug) },
-	                                                  n * n * n);
+	                                                  params);
 
 	float width = 200.0f;
 	float height = 200.0f;

@@ -123,7 +123,7 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	vout.MaterialIndex = matIndex;
 	MaterialData matData = gMaterialData[matIndex];
 
-/* #ifdef DISPLACEMENT_MAP
+#ifdef DISPLACEMENT_MAP
 	// Sample the displacement map using non-transformed [0,1]^2 tex-coords.
 	Vin.PosL.y += gDisplacementMap.SampleLevel(gsamLinearWrap, Vin.TexC, 1.0f).r;
 
@@ -135,7 +135,7 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	float t = gDisplacementMap.SampleLevel(gsamPointClamp, Vin.TexC - float2(0.0f, dv), 0.0f).r;
 	float b = gDisplacementMap.SampleLevel(gsamPointClamp, Vin.TexC + float2(0.0f, dv), 0.0f).r;
 	Vin.NormalL = normalize(float3(-r + l, 2.0f * inst.GridSpatialStep, b - t));
-#endif */
+#endif
 
 	// Transform to world space.
 

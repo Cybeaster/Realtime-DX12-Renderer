@@ -7,6 +7,7 @@
 #include "Settings.h"
 
 #include <filesystem>
+#include <unordered_set>
 OTextureManager::OTextureManager(ID3D12Device* Device, OCommandQueue* Queue)
     : Device(Device), CommandQueue(Queue)
 {
@@ -40,6 +41,7 @@ void OTextureManager::LoadLocalTextures()
 
 STexture* OTextureManager::CreateTexture(string Name, wstring FileName)
 {
+	static std::unordered_set<uint32_t> s;
 	if (Textures.contains(Name))
 	{
 		LOG(Engine, Error, "Texture with this name already exists!");
@@ -50,6 +52,8 @@ STexture* OTextureManager::CreateTexture(string Name, wstring FileName)
 	texture->Name = Name;
 	texture->FileName = FileName;
 	texture->HeapIdx = Textures.size();
+	CWIN_LOG(s.contains(texture->HeapIdx), Engine, Error, "Texture heap index already exists! {}", texture->HeapIdx);
+	s.insert(texture->HeapIdx);
 	THROW_IF_FAILED(DirectX::CreateDDSTextureFromFile12(Device,
 	                                                    CommandQueue->GetCommandList().Get(),
 	                                                    texture->FileName.c_str(),

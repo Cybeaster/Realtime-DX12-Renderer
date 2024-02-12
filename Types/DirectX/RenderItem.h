@@ -30,7 +30,7 @@ struct SRenderItem
 	}
 
 	string RenderLayer = "NONE";
-
+	bool bFrustrumCoolingEnabled = true;
 	// World matrix of the shape that describes the object’s local space
 	// relative to the world space, which defines the position,
 	// orientation, and scale of the object in the world.
@@ -66,4 +66,13 @@ struct SRenderItem
 	UINT VisibleInstanceCount = 0;
 	UINT StartIndexLocation = 0;
 	int BaseVertexLocation = 0;
+	int32_t StartInstanceLocation = 0;
+};
+
+struct SRenderItemParams
+{
+	string Submesh;
+	SMaterialDisplacementParams MaterialDispalcement;
+	size_t NumberOfInstances = 1;
+	bool bFrustrumCoolingEnabled = true;
 };

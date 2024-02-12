@@ -3,9 +3,9 @@
 //
 
 #include "Waves.h"
-#include "ppl.h"
 
 #include "Exception.h"
+#include "ppl.h"
 
 #include <pplwin.h>
 
@@ -32,7 +32,7 @@ OWaves::OWaves(int32_t M, int32_t N, float dx, float dt, float Speed, float Damp
 	Normals.resize(VertexCount);
 	TangentX.resize(VertexCount);
 
-	//generate grid vertices in system memory
+	// generate grid vertices in system memory
 
 	const float halfWidth = (N - 1) * dx * 0.5f;
 	const float halfDepth = (M - 1) * dx * 0.5f;
@@ -68,7 +68,8 @@ int32_t OWaves::GetVertexCount() const
 
 int32_t OWaves::GetTriangleCount() const
 {
-	return TriangleCount;;
+	return TriangleCount;
+	;
 }
 
 float OWaves::GetWidth() const
@@ -108,8 +109,7 @@ void OWaves::Update(float dt)
 		// Only update interior points; we use zero boundary conditions.
 		concurrency::parallel_for(1,
 		                          NumRows - 1,
-		                          [this](int32_t I)
-		                          {
+		                          [this](int32_t I) {
 			                          for (int32_t j = 1; j < NumCols - 1; ++j)
 			                          {
 				                          // After this update we will be discarding the old previous
@@ -121,12 +121,7 @@ void OWaves::Update(float dt)
 				                          // Moreover, our +z axis goes "down"; this is just to
 				                          // keep consistent with our row indices going down.
 
-				                          PrevSolution[I * NumCols + j].y = K1 * PrevSolution[I * NumCols + j].y +
-				                                                            K2 * CurrentSolution[I * NumCols + j].y +
-				                                                            K3 * (CurrentSolution[(I + 1) * NumCols + j].y +
-				                                                                  CurrentSolution[(I - 1) * NumCols + j].y +
-				                                                                  CurrentSolution[I * NumCols + j + 1].y +
-				                                                                  CurrentSolution[I * NumCols + j - 1].y); // The new value depends on the old value and its four neighbors
+				                          PrevSolution[I * NumCols + j].y = K1 * PrevSolution[I * NumCols + j].y + K2 * CurrentSolution[I * NumCols + j].y + K3 * (CurrentSolution[(I + 1) * NumCols + j].y + CurrentSolution[(I - 1) * NumCols + j].y + CurrentSolution[I * NumCols + j + 1].y + CurrentSolution[I * NumCols + j - 1].y); // The new value depends on the old value and its four neighbors
 			                          }
 		                          });
 
@@ -142,8 +137,7 @@ void OWaves::Update(float dt)
 		//
 		concurrency::parallel_for(1,
 		                          NumRows - 1,
-		                          [this](int32_t I)
-		                          {
+		                          [this](int32_t I) {
 			                          for (int32_t j = 1; j < NumCols - 1; ++j)
 			                          {
 				                          float l = CurrentSolution[I * NumCols + j - 1].y;
@@ -168,8 +162,8 @@ void OWaves::Update(float dt)
 
 void OWaves::Disturb(int32_t I, int32_t J, float Magnitude, float Radius)
 {
-	CHECK(I > 1 && I < NumRows - 2, "I is out of bounds");
-	CHECK(J > 1 && J < NumCols - 2, "J is out of bounds");
+	CHECK_MSG(I > 1 && I < NumRows - 2, "I is out of bounds");
+	CHECK_MSG(J > 1 && J < NumCols - 2, "J is out of bounds");
 	CurrentSolution[I * NumCols + J].y += Magnitude;
 
 	float HalfMag = Magnitude;

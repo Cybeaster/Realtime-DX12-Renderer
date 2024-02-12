@@ -134,12 +134,7 @@ void OUIManager::OnResize(ResizeEventArgs& Args)
 void OUIManager::KeyMap()
 {
 	ImGuiIO& io = ImGui::GetIO();
-
-	// Modifier keys
-	io.KeyMap[ImGuiKey_ModCtrl] = KeyCode::ControlKey; // Ctrl key
-	io.KeyMap[ImGuiKey_ModShift] = KeyCode::ShiftKey; // Shift key
-	io.KeyMap[ImGuiKey_ModAlt] = KeyCode::AltKey; // Alt key
-
+	
 	// Arrow keys
 	io.KeyMap[ImGuiKey_LeftArrow] = KeyCode::Left;
 	io.KeyMap[ImGuiKey_RightArrow] = KeyCode::Right;

@@ -28,45 +28,44 @@ inline STexture* FindTexture(const string& Name)
 	return OEngine::Get()->GetTextureManager()->FindTexture(Name);
 }
 
-inline auto& CreateGridRenderItem(string Category, string Name, float Width, float Depth, float Row, uint32_t Column, size_t NumberOfInstances, const SMaterialDisplacementParams& Params, string Submesh)
+inline auto& CreateGridRenderItem(string Category, string Name, float Width, float Depth, uint32_t Row, uint32_t Column, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
-
-	return engine->BuildRenderItemFromMesh(Category, generator->CreateGridMesh(Name, Width, Depth, Row, Column), NumberOfInstances, Params, Submesh);
+	return engine->BuildRenderItemFromMesh(Category, generator->CreateGridMesh(Name, Width, Depth, Row, Column), Params);
 }
 
-inline auto& CreateBoxRenderItem(string Category, string Name, float Width, float Height, float Depth, uint32_t NumSubdivisions, size_t NumberOfInstances, const SMaterialDisplacementParams& Params, string Submesh)
+inline auto& CreateBoxRenderItem(string Category, string Name, float Width, float Height, float Depth, uint32_t NumSubdivisions, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
-	return engine->BuildRenderItemFromMesh(Category, generator->CreateBoxMesh(Name, Width, Height, Depth, NumSubdivisions), NumberOfInstances, Params, Submesh);
+	return engine->BuildRenderItemFromMesh(Category, generator->CreateBoxMesh(Name, Width, Height, Depth, NumSubdivisions), Params);
 }
 
-inline auto& CreateSphereRenderItem(string Category, string Name, float Radius, uint32_t SliceCount, uint32_t StackCount, size_t NumberOfInstances, const SMaterialDisplacementParams& Params, string Submesh)
+inline auto& CreateSphereRenderItem(string Category, string Name, float Radius, uint32_t SliceCount, uint32_t StackCount, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
-	return engine->BuildRenderItemFromMesh(Category, generator->CreateSphereMesh(Name, Radius, SliceCount, StackCount), NumberOfInstances, Params, Submesh);
+	return engine->BuildRenderItemFromMesh(Category, generator->CreateSphereMesh(Name, Radius, SliceCount, StackCount), Params);
 }
 
-inline auto& CreateGeosphereRenderItem(string Category, string Name, float Radius, uint32_t NumSubdivisions, size_t NumberOfInstances, const SMaterialDisplacementParams& Params, string Submesh)
+inline auto& CreateGeosphereRenderItem(string Category, string Name, float Radius, uint32_t NumSubdivisions, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
-	return engine->BuildRenderItemFromMesh(Category, generator->CreateGeosphereMesh(Name, Radius, NumSubdivisions), NumberOfInstances, Params, Submesh);
+	return engine->BuildRenderItemFromMesh(Category, generator->CreateGeosphereMesh(Name, Radius, NumSubdivisions), Params);
 }
 
-inline auto& CreateCylinderRenderItem(string Category, string Name, float BottomRadius, float TopRadius, float Height, uint32_t SliceCount, uint32_t StackCount, size_t NumberOfInstances, const SMaterialDisplacementParams& Params, string Submesh)
+inline auto& CreateCylinderRenderItem(string Category, string Name, float BottomRadius, float TopRadius, float Height, uint32_t SliceCount, uint32_t StackCount, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
-	return engine->BuildRenderItemFromMesh(Category, generator->CreateCylinderMesh(Name, BottomRadius, TopRadius, Height, SliceCount, StackCount), NumberOfInstances, Params, Submesh);
+	return engine->BuildRenderItemFromMesh(Category, generator->CreateCylinderMesh(Name, BottomRadius, TopRadius, Height, SliceCount, StackCount), Params);
 }
 
-inline auto& CreateQuadRenderItem(string Category, string Name, float X, float Y, float Width, float Height, float Depth, size_t NumberOfInstances, const SMaterialDisplacementParams& Params, string Submesh)
+inline auto& CreateQuadRenderItem(string Category, string Name, float X, float Y, float Width, float Height, float Depth, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
-	return engine->BuildRenderItemFromMesh(Category, generator->CreateQuadMesh(Name, X, Y, Width, Height, Depth), NumberOfInstances, Params, Submesh);
+	return engine->BuildRenderItemFromMesh(Category, generator->CreateQuadMesh(Name, X, Y, Width, Height, Depth), Params);
 }

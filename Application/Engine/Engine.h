@@ -20,13 +20,6 @@
 
 #include <map>
 
-struct SMaterialDisplacementParams
-{
-	SMaterial* Material = nullptr;
-	DirectX::XMFLOAT2 DisplacementMapTexelSize = { 1, 1 };
-	float GridSpatialStep = 1.0f;
-};
-
 class OEngine : public std::enable_shared_from_this<OEngine>
 {
 public:
@@ -144,10 +137,10 @@ public:
 	std::unordered_map<string, unique_ptr<SMeshGeometry>>& GetSceneGeometry();
 	SMeshGeometry* SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry);
 
-	vector<SInstanceData>& BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, size_t NumberOfInstances, const SMaterialDisplacementParams& Params, string Submesh);
-	vector<SInstanceData>& BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, size_t NumberOfInstances = 1, const SMaterialDisplacementParams& Params = {}, string Submesh = {});
-	vector<SInstanceData>& BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, const SMaterialDisplacementParams& Params, size_t NumberOfInstances = 1);
-	vector<SInstanceData>& BuildRenderItemFromMesh(string Category, const string& Name, const OGeometryGenerator::SMeshData& Data, size_t NumberOfInstances = 1);
+	vector<SInstanceData>& BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params);
+	vector<SInstanceData>& BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, const SRenderItemParams& Params);
+	vector<SInstanceData>& BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, const SRenderItemParams& Params);
+	vector<SInstanceData>& BuildRenderItemFromMesh(string Category, const string& Name, const OGeometryGenerator::SMeshData& Data);
 
 	unique_ptr<SMeshGeometry> CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels);
 	unique_ptr<SMeshGeometry> CreateMesh(const string& Name, const OGeometryGenerator::SMeshData& Data);
@@ -283,7 +276,7 @@ private:
 
 	vector<D3D12_INPUT_ELEMENT_DESC> InputLayout;
 
-	//filters
+	// filters
 	TUUID BlurFilterUUID;
 	TUUID SobelFilterUUID;
 	TUUID BilateralFilterUUID;

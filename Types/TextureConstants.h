@@ -10,6 +10,19 @@ struct STextureNames
 	inline static const string Water = "debug";
 };
 
+struct SMaterialNames
+{
+	inline static const string Gold = "Gold";
+	inline static const string Silver = "Silver";
+	inline static const string Bronze = "Bronze";
+	inline static const string Lambertian = "Lambertian";
+	inline static const string Metallic = "Metallic";
+	inline static const string Mirror = "Mirror";
+	inline static const string Glass = "Glass";
+	inline static const string Water = "water1";
+	inline static const string Debug = "white1x1";
+};
+
 struct SMaterialSurfaces
 {
 	inline static SMaterialSurface Gold = {
@@ -51,5 +64,10 @@ struct SMaterialSurfaces
 		DirectX::XMFLOAT4(0.2f, 0.4f, 0.6f, 0.5f), // Light blue, semi-transparent
 		DirectX::XMFLOAT3(0.02f, 0.02f, 0.02f), // Low reflectance
 		0.8f // Slightly rough for water ripples
+	};
+	inline static SMaterialSurface Debug = {
+		DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), // White
+		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), // No reflectance
+		1.0f // Completely rough
 	};
 };

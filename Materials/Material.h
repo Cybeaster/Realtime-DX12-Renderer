@@ -29,3 +29,10 @@ struct SMaterial
 	// Used in texture mapping.
 	DirectX::XMFLOAT4X4 MatTransform = Utils::Math::Identity4x4();
 };
+
+struct SMaterialDisplacementParams
+{
+	SMaterial* Material = nullptr;
+	DirectX::XMFLOAT2 DisplacementMapTexelSize = { 1, 1 };
+	float GridSpatialStep = 1.0f;
+};
