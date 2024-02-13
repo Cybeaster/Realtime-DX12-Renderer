@@ -1,4 +1,5 @@
 #pragma once
+
 #include "Events.h"
 #include "Types.h"
 #include "backends/imgui_impl_dx12.h"
@@ -33,7 +34,7 @@ public:
 		return result;
 	}
 
-	vector<unique_ptr<IWidget>>& GetWidgets()
+	std::vector<std::unique_ptr<IWidget>>& GetWidgets()
 	{
 		return Widgets;
 	}
@@ -55,5 +56,5 @@ public:
 	}
 
 private:
-	vector<unique_ptr<IWidget>> Widgets;
+	std::vector<std::unique_ptr<IWidget>> Widgets;
 };

@@ -3,10 +3,10 @@
 #include "../ConfigReader.h"
 
 #include <ranges>
-class OMaterialsReader : public OConfigReader
+class OMaterialsConfigParser : public OConfigReader
 {
 public:
-	OMaterialsReader(const string& ConfigPath)
+	OMaterialsConfigParser(const string& ConfigPath)
 	    : OConfigReader(ConfigPath) {}
 
 	std::unordered_map<string, unique_ptr<SMaterial>> LoadMaterials()
@@ -19,7 +19,7 @@ public:
 			material->Name = val.get<string>("Name");
 			auto& data = val.get_child("Data");
 
-			material->TexturePath = data.get<string>("TexturePath");
+			material->TexturePath = UTF8ToWString(data.get<string>("TexturePath"));
 
 			//Load diffuse
 			float diffuse[4];
@@ -65,9 +65,8 @@ public:
 				float fresnel[3] = { Material->MaterialSurface.FresnelR0.x,
 					                 Material->MaterialSurface.FresnelR0.y,
 					                 Material->MaterialSurface.FresnelR0.z };
-
 				data.put("Name", Material->Name);
-				data.put("TexturePath", Material->TexturePath);
+				data.put("TexturePath", WStringToUTF8(Material->TexturePath));
 				data.put("Diffuse", diffuse);
 				data.put("Fresnel", fresnel);
 				data.put("Roughness", Material->MaterialSurface.Roughness);
@@ -77,14 +76,11 @@ public:
 		}
 	}
 
-	void AddMaterials(const map<string, vector<unique_ptr<SMaterial>>>& Materials)
+	void AddMaterials(const std::unordered_map<string, unique_ptr<SMaterial>>& Materials)
 	{
 		for (const auto& value : Materials | std::views::values)
 		{
-			for (const auto& material : value)
-			{
-				AddMaterial(material);
-			}
+			AddMaterial(value);
 		}
 	}
 };

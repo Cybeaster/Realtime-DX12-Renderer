@@ -1,5 +1,6 @@
 #include "BlurFilter.h"
 
+#include "../../../Utils/Statics.h"
 #include "../../Utils/DirectX.h"
 #include "Logger.h"
 

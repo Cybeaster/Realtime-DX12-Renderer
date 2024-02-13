@@ -6,7 +6,7 @@
 struct SMaterial
 {
 	string Name;
-	string TexturePath = "";
+	wstring TexturePath = L"";
 	// Index into constant buffer corresponding to this material.
 	int32_t MaterialCBIndex = -1;
 

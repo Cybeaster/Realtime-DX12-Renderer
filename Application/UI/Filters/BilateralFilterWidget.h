@@ -1,8 +1,7 @@
 #pragma once
 #include "DXHelper.h"
+#include "Filters/BilateralBlur/BilateralBlurFilter.h"
 #include "UI/Widget.h"
-
-class OBilateralBlurFilter;
 
 class OBilateralBlurFilterWidget : public IWidget
 {

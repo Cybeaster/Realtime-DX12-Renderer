@@ -8,6 +8,7 @@
 #include "UI/Engine/Camera.h"
 #include "UI/Filters/FilterManager.h"
 #include "UI/Geometry/GeometryManager.h"
+#include "UI/Material/MaterialManager/MaterialManager.h"
 #include "backends/imgui_impl_dx12.h"
 #include "backends/imgui_impl_win32.h"
 
@@ -71,6 +72,7 @@ void OUIManager::InitWidgets(OEngine* Engine)
 	MakeWidget<OLightWidget>(Engine);
 	MakeWidget<OCameraWidget>(Engine->GetWindow()->GetCamera());
 	MakeWidget<OGeometryManagerWidget>(Engine, &Engine->GetRenderLayers());
+	MakeWidget<OMaterialManagerWidget>(Engine->GetMaterialManager());
 }
 
 void OUIManager::OnMouseButtonPressed(MouseButtonEventArgs& Args)

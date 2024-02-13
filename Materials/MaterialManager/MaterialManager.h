@@ -16,17 +16,18 @@ public:
 	void AddMaterial(string Name, unique_ptr<SMaterial>& Material);
 	void CreateMaterial(const string& Name, int32_t CBIndex, int32_t DiffuseSRVHeapIdx, const SMaterialSurface& Surface);
 	void CreateMaterial(const string& Name, STexture* Texture, const SMaterialSurface& Surface);
+
 	const TMaterialsMap& GetMaterials() const;
 	SMaterial* FindMaterial(const string& Name) const;
+
 	uint32_t GetMaterialCBIndex(const string& Name) const;
-	uint32_t GetNumMaterials() const
-	{
-		return Materials.size();
-	}
+	uint32_t GetNumMaterials() const;
 
 	void LoadMaterials();
+	void SaveMaterials() const;
+	void BuildMaterialsFromTextures(const std::unordered_map<string, unique_ptr<STexture>>& Textures);
 
 private:
 	TMaterialsMap Materials;
-	unique_ptr<OMaterialsReader> MaterialsReader;
+	unique_ptr<OMaterialsConfigParser> MaterialsConfigParser;
 };

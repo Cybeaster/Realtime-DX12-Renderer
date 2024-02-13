@@ -28,6 +28,16 @@ inline STexture* FindTextureByName(const string& Name)
 	return OEngine::Get()->GetTextureManager()->FindTextureByName(Name);
 }
 
+inline STexture* FindOrCreateTexture(const string& Name, const wstring& FileName)
+{
+	return OEngine::Get()->GetTextureManager()->FindOrCreateTexture(Name, FileName);
+}
+
+inline STexture* FindOrCreateTexture(const wstring& FileName)
+{
+	return OEngine::Get()->GetTextureManager()->FindOrCreateTexture(FileName);
+}
+
 inline auto& CreateGridRenderItem(string Category, string Name, float Width, float Depth, uint32_t Row, uint32_t Column, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();

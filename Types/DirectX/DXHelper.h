@@ -1,6 +1,4 @@
 #pragma once
-#include "../../Utils/Statics.h"
-#include "Types.h"
 
 #include <dxgi1_3.h>
 #include <dxgidebug.h>
@@ -69,14 +67,14 @@ struct SSubmeshGeometry
 	UINT StartIndexLocation = 0;
 	INT BaseVertexLocation = 0;
 	DirectX::BoundingBox Bounds;
-	string Name;
-	unique_ptr<vector<DirectX::XMFLOAT3>> Vertices = nullptr;
-	unique_ptr<vector<uint32_t>> Indices = nullptr;
+	std::string Name;
+	std::unique_ptr<std::vector<DirectX::XMFLOAT3>> Vertices = nullptr;
+	std::unique_ptr<std::vector<uint32_t>> Indices = nullptr;
 };
 
 struct SMeshGeometry
 {
-	string Name;
+	std::string Name;
 	ComPtr<ID3DBlob> VertexBufferCPU = nullptr;
 	ComPtr<ID3DBlob> IndexBufferCPU = nullptr;
 
@@ -91,7 +89,7 @@ struct SMeshGeometry
 	DXGI_FORMAT IndexFormat = DXGI_FORMAT_R16_UINT;
 	UINT IndexBufferByteSize = 0;
 
-	SSubmeshGeometry* FindSubmeshGeomentry(const string& SubmeshName)
+	SSubmeshGeometry* FindSubmeshGeomentry(const std::string& SubmeshName)
 	{
 		if (!DrawArgs.contains(SubmeshName))
 		{
@@ -100,7 +98,7 @@ struct SMeshGeometry
 		return &DrawArgs.at(SubmeshName);
 	}
 
-	SSubmeshGeometry& SetGeometry(const string& SubmeshName, SSubmeshGeometry& Geometry)
+	SSubmeshGeometry& SetGeometry(const std::string& SubmeshName, SSubmeshGeometry& Geometry)
 	{
 		if (DrawArgs.contains(SubmeshName))
 		{
@@ -110,7 +108,7 @@ struct SMeshGeometry
 		return DrawArgs.at(SubmeshName);
 	}
 
-	const std::unordered_map<string, SSubmeshGeometry>& GetDrawArgs()
+	const std::unordered_map<std::string, SSubmeshGeometry>& GetDrawArgs()
 	{
 		return DrawArgs;
 	}
@@ -139,10 +137,34 @@ struct SMeshGeometry
 		IndexBufferUploader = nullptr;
 	}
 
-	std::unordered_map<string, SSubmeshGeometry> DrawArgs;
+	std::unordered_map<std::string, SSubmeshGeometry> DrawArgs;
 };
 
 inline bool IsKeyPressed(const char Key)
 {
 	return GetAsyncKeyState(Key) & 0x8000;
+}
+
+inline std::string WStringToUTF8(const std::wstring& Wstr)
+{
+	if (Wstr.empty())
+	{
+		return std::string();
+	}
+	int size_needed = WideCharToMultiByte(CP_UTF8, 0, &Wstr[0], static_cast<int>(Wstr.size()), nullptr, 0, nullptr, nullptr);
+	std::string strTo(size_needed, 0);
+	WideCharToMultiByte(CP_UTF8, 0, &Wstr[0], static_cast<int>(Wstr.size()), &strTo[0], size_needed, nullptr, nullptr);
+	return strTo;
+}
+
+inline std::wstring UTF8ToWString(const std::string& Str)
+{
+	if (Str.empty())
+	{
+		return std::wstring();
+	}
+	int size_needed = MultiByteToWideChar(CP_UTF8, 0, &Str[0], static_cast<int>(Str.size()), NULL, 0);
+	std::wstring wstrTo(size_needed, 0);
+	MultiByteToWideChar(CP_UTF8, 0, &Str[0], static_cast<int>(Str.size()), &wstrTo[0], size_needed);
+	return wstrTo;
 }

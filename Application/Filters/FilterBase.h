@@ -1,4 +1,5 @@
 #pragma once
+#include "CommandQueue/CommandQueue.h"
 #include "DXHelper.h"
 #include "Engine/RenderObject/RenderObject.h"
 

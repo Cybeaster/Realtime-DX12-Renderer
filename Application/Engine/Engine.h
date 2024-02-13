@@ -4,6 +4,7 @@
 #include "../../Objects/Geometry/Wave/Waves.h"
 #include "../../Objects/MeshGenerator/MeshGenerator.h"
 #include "../../Textures/TextureManager/TextureManager.h"
+#include "../../Utils/Statics.h"
 #include "../CommandQueue/CommandQueue.h"
 #include "../Types/Types.h"
 #include "../Window/Window.h"
@@ -319,6 +320,7 @@ T* OEngine::BuildRenderObject(Args&&... Params)
 {
 	return GetObjectByUUID<T>(BuildRenderObjectImpl<T>(std::forward<Args>(Params)...));
 }
+
 template<typename T>
 T* OEngine::GetObjectByUUID(TUUID UUID, bool Checked)
 {

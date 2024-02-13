@@ -1,8 +1,3 @@
-//***************************************************************************************
-// Default.hlsl by Frank Luna (C) 2015 All Rights Reserved.
-//
-// Default shader, currently supports lighting.
-//***************************************************************************************
 
 // Defaults for number of lights.
 #ifndef NUM_DIR_LIGHTS

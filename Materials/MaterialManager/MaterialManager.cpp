@@ -30,7 +30,7 @@ void OMaterialManager::CreateMaterial(const string& Name, STexture* Texture, con
 
 OMaterialManager::OMaterialManager()
 {
-	MaterialsReader = make_unique<OMaterialsReader>(OApplication::Get()->GetConfigPath("MaterialsConfigPath"));
+	MaterialsConfigParser = make_unique<OMaterialsConfigParser>(OApplication::Get()->GetConfigPath("MaterialsConfigPath"));
 }
 
 void OMaterialManager::AddMaterial(string Name, unique_ptr<SMaterial>& Material)
@@ -70,11 +70,33 @@ uint32_t OMaterialManager::GetMaterialCBIndex(const string& Name) const
 	return material->MaterialCBIndex;
 }
 
+uint32_t OMaterialManager::GetNumMaterials() const
+{
+	return Materials.size();
+}
+
 void OMaterialManager::LoadMaterials()
 {
-	Materials = std::move(MaterialsReader->LoadMaterials());
+	Materials = std::move(MaterialsConfigParser->LoadMaterials());
 	for (auto& material : Materials)
 	{
-		FindTexture()
+		auto& mat = material.second;
+		if (mat->DiffuseSRVHeapIndex == -1)
+		{
+			mat->DiffuseSRVHeapIndex = FindOrCreateTexture(material.second->TexturePath)->HeapIdx;
+		}
+	}
+}
+
+void OMaterialManager::SaveMaterials() const
+{
+	MaterialsConfigParser->AddMaterials(Materials);
+}
+
+void OMaterialManager::BuildMaterialsFromTextures(const std::unordered_map<string, unique_ptr<STexture>>& Textures)
+{
+	for (auto& texture : Textures)
+	{
+		CreateMaterial(texture.first, texture.second.get(), SMaterialSurface());
 	}
 }

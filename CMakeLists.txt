@@ -125,6 +125,10 @@ set(SRC_FILES
         Config/ConfigReader.cpp
         Config/ConfigReader.h
         Config/MaterialsReader/MaterialsReader.h
+        Application/UI/Material/MaterialManager/MaterialManager.cpp
+        Application/UI/Material/MaterialManager/MaterialManager.h
+        Application/UI/Material/MaterialManager/MaterialManager.h
+        Application/UI/Material/MaterialManager/MaterialManager.h
 )
 
 file(GLOB IMGUI_SOURCES Externals/imgui/*.cpp Externals/imgui/*.h)
@@ -162,6 +166,7 @@ include_directories(IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Externals/imgu
 
 target_include_directories(DXRenderer PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Externals/directx
+
         ${CMAKE_CURRENT_SOURCE_DIR}/Types/Utils
         ${CMAKE_CURRENT_SOURCE_DIR}/Types
         ${CMAKE_CURRENT_SOURCE_DIR}/Application

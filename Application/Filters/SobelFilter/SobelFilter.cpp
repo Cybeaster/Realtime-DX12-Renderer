@@ -1,6 +1,7 @@
 #include "SobelFilter.h"
 
 #include "../../../Utils/DirectX.h"
+#include "../../../Utils/Statics.h"
 #include "RenderConstants.h"
 
 OSobelFilter::OSobelFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format)

@@ -85,7 +85,7 @@ void OEngine::InitManagers()
 	MeshGenerator = make_unique<OMeshGenerator>(Device.Get(), GetCommandQueue().get());
 	TextureManager = make_unique<OTextureManager>(Device.Get(), GetCommandQueue().get());
 	MaterialManager = make_unique<OMaterialManager>();
-	MaterialManager->BuildDefaultMaterials(TextureManager->GetTextures());
+	MaterialManager->BuildMaterialsFromTextures(TextureManager->GetTextures());
 }
 
 void OEngine::PostInitialize()

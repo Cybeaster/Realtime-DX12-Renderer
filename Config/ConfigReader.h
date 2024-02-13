@@ -7,13 +7,17 @@ class OConfigReader
 {
 public:
 	OConfigReader(const string& ConfigPath)
-	    : FileName(ConfigPath) {}
+	    : FileName(ConfigPath)
+	{
+		LoadConfig(FileName);
+	}
 
 	void LoadConfig(const string& FileName)
 	{
 		if (!bIsLoaded)
 		{
 			read_json(FileName, PTree);
+			CWIN_LOG(PTree.size() == 0, Default, Error, "Config file is empty!")
 			bIsLoaded = true;
 		}
 	}
@@ -21,6 +25,7 @@ public:
 	template<typename T>
 	T Get(const std::string& Key) const
 	{
+		CWIN_LOG(!bIsLoaded, Default, Error, "Config file not loaded!");
 		if (PTree.get_child_optional(Key) == boost::none)
 		{
 			LOG(Debug, Error, "Key not found: {}", TO_STRING(Key));
@@ -31,6 +36,7 @@ public:
 	template<typename T>
 	T GetChild(const std::string& Key, const std::string& ChildKey) const
 	{
+		CWIN_LOG(!bIsLoaded, Default, Error, "Config file not loaded!");
 		if (PTree.get_child_optional(Key) == boost::none)
 		{
 			LOG(Debug, Error, "Key not found: {}", TO_STRING(Key));
