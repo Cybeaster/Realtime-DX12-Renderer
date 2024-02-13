@@ -300,6 +300,7 @@ void OTextureWaves::OnRender(const UpdateEventArgs& Event)
 	const auto commandList = engine->GetCommandQueue()->GetCommandList();
 
 	Waves->Update(Event.Timer, engine->GetWavesRootSignature(), engine->GetPSO(SPSOType::WavesUpdate).Get());
+
 	// GetEngine()->SetPipelineState(SPSOType::Opaque);
 	commandList->SetGraphicsRootShaderResourceView(1, engine->CurrentFrameResources->MaterialBuffer->GetResource()->GetGPUVirtualAddress());
 	commandList->SetGraphicsRootConstantBufferView(2, engine->CurrentFrameResources->PassCB->GetResource()->GetGPUVirtualAddress());

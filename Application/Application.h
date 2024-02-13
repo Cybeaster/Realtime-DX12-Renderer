@@ -5,6 +5,7 @@
 
 #include <Types.h>
 
+class OConfigReader;
 class OTest;
 class OApplication
 {
@@ -31,6 +32,7 @@ public:
 	static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 	void SetAppPaused(bool bPaused);
+	string GetConfigPath(const string& Key) const;
 
 private:
 	OApplication();
@@ -50,6 +52,7 @@ private:
 	bool bIsResizing = false;
 
 	SWindowInfo DefaultWindowInfo = { false, L"Window", 1300, 900, false, 45.f };
+	unique_ptr<OConfigReader> ConfigReader;
 };
 
 template<typename TestType>

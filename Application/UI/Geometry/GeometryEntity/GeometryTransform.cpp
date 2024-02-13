@@ -2,6 +2,8 @@
 
 #include "GeometryTransform.h"
 
+#include "imgui.h"
+
 void OGeometryTransformWidget::Draw()
 {
 	ImGui::SeparatorText("Transform");
@@ -9,13 +11,15 @@ void OGeometryTransformWidget::Draw()
 	if (ImGui::SliderFloat3("Position", &newPosition.x, -100, 100))
 	{
 		XMStoreFloat3(Position, DirectX::XMVectorLerp(XMLoadFloat3(Position), XMLoadFloat3(&newPosition), 0.1f));
-		HasTransformUpdateRequest = true;
+		OnTransformUpdate.Broadcast();
 	}
 
 	ImGui::Separator();
-	if (ImGui::SliderFloat3("Rotation", &Rotation->x, -180, 180))
+	DirectX::XMFLOAT3 newRotation = *Rotation;
+	if (ImGui::SliderFloat3("Rotation", &Rotation->x, -1, 1))
 	{
-		HasTransformUpdateRequest = true;
+		XMStoreFloat3(Rotation, DirectX::XMVectorLerp(XMLoadFloat3(Rotation), XMLoadFloat3(&newRotation), 0.1f));
+		OnTransformUpdate.Broadcast();
 	}
 
 	ImGui::Separator();
@@ -24,6 +28,6 @@ void OGeometryTransformWidget::Draw()
 	{
 		XMStoreFloat3(Scale, DirectX::XMVectorLerp(XMLoadFloat3(Scale), XMLoadFloat3(&newScale), 0.1f));
 
-		HasTransformUpdateRequest = true;
+		OnTransformUpdate.Broadcast();
 	}
 }

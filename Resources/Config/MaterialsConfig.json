@@ -1,0 +1,23 @@
+{
+  "Materials": [
+    {
+      "Name": "None",
+      "Data": {
+        "Name": "None",
+        "TexturePath": "None",
+        "Diffuse": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "Fresnel": [
+          0.1,
+          0.1,
+          0.1
+        ],
+        "Roughness": 0.5
+      }
+    }
+  ]
+}

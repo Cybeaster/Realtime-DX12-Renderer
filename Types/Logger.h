@@ -69,7 +69,7 @@ struct SLogUtils
 		{ SLogCategories::Default, true },
 		{ SLogCategories::Render, true },
 		{ SLogCategories::Widget, true },
-		{ SLogCategories::Debug, false },
+		{ SLogCategories::Debug, true },
 		{ SLogCategories::Test, false },
 		{ SLogCategories::Engine, true },
 		{ SLogCategories::Input, true }

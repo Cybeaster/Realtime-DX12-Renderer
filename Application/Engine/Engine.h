@@ -201,7 +201,11 @@ public:
 	SRenderObjectDescriptor GetObjectDescriptor();
 	void SetLightSources(const vector<SLight>& Lights);
 	void SetAmbientLight(const DirectX::XMFLOAT3& Color);
+
 	void RebuildGeometry(string Name);
+	void TryUpdateGeometry();
+	void UpdateGeometryRequest(string Name);
+
 	float GetDeltaTime() const;
 	TRenderLayer& GetRenderLayers();
 
@@ -297,6 +301,8 @@ private:
 	unique_ptr<OMaterialManager> MaterialManager;
 
 	inline static OEngine* Engine = nullptr;
+
+	std::optional<string> GeometryToRebuild;
 };
 
 template<typename T, typename... Args>

@@ -7,17 +7,12 @@
 #include "DXHelper.h"
 #include "Engine/Engine.h"
 #include "UI/Geometry/GeometryManager.h"
-void OGeometryEntityWidget::Draw()
-{
-	auto setNextWindowPos = []() {
-		ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y));
-	};
-	setNextWindowPos();
-	ImGui::SetNextWindowSize(ImVec2(SliderWidth, 500));
+#include "imgui.h"
 
-	if (ImGui::Begin("Submesh parameters")) // Begin new window for Submesh parameters
+void OGeometryEntityWidget::DrawSubmeshParameters()
+{
+	if (ImGui::CollapsingHeader("Submeshes"))
 	{
-		ImGui::SeparatorText("Submeshes");
 		if (ImGui::BeginListBox("##Submeshes"))
 		{
 			for (auto& Submesh : GetGeometry()->DrawArgs)
@@ -77,8 +72,13 @@ void OGeometryEntityWidget::Draw()
 				}
 			}
 		}
+	}
+}
 
-		ImGui::SeparatorText("Object Instances");
+void OGeometryEntityWidget::DrawInstanceParameters()
+{
+	if (ImGui::CollapsingHeader("Object Instances"))
+	{
 		if (ImGui::BeginListBox("##Object Instances"))
 		{
 			size_t counter = 1;
@@ -101,44 +101,37 @@ void OGeometryEntityWidget::Draw()
 				}
 				counter++;
 			}
+
 			ImGui::EndListBox();
-			ImGui::SameLine();
 			if (SelectedInstance != "")
 			{
 				OHierarchicalWidgetBase::Draw();
 			}
 		}
-
-		ImGui::End();
 	}
 }
 
-void OGeometryEntityWidget::Update()
+void OGeometryEntityWidget::Draw()
 {
-	using namespace DirectX;
-	OHierarchicalWidgetBase::Update();
+	auto setNextWindowPos = []() {
+		ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y));
+	};
+	setNextWindowPos();
+	ImGui::SetNextWindowSize(ImVec2(SliderWidth, 500));
 
-	if (TransformWidget->SatisfyUpdateRequest() && SelectedInstanceData != nullptr)
+	if (ImGui::Begin("Submesh parameters")) // Begin new window for Submesh parameters
 	{
-		// Convert to XMVECTOR for operations
-		const XMVECTOR vPosition = XMLoadFloat3(&Position);
-		const XMVECTOR vRotation = XMLoadFloat3(&Rotation);
-		const XMVECTOR vScale = XMLoadFloat3(&Scale);
+		DrawSubmeshParameters();
+		DrawInstanceParameters();
 
-		// Create individual transform matrices
-		const XMMATRIX matScale = XMMatrixScalingFromVector(vScale);
-		const XMMATRIX matRotation = XMMatrixRotationRollPitchYawFromVector(vRotation);
-		const XMMATRIX matTranslation = XMMatrixTranslationFromVector(vPosition);
-
-		// Combine into a single transform matrix
-		const XMMATRIX transformMatrix = matScale * matRotation * matTranslation;
-		XMStoreFloat4x4(&SelectedInstanceData->World, transformMatrix);
+		ImGui::End();
 	}
 }
 
 void OGeometryEntityWidget::Init()
 {
 	IWidget::Init();
+	using namespace DirectX;
 	// Variables to store the decomposed components
 	DirectX::XMVECTOR scale, rotation, translation;
 	if (DirectX::XMMatrixDecompose(&scale, &rotation, &translation, DirectX::XMLoadFloat4x4(&RenderItem->World)))
@@ -154,9 +147,30 @@ void OGeometryEntityWidget::Init()
 	DirectX::XMStoreFloat3(&Scale, scale);
 
 	TransformWidget = MakeWidget<OGeometryTransformWidget>(&Position, &Rotation, &Scale);
+	MaterialPickerWidget = MakeWidget<OMaterialPickerWidget>(Engine->GetMaterialManager());
+
+	TransformWidget->GetOnTransformUpdate().Add([this]() {
+		// Convert to XMVECTOR for operations
+		const XMVECTOR vPosition = XMLoadFloat3(&Position);
+		const XMVECTOR vRotation = XMLoadFloat3(&Rotation);
+		const XMVECTOR vScale = XMLoadFloat3(&Scale);
+
+		// Create individual transform matrices
+		const XMMATRIX matScale = XMMatrixScalingFromVector(vScale);
+		const XMMATRIX matRotation = XMMatrixRotationRollPitchYawFromVector(vRotation);
+		const XMMATRIX matTranslation = XMMatrixTranslationFromVector(vPosition);
+
+		// Combine into a single transform matrix
+		const XMMATRIX transformMatrix = matScale * matRotation * matTranslation;
+		XMStoreFloat4x4(&SelectedInstanceData->World, transformMatrix);
+	});
+
+	MaterialPickerWidget->GetOnMaterialUpdateDelegate().Add([this](const SMaterial* Material) {
+		SelectedInstanceData->MaterialIndex = Material->MaterialCBIndex;
+	});
 }
 
-void OGeometryEntityWidget::RebuildRequest()
+void OGeometryEntityWidget::RebuildRequest() const
 {
 	Manager->RebuildRequest();
 }

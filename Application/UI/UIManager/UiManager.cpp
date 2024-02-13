@@ -8,6 +8,8 @@
 #include "UI/Engine/Camera.h"
 #include "UI/Filters/FilterManager.h"
 #include "UI/Geometry/GeometryManager.h"
+#include "backends/imgui_impl_dx12.h"
+#include "backends/imgui_impl_win32.h"
 
 void OUIManager::InitContext(ID3D12Device2* Device, HWND Hwnd, UINT NumFramesInLight, ID3D12DescriptorHeap* SRVDescriptorHeap, SRenderObjectDescriptor& OutDescriptor, OEngine* Engine)
 {
@@ -134,7 +136,7 @@ void OUIManager::OnResize(ResizeEventArgs& Args)
 void OUIManager::KeyMap()
 {
 	ImGuiIO& io = ImGui::GetIO();
-	
+
 	// Arrow keys
 	io.KeyMap[ImGuiKey_LeftArrow] = KeyCode::Left;
 	io.KeyMap[ImGuiKey_RightArrow] = KeyCode::Right;

@@ -1,7 +1,9 @@
 #include "MaterialManager.h"
 
+#include "../../Config/ConfigReader.h"
 #include "../../Textures/Texture.h"
 #include "../../Utils/EngineHelper.h"
+#include "Application.h"
 #include "Logger.h"
 #include "Settings.h"
 #include "TextureConstants.h"
@@ -21,9 +23,14 @@ void OMaterialManager::CreateMaterial(const string& Name, STexture* Texture, con
 	auto mat = make_unique<SMaterial>();
 	mat->Name = Name;
 	mat->MaterialCBIndex = Materials.size();
-	mat->DiffuseSRVHeapIndex = Texture ? Texture->HeapIdx : FindTexture(STextureNames::Debug)->HeapIdx;
+	mat->DiffuseSRVHeapIndex = Texture ? Texture->HeapIdx : FindTextureByName(STextureNames::Debug)->HeapIdx;
 	mat->MaterialSurface = Surface;
 	AddMaterial(Name, mat);
+}
+
+OMaterialManager::OMaterialManager()
+{
+	MaterialsReader = make_unique<OMaterialsReader>(OApplication::Get()->GetConfigPath("MaterialsConfigPath"));
 }
 
 void OMaterialManager::AddMaterial(string Name, unique_ptr<SMaterial>& Material)
@@ -63,11 +70,11 @@ uint32_t OMaterialManager::GetMaterialCBIndex(const string& Name) const
 	return material->MaterialCBIndex;
 }
 
-void OMaterialManager::BuildDefaultMaterials(std::unordered_map<string, unique_ptr<STexture>>& Textures)
+void OMaterialManager::LoadMaterials()
 {
-	CreateMaterial(SMaterialNames::Debug, FindTexture(SConfig::DebugTexture), SMaterialSurfaces::Debug);
-	for (const auto& [name, texture] : Textures)
+	Materials = std::move(MaterialsReader->LoadMaterials());
+	for (auto& material : Materials)
 	{
-		CreateMaterial(name, texture.get(), SMaterialSurfaces::Lambertian);
+		FindTexture()
 	}
 }

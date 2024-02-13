@@ -1,5 +1,6 @@
 #include "Application.h"
 
+#include "../Config/ConfigReader.h"
 #include "Camera/Camera.h"
 #include "Engine/Engine.h"
 #include "Exception.h"
@@ -62,6 +63,7 @@ void OApplication::Quit(int ExitCode)
 void OApplication::InitApplication(HINSTANCE hInstance)
 {
 	AppInstance = hInstance;
+	ConfigReader = make_unique<OConfigReader>("Resources/Config/Config.json");
 
 	// Enable run-time memory check for debug builds.
 #if defined(DEBUG) | defined(_DEBUG)
@@ -394,4 +396,10 @@ void OApplication::SetAppPaused(bool bPaused)
 {
 	bIsAppPaused = bPaused;
 }
+
+string OApplication::GetConfigPath(const string& Key) const
+{
+	return ConfigReader->Get<string>(Key);
+}
+
 #pragma optimize("", on)

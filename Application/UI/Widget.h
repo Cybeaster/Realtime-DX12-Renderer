@@ -1,5 +1,6 @@
 #pragma once
 #include "Events.h"
+#include "Types.h"
 #include "backends/imgui_impl_dx12.h"
 #include "backends/imgui_impl_win32.h"
 
@@ -32,6 +33,11 @@ public:
 		return result;
 	}
 
+	vector<unique_ptr<IWidget>>& GetWidgets()
+	{
+		return Widgets;
+	}
+
 	void Draw() override
 	{
 		for (const auto& widget : GetWidgets())
@@ -46,11 +52,6 @@ public:
 		{
 			widget->Update();
 		}
-	}
-
-	vector<unique_ptr<IWidget>>& GetWidgets()
-	{
-		return Widgets;
 	}
 
 private:

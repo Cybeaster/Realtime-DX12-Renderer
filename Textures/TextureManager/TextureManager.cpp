@@ -64,7 +64,7 @@ STexture* OTextureManager::CreateTexture(string Name, wstring FileName)
 	return Textures[Name].get();
 }
 
-STexture* OTextureManager::FindTexture(string Name) const
+STexture* OTextureManager::FindTextureByName(string Name) const
 {
 	if (!Textures.contains(Name))
 	{

@@ -1,4 +1,5 @@
 #pragma once
+#include "BilateralFilterWidget.h"
 #include "Engine/Engine.h"
 #include "GaussianBlurWidget.h"
 #include "SobelFilterWidget.h"

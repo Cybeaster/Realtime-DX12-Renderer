@@ -1303,6 +1303,20 @@ OMeshGenerator* OEngine::GetMeshGenerator() const
 	return MeshGenerator.get();
 }
 
+void OEngine::TryUpdateGeometry()
+{
+	if (GeometryToRebuild.has_value())
+	{
+		RebuildGeometry(GeometryToRebuild.value());
+		GeometryToRebuild.reset();
+	}
+}
+
+void OEngine::UpdateGeometryRequest(string Name)
+{
+	GeometryToRebuild.emplace(Name);
+}
+
 float OEngine::GetDeltaTime() const
 {
 	return TickTimer.GetDeltaTime();
@@ -1364,7 +1378,6 @@ void OEngine::PerformFrustrumCulling()
 			}
 		}
 		e->VisibleInstanceCount = visibleInstanceCount;
-		LOG(Render, Log, "Number of visible instances of object {} out of {}", visibleInstanceCount, e->Instances.size());
 	}
 }
 

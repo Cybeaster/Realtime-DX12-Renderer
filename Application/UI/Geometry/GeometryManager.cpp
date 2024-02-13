@@ -35,16 +35,6 @@ void OGeometryManagerWidget::Draw()
 	}
 }
 
-void OGeometryManagerWidget::Update()
-{
-	OHierarchicalWidgetBase::Update();
-	if (bRebuildRequested)
-	{
-		Engine->RebuildGeometry(SelectedGeometry);
-		bRebuildRequested = false;
-	}
-}
-
 void OGeometryManagerWidget::Init()
 {
 	IWidget::Init();
@@ -58,7 +48,7 @@ void OGeometryManagerWidget::Init()
 	}
 }
 
-void OGeometryManagerWidget::RebuildRequest()
+void OGeometryManagerWidget::RebuildRequest() const
 {
-	bRebuildRequested = true;
+	Engine->UpdateGeometryRequest(SelectedGeometry);
 }

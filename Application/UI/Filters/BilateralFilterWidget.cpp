@@ -3,6 +3,7 @@
 
 #include "Filters/BilateralBlur/BilateralBlurFilter.h"
 #include "Logger.h"
+#include "imgui.h"
 void OBilateralBlurFilterWidget::Draw()
 {
 	bEnabled = ImGui::TreeNode("Bilateral Blur");

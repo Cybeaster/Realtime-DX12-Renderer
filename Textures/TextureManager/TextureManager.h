@@ -14,7 +14,8 @@ public:
 	OTextureManager(ID3D12Device* Device, OCommandQueue* CommandList);
 
 	STexture* CreateTexture(string Name, wstring FileName);
-	STexture* FindTexture(string Name) const;
+	STexture* FindTextureByName(string Name) const;
+	STexture* FindTextureByPath(wstring Path) const;
 	TTexturesMap& GetTextures() { return Textures; }
 	uint32_t GetNumTextures() const { return Textures.size(); }
 

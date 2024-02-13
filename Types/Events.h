@@ -1,11 +1,8 @@
 #pragma once
 #include "KeyCodes.h"
 #include "Timer/Timer.h"
+#include "boost/signals2.hpp"
 
-#include <Types.h>
-#include <d3d12.h>
-#include <dxgi1_5.h>
-#include <wrl.h>
 // Super class for all event args
 class EventArgs
 {
@@ -159,3 +156,37 @@ public:
 	void* Data1;
 	void* Data2;
 };
+
+template<typename ReturnType, typename... Args>
+struct SDelegate
+{
+	void Add(std::function<ReturnType(Args...)> Func)
+	{
+		Signal.connect(Func);
+	}
+
+	template<typename Obj, typename Func>
+	void AddMember(Obj* object, Func&& func)
+	{
+		Signal.connect([=](Args... args) -> ReturnType {
+			return (object->*func)(std::forward<Args>(args)...);
+		});
+	}
+
+	void RemoveAll()
+	{
+		Signal.disconnect_all_slots();
+	}
+
+	template<typename... LocArgs>
+	ReturnType Broadcast(LocArgs&&... args)
+	{
+		return Signal(args...);
+	}
+
+private:
+	boost::signals2::signal<ReturnType(Args...)> Signal;
+};
+
+#define DECLARE_DELEGATE(Type, ...) \
+	using Type = SDelegate<void, __VA_ARGS__>;

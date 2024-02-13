@@ -23,9 +23,9 @@ inline void CreateTexture(const string& Name, wstring FileName)
 	OEngine::Get()->GetTextureManager()->CreateTexture(Name, FileName);
 }
 
-inline STexture* FindTexture(const string& Name)
+inline STexture* FindTextureByName(const string& Name)
 {
-	return OEngine::Get()->GetTextureManager()->FindTexture(Name);
+	return OEngine::Get()->GetTextureManager()->FindTextureByName(Name);
 }
 
 inline auto& CreateGridRenderItem(string Category, string Name, float Width, float Depth, uint32_t Row, uint32_t Column, const SRenderItemParams& Params)

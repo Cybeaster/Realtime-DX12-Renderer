@@ -120,6 +120,11 @@ set(SRC_FILES
         Textures/TextureManager/TextureManager.cpp
         Textures/TextureManager/TextureManager.h
         Utils/EngineHelper.h
+        Application/UI/Material/MaterialPicker.cpp
+        Application/UI/Material/MaterialPicker.h
+        Config/ConfigReader.cpp
+        Config/ConfigReader.h
+        Config/MaterialsReader/MaterialsReader.h
 )
 
 file(GLOB IMGUI_SOURCES Externals/imgui/*.cpp Externals/imgui/*.h)

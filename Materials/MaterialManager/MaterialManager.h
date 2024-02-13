@@ -1,4 +1,5 @@
 #pragma once
+#include "../../Config/MaterialsReader/MaterialsReader.h"
 #include "../DirectX/MaterialData.h"
 #include "../Material.h"
 #include "Types.h"
@@ -9,6 +10,7 @@ struct STexture;
 class OMaterialManager
 {
 public:
+	OMaterialManager();
 	using TMaterialsMap = std::unordered_map<string, unique_ptr<SMaterial>>;
 
 	void AddMaterial(string Name, unique_ptr<SMaterial>& Material);
@@ -21,8 +23,10 @@ public:
 	{
 		return Materials.size();
 	}
-	void BuildDefaultMaterials(std::unordered_map<string, unique_ptr<STexture>>& Textures);
+
+	void LoadMaterials();
 
 private:
 	TMaterialsMap Materials;
+	unique_ptr<OMaterialsReader> MaterialsReader;
 };

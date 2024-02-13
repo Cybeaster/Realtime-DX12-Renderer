@@ -6,6 +6,8 @@
 class OGeometryTransformWidget : public IWidget
 {
 public:
+	DECLARE_DELEGATE(SGeometryUpdate, void);
+
 	OGeometryTransformWidget(DirectX::XMFLOAT3* OutPosition, DirectX::XMFLOAT3* OutRotation, DirectX::XMFLOAT3* OutScale)
 	    : Position(OutPosition), Rotation(OutRotation), Scale(OutScale){};
 
@@ -18,18 +20,13 @@ public:
 		Scale = OutScale;
 	}
 
-	bool SatisfyUpdateRequest()
+	SGeometryUpdate& GetOnTransformUpdate()
 	{
-		if (HasTransformUpdateRequest)
-		{
-			HasTransformUpdateRequest = false;
-			return true;
-		}
-		return false;
+		return OnTransformUpdate;
 	}
 
 private:
-	bool HasTransformUpdateRequest = false;
+	SGeometryUpdate OnTransformUpdate;
 
 	DirectX::XMFLOAT3* Position = nullptr;
 	DirectX::XMFLOAT3* Rotation = nullptr;

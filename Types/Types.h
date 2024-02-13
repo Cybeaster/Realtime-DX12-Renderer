@@ -1,12 +1,17 @@
 #pragma once
 
+#include "boost/signals2.hpp"
+
 #include <algorithm> // For std::min and std::max.
 #include <cassert>
 #include <chrono>
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <queue>
 #include <string>
+#include <vector>
+
 #if defined(min)
 #undef min
 #endif

@@ -12,13 +12,11 @@ public:
 	    : Engine(_Engine), RenderLayers(Map) {}
 
 	void Draw() override;
-	void Update() override;
 	void Init() override;
-	void RebuildRequest();
+	void RebuildRequest() const;
 
 private:
 	OEngine::TRenderLayer* RenderLayers = nullptr;
 	OEngine* Engine = nullptr;
 	string SelectedGeometry = "";
-	bool bRebuildRequested = false;
 };
