@@ -1,5 +1,5 @@
 #pragma once
-#include <DXHelper.h>
+#include <DirectX/DXHelper.h>
 #include <Types.h>
 class OCommandQueue
 {

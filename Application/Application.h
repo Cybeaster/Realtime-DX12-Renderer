@@ -1,9 +1,10 @@
 #pragma once
 
+#include "../Types/Path.h"
 #include "Engine/Engine.h"
 #include "Timer/Timer.h"
 
-#include <Types.h>
+#include <filesystem>
 
 class OConfigReader;
 class OTest;
@@ -52,6 +53,10 @@ private:
 	bool bIsResizing = false;
 
 	SWindowInfo DefaultWindowInfo = { false, L"Window", 1300, 900, false, 45.f };
+
+	SPath RootDirPath;
+	SPath CurrentPath;
+
 	unique_ptr<OConfigReader> ConfigReader;
 };
 

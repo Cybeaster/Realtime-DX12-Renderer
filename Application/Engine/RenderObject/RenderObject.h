@@ -1,5 +1,5 @@
 #pragma once
-#include "DXHelper.h"
+#include "../Types/DirectX/DXHelper.h"
 
 struct IDescriptor
 {

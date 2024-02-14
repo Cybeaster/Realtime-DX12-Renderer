@@ -1,5 +1,8 @@
 #pragma once
-#include "DXHelper.h"
+#include "DirectX/DXHelper.h"
+
+#include <DirectXMath.h>
+#include <corecrt_math.h>
 
 #include <random>
 

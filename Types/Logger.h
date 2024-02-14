@@ -1,15 +1,10 @@
 #pragma once
-#include "Exception.h"
-#include "Types.h"
 
-#include <DirectXMath.h>
-#include <Windows.h>
-#include <dxgi1_3.h>
+#include "DirectX/DXHelper.h"
 
-#include <format>
+#include <fstream>
 #include <iostream>
-#include <memory>
-#include <ostream>
+
 #ifndef DEBUG
 #define DEBUG 0
 #endif
@@ -49,10 +44,12 @@ struct SLogCategories
 		MessageBox(0, _string_.c_str(), SLogCategories::Category.c_str(), 0);         \
 	}
 
-#define WIN_LOG(Category, LogType, String, ...)                                   \
-	wstring _string_ = SLogUtils::Format(L##String, __VA_ARGS__);                 \
-	SLogUtils::Log(SLogCategories::Category, _string_, ELogType::LogType, false); \
-	MessageBox(0, _string_.c_str(), SLogCategories::Category.c_str(), 0);
+#define WIN_LOG(Category, LogType, String, ...)                                       \
+	{                                                                                 \
+		wstring _string_ = SLogUtils::Format(L##String, __VA_ARGS__);                 \
+		SLogUtils::Log(SLogCategories::Category, _string_, ELogType::LogType, false); \
+		MessageBox(0, _string_.c_str(), SLogCategories::Category.c_str(), 0);         \
+	}
 
 #define LOG(Category, LogType, String, ...) \
 	SLogUtils::Log(SLogCategories::Category, SLogUtils::Format(L##String, ##__VA_ARGS__), ELogType::LogType, false);

@@ -1,5 +1,5 @@
 #pragma once
-#include "..\..\..\Utils\DirectX.h"
+#include "..\..\..\Utils\DirectXUtils.h"
 #include "Exception.h"
 
 #include <d3d12.h>

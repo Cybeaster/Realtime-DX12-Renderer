@@ -1,8 +1,6 @@
 #pragma once
-#include "../../Utils/DirectX.h"
+#include "../../Utils/DirectXUtils.h"
 #include "../../Utils/Math.h"
-#include "DXHelper.h"
-
 struct SMaterialSurface
 {
 	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };

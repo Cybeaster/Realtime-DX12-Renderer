@@ -1,6 +1,6 @@
 #include "GpuWave.h"
 
-#include "../../../Utils/DirectX.h"
+#include "../../../Utils/DirectXUtils.h"
 
 OGPUWave::OGPUWave(ID3D12Device* _Device, ID3D12GraphicsCommandList* _List, int32_t _M, int32_t _N, float dx, float dt, float speed, float damping)
     : Device(_Device), CMDList(_List), NumRows(_M), NumCols(_N), SpatialStep(dx), TimeStep(dt), VertexCount(_M * _N), TriangleCount((_M - 1) * (_N - 1) * 2)

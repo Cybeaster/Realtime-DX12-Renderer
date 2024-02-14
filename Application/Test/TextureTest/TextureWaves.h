@@ -4,7 +4,7 @@
 #include "../../../Objects/Geometry/Wave/Waves.h"
 #include "../../Window/Window.h"
 #include "../Test.h"
-#include "..\..\..\Utils\DirectX.h"
+#include "..\..\..\Utils\DirectXUtils.h"
 #include "..\..\..\Utils\Math.h"
 #include "Engine/UploadBuffer/UploadBuffer.h"
 #include "Events.h"

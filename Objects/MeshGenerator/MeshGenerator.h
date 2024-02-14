@@ -1,7 +1,7 @@
 #pragma once
 #include "../GeomertryGenerator/GeometryGenerator.h"
 #include "../MeshParser.h"
-#include "DXHelper.h"
+#include "DirectX/DXHelper.h"
 
 class OCommandQueue;
 enum class EParserType

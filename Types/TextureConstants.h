@@ -1,5 +1,5 @@
 #pragma once
-#include "MaterialData.h"
+#include "DirectX/MaterialData.h"
 #include "Types.h"
 
 struct STextureNames

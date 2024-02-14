@@ -4,7 +4,7 @@
 
 #include "BilateralBlurFilter.h"
 
-#include "../../../Utils/DirectX.h"
+#include "../../../Utils/DirectXUtils.h"
 #include "../../../Utils/Statics.h"
 
 OBilateralBlurFilter::OBilateralBlurFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format)

@@ -1,7 +1,7 @@
 #include "BlurFilter.h"
 
 #include "../../../Utils/Statics.h"
-#include "../../Utils/DirectX.h"
+#include "../../Utils/DirectXUtils.h"
 #include "Logger.h"
 
 OBlurFilter::OBlurFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format)

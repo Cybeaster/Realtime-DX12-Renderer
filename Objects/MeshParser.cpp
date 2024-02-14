@@ -1,6 +1,6 @@
 #include "MeshParser.h"
 
-#include "../Utils/DirectX.h"
+#include "../Utils/DirectXUtils.h"
 #include "../Utils/Math.h"
 #include "Logger.h"
 #include "Vertex.h"

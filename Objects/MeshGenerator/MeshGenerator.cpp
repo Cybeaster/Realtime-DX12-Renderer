@@ -4,7 +4,7 @@
 
 #include "MeshGenerator.h"
 
-#include "../../Utils/DirectX.h"
+#include "../../Utils/DirectXUtils.h"
 #include "../../Utils/Math.h"
 #include "../MeshParser.h"
 #include "CommandQueue/CommandQueue.h"

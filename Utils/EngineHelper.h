@@ -1,6 +1,7 @@
 #pragma once
 #include "../Materials/MaterialManager/MaterialManager.h"
 #include "../Types/TextureConstants.h"
+#include "DirectX/RenderItem.h"
 #include "Engine/Engine.h"
 
 inline void CreateMaterial(const string& Name, STexture* Texture, const SMaterialSurface& Constants)

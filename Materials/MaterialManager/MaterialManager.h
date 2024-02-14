@@ -1,7 +1,7 @@
 #pragma once
 #include "../../Config/MaterialsReader/MaterialsReader.h"
-#include "../DirectX/MaterialData.h"
 #include "../Material.h"
+#include "DirectX/MaterialData.h"
 #include "Types.h"
 
 #include <unordered_map>

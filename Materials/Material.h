@@ -1,8 +1,7 @@
 #pragma once
 
+#include "DirectX/RenderConstants.h"
 #include "MaterialData.h"
-#include "RenderConstants.h"
-
 struct SMaterial
 {
 	string Name;

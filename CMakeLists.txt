@@ -45,7 +45,7 @@ set(SRC_FILES
         Application/Camera/Camera.h
         Application/Engine/UploadBuffer/UploadBuffer.cpp
         Application/Engine/UploadBuffer/UploadBuffer.h
-        Utils/DirectX.h
+        Utils/DirectXUtils.h
         Utils/Math.h
         Types/DirectX/FrameResource.h
         Types/DirectX/ObjectConstants.h
@@ -71,7 +71,7 @@ set(SRC_FILES
         Application/Filters/Blur/BlurFilter.h
         Types/DirectX/ShaderTypes.h
         Types/DirectX/ShaderTypes.h
-        Utils/DirectX.cpp
+        Utils/DirectXUtils.cpp
         Application/UI/UIManager/UiManager.cpp
         Application/UI/UIManager/UiManager.h
         Types/Settings.h
@@ -127,8 +127,8 @@ set(SRC_FILES
         Config/MaterialsReader/MaterialsReader.h
         Application/UI/Material/MaterialManager/MaterialManager.cpp
         Application/UI/Material/MaterialManager/MaterialManager.h
-        Application/UI/Material/MaterialManager/MaterialManager.h
-        Application/UI/Material/MaterialManager/MaterialManager.h
+        Config/MaterialsReader/MaterialsReader.cpp
+
 )
 
 file(GLOB IMGUI_SOURCES Externals/imgui/*.cpp Externals/imgui/*.h)
@@ -166,11 +166,10 @@ include_directories(IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Externals/imgu
 
 target_include_directories(DXRenderer PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Externals/directx
-
-        ${CMAKE_CURRENT_SOURCE_DIR}/Types/Utils
         ${CMAKE_CURRENT_SOURCE_DIR}/Types
         ${CMAKE_CURRENT_SOURCE_DIR}/Application
-        ${CMAKE_CURRENT_SOURCE_DIR}/Types/DirectX)
+        ${CMAKE_CURRENT_SOURCE_DIR}/Types/DirectX
+)
 
 # Link necessary libraries
 target_link_libraries(DXRenderer d3d12.lib dxgi.lib dxguid.lib d3dcompiler.lib Shlwapi.lib imgui ${Boost_LIBRARIES} Bcrypt.lib)

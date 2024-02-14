@@ -1,6 +1,6 @@
 #pragma once
 #include "CommandQueue/CommandQueue.h"
-#include "DXHelper.h"
+#include "DirectX/DXHelper.h"
 #include "Engine/RenderObject/RenderObject.h"
 
 class OFilterBase : public IRenderObject

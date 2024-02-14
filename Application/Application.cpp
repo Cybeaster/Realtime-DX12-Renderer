@@ -7,7 +7,6 @@
 
 #include <DirectXMath.h>
 #include <Windowsx.h>
-#pragma optimize("", off)
 
 using namespace Microsoft::WRL;
 OApplication* OApplication::Get()
@@ -63,7 +62,7 @@ void OApplication::Quit(int ExitCode)
 void OApplication::InitApplication(HINSTANCE hInstance)
 {
 	AppInstance = hInstance;
-	ConfigReader = make_unique<OConfigReader>("Resources/Config/Config.json");
+	ConfigReader = make_unique<OConfigReader>(RootDirPath.GetPath() + "/Resources/Config/Config.json");
 
 	// Enable run-time memory check for debug builds.
 #if defined(DEBUG) | defined(_DEBUG)
@@ -82,6 +81,8 @@ HINSTANCE OApplication::GetAppInstance() const
 
 OApplication::OApplication()
 {
+	CurrentPath.SetPath(std::filesystem::current_path());
+	RootDirPath.SetPath(std::filesystem::current_path().parent_path().parent_path());
 }
 
 void OApplication::InitWindowClass() const
@@ -399,7 +400,5 @@ void OApplication::SetAppPaused(bool bPaused)
 
 string OApplication::GetConfigPath(const string& Key) const
 {
-	return ConfigReader->Get<string>(Key);
+	return RootDirPath.GetPath() + ConfigReader->Get<string>(Key);
 }
-
-#pragma optimize("", on)

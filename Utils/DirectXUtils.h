@@ -1,10 +1,10 @@
 #pragma once
-#include <DXHelper.h>
+#include "DirectX/DXHelper.h"
+
 #include <Windows.h>
 #include <d3dx12.h>
 
 #include <array>
-#include <fstream>
 
 namespace Utils
 {

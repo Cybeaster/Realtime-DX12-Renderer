@@ -1,6 +1,6 @@
 #include "SobelFilter.h"
 
-#include "../../../Utils/DirectX.h"
+#include "../../../Utils/DirectXUtils.h"
 #include "../../../Utils/Statics.h"
 #include "RenderConstants.h"
 
