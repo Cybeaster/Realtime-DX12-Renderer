@@ -12,32 +12,26 @@ std::unordered_map<string, unique_ptr<SMaterial>> OMaterialsConfigParser::LoadMa
 
 		material->TexturePath = UTF8ToWString(data.get<string>("TexturePath"));
 
-		//Load diffuse
-		float diffuse[4];
-		int index = 0;
-		for (const auto& val : data.get_child("Diffuse") | std::views::values)
-		{
-			diffuse[index] = val.get_value<float>();
-			index++;
-		}
-		material->MaterialSurface.DiffuseAlbedo = { diffuse[0], diffuse[1], diffuse[2], diffuse[3] };
+		auto& diffChild = data.get_child("Diffuse");
+		material->MaterialSurface.DiffuseAlbedo.x = diffChild.get<float>("x");
+		material->MaterialSurface.DiffuseAlbedo.y = diffChild.get<float>("y");
+		material->MaterialSurface.DiffuseAlbedo.z = diffChild.get<float>("z");
+		material->MaterialSurface.DiffuseAlbedo.w = diffChild.get<float>("w");
 
-		// Load Fresnel
-		index = 0;
-		float fresnel[3];
-		for (const auto& val : data.get_child("Fresnel") | std::views::values)
-		{
-			fresnel[index] = val.get_value<float>();
-		}
-		material->MaterialSurface.FresnelR0 = { fresnel[0], fresnel[1], fresnel[2] };
+		auto& fresnelChild = data.get_child("Fresnel");
+		material->MaterialSurface.FresnelR0.x = fresnelChild.get<float>("x");
+		material->MaterialSurface.FresnelR0.y = fresnelChild.get<float>("y");
+		material->MaterialSurface.FresnelR0.z = fresnelChild.get<float>("z");
+
 		material->MaterialSurface.Roughness = data.get<float>("Roughness");
 		Materials[material->Name] = std::move(material);
 	}
 	return std::move(Materials);
 }
 
-void OMaterialsConfigParser::AddDataToNode(SMaterial* Mat, boost::property_tree::ptree& OutNode)
+void OMaterialsConfigParser::AddDataToNode(const SMaterial* Mat, boost::property_tree::ptree& OutNode)
 {
+	ENSURE(Mat->TexturePath.size() > 0);
 	OutNode.put("TexturePath", WStringToUTF8(Mat->TexturePath));
 
 	OutNode.put("Diffuse.x", Mat->MaterialSurface.DiffuseAlbedo.x);
@@ -51,23 +45,22 @@ void OMaterialsConfigParser::AddDataToNode(SMaterial* Mat, boost::property_tree:
 	OutNode.put("Roughness", Mat->MaterialSurface.Roughness);
 }
 
-void OMaterialsConfigParser::AddMaterial(const unique_ptr<SMaterial>& Material)
+void OMaterialsConfigParser::AddMaterial(const SMaterial* Material)
 {
 	using namespace boost::property_tree;
 	LoadConfig(FileName);
 	auto name = Material->Name;
 
-	ptree matNode;
 	bool foundMat = false;
 	auto& items = PTree.get_child("Materials");
 	for (auto& item : items)
 	{
 		if (item.second.get<string>("Name") == name)
 		{
-			matNode = item.second;
-			auto data = matNode.get_child("Data");
+			auto& matNode = item.second;
+			auto& data = matNode.get_child("Data");
 			matNode.put("Name", Material->Name);
-			AddDataToNode(Material.get(), data);
+			AddDataToNode(Material, data);
 			foundMat = true;
 			break;
 		}
@@ -75,16 +68,17 @@ void OMaterialsConfigParser::AddMaterial(const unique_ptr<SMaterial>& Material)
 
 	if (!foundMat)
 	{
+		ptree matNode;
 		matNode.put("Name", Material->Name);
 		ptree data;
-		AddDataToNode(Material.get(), data);
+		AddDataToNode(Material, data);
 		matNode.add_child("Data", data);
 		items.push_back(std::make_pair("", matNode));
 	}
 	write_json(FileName, PTree);
 }
 
-void OMaterialsConfigParser::AddMaterials(const std::unordered_map<string, unique_ptr<SMaterial>>& Materials)
+void OMaterialsConfigParser::AddMaterials(const std::unordered_map<string, SMaterial*>& Materials)
 {
 	for (const auto& value : Materials | std::views::values)
 	{

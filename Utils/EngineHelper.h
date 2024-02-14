@@ -4,9 +4,9 @@
 #include "DirectX/RenderItem.h"
 #include "Engine/Engine.h"
 
-inline void CreateMaterial(const string& Name, STexture* Texture, const SMaterialSurface& Constants)
+inline void CreateMaterial(const string& Name, STexture* Texture, const SMaterialSurface& Constants, bool Notify = false)
 {
-	OEngine::Get()->GetMaterialManager()->CreateMaterial(Name, Texture, Constants);
+	OEngine::Get()->GetMaterialManager()->CreateMaterial(Name, Texture, Constants, Notify);
 }
 
 inline auto& GetMaterials()
@@ -27,6 +27,11 @@ inline void CreateTexture(const string& Name, wstring FileName)
 inline STexture* FindTextureByName(const string& Name)
 {
 	return OEngine::Get()->GetTextureManager()->FindTextureByName(Name);
+}
+
+inline STexture* FindTextureByPath(const wstring& FileName)
+{
+	return OEngine::Get()->GetTextureManager()->FindTextureByPath(FileName);
 }
 
 inline STexture* FindOrCreateTexture(const string& Name, const wstring& FileName)

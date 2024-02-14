@@ -128,6 +128,7 @@ set(SRC_FILES
         Application/UI/Material/MaterialManager/MaterialManager.cpp
         Application/UI/Material/MaterialManager/MaterialManager.h
         Config/MaterialsReader/MaterialsReader.cpp
+        Types/Async.h
 
 )
 

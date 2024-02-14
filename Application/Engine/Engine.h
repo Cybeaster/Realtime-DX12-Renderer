@@ -24,6 +24,8 @@
 class OEngine : public std::enable_shared_from_this<OEngine>
 {
 public:
+	DECLARE_DELEGATE(SOnFrameResourceChanged);
+
 	using TWindowPtr = std::shared_ptr<OWindow>;
 	using TWindowMap = std::map<HWND, TWindowPtr>;
 	using WindowNameMap = std::map<std::wstring, TWindowPtr>;
@@ -77,8 +79,7 @@ public:
 
 	void OnEnd(shared_ptr<OTest> Test) const;
 
-	void BuildFrameResource(uint32_t PassCount = 1);
-
+	void TryRebuildFrameResource();
 	void OnPreRender();
 	void Draw(UpdateEventArgs& Args);
 	void Render(UpdateEventArgs& Args);
@@ -200,6 +201,7 @@ public:
 	T* GetObjectByUUID(TUUID UUID, bool Checked = false);
 
 	SRenderObjectDescriptor GetObjectDescriptor();
+	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVDescHandleForTexture(STexture* Texture) const;
 	void SetLightSources(const vector<SLight>& Lights);
 	void SetAmbientLight(const DirectX::XMFLOAT3& Color);
 
@@ -224,6 +226,7 @@ public:
 	}
 
 	OMeshGenerator* GetMeshGenerator() const;
+	SOnFrameResourceChanged OnFrameResourceChanged;
 
 protected:
 	template<typename T, typename... Args>
@@ -246,6 +249,12 @@ protected:
 	uint32_t GetNumOffscrenRT() const;
 
 private:
+	void BuildFrameResource(uint32_t Count = 1);
+	uint32_t PassCount = 1;
+	uint32_t CurrentPass = 0;
+	uint32_t CurrentNumMaterials = 0;
+	uint32_t CurrentNumInstances = 0;
+
 	OEngine() = default;
 	void UpdateMainPass(const STimer& Timer);
 	SPassConstants MainPassCB;

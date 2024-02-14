@@ -74,6 +74,7 @@ bool OEngine::Initialize()
 	}
 
 	bIsTearingSupported = CheckTearingSupport();
+
 	InitManagers();
 	CreateWindow();
 	PostInitialize();
@@ -85,7 +86,8 @@ void OEngine::InitManagers()
 	MeshGenerator = make_unique<OMeshGenerator>(Device.Get(), GetCommandQueue().get());
 	TextureManager = make_unique<OTextureManager>(Device.Get(), GetCommandQueue().get());
 	MaterialManager = make_unique<OMaterialManager>();
-	MaterialManager->BuildMaterialsFromTextures(TextureManager->GetTextures());
+	MaterialManager->LoadMaterialsFromCache();
+	MaterialManager->MaterialsRebuld.AddMember(this, &OEngine::TryRebuildFrameResource);
 }
 
 void OEngine::PostInitialize()
@@ -222,16 +224,32 @@ void OEngine::OnEnd(shared_ptr<OTest> Test) const
 	Test->Destroy();
 }
 
-void OEngine::BuildFrameResource(uint32_t PassCount)
+void OEngine::TryRebuildFrameResource()
 {
+	LOG(Engine, Log, "Engine::RebuildFrameResource")
+	if (CurrentNumMaterials != MaterialManager->GetNumMaterials() || CurrentNumInstances != GetTotalNumberOfInstances())
+	{
+		FrameResources.clear();
+		BuildFrameResource(PassCount);
+	}
+}
+
+void OEngine::BuildFrameResource(uint32_t Count)
+{
+	PassCount = Count;
+
+	CurrentNumInstances = GetTotalNumberOfInstances();
+	CurrentNumMaterials = MaterialManager->GetNumMaterials();
+
 	for (int i = 0; i < SRenderConstants::NumFrameResources; ++i)
 	{
 		FrameResources.push_back(make_unique<SFrameResource>(
 		    Device.Get(),
 		    PassCount,
-		    GetTotalNumberOfInstances(),
-		    MaterialManager->GetNumMaterials()));
+		    CurrentNumInstances,
+		    CurrentNumMaterials));
 	}
+	OnFrameResourceChanged.Broadcast();
 }
 
 void OEngine::OnPreRender()
@@ -1298,6 +1316,13 @@ uint32_t OEngine::GetNumOffscrenRT() const
 	return 1;
 }
 
+D3D12_GPU_DESCRIPTOR_HANDLE OEngine::GetSRVDescHandleForTexture(STexture* Texture) const
+{
+	auto desc = SRVDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+	desc.ptr += Texture->HeapIdx * CBVSRVUAVDescriptorSize;
+	return desc;
+}
+
 OMeshGenerator* OEngine::GetMeshGenerator() const
 {
 	return MeshGenerator.get();
@@ -1498,6 +1523,11 @@ vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(string Category, unique_
 
 vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, const SRenderItemParams& Params)
 {
+	if (Params.MaterialDispalcement.Material == nullptr || Params.MaterialDispalcement.Material->MaterialCBIndex == -1)
+	{
+		LOG(Geometry, Error, "Material not specified!");
+	}
+
 	auto newItem = make_unique<SRenderItem>();
 	newItem->World = Utils::Math::Identity4x4();
 	newItem->TexTransform = Utils::Math::Identity4x4();

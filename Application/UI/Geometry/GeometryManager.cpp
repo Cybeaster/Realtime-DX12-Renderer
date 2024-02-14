@@ -4,34 +4,36 @@
 
 void OGeometryManagerWidget::Draw()
 {
-	ImGui::SeparatorText("Geometry manager");
-	ImGui::Text("Number of geometries %d", RenderLayers->size());
-	OGeometryEntityWidget* selectedWidget = nullptr;
-
-	if (ImGui::TreeNode("Geometries"))
+	if (ImGui::CollapsingHeader("Geometry Manager"))
 	{
-		for (auto& entity : GetWidgets())
-		{
-			if (const auto widget = SCast<OGeometryEntityWidget>(entity.get()))
-			{
-				const auto geometry = widget->GetGeometry();
-				if (ImGui::Selectable(geometry->Name.c_str(), SelectedGeometry == geometry->Name))
-				{
-					SelectedGeometry = geometry->Name;
-				}
+		ImGui::Text("Number of geometries %d", RenderLayers->size());
+		OGeometryEntityWidget* selectedWidget = nullptr;
 
-				if (SelectedGeometry == geometry->Name)
+		if (ImGui::TreeNode("Geometries"))
+		{
+			for (auto& entity : GetWidgets())
+			{
+				if (const auto widget = SCast<OGeometryEntityWidget>(entity.get()))
 				{
-					selectedWidget = widget;
+					const auto geometry = widget->GetGeometry();
+					if (ImGui::Selectable(geometry->Name.c_str(), SelectedGeometry == geometry->Name))
+					{
+						SelectedGeometry = geometry->Name;
+					}
+
+					if (SelectedGeometry == geometry->Name)
+					{
+						selectedWidget = widget;
+					}
 				}
 			}
+			ImGui::TreePop();
 		}
-		ImGui::TreePop();
-	}
 
-	if (selectedWidget)
-	{
-		selectedWidget->Draw();
+		if (selectedWidget)
+		{
+			selectedWidget->Draw();
+		}
 	}
 }
 

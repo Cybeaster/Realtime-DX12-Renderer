@@ -11,8 +11,8 @@ public:
 
 	std::unordered_map<string, unique_ptr<SMaterial>> LoadMaterials();
 
-	void AddDataToNode(SMaterial* Mat, boost::property_tree::ptree& OutNode);
+	void AddDataToNode(const SMaterial* Mat, boost::property_tree::ptree& OutNode);
 	/*Adds or modifies the material in the tree*/
-	void AddMaterial(const unique_ptr<SMaterial>& Material);
-	void AddMaterials(const std::unordered_map<string, unique_ptr<SMaterial>>& Materials);
+	void AddMaterial(const SMaterial* Material);
+	void AddMaterials(const std::unordered_map<string, SMaterial*>& Materials);
 };

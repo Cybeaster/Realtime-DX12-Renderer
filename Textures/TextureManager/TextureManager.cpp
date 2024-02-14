@@ -18,13 +18,13 @@ OTextureManager::OTextureManager(ID3D12Device* Device, OCommandQueue* Queue)
 
 void OTextureManager::LoadLocalTextures()
 {
-	auto path = std::filesystem::current_path();
-	path /= SConfig::TexturesFolder;
+	const std::filesystem::path path = SConfig::TexturesFolder;
 	if (!exists(path))
 	{
 		LOG(Engine, Error, "Textures folder not found!");
 		return;
 	}
+
 	for (auto& entry : std::filesystem::directory_iterator(path))
 	{
 		if (is_regular_file(entry))

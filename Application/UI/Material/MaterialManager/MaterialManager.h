@@ -14,4 +14,8 @@ public:
 private:
 	SMaterial* CurrentMaterial = nullptr;
 	OMaterialManager* MaterialManager = nullptr;
+
+	float SplitterPercent = 0.25f;
+	bool ResizingSplitter = false;
+	const float SplitterWidth = 8.0f; // Width of the splitter
 };

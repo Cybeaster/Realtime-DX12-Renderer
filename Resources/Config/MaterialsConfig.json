@@ -1,652 +1,634 @@
 {
-    "Materials": [
-        {
-            "Name": "None",
-            "Data": {
-                "TexturePath": "None",
-                "Diffuse": {
-                    "x": "1.0",
-                    "y": "1.0",
-                    "z": "1.0",
-                    "w": "1.0"
-                },
-                "Fresnel": {
-                    "x": "0.1",
-                    "y": "0.1",
-                    "z": "0.1"
-                },
-                "Roughness": "0.5"
-            }
+  "Materials": [
+    {
+      "Name": "upbody_norm",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/upbody_norm.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
         },
-        {
-            "Name": "upbody_norm",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
         },
-        {
-            "Name": "bricks",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "bricks",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/bricks.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
         },
-        {
-            "Name": "bricks2",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
         },
-        {
-            "Name": "ice",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "bricks2",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/bricks2.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
         },
-        {
-            "Name": "bricks2_nmap",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
         },
-        {
-            "Name": "WoodCrate01",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "ice",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/ice.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
         },
-        {
-            "Name": "bricks3",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
         },
-        {
-            "Name": "bricks_nmap",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "bricks2_nmap",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/bricks2_nmap.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
         },
-        {
-            "Name": "checkboard",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
         },
-        {
-            "Name": "default_nmap",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "WoodCrate01",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/WoodCrate01.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
         },
-        {
-            "Name": "grasscube1024",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
         },
-        {
-            "Name": "desertcube1024",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "bricks3",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/bricks3.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
         },
-        {
-            "Name": "Fireball",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
         },
-        {
-            "Name": "grass",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "bricks_nmap",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/bricks_nmap.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
         },
-        {
-            "Name": "head_diff",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
         },
-        {
-            "Name": "water1",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "checkboard",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/checkboard.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
         },
-        {
-            "Name": "head_norm",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
         },
-        {
-            "Name": "stone",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "default_nmap",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/default_nmap.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
         },
-        {
-            "Name": "jacket_diff",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
         },
-        {
-            "Name": "tree01S",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "grasscube1024",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/grasscube1024.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
         },
-        {
-            "Name": "jacket_norm",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
         },
-        {
-            "Name": "pants_diff",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "desertcube1024",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/desertcube1024.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
         },
-        {
-            "Name": "pants_norm",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
         },
-        {
-            "Name": "snowcube1024",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "Fireball",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/Fireball.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
         },
-        {
-            "Name": "sunsetcube1024",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
         },
-        {
-            "Name": "tile",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "grass",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/grass.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
         },
-        {
-            "Name": "tile_nmap",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
         },
-        {
-            "Name": "tree02S",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "head_diff",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/head_diff.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
         },
-        {
-            "Name": "tree35S",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
         },
-        {
-            "Name": "treearray",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "water1",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/water1.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
         },
-        {
-            "Name": "upBody_diff",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
         },
-        {
-            "Name": "treeArray2",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "head_norm",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/head_norm.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
         },
-        {
-            "Name": "white1x1",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
         },
-        {
-            "Name": "WireFence",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "stone",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/stone.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
         },
-        {
-            "Name": "WoodCrate02",
-            "Data": {
-                "TexturePath": "",
-                "Diffuse": {
-                    "x": "1",
-                    "y": "1",
-                    "z": "1",
-                    "w": "1"
-                },
-                "Fresnel": {
-                    "x": "0.00999999978",
-                    "y": "0.00999999978",
-                    "z": "0.00999999978"
-                },
-                "Roughness": "0.25"
-            }
-        }
-    ]
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "jacket_diff",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/jacket_diff.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "tree01S",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/tree01S.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "jacket_norm",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/jacket_norm.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "pants_diff",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/pants_diff.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "pants_norm",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/pants_norm.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "snowcube1024",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/snowcube1024.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "sunsetcube1024",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/sunsetcube1024.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "tile",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/tile.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "tile_nmap",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/tile_nmap.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "tree02S",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/tree02S.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "tree35S",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/tree35S.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "treearray",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/treearray.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "upBody_diff",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/upBody_diff.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "treeArray2",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/treeArray2.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "white1x1",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/white1x1.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "WireFence",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/WireFence.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "WoodCrate02",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/WoodCrate02.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    }
+  ]
 }
