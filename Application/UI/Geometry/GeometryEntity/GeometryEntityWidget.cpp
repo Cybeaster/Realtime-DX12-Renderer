@@ -123,9 +123,8 @@ void OGeometryEntityWidget::Draw()
 	{
 		DrawSubmeshParameters();
 		DrawInstanceParameters();
-
-		ImGui::End();
 	}
+	ImGui::End();
 }
 
 void OGeometryEntityWidget::Init()

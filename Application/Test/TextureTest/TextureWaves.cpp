@@ -405,7 +405,7 @@ void OTextureWaves::UpdateMaterialCB()
 				matConstants.MaterialSurface.DiffuseAlbedo = material->MaterialSurface.DiffuseAlbedo;
 				matConstants.MaterialSurface.FresnelR0 = material->MaterialSurface.FresnelR0;
 				matConstants.MaterialSurface.Roughness = material->MaterialSurface.Roughness;
-				matConstants.DiffuseMapIndex = material->DiffuseSRVHeapIndex;
+				matConstants.DiffuseMapIndex = material->DiffuseTexture->HeapIdx;
 
 				XMStoreFloat4x4(&matConstants.MatTransform, XMMatrixTranspose(matTransform));
 

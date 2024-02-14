@@ -2,15 +2,15 @@
 
 #include "DirectX/RenderConstants.h"
 #include "MaterialData.h"
+
+struct STexture;
 struct SMaterial
 {
 	string Name;
 	wstring TexturePath = L"";
+	STexture* DiffuseTexture = nullptr;
 	// Index into constant buffer corresponding to this material.
 	int32_t MaterialCBIndex = -1;
-
-	// Index into SRV heap for diffuse texture
-	UINT DiffuseSRVHeapIndex = -1;
 
 	UINT NormalSrvHeapIndex = -1;
 

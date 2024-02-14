@@ -15,8 +15,8 @@ void OMaterialManager::CreateMaterial(const string& Name, STexture* Texture, con
 	auto mat = make_unique<SMaterial>();
 	mat->Name = Name;
 	mat->MaterialCBIndex = Materials.size();
-	mat->TexturePath = Texture ? Texture->FileName : L"";
-	mat->DiffuseSRVHeapIndex = Texture ? Texture->HeapIdx : FindTextureByName(STextureNames::Debug)->HeapIdx;
+	mat->TexturePath = Texture->FileName;
+	mat->DiffuseTexture = Texture;
 	mat->MaterialSurface = Surface;
 	AddMaterial(Name, mat, Notify);
 }
@@ -79,8 +79,8 @@ void OMaterialManager::LoadMaterialsFromCache()
 	for (auto& val : Materials | std::views::values)
 	{
 		auto& mat = val;
-		mat->DiffuseSRVHeapIndex = FindOrCreateTexture(val->TexturePath)->HeapIdx;
-		ENSURE(mat->DiffuseSRVHeapIndex != -1);
+		mat->DiffuseTexture = FindOrCreateTexture(val->TexturePath);
+		ENSURE(mat->DiffuseTexture->HeapIdx != -1);
 		mat->MaterialCBIndex = it;
 		++it;
 	}
