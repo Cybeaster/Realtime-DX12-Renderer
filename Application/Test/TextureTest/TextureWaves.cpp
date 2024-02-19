@@ -105,7 +105,7 @@ void OTextureWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandLis
 		{
 			continue;
 		}
-		if (!renderItem->Instances.empty())
+		if (!renderItem->Instances.empty() && renderItem->Geometry)
 		{
 			auto vertexView = renderItem->Geometry->VertexBufferView();
 			auto indexView = renderItem->Geometry->IndexBufferView();
@@ -312,6 +312,9 @@ void OTextureWaves::OnRender(const UpdateEventArgs& Event)
 	GetEngine()->SetPipelineState(SPSOType::Opaque);
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Opaque));
 
+	GetEngine()->SetPipelineState(SPSOType::Highlight);
+	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Highlight));
+
 	GetEngine()->SetPipelineState(SPSOType::WavesRender);
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Waves));
 }
@@ -487,7 +490,23 @@ void OTextureWaves::BuildLandGeometry()
 void OTextureWaves::BuildRenderItems()
 {
 	const auto engine = Engine;
+	SRenderItemParams carParams;
+	carParams.NumberOfInstances = 1;
+	carParams.MaterialParams = { FindMaterial(SMaterialNames::Bronze) };
 
+	auto mesh = CreateMesh("Car",
+	                       "Resources/Models/car.txt",
+	                       EParserType::Custom,
+	                       ETextureMapType::None);
+
+	auto& car = engine->BuildRenderItemFromMesh(SRenderLayer::Opaque, mesh, carParams);
+
+	SRenderItemParams highlightedParams;
+	highlightedParams.NumberOfInstances = 1;
+	highlightedParams.MaterialParams = { FindMaterial(SMaterialNames::Picked) };
+	highlightedParams.bVisible = false;
+
+	engine->BuildPickRenderItem();
 	CreateGridRenderItem(SRenderLayer::Waves,
 	                     "Water",
 	                     160,
@@ -498,8 +517,9 @@ void OTextureWaves::BuildRenderItems()
 
 	constexpr size_t n = 2;
 	SRenderItemParams params;
+	params.bVisible = true;
 	params.NumberOfInstances = n * n * n;
-	params.MaterialDispalcement = { FindMaterial(SMaterialNames::Debug) };
+	params.MaterialParams = { FindMaterial(SMaterialNames::Debug) };
 	auto& instances = engine->BuildRenderItemFromMesh(SRenderLayer::Opaque,
 	                                                  "Skull",
 	                                                  "Resources/Models/skull.txt",

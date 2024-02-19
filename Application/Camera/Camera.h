@@ -67,6 +67,8 @@ public:
 	float GetCameraSensivity() const { return CameraSensivity; }
 	DirectX::BoundingFrustum& GetFrustrum() { return Frustum; };
 
+	std::tuple<DirectX::XMVECTOR /*ray_origin*/, DirectX::XMVECTOR /*ray dir*/, DirectX::XMMATRIX /*invView*/> Pick(int32_t Sx, int32_t Sy) const;
+
 private:
 	DirectX::XMFLOAT3 Position = { 0.0f, 0.0f, 0.0f };
 	DirectX::XMFLOAT3 Target = { 0.0f, 0.0f, 1.0f };

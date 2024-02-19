@@ -29,7 +29,7 @@ public:
 	SMaterialDisplacementParams GetDisplacementParams() const
 	{
 		SMaterialDisplacementParams Params;
-		Params.Material = FindMaterial(SMaterialNames::Debug);
+		Params.Material = FindMaterial(SMaterialNames::Water);
 		Params.DisplacementMapTexelSize = GetDiplacementMapTexelSize();
 		Params.GridSpatialStep = GetSpatialStep();
 		return Params;
@@ -40,7 +40,8 @@ public:
 		SRenderItemParams params;
 		params.NumberOfInstances = 1;
 		params.bFrustrumCoolingEnabled = false;
-		params.MaterialDispalcement = GetDisplacementParams();
+		params.bVisible = false;
+		params.MaterialParams = GetDisplacementParams();
 		return params;
 	}
 

@@ -13,7 +13,6 @@ T* Cast(auto* Ptr)
 	}
 	else
 	{
-		assert(false);
 		return nullptr;
 	}
 }

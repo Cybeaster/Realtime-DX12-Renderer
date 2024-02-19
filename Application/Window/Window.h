@@ -133,6 +133,7 @@ public:
 	shared_ptr<OCamera> GetCamera();
 
 protected:
+	bool HasCapturedLeftMouseButton();
 	// The Window procedure needs to call protected methods of this class.
 	friend LRESULT CALLBACK
 	WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -162,4 +163,6 @@ private:
 
 	float LastMouseXPos = 0;
 	float LastMouseYPos = 0;
+	float LeftButtonPressedTime = 0;
+	float CameraLeftMoveTime = 0.5;
 };

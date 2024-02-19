@@ -19,7 +19,7 @@ struct SRenderItem
 
 	bool IsValid() const
 	{
-		return RenderLayer != "NONE";
+		return RenderLayer != "NONE" && Geometry != nullptr;
 	}
 
 	bool IsValidChecked() const
@@ -28,8 +28,8 @@ struct SRenderItem
 		CWIN_LOG(!bIsValid, Geometry, Error, "RenderLayer is NONE");
 		return bIsValid;
 	}
-
 	string RenderLayer = "NONE";
+	bool bTraceable = true;
 	bool bFrustrumCoolingEnabled = true;
 	// World matrix of the shape that describes the object’s local space
 	// relative to the world space, which defines the position,
@@ -72,7 +72,8 @@ struct SRenderItem
 struct SRenderItemParams
 {
 	string Submesh;
-	SMaterialDisplacementParams MaterialDispalcement;
+	SMaterialDisplacementParams MaterialParams;
 	size_t NumberOfInstances = 1;
 	bool bFrustrumCoolingEnabled = true;
+	bool bVisible = true;
 };

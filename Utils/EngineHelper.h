@@ -44,6 +44,11 @@ inline STexture* FindOrCreateTexture(const wstring& FileName)
 	return OEngine::Get()->GetTextureManager()->FindOrCreateTexture(FileName);
 }
 
+inline auto CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels)
+{
+	return OEngine::Get()->CreateMesh(Name, Path, Parser, GenTexels);
+}
+
 inline auto& CreateGridRenderItem(string Category, string Name, float Width, float Depth, uint32_t Row, uint32_t Column, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();

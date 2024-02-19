@@ -3,6 +3,7 @@
 #include "GeometryEntity/GeometryEntityWidget.h"
 #include "UI/Widget.h"
 
+class OPickedRenderItemWidget;
 class OEngine;
 class OGeometryManagerWidget : public OHierarchicalWidgetBase
 {
@@ -16,6 +17,7 @@ public:
 	void RebuildRequest() const;
 
 private:
+	OPickedRenderItemWidget* PickedRenderItemWidget = nullptr;
 	OEngine::TRenderLayer* RenderLayers = nullptr;
 	OEngine* Engine = nullptr;
 	string SelectedGeometry = "";

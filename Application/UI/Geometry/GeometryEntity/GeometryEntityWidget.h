@@ -21,7 +21,10 @@ public:
 	void Init() override;
 	SMeshGeometry* GetGeometry() const
 	{
-		return RenderItem->Geometry;
+		if (RenderItem)
+			return RenderItem->Geometry;
+		else
+			return nullptr;
 	}
 	void RebuildRequest() const;
 

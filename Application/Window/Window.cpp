@@ -245,7 +245,7 @@ void OWindow::OnMouseMoved(MouseMotionEventArgs& Event)
 		Camera->RotateY(dx);
 	}
 
-	if (Event.LeftButton)
+	if (Event.LeftButton && (OEngine::Get()->GetTime() - LeftButtonPressedTime) > CameraLeftMoveTime)
 	{
 		const float dx = 0.1 * static_cast<float>(Event.X - LastMouseXPos);
 		Camera->MoveToTarget(dx * OEngine::Get()->GetDeltaTime());
@@ -264,11 +264,26 @@ void OWindow::OnMouseButtonPressed(MouseButtonEventArgs& Event)
 
 	LastMouseXPos = Event.X;
 	LastMouseYPos = Event.Y;
+
+	if (Event.LeftButton)
+	{
+		LeftButtonPressedTime = OEngine::Get()->GetTime();
+	}
+
 	SetCapture(Hwnd);
 }
 
 void OWindow::OnMouseButtonReleased(MouseButtonEventArgs& Event)
 {
+	if (Event.Button == MouseButtonEventArgs::EMouseButton::Left)
+	{
+		if (!HasCapturedLeftMouseButton())
+		{
+			OEngine::Get()->Pick(Event.X, Event.Y);
+		}
+		LeftButtonPressedTime = 0;
+	}
+
 	ReleaseCapture();
 }
 
@@ -347,6 +362,11 @@ float OWindow::GetLastYMousePos() const
 shared_ptr<OCamera> OWindow::GetCamera()
 {
 	return Camera;
+}
+
+bool OWindow::HasCapturedLeftMouseButton()
+{
+	return LeftButtonPressedTime > 0 && OEngine::Get()->GetTime() - LeftButtonPressedTime > CameraLeftMoveTime;
 }
 
 ComPtr<IDXGISwapChain4> OWindow::CreateSwapChain()

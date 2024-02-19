@@ -1,6 +1,7 @@
 #pragma once
 #include "DXHelper.h"
 
+#define RENDER_TYPE inline static const string
 struct SRenderConstants
 {
 	inline static constexpr D3D_DRIVER_TYPE DriverType = D3D_DRIVER_TYPE_HARDWARE;
@@ -12,73 +13,75 @@ struct SRenderConstants
 
 struct SRenderLayer
 {
-	inline static const string Opaque = "Opaque";
-	inline static const string Transparent = "Transparent";
-	inline static const string AlphaTested = "AlphaTested";
-	inline static const string Shadow = "Shadow";
-	inline static const string Reflected = "Reflected";
-	inline static const string Mirror = "Mirror";
-	inline static const string AlphaTestedTreeSprites = "AlphaTestedTreeSprites";
-	inline static const string IcosahedronLODs = "IcosahedronLODs";
-	inline static const string Waves = "Waves";
-	inline static const string Tesselation = "Tesselation";
+	RENDER_TYPE Opaque = "Opaque";
+	RENDER_TYPE Transparent = "Transparent";
+	RENDER_TYPE AlphaTested = "AlphaTested";
+	RENDER_TYPE Shadow = "Shadow";
+	RENDER_TYPE Reflected = "Reflected";
+	RENDER_TYPE Mirror = "Mirror";
+	RENDER_TYPE AlphaTestedTreeSprites = "AlphaTestedTreeSprites";
+	RENDER_TYPE IcosahedronLODs = "IcosahedronLODs";
+	RENDER_TYPE Waves = "Waves";
+	RENDER_TYPE Tesselation = "Tesselation";
+	RENDER_TYPE Highlight = "Highlight";
 };
 
 struct SPSOType
 {
-	inline static const string Opaque = "Opaque";
-	inline static const string Transparent = "Transparent";
-	inline static const string AlphaTested = "AlphaTested";
-	inline static const string Shadow = "Shadow";
-	inline static const string Debug = "Debug";
-	inline static const string StencilReflection = "Reflected";
-	inline static const string StencilMirrors = "Mirror";
-	inline static const string TreeSprites = "TreeSprites";
-	inline static const string Icosahedron = "Icosahedron";
-	inline static const string HorizontalBlur = "HorizontalBlur";
-	inline static const string VerticalBlur = "VerticalBlur";
-	inline static const string SobelFilter = "SobelFilter";
-	inline static const string Composite = "Composite";
+	RENDER_TYPE Opaque = "Opaque";
+	RENDER_TYPE Transparent = "Transparent";
+	RENDER_TYPE AlphaTested = "AlphaTested";
+	RENDER_TYPE Shadow = "Shadow";
+	RENDER_TYPE Debug = "Debug";
+	RENDER_TYPE StencilReflection = "Reflected";
+	RENDER_TYPE StencilMirrors = "Mirror";
+	RENDER_TYPE TreeSprites = "TreeSprites";
+	RENDER_TYPE Icosahedron = "Icosahedron";
+	RENDER_TYPE HorizontalBlur = "HorizontalBlur";
+	RENDER_TYPE VerticalBlur = "VerticalBlur";
+	RENDER_TYPE SobelFilter = "SobelFilter";
+	RENDER_TYPE Composite = "Composite";
 
-	inline static const string WavesRender = "WavesRender";
-	inline static const string WavesDisturb = "WavesDisturb";
-	inline static const string WavesUpdate = "WavesUpdate";
+	RENDER_TYPE WavesRender = "WavesRender";
+	RENDER_TYPE WavesDisturb = "WavesDisturb";
+	RENDER_TYPE WavesUpdate = "WavesUpdate";
 
-	inline static const string BilateralBlur = "BilateralBlur";
-	inline static const string Tesselation = "Tesselation";
+	RENDER_TYPE BilateralBlur = "BilateralBlur";
+	RENDER_TYPE Tesselation = "Tesselation";
+	RENDER_TYPE Highlight = "Highlight";
 };
 
 struct SShaderTypes
 {
-	inline static const string VSBaseShader = "VSBaseShader";
+	RENDER_TYPE VSBaseShader = "VSBaseShader";
 
-	inline static const string PSAlphaTested = "PSAlphaTested";
-	inline static const string PSOpaque = "PSOpaque";
-	inline static const string PSBaseShader = "PSBaseShader";
+	RENDER_TYPE PSAlphaTested = "PSAlphaTested";
+	RENDER_TYPE PSOpaque = "PSOpaque";
+	RENDER_TYPE PSBaseShader = "PSBaseShader";
 
-	inline static const string VSTreeSprite = "VSTreeSprite";
-	inline static const string GSTreeSprite = "GSTreeSprite";
-	inline static const string PSTreeSprite = "PSTreeSprite";
+	RENDER_TYPE VSTreeSprite = "VSTreeSprite";
+	RENDER_TYPE GSTreeSprite = "GSTreeSprite";
+	RENDER_TYPE PSTreeSprite = "PSTreeSprite";
 
-	inline static const string GSIcosahedron = "GSIcosahedron";
-	inline static const string PSIcosahedron = "PSIcosahedron";
-	inline static const string VSIcosahedron = "VSIcosahedron";
+	RENDER_TYPE GSIcosahedron = "GSIcosahedron";
+	RENDER_TYPE PSIcosahedron = "PSIcosahedron";
+	RENDER_TYPE VSIcosahedron = "VSIcosahedron";
 
-	inline static const string CSHorizontalBlur = "CSHorizontalBlur";
-	inline static const string CSVerticalBlur = "CSVerticalBlur";
+	RENDER_TYPE CSHorizontalBlur = "CSHorizontalBlur";
+	RENDER_TYPE CSVerticalBlur = "CSVerticalBlur";
 
-	inline static const string CSBilateralBlur = "CSBilateralBlur";
+	RENDER_TYPE CSBilateralBlur = "CSBilateralBlur";
 
-	inline static const string PSComposite = "PSComposite";
-	inline static const string VSComposite = "VSComposite";
+	RENDER_TYPE PSComposite = "PSComposite";
+	RENDER_TYPE VSComposite = "VSComposite";
 
-	inline static const string CSWavesDisturb = "CSWavesDisturb";
-	inline static const string CSWavesUpdate = "CSWavesUpdate";
-	inline static const string VSWaves = "PSWaves";
+	RENDER_TYPE CSWavesDisturb = "CSWavesDisturb";
+	RENDER_TYPE CSWavesUpdate = "CSWavesUpdate";
+	RENDER_TYPE VSWaves = "PSWaves";
 
-	inline static const string CSSobelFilter = "CSSobelFilter";
-	inline static const string VSTesselation = "VSTesselation";
-	inline static const string HSTesselation = "HSTesselation";
-	inline static const string DSTesselation = "DSTesselation";
-	inline static const string PSTesselation = "PSTesselation";
+	RENDER_TYPE CSSobelFilter = "CSSobelFilter";
+	RENDER_TYPE VSTesselation = "VSTesselation";
+	RENDER_TYPE HSTesselation = "HSTesselation";
+	RENDER_TYPE DSTesselation = "DSTesselation";
+	RENDER_TYPE PSTesselation = "PSTesselation";
 };

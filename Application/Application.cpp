@@ -134,9 +134,9 @@ void OApplication::CalculateFrameStats()
 }
 
 // Convert the message ID into a MouseButton ID
-static MouseButtonEventArgs::MouseButton DecodeMouseButton(UINT messageID)
+static MouseButtonEventArgs::EMouseButton DecodeMouseButton(UINT messageID)
 {
-	MouseButtonEventArgs::MouseButton mouseButton = MouseButtonEventArgs::None;
+	MouseButtonEventArgs::EMouseButton mouseButton = MouseButtonEventArgs::None;
 	switch (messageID)
 	{
 	case WM_LBUTTONDOWN:

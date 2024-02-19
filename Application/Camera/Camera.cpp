@@ -213,6 +213,21 @@ void OCamera::UpdateCameraSpeed(float Delta)
 	CameraSpeed = std::clamp(CameraSpeed, 0.f, MaxCameraSpeed);
 }
 
+std::tuple<XMVECTOR /*ray_origin*/, XMVECTOR /*ray dir*/, XMMATRIX /*invView*/> OCamera::Pick(int32_t Sx, int32_t Sy) const
+{
+	XMFLOAT4X4 proj = GetProj4x4f();
+
+	float vx = (+2.0f * Sx / Window.lock()->GetWidth() - 1.0f) / proj(0, 0);
+	float vy = (-2.0f * Sy / Window.lock()->GetHeight() + 1.0f) / proj(1, 1);
+
+	XMVECTOR rayOrigin = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+	XMVECTOR rayDir = XMVectorSet(vx, vy, 1.0f, 0.0f);
+	const XMMATRIX view = GetView();
+	auto det = XMMatrixDeterminant(view);
+	XMMATRIX invView = XMMatrixInverse(&det, view);
+	return { rayOrigin, rayDir, invView };
+}
+
 DirectX::XMVECTOR OCamera::GetUp() const
 {
 	return XMLoadFloat3(&Up);

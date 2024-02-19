@@ -119,6 +119,7 @@ public:
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetTreeSpritePSODesc();
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetIcosahedronPSODesc();
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetWavesRenderPSODesc();
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetHighlightPSODesc();
 	D3D12_COMPUTE_PIPELINE_STATE_DESC GetBilateralBlurPSODesc();
 	D3D12_COMPUTE_PIPELINE_STATE_DESC GetWavesDisturbPSODesc();
 	D3D12_COMPUTE_PIPELINE_STATE_DESC GetWavesUpdatePSODesc();
@@ -143,9 +144,9 @@ public:
 	vector<SInstanceData>& BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, const SRenderItemParams& Params);
 	vector<SInstanceData>& BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, const SRenderItemParams& Params);
 	vector<SInstanceData>& BuildRenderItemFromMesh(string Category, const string& Name, const OGeometryGenerator::SMeshData& Data);
-
-	unique_ptr<SMeshGeometry> CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels);
-	unique_ptr<SMeshGeometry> CreateMesh(const string& Name, const OGeometryGenerator::SMeshData& Data);
+	void BuildPickRenderItem();
+	SMeshGeometry* CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels);
+	unique_ptr<SMeshGeometry> CreateMesh(const string& Name, const OGeometryGenerator::SMeshData& Data) const;
 
 	SMeshGeometry* FindSceneGeometry(const string& Name) const;
 
@@ -210,6 +211,7 @@ public:
 	void UpdateGeometryRequest(string Name);
 
 	float GetDeltaTime() const;
+	float GetTime() const;
 	TRenderLayer& GetRenderLayers();
 
 	void PerformFrustrumCulling();
@@ -226,6 +228,10 @@ public:
 	}
 
 	OMeshGenerator* GetMeshGenerator() const;
+
+	void Pick(int32_t SX, int32_t SY);
+	SRenderItem* GetPickedItem() const;
+
 	SOnFrameResourceChanged OnFrameResourceChanged;
 
 protected:
@@ -313,6 +319,8 @@ private:
 	inline static OEngine* Engine = nullptr;
 
 	std::optional<string> GeometryToRebuild;
+
+	SRenderItem* PickedItem = nullptr;
 };
 
 template<typename T, typename... Args>

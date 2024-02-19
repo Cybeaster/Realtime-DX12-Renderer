@@ -844,6 +844,14 @@ D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetWavesRenderPSODesc()
 	return wavesRenderPSO;
 }
 
+D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetHighlightPSODesc()
+{
+	auto highlightPSO = GetOpaquePSODesc();
+	highlightPSO.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	highlightPSO.BlendState.RenderTarget[0] = GetTransparentBlendState();
+	return highlightPSO;
+}
+
 D3D12_COMPUTE_PIPELINE_STATE_DESC OEngine::GetWavesDisturbPSODesc()
 {
 	D3D12_COMPUTE_PIPELINE_STATE_DESC wavesPSO = {};
@@ -883,7 +891,7 @@ void OEngine::BuildPSOs()
 	CreatePSO(SPSOType::WavesDisturb, GetWavesDisturbPSODesc());
 	CreatePSO(SPSOType::WavesUpdate, GetWavesUpdatePSODesc());
 	CreatePSO(SPSOType::WavesRender, GetWavesRenderPSODesc());
-
+	CreatePSO(SPSOType::Highlight, GetHighlightPSODesc());
 	BuildBlurPSO();
 	CreatePSO(SPSOType::BilateralBlur, GetBilateralBlurPSODesc());
 }
@@ -1319,6 +1327,87 @@ uint32_t OEngine::GetNumOffscrenRT() const
 	return 1;
 }
 
+void OEngine::Pick(int32_t SX, int32_t SY)
+{
+	auto camera = Window->GetCamera();
+	auto [origin, dir, invView] = camera->Pick(SX, SY);
+
+	for (auto item : RenderLayers | std::views::values | std::views::join)
+	{
+		if (!item->bTraceable)
+		{
+			continue;
+		}
+
+		auto geometry = item->Geometry;
+		auto world = XMLoadFloat4x4(&item->World);
+		auto worldDet = XMMatrixDeterminant(world);
+		auto Invworld = XMMatrixInverse(&worldDet, world);
+
+		// Tranform ray to vi space of Mesh.
+		auto toLocal = XMMatrixMultiply(invView, Invworld);
+
+		origin = XMVector3TransformCoord(origin, toLocal);
+		dir = XMVector3TransformNormal(dir, toLocal);
+
+		// Make the ray direction unit length for the intersection tests.
+		dir = XMVector3Normalize(dir);
+
+		// If we hit the bounding box of the Mesh, then we might have picked a Mesh triangle,
+		// so do the ray/triangle tests.
+		//
+		// If we did not hit the bounding box, then it is impossible that we hit
+		// the Mesh, so do not waste effort doing ray/triangle tests.
+		float tmin = 0.0f;
+		if (item->Bounds.Intersects(origin, dir, tmin))
+		{
+			for (auto& submesh : geometry->GetDrawArgs() | std::views::values)
+			{
+				auto indices = submesh.Indices.get();
+				auto vertices = submesh.Vertices.get();
+				auto triCount = indices->size() / 3;
+
+				tmin = INFINITE;
+				for (size_t i = 0; i < triCount; i++)
+				{
+					auto i0 = indices->at(i * 3);
+					auto i1 = indices->at(i * 3 + 1);
+					auto i2 = indices->at(i * 3 + 2);
+
+					auto v0 = XMLoadFloat3(&vertices->at(i0));
+					auto v1 = XMLoadFloat3(&vertices->at(i1));
+					auto v2 = XMLoadFloat3(&vertices->at(i2));
+
+					if (float t = 0.0f; TriangleTests::Intersects(origin, dir, v0, v1, v2, t))
+					{
+						if (t < tmin)
+						{
+							t = tmin;
+							uint32_t pickedTriangle = i;
+
+							PickedItem->bTraceable = false;
+							PickedItem->Geometry = geometry;
+							PickedItem->IndexCount = 3;
+							PickedItem->BaseVertexLocation = 0;
+							PickedItem->World = item->World;
+							PickedItem->Bounds = item->Bounds;
+							PickedItem->TexTransform = item->TexTransform;
+
+							PickedItem->NumFramesDirty = SRenderConstants::NumFrameResources;
+							PickedItem->StartIndexLocation = 3 * pickedTriangle;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+SRenderItem* OEngine::GetPickedItem() const
+{
+	return PickedItem;
+}
+
 D3D12_GPU_DESCRIPTOR_HANDLE OEngine::GetSRVDescHandleForTexture(STexture* Texture) const
 {
 	auto desc = SRVDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
@@ -1348,6 +1437,11 @@ void OEngine::UpdateGeometryRequest(string Name)
 float OEngine::GetDeltaTime() const
 {
 	return TickTimer.GetDeltaTime();
+}
+
+float OEngine::GetTime() const
+{
+	return TickTimer.GetTime();
 }
 
 OEngine::TRenderLayer& OEngine::GetRenderLayers()
@@ -1526,7 +1620,7 @@ vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(string Category, unique_
 
 vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, const SRenderItemParams& Params)
 {
-	if (Params.MaterialDispalcement.Material == nullptr || Params.MaterialDispalcement.Material->MaterialCBIndex == -1)
+	if (Params.MaterialParams.Material == nullptr || Params.MaterialParams.Material->MaterialCBIndex == -1)
 	{
 		LOG(Geometry, Error, "Material not specified!");
 	}
@@ -1539,14 +1633,15 @@ vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, 
 	newItem->bFrustrumCoolingEnabled = Params.bFrustrumCoolingEnabled;
 
 	SInstanceData defaultInstance;
-	defaultInstance.MaterialIndex = Params.MaterialDispalcement.Material != nullptr ? Params.MaterialDispalcement.Material->MaterialCBIndex : MaterialManager->GetMaterialCBIndex(STextureNames::Debug);
-	defaultInstance.GridSpatialStep = Params.MaterialDispalcement.GridSpatialStep;
-	defaultInstance.DisplacementMapTexelSize = Params.MaterialDispalcement.DisplacementMapTexelSize;
+	auto mat = Params.MaterialParams.Material;
+	defaultInstance.MaterialIndex = mat != nullptr ? mat->MaterialCBIndex : MaterialManager->GetMaterialCBIndex(STextureNames::Debug);
+	defaultInstance.GridSpatialStep = Params.MaterialParams.GridSpatialStep;
+	defaultInstance.DisplacementMapTexelSize = Params.MaterialParams.DisplacementMapTexelSize;
 
 	newItem->Instances.resize(Params.NumberOfInstances, defaultInstance);
 	newItem->RenderLayer = Category;
 	newItem->Geometry = Mesh;
-
+	newItem->bTraceable = Params.bVisible;
 	const auto itemptr = newItem.get();
 	auto submesh = Params.Submesh;
 	if (submesh.empty())
@@ -1554,6 +1649,7 @@ vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, 
 		LOG(Geometry, Log, "Submesh not specified, using first submesh!");
 		submesh = Mesh->GetDrawArgs().begin()->first;
 	}
+
 	const auto& chosenSubmesh = *Mesh->FindSubmeshGeomentry(submesh);
 	newItem->IndexCount = chosenSubmesh.IndexCount;
 	newItem->StartIndexLocation = chosenSubmesh.StartIndexLocation;
@@ -1570,12 +1666,35 @@ vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, 
 	return BuildRenderItemFromMesh(Category, meshptr, Params);
 }
 
-unique_ptr<SMeshGeometry> OEngine::CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels)
+void OEngine::BuildPickRenderItem()
 {
-	return MeshGenerator->CreateMesh(Name, Path, Parser, GenTexels);
+	auto newItem = make_unique<SRenderItem>();
+	newItem->World = Utils::Math::Identity4x4();
+	newItem->TexTransform = Utils::Math::Identity4x4();
+	newItem->ObjectCBIndex = AllRenderItems.size();
+	newItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	newItem->bFrustrumCoolingEnabled = false;
+	newItem->StartIndexLocation = 0;
+	newItem->BaseVertexLocation = 0;
+	newItem->Material = MaterialManager->FindMaterial(SMaterialNames::Picked);
+	newItem->IndexCount = 0;
+	newItem->RenderLayer = SRenderLayer::Highlight;
+	newItem->bTraceable = false;
+
+	SInstanceData defaultInstance;
+	defaultInstance.MaterialIndex = newItem->Material->MaterialCBIndex;
+
+	newItem->Instances.push_back(defaultInstance);
+	PickedItem = newItem.get();
+	AddRenderItem(SRenderLayer::Highlight, std::move(newItem));
 }
 
-unique_ptr<SMeshGeometry> OEngine::CreateMesh(const string& Name, const OGeometryGenerator::SMeshData& Data)
+SMeshGeometry* OEngine::CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels)
+{
+	return SetSceneGeometry(MeshGenerator->CreateMesh(Name, Path, Parser, GenTexels));
+}
+
+unique_ptr<SMeshGeometry> OEngine::CreateMesh(const string& Name, const OGeometryGenerator::SMeshData& Data) const
 {
 	return MeshGenerator->CreateMesh(Name, Data);
 }

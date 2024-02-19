@@ -1,6 +1,24 @@
 {
   "Materials": [
     {
+      "Name": "Debug",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/white1x1.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "0",
+          "z": "0",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "1.0"
+      }
+    },
+    {
       "Name": "upbody_norm",
       "Data": {
         "TexturePath": "Resources\/Textures\/upbody_norm.dds",
@@ -256,24 +274,6 @@
       "Name": "head_diff",
       "Data": {
         "TexturePath": "Resources\/Textures\/head_diff.dds",
-        "Diffuse": {
-          "x": "1",
-          "y": "1",
-          "z": "1",
-          "w": "1"
-        },
-        "Fresnel": {
-          "x": "0.1",
-          "y": "0.1",
-          "z": "0.1"
-        },
-        "Roughness": "0.25"
-      }
-    },
-    {
-      "Name": "water1",
-      "Data": {
-        "TexturePath": "Resources\/Textures\/water1.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -628,6 +628,186 @@
           "z": "0.1"
         },
         "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "Picked",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/white1x1.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "0",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "1.0"
+      }
+    },
+    {
+      "Name": "Gold",
+      "Data": {
+        "TexturePath": "Resources/Textures/white1x1.dds",
+        "Diffuse": {
+          "x": "1.0",
+          "y": "0.765",
+          "z": "0.336",
+          "w": "1.0"
+        },
+        "Fresnel": {
+          "x": "0.85",
+          "y": "0.65",
+          "z": "0.45"
+        },
+        "Roughness": "0.1"
+      }
+    },
+    {
+      "Name": "Silver",
+      "Data": {
+        "TexturePath": "Resources/Textures/white1x1.dds",
+        "Diffuse": {
+          "x": "0.972",
+          "y": "0.960",
+          "z": "0.915",
+          "w": "1.0"
+        },
+        "Fresnel": {
+          "x": "0.95",
+          "y": "0.93",
+          "z": "0.88"
+        },
+        "Roughness": "0.2"
+      }
+    },
+    {
+      "Name": "Bronze",
+      "Data": {
+        "TexturePath": "Resources/Textures/white1x1.dds",
+        "Diffuse": {
+          "x": "0.804",
+          "y": "0.498",
+          "z": "0.196",
+          "w": "1.0"
+        },
+        "Fresnel": {
+          "x": "0.65",
+          "y": "0.48",
+          "z": "0.36"
+        },
+        "Roughness": "0.2"
+      }
+    },
+    {
+      "Name": "Lambertian",
+      "Data": {
+        "TexturePath": "Resources/Textures/white1x1.dds",
+        "Diffuse": {
+          "x": "0.8",
+          "y": "0.8",
+          "z": "0.8",
+          "w": "1.0"
+        },
+        "Fresnel": {
+          "x": "0.03",
+          "y": "0.03",
+          "z": "0.03"
+        },
+        "Roughness": "1.0"
+      }
+    },
+    {
+      "Name": "Metallic",
+      "Data": {
+        "TexturePath": "Resources/Textures/white1x1.dds",
+        "Diffuse": {
+          "x": "0.8",
+          "y": "0.8",
+          "z": "0.8",
+          "w": "1.0"
+        },
+        "Fresnel": {
+          "x": "0.85",
+          "y": "0.85",
+          "z": "0.85"
+        },
+        "Roughness": "0.1"
+      }
+    },
+    {
+      "Name": "Mirror",
+      "Data": {
+        "TexturePath": "Resources/Textures/white1x1.dds",
+        "Diffuse": {
+          "x": "1.0",
+          "y": "1.0",
+          "z": "1.0",
+          "w": "1.0"
+        },
+        "Fresnel": {
+          "x": "0.98",
+          "y": "0.98",
+          "z": "0.98"
+        },
+        "Roughness": "0.0"
+      }
+    },
+    {
+      "Name": "Glass",
+      "Data": {
+        "TexturePath": "Resources/Textures/white1x1.dds",
+        "Diffuse": {
+          "x": "0.6",
+          "y": "0.7",
+          "z": "0.8",
+          "w": "0.1"
+        },
+        "Fresnel": {
+          "x": "0.9",
+          "y": "0.9",
+          "z": "0.9"
+        },
+        "Roughness": "0.05"
+      }
+    },
+    {
+      "Name": "Water",
+      "Data": {
+        "TexturePath": "Resources/Textures/water1.dds",
+        "Diffuse": {
+          "x": "0.2",
+          "y": "0.4",
+          "z": "0.6",
+          "w": "0.5"
+        },
+        "Fresnel": {
+          "x": "0.02",
+          "y": "0.02",
+          "z": "0.02"
+        },
+        "Roughness": "0.8"
+      }
+    },
+    {
+      "Name": "Debug",
+      "Data": {
+        "TexturePath": "Resources/Textures/white1x1.dds",
+        "Diffuse": {
+          "x": "1.0",
+          "y": "1.0",
+          "z": "1.0",
+          "w": "1.0"
+        },
+        "Fresnel": {
+          "x": "0.0",
+          "y": "0.0",
+          "z": "0.0"
+        },
+        "Roughness": "1.0"
       }
     }
   ]

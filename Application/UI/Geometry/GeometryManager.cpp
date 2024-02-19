@@ -1,11 +1,14 @@
 #include "GeometryManager.h"
 
+#include "GeometryEntity/PickedRenderItem.h"
+
 #include <ranges>
 
 void OGeometryManagerWidget::Draw()
 {
 	if (ImGui::CollapsingHeader("Geometry Manager"))
 	{
+		PickedRenderItemWidget->Draw();
 		ImGui::Text("Number of geometries %d", RenderLayers->size());
 		OGeometryEntityWidget* selectedWidget = nullptr;
 
@@ -13,17 +16,19 @@ void OGeometryManagerWidget::Draw()
 		{
 			for (auto& entity : GetWidgets())
 			{
-				if (const auto widget = SCast<OGeometryEntityWidget>(entity.get()))
+				if (const auto widget = Cast<OGeometryEntityWidget>(entity.get()))
 				{
-					const auto geometry = widget->GetGeometry();
-					if (ImGui::Selectable(geometry->Name.c_str(), SelectedGeometry == geometry->Name))
+					if (const auto geometry = widget->GetGeometry())
 					{
-						SelectedGeometry = geometry->Name;
-					}
+						if (ImGui::Selectable(geometry->Name.c_str(), SelectedGeometry == geometry->Name))
+						{
+							SelectedGeometry = geometry->Name;
+						}
 
-					if (SelectedGeometry == geometry->Name)
-					{
-						selectedWidget = widget;
+						if (SelectedGeometry == geometry->Name)
+						{
+							selectedWidget = widget;
+						}
 					}
 				}
 			}
@@ -40,12 +45,18 @@ void OGeometryManagerWidget::Draw()
 void OGeometryManagerWidget::Init()
 {
 	IWidget::Init();
-
-	for (auto& layer : *RenderLayers | std::views::values)
+	PickedRenderItemWidget = MakeWidget<OPickedRenderItemWidget>();
+	for (auto& layer : *RenderLayers)
 	{
-		for (auto item : layer)
+		if (layer.first == "Opaque" || layer.first == "Transparent")
 		{
-			MakeWidget<OGeometryEntityWidget>(item, Engine, this);
+			for (auto item : layer.second)
+			{
+				if (item->Geometry)
+				{
+					MakeWidget<OGeometryEntityWidget>(item, Engine, this);
+				}
+			}
 		}
 	}
 }

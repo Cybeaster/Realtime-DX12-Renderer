@@ -66,7 +66,7 @@ public:
 class MouseButtonEventArgs : public EventArgs
 {
 public:
-	enum MouseButton
+	enum EMouseButton
 	{
 		None = 0,
 		Left = 1,
@@ -80,12 +80,12 @@ public:
 	};
 
 	typedef EventArgs Super;
-	MouseButtonEventArgs(MouseButton buttonID, ButtonState state, bool leftButton, bool middleButton, bool rightButton, bool control, bool shift, int x, int y, HWND Handle)
+	MouseButtonEventArgs(EMouseButton buttonID, ButtonState state, bool leftButton, bool middleButton, bool rightButton, bool control, bool shift, int x, int y, HWND Handle)
 	    : Super(Handle), Button(buttonID), State(state), LeftButton(leftButton), MiddleButton(middleButton), RightButton(rightButton), Control(control), Shift(shift), X(x), Y(y)
 	{
 	}
 
-	MouseButton Button; // The mouse button that was pressed or released.
+	EMouseButton Button; // The mouse button that was pressed or released.
 	ButtonState State; // Was the button pressed or released?
 	bool LeftButton; // Is the left mouse button down?
 	bool MiddleButton; // Is the middle mouse button down?
