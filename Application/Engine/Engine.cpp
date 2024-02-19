@@ -815,8 +815,8 @@ void OEngine::BuildDescriptorHeap()
 	uint32_t texturesOffset = 0;
 	for (const auto& texture : TextureManager->GetTextures() | std::views::values)
 	{
-		srvDesc.Format = texture->Resource->GetDesc().Format;
-		Device->CreateShaderResourceView(texture->Resource.Get(), &srvDesc, hDescriptor);
+		auto srv = texture->GetSRVDesc();
+		Device->CreateShaderResourceView(texture->Resource.Get(), &srv, hDescriptor);
 		texture->HeapIdx = texturesOffset;
 		texturesOffset++;
 		hDescriptor.Offset(1, CBVSRVUAVDescriptorSize);
