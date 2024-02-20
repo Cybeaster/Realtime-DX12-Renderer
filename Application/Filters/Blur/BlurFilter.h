@@ -20,14 +20,9 @@ public:
 	    ID3D12PipelineState* HorizontalBlurPSO,
 	    ID3D12PipelineState* VerticalBlurPSO,
 	    ID3D12Resource* Input) const;
-	uint32_t GetNumDescriptors() const override
+	uint32_t GetNumSRVRequired() const override
 	{
 		return 4;
-	}
-
-	void UpdateDescriptors(SRenderObjectDescriptor& OutDescriptor) override
-	{
-		OutDescriptor.OffsetSRV(GetNumDescriptors());
 	}
 
 	void SetParameters(float InSigma, uint32_t InBlurCount)

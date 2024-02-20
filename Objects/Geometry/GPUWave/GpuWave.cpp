@@ -16,7 +16,6 @@ OGPUWave::OGPUWave(ID3D12Device* _Device, ID3D12GraphicsCommandList* _List, int3
 
 void OGPUWave::BuildResources()
 {
-
 	// All the textures for the wave simulation will be bound as a shader resource and
 	// unordered access view at some point since we ping-pong the buffers.
 
@@ -117,9 +116,6 @@ void OGPUWave::BuildDescriptors(IDescriptor* Descriptor)
 	{
 		return;
 	}
-	auto CpuDescriptor = descriptor->CPUSRVescriptor;
-	auto GpuDescriptor = descriptor->GPUSRVDescriptor;
-	auto DescriptorSize = descriptor->DSVSRVUAVDescriptorSize;
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -133,22 +129,29 @@ void OGPUWave::BuildDescriptors(IDescriptor* Descriptor)
 	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 	uavDesc.Texture2D.MipSlice = 0;
 
-	Device->CreateShaderResourceView(PrevSol.Get(), &srvDesc, CpuDescriptor);
-	Device->CreateShaderResourceView(CurrSol.Get(), &srvDesc, CpuDescriptor.Offset(1, DescriptorSize));
-	Device->CreateShaderResourceView(NextSol.Get(), &srvDesc, CpuDescriptor.Offset(1, DescriptorSize));
+	auto [prevCPU, prevGPU] = descriptor->OffsetSRV();
+	auto [curCPU, curGPU] = descriptor->OffsetSRV();
+	auto [nextCPU, nextGPU] = descriptor->OffsetSRV();
+	auto [prevCPUUAV, prevGPUUAV] = descriptor->OffsetSRV();
+	auto [curCPUUAV, curGPUUAV] = descriptor->OffsetSRV();
+	auto [nextCPUUAV, nextGPUUAV] = descriptor->OffsetSRV();
 
-	Device->CreateUnorderedAccessView(PrevSol.Get(), nullptr, &uavDesc, CpuDescriptor.Offset(1, DescriptorSize));
-	Device->CreateUnorderedAccessView(CurrSol.Get(), nullptr, &uavDesc, CpuDescriptor.Offset(1, DescriptorSize));
-	Device->CreateUnorderedAccessView(NextSol.Get(), nullptr, &uavDesc, CpuDescriptor.Offset(1, DescriptorSize));
+	Device->CreateShaderResourceView(PrevSol.Get(), &srvDesc, prevCPU);
+	Device->CreateShaderResourceView(CurrSol.Get(), &srvDesc, curCPU);
+	Device->CreateShaderResourceView(NextSol.Get(), &srvDesc, nextCPU);
+
+	Device->CreateUnorderedAccessView(PrevSol.Get(), nullptr, &uavDesc, prevCPUUAV);
+	Device->CreateUnorderedAccessView(CurrSol.Get(), nullptr, &uavDesc, curCPUUAV);
+	Device->CreateUnorderedAccessView(NextSol.Get(), nullptr, &uavDesc, nextCPUUAV);
 
 	//save references to gpu resources
-	PrevSolSrv = GpuDescriptor;
-	CurrSolSrv = GpuDescriptor.Offset(1, DescriptorSize);
-	NextSolSrv = GpuDescriptor.Offset(1, DescriptorSize);
+	PrevSolSrv = prevGPU;
+	CurrSolSrv = curGPU;
+	NextSolSrv = nextGPU;
 
-	PrevSolUav = GpuDescriptor.Offset(1, DescriptorSize);
-	CurrSolUav = GpuDescriptor.Offset(1, DescriptorSize);
-	NextSolUav = GpuDescriptor.Offset(1, DescriptorSize);
+	PrevSolUav = prevGPUUAV;
+	CurrSolUav = curGPUUAV;
+	NextSolUav = nextGPUUAV;
 }
 
 void OGPUWave::Update(const STimer& Gt, ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO)

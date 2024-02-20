@@ -2,6 +2,7 @@
 #include "../../Utils/Math.h"
 #include "../InputHandler/InputHandler.h"
 #include "Events.h"
+#include "RenderConstants.h"
 
 #include <DirectXMath.h>
 #include <Types.h>
@@ -30,7 +31,6 @@ class OWindow : public std::enable_shared_from_this<OWindow>
 {
 public:
 	virtual ~OWindow() = default;
-	static constexpr uint32_t BuffersCount = 2;
 
 	OWindow() = default;
 
@@ -94,7 +94,7 @@ public:
 
 	D3D12_VIEWPORT Viewport;
 	D3D12_RECT ScissorRect;
-	uint64_t FenceValues[BuffersCount];
+	uint64_t FenceValues[SRenderConstants::RenderBuffersCount];
 
 	ComPtr<ID3D12Resource> DepthBuffer;
 	ComPtr<ID3D12DescriptorHeap> DSVHeap;
@@ -157,7 +157,7 @@ private:
 	uint64_t FrameCounter = 0;
 
 	ComPtr<IDXGISwapChain4> SwapChain;
-	ComPtr<ID3D12Resource> BackBuffers[BuffersCount];
+	ComPtr<ID3D12Resource> BackBuffers[SRenderConstants::RenderBuffersCount];
 
 	SWindowInfo WindowInfo;
 

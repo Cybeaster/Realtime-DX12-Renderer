@@ -27,11 +27,11 @@ void OWindow::Init()
 	Camera = make_shared<OCamera>(shared_from_this());
 	const auto engine = OEngine::Get();
 	SwapChain = CreateSwapChain();
-	RTVHeap = engine->CreateDescriptorHeap(BuffersCount + 1, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	RTVHeap = engine->CreateDescriptorHeap(OEngine::Get()->GetDesiredCountOfRTVs(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	RTVDescriptorSize = engine->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
-	dsvHeapDesc.NumDescriptors = 1;
+	dsvHeapDesc.NumDescriptors = OEngine::Get()->GetDesiredCountOfDSVs();
 	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	dsvHeapDesc.NodeMask = 0;
@@ -294,7 +294,7 @@ void OWindow::OnMouseWheel(MouseWheelEventArgs& Event)
 
 void OWindow::MoveToNextFrame()
 {
-	CurrentBackBufferIndex = (CurrentBackBufferIndex + 1) % BuffersCount;
+	CurrentBackBufferIndex = (CurrentBackBufferIndex + 1) % SRenderConstants::RenderBuffersCount;
 }
 
 const ComPtr<IDXGISwapChain4>& OWindow::GetSwapChain()
@@ -331,14 +331,14 @@ void OWindow::OnResize(ResizeEventArgs& Event)
 	engine->FlushGPU();
 	engine->GetCommandQueue()->TryResetCommandList();
 
-	for (int i = 0; i < BuffersCount; ++i)
+	for (int i = 0; i < SRenderConstants::RenderBuffersCount; ++i)
 	{
 		// Flush any GPU commands that might be referencing the back buffers
 		BackBuffers[i].Reset();
 	}
 	DepthBuffer.Reset();
 
-	THROW_IF_FAILED(SwapChain->ResizeBuffers(BuffersCount, WindowInfo.ClientWidth, WindowInfo.ClientHeight, SRenderConstants::BackBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
+	THROW_IF_FAILED(SwapChain->ResizeBuffers(SRenderConstants::RenderBuffersCount, WindowInfo.ClientWidth, WindowInfo.ClientHeight, SRenderConstants::BackBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 	CurrentBackBufferIndex = 0;
 
 	UpdateRenderTargetViews();
@@ -384,7 +384,7 @@ ComPtr<IDXGISwapChain4> OWindow::CreateSwapChain()
 	swapChainDesc.SampleDesc.Count = msaaState ? 4 : 1;
 	swapChainDesc.SampleDesc.Quality = msaaState ? msaaQuality - 1 : 0;
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDesc.BufferCount = BuffersCount;
+	swapChainDesc.BufferCount = SRenderConstants::RenderBuffersCount;
 	swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
@@ -415,7 +415,7 @@ void OWindow::UpdateRenderTargetViews()
 	const auto device = OEngine::Get()->GetDevice();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(RTVHeap->GetCPUDescriptorHandleForHeapStart());
 
-	for (int i = 0; i < BuffersCount; i++)
+	for (int i = 0; i < SRenderConstants::RenderBuffersCount; i++)
 	{
 		THROW_IF_FAILED(SwapChain->GetBuffer(i, IID_PPV_ARGS(&BackBuffers[i])));
 		device->CreateRenderTargetView(BackBuffers[i].Get(), nullptr, rtvHandle);

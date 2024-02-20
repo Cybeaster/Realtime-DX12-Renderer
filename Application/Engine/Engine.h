@@ -116,6 +116,7 @@ public:
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetMirrorPSODesc();
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetDebugPSODesc();
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetCompositePSODesc();
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetSkyPSO();
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetTreeSpritePSODesc();
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetIcosahedronPSODesc();
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetWavesRenderPSODesc();
@@ -125,7 +126,7 @@ public:
 	D3D12_COMPUTE_PIPELINE_STATE_DESC GetWavesUpdatePSODesc();
 	D3D12_COMPUTE_PIPELINE_STATE_DESC GetSobelPSODesc();
 	D3D12_RENDER_TARGET_BLEND_DESC GetTransparentBlendState();
-
+	D3D12_SHADER_BYTECODE GetShaderByteCode(const string& ShaderName);
 	void BuildDescriptorHeap();
 	void BuildPSOs();
 	void BuildBlurPSO();
@@ -137,6 +138,9 @@ public:
 	UINT DSVDescriptorSize = 0;
 	UINT CBVSRVUAVDescriptorSize = 0;
 
+	uint32_t GetDesiredCountOfRTVs() const;
+	uint32_t GetDesiredCountOfDSVs() const;
+	uint32_t GetDesiredCountOfSRVs() const;
 	std::unordered_map<string, unique_ptr<SMeshGeometry>>& GetSceneGeometry();
 	SMeshGeometry* SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry);
 
@@ -192,7 +196,7 @@ public:
 	TUUID AddRenderObject(IRenderObject* RenderObject);
 
 	void BuildOffscreenRT();
-	ORenderTarget* GetOffscreenRT() const;
+	OOffscreenTexture* GetOffscreenRT() const;
 	void DrawFullScreenQuad();
 
 	template<typename T>
@@ -201,7 +205,7 @@ public:
 	template<typename T>
 	T* GetObjectByUUID(TUUID UUID, bool Checked = false);
 
-	SRenderObjectDescriptor GetObjectDescriptor();
+	SRenderObjectDescriptor GetObjectDescriptor() const;
 	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVDescHandleForTexture(STexture* Texture) const;
 	void SetLightSources(const vector<SLight>& Lights);
 	void SetAmbientLight(const DirectX::XMFLOAT3& Color);
@@ -306,7 +310,7 @@ private:
 
 	bool HasInitializedTests = false;
 	STimer TickTimer;
-	ORenderTarget* OffscreenRT = nullptr;
+	OOffscreenTexture* OffscreenRT = nullptr;
 	unique_ptr<OUIManager> UIManager;
 	map<TUUID, unique_ptr<IRenderObject>> RenderObjects;
 	int32_t LightCount = 0;

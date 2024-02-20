@@ -131,8 +131,10 @@ set(SRC_FILES
         Types/Async.h
         Application/UI/Geometry/GeometryEntity/PickedRenderItem.cpp
         Application/UI/Geometry/GeometryEntity/PickedRenderItem.h
-        Textures/CubeMaps/CubeMapBase.cpp
-        Textures/CubeMaps/CubeMapBase.h
+        Application/Engine/RenderTarget/CubeMap/CubeRenderTarget.cpp
+        Application/Engine/RenderTarget/CubeMap/CubeRenderTarget.h
+        Application/Engine/RenderObject/RenderObject.cpp
+        Application/Engine/RenderObject/RenderObject.cpp
 
 )
 

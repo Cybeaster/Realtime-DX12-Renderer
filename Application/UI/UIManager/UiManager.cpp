@@ -21,16 +21,16 @@ void OUIManager::InitContext(ID3D12Device2* Device, HWND Hwnd, UINT NumFramesInL
 	KeyMap();
 
 	ImGui_ImplWin32_Init(Hwnd);
+	auto [cpu, gpu] = OutDescriptor.OffsetSRV(GetNumSRVRequired());
 	ImGui_ImplDX12_Init(
 	    Device,
 	    NumFramesInLight,
 	    SRenderConstants::BackBufferFormat,
 	    SRVDescriptorHeap,
-	    OutDescriptor.CPUSRVescriptor,
-	    OutDescriptor.GPUSRVDescriptor);
+	    cpu,
+	    gpu);
 
 	ImGui::StyleColorsDark();
-	UpdateDescriptors(OutDescriptor);
 	InitWidgets(Engine);
 }
 
@@ -183,11 +183,6 @@ void OUIManager::KeyMap()
 	{ // Map 0-9
 		io.KeyMap[ImGuiKey_0 + i] = KeyCode::D0 + i;
 	}
-}
-
-void OUIManager::UpdateDescriptors(SRenderObjectDescriptor& OutDescriptor)
-{
-	OutDescriptor.OffsetSRV(GetNumDescriptors());
 }
 
 void OUIManager::PostInputUpdate()

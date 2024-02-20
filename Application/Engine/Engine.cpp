@@ -121,12 +121,12 @@ TUUID OEngine::AddRenderObject(IRenderObject* RenderObject)
 
 void OEngine::BuildOffscreenRT()
 {
-	const auto RT = new ORenderTarget(Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
+	const auto RT = new OOffscreenTexture(Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
 	AddRenderObject(RT);
 	OffscreenRT = RT;
 }
 
-ORenderTarget* OEngine::GetOffscreenRT() const
+OOffscreenTexture* OEngine::GetOffscreenRT() const
 {
 	return OffscreenRT;
 }
@@ -770,6 +770,24 @@ D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetCompositePSODesc()
 	return compositePSO;
 }
 
+D3D12_SHADER_BYTECODE OEngine::GetShaderByteCode(const string& ShaderName)
+{
+	return {
+		reinterpret_cast<BYTE*>(GetShader(ShaderName)->GetBufferPointer()),
+		GetShader(ShaderName)->GetBufferSize()
+	};
+}
+
+D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetSkyPSO()
+{
+	auto skyPSO = GetOpaquePSODesc();
+	skyPSO.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	skyPSO.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	skyPSO.VS = GetShaderByteCode(SShaderTypes::VSSky);
+	skyPSO.PS = GetShaderByteCode(SShaderTypes::PSSky);
+	return skyPSO;
+}
+
 D3D12_COMPUTE_PIPELINE_STATE_DESC OEngine::GetSobelPSODesc()
 {
 	D3D12_COMPUTE_PIPELINE_STATE_DESC sobelPSO = {};
@@ -784,26 +802,16 @@ D3D12_COMPUTE_PIPELINE_STATE_DESC OEngine::GetSobelPSODesc()
 
 void OEngine::BuildDescriptorHeap()
 {
-	auto texturesNum = GetTextureManager()->GetNumTextures();
-	auto renderObjectDescCount = std::accumulate(
-	    std::views::values(RenderObjects).begin(),
-	    std::views::values(RenderObjects).end(),
-	    0,
-	    [](int acc, const auto& renderObject) {
-		    return acc + renderObject->GetNumDescriptors();
-	    });
-
-	auto totalDescriptors = texturesNum + renderObjectDescCount + GetNumOffscrenRT() + UIManager->GetNumDescriptors();
-	auto numBackBuffers = OWindow::BuffersCount;
+	auto numBackBuffers = SRenderConstants::RenderBuffersCount;
 
 	// create srv heap counting all the textures in it
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = totalDescriptors;
+	srvHeapDesc.NumDescriptors = GetDesiredCountOfSRVs();
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	THROW_IF_FAILED(Device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&SRVDescriptorHeap)));
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(SRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	SRVDescriptor = GetObjectDescriptor();
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -815,22 +823,19 @@ void OEngine::BuildDescriptorHeap()
 	uint32_t texturesOffset = 0;
 	for (const auto& texture : TextureManager->GetTextures() | std::views::values)
 	{
-		auto srv = texture->GetSRVDesc();
-		Device->CreateShaderResourceView(texture->Resource.Get(), &srv, hDescriptor);
+		auto resourceSRV = texture->GetSRVDesc();
+		auto [cpu, gpu] = SRVDescriptor.OffsetSRV();
+		Device->CreateShaderResourceView(texture->Resource.Get(), &resourceSRV, cpu);
 		texture->HeapIdx = texturesOffset;
 		texturesOffset++;
-		hDescriptor.Offset(1, CBVSRVUAVDescriptorSize);
 	}
 
 	// All the other objcts, SRVs, UAVs and RTVs
-	SRVDescriptor = GetObjectDescriptor();
-	SRVDescriptor.OffsetSRV(texturesNum);
-	SRVDescriptor.RTVCPUOffset(numBackBuffers);
+	SRVDescriptor.OffsetRTV(numBackBuffers);
 
 	for (const auto& rObject : RenderObjects | std::views::values)
 	{
 		rObject->BuildDescriptors(&SRVDescriptor);
-		rObject->UpdateDescriptors(SRVDescriptor);
 	}
 }
 
@@ -892,6 +897,7 @@ void OEngine::BuildPSOs()
 	CreatePSO(SPSOType::WavesUpdate, GetWavesUpdatePSODesc());
 	CreatePSO(SPSOType::WavesRender, GetWavesRenderPSODesc());
 	CreatePSO(SPSOType::Highlight, GetHighlightPSODesc());
+	CreatePSO(SPSOType::Sky, GetSkyPSO());
 	BuildBlurPSO();
 	CreatePSO(SPSOType::BilateralBlur, GetBilateralBlurPSODesc());
 }
@@ -1054,15 +1060,10 @@ OSobelFilter* OEngine::GetSobelFilter()
 	return GetObjectByUUID<OSobelFilter>(SobelFilterUUID);
 }
 
-SRenderObjectDescriptor OEngine::GetObjectDescriptor()
+SRenderObjectDescriptor OEngine::GetObjectDescriptor() const
 {
-	const auto rtvDesc = Window->RTVHeap->GetCPUDescriptorHandleForHeapStart();
 	SRenderObjectDescriptor desc;
-	desc.CPUSRVescriptor = SRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-	desc.GPUSRVDescriptor = SRVDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
-	desc.DSVSRVUAVDescriptorSize = CBVSRVUAVDescriptorSize;
-	desc.CPURTVDescriptor = rtvDesc;
-	desc.RTVDescriptorSize = RTVDescriptorSize;
+	desc.Init(SRVDescriptorHeap.Get(), CBVSRVUAVDescriptorSize, Window->RTVHeap.Get(), RTVDescriptorSize);
 	return desc;
 }
 
@@ -1599,6 +1600,28 @@ void OEngine::UpdateMainPass(const STimer& Timer)
 
 	const auto currPassCB = CurrentFrameResources->PassCB.get();
 	currPassCB->CopyData(0, MainPassCB);
+}
+
+uint32_t OEngine::GetDesiredCountOfRTVs() const
+{
+	return std::accumulate(RenderObjects.begin(), RenderObjects.end(), SRenderConstants::RenderBuffersCount, [](int acc, const auto& renderObject) {
+		return acc + renderObject.second->GetNumRTVRequired();
+	});
+}
+
+uint32_t OEngine::GetDesiredCountOfDSVs() const
+{
+	return std::accumulate(RenderObjects.begin(), RenderObjects.end(), 1, [](int acc, const auto& renderObject) {
+		return acc + renderObject.second->GetNumDSVRequired();
+	});
+}
+
+uint32_t OEngine::GetDesiredCountOfSRVs() const
+{
+	const auto roNum = std::accumulate(RenderObjects.begin(), RenderObjects.end(), 1, [](int acc, const auto& renderObject) {
+		return acc + renderObject.second->GetNumSRVRequired();
+	});
+	return roNum + UIManager->GetNumSRVRequired() + GetTextureManager()->GetNumTextures();
 }
 
 std::unordered_map<string, unique_ptr<SMeshGeometry>>& OEngine::GetSceneGeometry()

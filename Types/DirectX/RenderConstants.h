@@ -1,7 +1,7 @@
 #pragma once
 #include "DXHelper.h"
 
-#define RENDER_TYPE inline static const string
+#define RENDER_TYPE(type) inline static const string type = #type
 struct SRenderConstants
 {
 	inline static constexpr D3D_DRIVER_TYPE DriverType = D3D_DRIVER_TYPE_HARDWARE;
@@ -9,79 +9,84 @@ struct SRenderConstants
 	inline static constexpr DXGI_FORMAT DepthBufferFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	inline static constexpr uint32_t NumFrameResources = 3;
 	inline static constexpr uint32_t MaxLights = 16;
+	inline static constexpr uint32_t RenderBuffersCount = 2;
 };
 
 struct SRenderLayer
 {
-	RENDER_TYPE Opaque = "Opaque";
-	RENDER_TYPE Transparent = "Transparent";
-	RENDER_TYPE AlphaTested = "AlphaTested";
-	RENDER_TYPE Shadow = "Shadow";
-	RENDER_TYPE Reflected = "Reflected";
-	RENDER_TYPE Mirror = "Mirror";
-	RENDER_TYPE AlphaTestedTreeSprites = "AlphaTestedTreeSprites";
-	RENDER_TYPE IcosahedronLODs = "IcosahedronLODs";
-	RENDER_TYPE Waves = "Waves";
-	RENDER_TYPE Tesselation = "Tesselation";
-	RENDER_TYPE Highlight = "Highlight";
+	RENDER_TYPE(Opaque);
+	RENDER_TYPE(Transparent);
+	RENDER_TYPE(AlphaTested);
+	RENDER_TYPE(Shadow);
+	RENDER_TYPE(Reflected);
+	RENDER_TYPE(Mirror);
+	RENDER_TYPE(AlphaTestedTreeSprites);
+	RENDER_TYPE(IcosahedronLODs);
+	RENDER_TYPE(Waves);
+	RENDER_TYPE(Tesselation);
+	RENDER_TYPE(Highlight);
+	RENDER_TYPE(Sky);
 };
 
 struct SPSOType
 {
-	RENDER_TYPE Opaque = "Opaque";
-	RENDER_TYPE Transparent = "Transparent";
-	RENDER_TYPE AlphaTested = "AlphaTested";
-	RENDER_TYPE Shadow = "Shadow";
-	RENDER_TYPE Debug = "Debug";
-	RENDER_TYPE StencilReflection = "Reflected";
-	RENDER_TYPE StencilMirrors = "Mirror";
-	RENDER_TYPE TreeSprites = "TreeSprites";
-	RENDER_TYPE Icosahedron = "Icosahedron";
-	RENDER_TYPE HorizontalBlur = "HorizontalBlur";
-	RENDER_TYPE VerticalBlur = "VerticalBlur";
-	RENDER_TYPE SobelFilter = "SobelFilter";
-	RENDER_TYPE Composite = "Composite";
+	RENDER_TYPE(Opaque);
+	RENDER_TYPE(Transparent);
+	RENDER_TYPE(AlphaTested);
+	RENDER_TYPE(Shadow);
+	RENDER_TYPE(Debug);
+	RENDER_TYPE(StencilReflection);
+	RENDER_TYPE(StencilMirrors);
+	RENDER_TYPE(TreeSprites);
+	RENDER_TYPE(Icosahedron);
+	RENDER_TYPE(HorizontalBlur);
+	RENDER_TYPE(VerticalBlur);
+	RENDER_TYPE(SobelFilter);
+	RENDER_TYPE(Composite);
 
-	RENDER_TYPE WavesRender = "WavesRender";
-	RENDER_TYPE WavesDisturb = "WavesDisturb";
-	RENDER_TYPE WavesUpdate = "WavesUpdate";
+	RENDER_TYPE(WavesRender);
+	RENDER_TYPE(WavesDisturb);
+	RENDER_TYPE(WavesUpdate);
 
-	RENDER_TYPE BilateralBlur = "BilateralBlur";
-	RENDER_TYPE Tesselation = "Tesselation";
-	RENDER_TYPE Highlight = "Highlight";
+	RENDER_TYPE(BilateralBlur);
+	RENDER_TYPE(Tesselation);
+	RENDER_TYPE(Highlight);
+	RENDER_TYPE(Sky);
 };
 
 struct SShaderTypes
 {
-	RENDER_TYPE VSBaseShader = "VSBaseShader";
+	RENDER_TYPE(VSBaseShader);
 
-	RENDER_TYPE PSAlphaTested = "PSAlphaTested";
-	RENDER_TYPE PSOpaque = "PSOpaque";
-	RENDER_TYPE PSBaseShader = "PSBaseShader";
+	RENDER_TYPE(PSAlphaTested);
+	RENDER_TYPE(PSOpaque);
+	RENDER_TYPE(PSBaseShader);
 
-	RENDER_TYPE VSTreeSprite = "VSTreeSprite";
-	RENDER_TYPE GSTreeSprite = "GSTreeSprite";
-	RENDER_TYPE PSTreeSprite = "PSTreeSprite";
+	RENDER_TYPE(VSTreeSprite);
+	RENDER_TYPE(GSTreeSprite);
+	RENDER_TYPE(PSTreeSprite);
 
-	RENDER_TYPE GSIcosahedron = "GSIcosahedron";
-	RENDER_TYPE PSIcosahedron = "PSIcosahedron";
-	RENDER_TYPE VSIcosahedron = "VSIcosahedron";
+	RENDER_TYPE(GSIcosahedron);
+	RENDER_TYPE(PSIcosahedron);
+	RENDER_TYPE(VSIcosahedron);
 
-	RENDER_TYPE CSHorizontalBlur = "CSHorizontalBlur";
-	RENDER_TYPE CSVerticalBlur = "CSVerticalBlur";
+	RENDER_TYPE(CSHorizontalBlur);
+	RENDER_TYPE(CSVerticalBlur);
 
-	RENDER_TYPE CSBilateralBlur = "CSBilateralBlur";
+	RENDER_TYPE(CSBilateralBlur);
 
-	RENDER_TYPE PSComposite = "PSComposite";
-	RENDER_TYPE VSComposite = "VSComposite";
+	RENDER_TYPE(PSComposite);
+	RENDER_TYPE(VSComposite);
 
-	RENDER_TYPE CSWavesDisturb = "CSWavesDisturb";
-	RENDER_TYPE CSWavesUpdate = "CSWavesUpdate";
-	RENDER_TYPE VSWaves = "PSWaves";
+	RENDER_TYPE(CSWavesDisturb);
+	RENDER_TYPE(CSWavesUpdate);
+	RENDER_TYPE(VSWaves);
 
-	RENDER_TYPE CSSobelFilter = "CSSobelFilter";
-	RENDER_TYPE VSTesselation = "VSTesselation";
-	RENDER_TYPE HSTesselation = "HSTesselation";
-	RENDER_TYPE DSTesselation = "DSTesselation";
-	RENDER_TYPE PSTesselation = "PSTesselation";
+	RENDER_TYPE(CSSobelFilter);
+	RENDER_TYPE(VSTesselation);
+	RENDER_TYPE(HSTesselation);
+	RENDER_TYPE(DSTesselation);
+	RENDER_TYPE(PSTesselation);
+	RENDER_TYPE(VSSky);
+	RENDER_TYPE(PSSky);
 };

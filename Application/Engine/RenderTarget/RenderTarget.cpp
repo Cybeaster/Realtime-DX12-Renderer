@@ -5,25 +5,24 @@
 #include "RenderTarget.h"
 
 #include "../../../Utils/Statics.h"
-ORenderTarget::ORenderTarget(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format)
-    : Device(Device), Width(Width), Height(Height), Format(Format)
+
+OOffscreenTexture::OOffscreenTexture(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format)
+    : ORenderTargetBase(Device, Width, Height, Format)
 {
-	BuildResource();
+	OOffscreenTexture::BuildResource();
 }
 
-void ORenderTarget::BuildDescriptors(IDescriptor* Descriptor)
+void OOffscreenTexture::BuildDescriptors(IDescriptor* Descriptor)
 {
 	if (const auto descriptor = Cast<SRenderObjectDescriptor>(Descriptor))
 	{
-		CpuSrv = descriptor->CPUSRVescriptor;
-		GpuSrv = descriptor->GPUSRVDescriptor;
-		CpuRtv = descriptor->CPURTVDescriptor;
-
+		descriptor->OffsetSRV(CpuSrv, GpuSrv);
+		descriptor->OffsetRTV(CpuRtv);
 		BuildDescriptors();
 	}
 }
 
-void ORenderTarget::OnResize(UINT NewWidth, UINT NewHeight)
+void OOffscreenTexture::OnResize(UINT NewWidth, UINT NewHeight)
 {
 	if (Width != NewWidth || Height != NewHeight)
 	{
@@ -35,7 +34,7 @@ void ORenderTarget::OnResize(UINT NewWidth, UINT NewHeight)
 	}
 }
 
-void ORenderTarget::BuildDescriptors()
+void OOffscreenTexture::BuildDescriptors()
 {
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -44,11 +43,11 @@ void ORenderTarget::BuildDescriptors()
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.MipLevels = 1;
 
-	Device->CreateShaderResourceView(OffscreenTex.Get(), &srvDesc, CpuSrv);
-	Device->CreateRenderTargetView(OffscreenTex.Get(), nullptr, CpuRtv);
+	Device->CreateShaderResourceView(RenderTarget.Get(), &srvDesc, CpuSrv);
+	Device->CreateRenderTargetView(RenderTarget.Get(), nullptr, CpuRtv);
 }
 
-void ORenderTarget::BuildResource()
+void OOffscreenTexture::BuildResource()
 {
 	D3D12_RESOURCE_DESC texDesc;
 	ZeroMemory(&texDesc, sizeof(D3D12_RESOURCE_DESC));
@@ -70,5 +69,5 @@ void ORenderTarget::BuildResource()
 	                                                &texDesc,
 	                                                D3D12_RESOURCE_STATE_GENERIC_READ,
 	                                                nullptr,
-	                                                IID_PPV_ARGS(&OffscreenTex)));
+	                                                IID_PPV_ARGS(&RenderTarget)));
 }

@@ -24,10 +24,8 @@ public:
 	void OnResize(ResizeEventArgs& Args);
 
 	void KeyMap();
-	void UpdateDescriptors(SRenderObjectDescriptor& OutDescriptor) override;
-	void BuildDescriptors(IDescriptor* Descriptor) override {}
 
-	uint32_t GetNumDescriptors() const override
+	uint32_t GetNumSRVRequired() const override
 	{
 		return 10;
 	}

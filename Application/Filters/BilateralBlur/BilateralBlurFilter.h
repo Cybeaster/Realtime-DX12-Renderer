@@ -14,13 +14,9 @@ public:
 	void Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO,
 	             ID3D12Resource* Input) const;
 
-	uint32_t GetNumDescriptors() const override
+	uint32_t GetNumSRVRequired() const override
 	{
 		return 4;
-	}
-	void UpdateDescriptors(SRenderObjectDescriptor& OutDescriptor) override
-	{
-		OutDescriptor.OffsetSRV(GetNumDescriptors());
 	}
 
 	void SetSpatialSigma(float Value)

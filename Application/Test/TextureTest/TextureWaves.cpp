@@ -317,6 +317,9 @@ void OTextureWaves::OnRender(const UpdateEventArgs& Event)
 
 	GetEngine()->SetPipelineState(SPSOType::WavesRender);
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Waves));
+
+	GetEngine()->SetPipelineState(SPSOType::Sky);
+	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Sky));
 }
 
 void OTextureWaves::BuildPSOTreeSprites()

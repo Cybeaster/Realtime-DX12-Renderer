@@ -19,21 +19,12 @@ void OBilateralBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
 	{
 		return;
 	}
-	auto cpuDescriptor = descriptor->CPUSRVescriptor;
-	auto gpuDescriptor = descriptor->GPUSRVDescriptor;
-	const auto size = descriptor->DSVSRVUAVDescriptorSize;
 
-	BlurOutputCpuSrv = cpuDescriptor;
-	BlurOutputCpuUav = cpuDescriptor.Offset(1, size);
-
-	BlurInputCpuSrv = cpuDescriptor.Offset(1, size);
-	BlurInputCpuUav = cpuDescriptor.Offset(1, size);
-
-	BlurOutputGpuSrv = gpuDescriptor;
-	BlurOutputGpuUav = gpuDescriptor.Offset(1, size);
-
-	BlurInputGpuSrv = gpuDescriptor.Offset(1, size);
-	BlurInputGpuUav = gpuDescriptor.Offset(1, size);
+	descriptor->OffsetSRV(BlurOutputCpuSrv, BlurOutputGpuSrv);
+	descriptor->OffsetSRV(BlurOutputCpuSrv, BlurOutputGpuSrv);
+	descriptor->OffsetSRV(BlurOutputCpuUav, BlurOutputGpuUav);
+	descriptor->OffsetSRV(BlurInputCpuSrv, BlurInputGpuSrv);
+	descriptor->OffsetSRV(BlurInputCpuUav, BlurInputGpuUav);
 
 	BuildDescriptors();
 }

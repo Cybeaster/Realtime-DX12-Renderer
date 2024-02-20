@@ -23,21 +23,10 @@ void OBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
 		return;
 	}
 
-	auto cpuDescriptor = descriptor->CPUSRVescriptor;
-	auto gpuDescriptor = descriptor->GPUSRVDescriptor;
-	const auto size = descriptor->DSVSRVUAVDescriptorSize;
-
-	Blur0CpuSrv = cpuDescriptor;
-	Blur0CpuUav = cpuDescriptor.Offset(1, size);
-
-	Blur1CpuSrv = cpuDescriptor.Offset(1, size);
-	Blur1CpuUav = cpuDescriptor.Offset(1, size);
-
-	Blur0GpuSrv = gpuDescriptor;
-	Blur0GpuUav = gpuDescriptor.Offset(1, size);
-
-	Blur1GpuSrv = gpuDescriptor.Offset(1, size);
-	Blur1GpuUav = gpuDescriptor.Offset(1, size);
+	descriptor->OffsetSRV(Blur0CpuSrv, Blur0GpuSrv);
+	descriptor->OffsetSRV(Blur0CpuUav, Blur0GpuUav);
+	descriptor->OffsetSRV(Blur1CpuSrv, Blur1GpuSrv);
+	descriptor->OffsetSRV(Blur1CpuUav, Blur1GpuUav);
 
 	BuildDescriptors();
 }

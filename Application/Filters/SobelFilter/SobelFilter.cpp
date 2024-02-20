@@ -87,14 +87,8 @@ void OSobelFilter::BuildDescriptors(IDescriptor* Descriptor)
 	{
 		return;
 	}
-	auto cpuDescriptor = descriptor->CPUSRVescriptor;
-	auto gpuDescriptor = descriptor->GPUSRVDescriptor;
-	const auto size = descriptor->DSVSRVUAVDescriptorSize;
+	descriptor->OffsetSRV(CPUSRV, GPUSRV);
+	descriptor->OffsetSRV(CPUUAV, GPUUAV);
 
-	CPUSRV = cpuDescriptor;
-	CPUUAV = cpuDescriptor.Offset(1, size);
-
-	GPUSRV = gpuDescriptor;
-	GPUUAV = gpuDescriptor.Offset(1, size);
 	BuildDescriptors();
 }

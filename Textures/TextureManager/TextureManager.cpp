@@ -75,7 +75,7 @@ STexture* OTextureManager::CreateTexture(string Name, wstring FileName)
 		return nullptr;
 	}
 
-	auto texture = make_unique<STexture>(Name, FileName);
+	auto texture = make_unique<STexture>();
 	texture->Name = Name;
 	texture->FileName = FileName;
 	texture->HeapIdx = Textures.size();
