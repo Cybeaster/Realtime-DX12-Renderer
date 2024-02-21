@@ -49,6 +49,13 @@ inline auto CreateMesh(const string& Name, const string& Path, const EParserType
 	return OEngine::Get()->CreateMesh(Name, Path, Parser, GenTexels);
 }
 
+inline auto& CreateRenderItem(const string& RenderLayer, const string& MeshName, const string& Path, EParserType ParserType, ETextureMapType TexelGenerator, const SRenderItemParams& Params)
+{
+	auto engine = OEngine::Get();
+	auto generator = engine->GetMeshGenerator();
+	return engine->BuildRenderItemFromMesh(RenderLayer, generator->CreateMesh(MeshName, Path, ParserType, TexelGenerator), Params);
+}
+
 inline auto& CreateGridRenderItem(string Category, string Name, float Width, float Depth, uint32_t Row, uint32_t Column, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();
@@ -68,6 +75,14 @@ inline auto& CreateSphereRenderItem(string Category, string Name, float Radius, 
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
 	return engine->BuildRenderItemFromMesh(Category, generator->CreateSphereMesh(Name, Radius, SliceCount, StackCount), Params);
+}
+
+inline auto& CreateSphereRenderItem(string Category, string Name, const SRenderItemParams& Params)
+{
+	auto engine = OEngine::Get();
+	auto generator = engine->GetMeshGenerator();
+	auto& constants = SRenderConstants::Sphere;
+	return engine->BuildRenderItemFromMesh(Category, generator->CreateSphereMesh(Name, constants.Radius, constants.SliceCount, constants.StackCount), Params);
 }
 
 inline auto& CreateGeosphereRenderItem(string Category, string Name, float Radius, uint32_t NumSubdivisions, const SRenderItemParams& Params)

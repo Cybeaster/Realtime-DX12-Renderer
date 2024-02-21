@@ -13,13 +13,15 @@ struct VertexOut
 	float3 PositionL : POSITION;
 };
 
-VertexOut VS(VertexIn vin)
+VertexOut VS(VertexIn vin, uint InstanceID
+             : SV_InstanceID)
 {
+	InstanceData inst = gInstanceData[InstanceID];
 	VertexOut vout;
-	vout.PositionH = vin.PositionL;
-	float4 posW = mul(float4(vin.PositionL, 1.0f), gWorld);
+	vout.PositionL = vin.Position;
+	float4 posW = mul(float4(vin.Position, 1.0f), inst.World);
 	posW.xyz += gEyePosW;
-	posW = mul(posW, gViewProj).xyww;
+	vout.PositionH = mul(posW, gViewProj).xyww;
 	return vout;
 }
 

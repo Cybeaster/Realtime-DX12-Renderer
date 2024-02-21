@@ -86,3 +86,29 @@ inline DirectX::XMVECTOR SphericalToCartesian(float Radius, float Theta, float P
 	    1.0f);
 }
 } // namespace Utils::Math
+
+inline DirectX::XMFLOAT4X4 Scale(DirectX::XMFLOAT4X4& OutOther, DirectX::XMFLOAT3 ScaleFactor)
+{
+	DirectX::XMStoreFloat4x4(&OutOther, DirectX::XMMatrixScaling(ScaleFactor.x, ScaleFactor.y, ScaleFactor.z));
+	return OutOther;
+}
+
+inline DirectX::XMFLOAT4X4 Scale(const DirectX::XMFLOAT4X4& Other, DirectX::XMFLOAT3 ScaleFactor)
+{
+	auto other = Other;
+	DirectX::XMStoreFloat4x4(&other, DirectX::XMMatrixScaling(ScaleFactor.x, ScaleFactor.y, ScaleFactor.z));
+	return other;
+}
+
+inline DirectX::XMFLOAT4X4 Translate(DirectX::XMFLOAT4X4& OutOther, DirectX::XMFLOAT3 TranslationFactor)
+{
+	DirectX::XMStoreFloat4x4(&OutOther, DirectX::XMMatrixTranslation(TranslationFactor.x, TranslationFactor.y, TranslationFactor.z));
+	return OutOther;
+}
+
+inline DirectX::XMFLOAT4X4 Translate(const DirectX::XMFLOAT4X4& Other, DirectX::XMFLOAT3 TranslationFactor)
+{
+	auto other = Other;
+	XMStoreFloat4x4(&other, DirectX::XMMatrixTranslation(TranslationFactor.x, TranslationFactor.y, TranslationFactor.z));
+	return other;
+}

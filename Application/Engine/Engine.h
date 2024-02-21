@@ -13,6 +13,8 @@
 #include "Filters/Blur/BlurFilter.h"
 #include "Filters/SobelFilter/SobelFilter.h"
 #include "RenderItem.h"
+#include "RenderTarget/CubeMap/CubeRenderTarget.h"
+#include "RenderTarget/CubeMap/DynamicCubeMap/DynamicCubeMapTarget.h"
 #include "RenderTarget/RenderTarget.h"
 #include "ShaderTypes.h"
 #include "UI/UIManager/UiManager.h"
@@ -116,7 +118,7 @@ public:
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetMirrorPSODesc();
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetDebugPSODesc();
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetCompositePSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetSkyPSO();
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetSkyPSODesc();
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetTreeSpritePSODesc();
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetIcosahedronPSODesc();
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetWavesRenderPSODesc();
@@ -237,6 +239,8 @@ public:
 	SRenderItem* GetPickedItem() const;
 
 	SOnFrameResourceChanged OnFrameResourceChanged;
+	ODynamicCubeMapRenderTarget* GetCubeRenderTarget() const;
+	ODynamicCubeMapRenderTarget* BuildCubeRenderTarget(DirectX::XMFLOAT3 Center);
 
 protected:
 	template<typename T, typename... Args>
@@ -311,6 +315,8 @@ private:
 	bool HasInitializedTests = false;
 	STimer TickTimer;
 	OOffscreenTexture* OffscreenRT = nullptr;
+	ODynamicCubeMapRenderTarget* CubeRenderTarget = nullptr;
+
 	unique_ptr<OUIManager> UIManager;
 	map<TUUID, unique_ptr<IRenderObject>> RenderObjects;
 	int32_t LightCount = 0;

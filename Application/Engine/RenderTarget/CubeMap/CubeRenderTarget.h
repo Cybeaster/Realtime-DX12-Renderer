@@ -5,21 +5,24 @@ class OCubeRenderTarget : public ORenderTargetBase
 {
 public:
 	OCubeRenderTarget(ID3D12Device* Device, int Width, int Height, DXGI_FORMAT Format);
+	OCubeRenderTarget(SRenderTargetParams Params);
 	OCubeRenderTarget(const OCubeRenderTarget& rhs) = delete;
 	OCubeRenderTarget& operator=(const OCubeRenderTarget& rhs) = delete;
 
 	~OCubeRenderTarget() = default;
 
-	D3D12_VIEWPORT GetViewport() const;
-	D3D12_RECT GetScissorRect() const;
+	D3D12_VIEWPORT GetViewport() const { return Viewport; }
+	D3D12_RECT GetScissorRect() const { return ScissorRect; }
 
 	void BuildDescriptors(IDescriptor* Descriptor) override;
-	void OnResize(int NewWidth, int NewHeight);
 
 	uint32_t GetNumRTVRequired() override;
 	uint32_t GetNumDSVRequired() override;
 
+	void Init() override;
+
 private:
+	void BuildViewport();
 	void BuildResource() override;
 	void BuildDescriptors() override;
 
@@ -29,5 +32,5 @@ private:
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE HCpuSrv;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE HGpuSrv;
-	CD3DX12_CPU_DESCRIPTOR_HANDLE HCpuRtv[6];
+	vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> HCpuRtv{ GetNumRTVRequired() };
 };

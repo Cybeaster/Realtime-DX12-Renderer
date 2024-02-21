@@ -29,8 +29,12 @@ struct SMaterial
 	DirectX::XMFLOAT4X4 MatTransform = Utils::Math::Identity4x4();
 };
 
-struct SMaterialDisplacementParams
+struct SMaterialParams
 {
+	SMaterialParams() = default;
+	SMaterialParams(SMaterial* Mat)
+	    : Material(Mat) {}
+
 	SMaterial* Material = nullptr;
 	DirectX::XMFLOAT2 DisplacementMapTexelSize = { 1, 1 };
 	float GridSpatialStep = 1.0f;

@@ -71,9 +71,16 @@ struct SRenderItem
 
 struct SRenderItemParams
 {
+	SRenderItemParams(SMaterial* Material)
+	    : MaterialParams(Material) {}
+	SRenderItemParams() = default;
+
+	SRenderItemParams(SMaterial* Material, size_t Instances)
+	    : MaterialParams(Material), NumberOfInstances(Instances) {}
+
 	string Submesh;
-	SMaterialDisplacementParams MaterialParams;
+	SMaterialParams MaterialParams;
 	size_t NumberOfInstances = 1;
 	bool bFrustrumCoolingEnabled = true;
-	bool bVisible = true;
+	bool Pickable = false;
 };

@@ -30,10 +30,7 @@ OTextureWaves::OTextureWaves(const shared_ptr<OWindow>& _Window)
 bool OTextureWaves::Initialize()
 {
 	const auto engine = Engine;
-	assert(engine->GetCommandQueue()->GetCommandQueue());
 	const auto queue = engine->GetCommandQueue();
-	queue->TryResetCommandList();
-
 	Waves = engine->BuildRenderObject<OGPUWave>(engine->GetDevice().Get(),
 	                                            queue->GetCommandList().Get(),
 	                                            256,
@@ -42,19 +39,8 @@ bool OTextureWaves::Initialize()
 	                                            0.03f,
 	                                            2.0f,
 	                                            0.2f);
-
-	BuildShadersAndInputLayout();
 	BuildRenderItems();
-	engine->GetCommandQueue()->ExecuteCommandList();
-	engine->FlushGPU();
-	ContentLoaded = true;
-
 	return true;
-}
-
-void OTextureWaves::UnloadContent()
-{
-	ContentLoaded = false;
 }
 
 void OTextureWaves::UpdateWave(const STimer& Timer) const
@@ -194,6 +180,7 @@ void OTextureWaves::BuildTreeSpriteGeometry()
 	geometry->SetGeometry("Points", submesh);
 	GetEngine()->SetSceneGeometry(std::move(geometry));
 }
+
 void OTextureWaves::BuildQuadPatchGeometry()
 {
 	std::vector<XMFLOAT3> vertices = {
@@ -507,7 +494,7 @@ void OTextureWaves::BuildRenderItems()
 	SRenderItemParams highlightedParams;
 	highlightedParams.NumberOfInstances = 1;
 	highlightedParams.MaterialParams = { FindMaterial(SMaterialNames::Picked) };
-	highlightedParams.bVisible = false;
+	highlightedParams.Pickable = false;
 
 	engine->BuildPickRenderItem();
 	CreateGridRenderItem(SRenderLayer::Waves,
@@ -520,7 +507,7 @@ void OTextureWaves::BuildRenderItems()
 
 	constexpr size_t n = 2;
 	SRenderItemParams params;
-	params.bVisible = true;
+	params.Pickable = true;
 	params.NumberOfInstances = n * n * n;
 	params.MaterialParams = { FindMaterial(SMaterialNames::Debug) };
 	auto& instances = engine->BuildRenderItemFromMesh(SRenderLayer::Opaque,

@@ -19,6 +19,42 @@
       }
     },
     {
+      "Name": "GrassSky",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/grasscube1024.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "1.0"
+      }
+    },
+    {
+      "Name": "DesertSky",
+      "Data": {
+        "TexturePath": "Resources\/Textures\/desertcube1024.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "1.0"
+      }
+    },
+    {
       "Name": "upbody_norm",
       "Data": {
         "TexturePath": "Resources\/Textures\/upbody_norm.dds",
@@ -37,7 +73,7 @@
       }
     },
     {
-      "Name": "bricks",
+      "Name": "Bricks",
       "Data": {
         "TexturePath": "Resources\/Textures\/bricks.dds",
         "Diffuse": {
@@ -51,11 +87,11 @@
           "y": "0.1",
           "z": "0.1"
         },
-        "Roughness": "0.25"
+        "Roughness": "0.3"
       }
     },
     {
-      "Name": "bricks2",
+      "Name": "Bricks2",
       "Data": {
         "TexturePath": "Resources\/Textures\/bricks2.dds",
         "Diffuse": {
@@ -73,7 +109,7 @@
       }
     },
     {
-      "Name": "ice",
+      "Name": "Ice",
       "Data": {
         "TexturePath": "Resources\/Textures\/ice.dds",
         "Diffuse": {
@@ -451,21 +487,21 @@
       }
     },
     {
-      "Name": "tile",
+      "Name": "Tile",
       "Data": {
         "TexturePath": "Resources\/Textures\/tile.dds",
         "Diffuse": {
-          "x": "1",
-          "y": "1",
-          "z": "1",
-          "w": "1"
+          "x": "0.9",
+          "y": "0.9",
+          "z": "0.9",
+          "w": "1.0"
         },
         "Fresnel": {
-          "x": "0.1",
-          "y": "0.1",
-          "z": "0.1"
+          "x": "0.2",
+          "y": "0.2",
+          "z": "0.2"
         },
-        "Roughness": "0.25"
+        "Roughness": "0.1"
       }
     },
     {
@@ -743,14 +779,14 @@
       "Data": {
         "TexturePath": "Resources/Textures/white1x1.dds",
         "Diffuse": {
-          "x": "1.0",
-          "y": "1.0",
-          "z": "1.0",
+          "x": "0.0",
+          "y": "0.0",
+          "z": "0.0",
           "w": "1.0"
         },
         "Fresnel": {
           "x": "0.98",
-          "y": "0.98",
+          "y": "0.97",
           "z": "0.98"
         },
         "Roughness": "0.0"

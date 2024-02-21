@@ -4,12 +4,31 @@
 #define RENDER_TYPE(type) inline static const string type = #type
 struct SRenderConstants
 {
+	struct SSphere
+	{
+		const uint32_t SliceCount = 20;
+		const uint32_t StackCount = 20;
+		const float Radius = 0.5f;
+	};
+
+	struct SCylinder
+	{
+		const float BottomRadius = 1.f;
+		const float TopRadius = 0.5f;
+		const float Height = 3.0f;
+		const uint32_t SliceCount = 20;
+		const uint32_t StackCount = 20;
+	};
+
 	inline static constexpr D3D_DRIVER_TYPE DriverType = D3D_DRIVER_TYPE_HARDWARE;
 	inline static constexpr DXGI_FORMAT BackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	inline static constexpr DXGI_FORMAT DepthBufferFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	inline static constexpr uint32_t NumFrameResources = 3;
 	inline static constexpr uint32_t MaxLights = 16;
 	inline static constexpr uint32_t RenderBuffersCount = 2;
+	inline static constexpr DirectX::XMUINT2 CubeMapDefaultResolution = { 512, 512 };
+	inline static constexpr SSphere Sphere;
+	inline static constexpr SCylinder Cylinder;
 };
 
 struct SRenderLayer

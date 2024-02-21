@@ -26,9 +26,9 @@ public:
 		return DirectX::XMFLOAT2(1.0f / NumCols, 1.0f / NumRows);
 	}
 
-	SMaterialDisplacementParams GetDisplacementParams() const
+	SMaterialParams GetDisplacementParams() const
 	{
-		SMaterialDisplacementParams Params;
+		SMaterialParams Params;
 		Params.Material = FindMaterial(SMaterialNames::Water);
 		Params.DisplacementMapTexelSize = GetDiplacementMapTexelSize();
 		Params.GridSpatialStep = GetSpatialStep();
@@ -40,7 +40,7 @@ public:
 		SRenderItemParams params;
 		params.NumberOfInstances = 1;
 		params.bFrustrumCoolingEnabled = false;
-		params.bVisible = false;
+		params.Pickable = false;
 		params.MaterialParams = GetDisplacementParams();
 		return params;
 	}

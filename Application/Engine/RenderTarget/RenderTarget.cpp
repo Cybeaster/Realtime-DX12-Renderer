@@ -9,7 +9,6 @@
 OOffscreenTexture::OOffscreenTexture(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format)
     : ORenderTargetBase(Device, Width, Height, Format)
 {
-	OOffscreenTexture::BuildResource();
 }
 
 void OOffscreenTexture::BuildDescriptors(IDescriptor* Descriptor)
@@ -32,6 +31,11 @@ void OOffscreenTexture::OnResize(UINT NewWidth, UINT NewHeight)
 		BuildResource();
 		BuildDescriptors();
 	}
+}
+
+void OOffscreenTexture::Init()
+{
+	BuildResource();
 }
 
 void OOffscreenTexture::BuildDescriptors()

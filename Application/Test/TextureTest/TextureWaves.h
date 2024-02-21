@@ -21,14 +21,9 @@ class OTextureWaves : public OTest
 public:
 	OTextureWaves(const shared_ptr<OWindow>& _Window);
 
-	bool Initialize() override;
-
-	void UnloadContent() override;
-
 	void UpdateWave(const STimer& Timer) const;
-
+	bool Initialize() override;
 	void OnUpdate(const UpdateEventArgs& Event) override;
-
 	void OnRender(const UpdateEventArgs& Event) override;
 
 	void DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList,
@@ -43,17 +38,11 @@ private:
 	void BuildPSOTreeSprites();
 
 	void BuildPSOGeosphere();
-
-	void BuildMaterials();
-
 	void UpdateMaterialCB();
 
 	void BuildShadersAndInputLayout();
 	void BuildLandGeometry();
-	void BuildWavesGeometryBuffers();
-	void BuildBoxGeometryBuffers();
 	void BuildRenderItems();
-	void BuildIcosahedronGeometry();
 
 	float GetHillsHeight(float X, float Z) const;
 
@@ -66,20 +55,7 @@ private:
 
 	unique_ptr<OUploadBuffer<SVertex>> WavesVB = nullptr;
 
-	bool ContentLoaded = false;
-
 	vector<D3D12_INPUT_ELEMENT_DESC> TreeSpriteInputLayout;
-
-	float Theta = 1.5f * DirectX::XM_PI;
-	float Phi = DirectX::XM_PIDIV4;
-	float Radius = 150.f;
-
-	uint32_t PSOMode = 0;
-	float SunTheta = 1.25f * DirectX::XM_PI;
-	float SunPhi = DirectX::XM_PIDIV4;
-
-	SRenderItem* WavesRenderItem = nullptr;
-	ComPtr<ID3D12DescriptorHeap> SamplerDescriptorHeap = nullptr;
 
 	bool IsInputBlocked = false;
 };

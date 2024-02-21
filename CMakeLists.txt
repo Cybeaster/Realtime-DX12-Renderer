@@ -135,6 +135,10 @@ set(SRC_FILES
         Application/Engine/RenderTarget/CubeMap/CubeRenderTarget.h
         Application/Engine/RenderObject/RenderObject.cpp
         Application/Engine/RenderObject/RenderObject.cpp
+        Application/Engine/RenderTarget/CubeMap/DynamicCubeMap/DynamicCubeMapTarget.cpp
+        Application/Engine/RenderTarget/CubeMap/DynamicCubeMap/DynamicCubeMapTarget.h
+        Application/Test/CubeMap/CubeMapTest.cpp
+        Application/Test/CubeMap/CubeMapTest.h
 
 )
 

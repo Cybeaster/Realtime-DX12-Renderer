@@ -2,6 +2,14 @@
 #include "DXHelper.h"
 #include "Engine/RenderObject/RenderObject.h"
 
+struct SRenderTargetParams
+{
+	ID3D12Device* Device;
+	UINT Width;
+	UINT Height;
+	DXGI_FORMAT Format;
+};
+
 class ORenderTargetBase : public IRenderObject
 {
 public:
@@ -9,6 +17,11 @@ public:
 	                  UINT Width, UINT Height,
 	                  DXGI_FORMAT Format)
 	    : Width(Width), Height(Height), Format(Format), Device(Device)
+	{
+	}
+
+	ORenderTargetBase(const SRenderTargetParams& Params)
+	    : Width(Params.Width), Height(Params.Height), Format(Params.Format), Device(Params.Device)
 	{
 	}
 
@@ -26,6 +39,7 @@ public:
 	{
 		return 1;
 	}
+	virtual void Init() = 0;
 
 protected:
 	UINT Width = 0;
@@ -55,6 +69,7 @@ public:
 
 	void BuildDescriptors(IDescriptor* Descriptor) override;
 	void OnResize(UINT NewWidth, UINT NewHeight);
+	void Init() override;
 
 protected:
 	void BuildDescriptors() override;

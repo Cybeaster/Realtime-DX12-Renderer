@@ -122,8 +122,16 @@ TUUID OEngine::AddRenderObject(IRenderObject* RenderObject)
 void OEngine::BuildOffscreenRT()
 {
 	const auto RT = new OOffscreenTexture(Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
+	RT->Init();
 	AddRenderObject(RT);
 	OffscreenRT = RT;
+}
+
+ODynamicCubeMapRenderTarget* OEngine::BuildCubeRenderTarget(XMFLOAT3 Center)
+{
+	auto resulution = SRenderConstants::CubeMapDefaultResolution;
+	CubeRenderTarget = BuildRenderObject<ODynamicCubeMapRenderTarget>({ Device.Get(), resulution.x, resulution.y, SRenderConstants::BackBufferFormat }, Center);
+	return CubeRenderTarget;
 }
 
 OOffscreenTexture* OEngine::GetOffscreenRT() const
@@ -184,7 +192,9 @@ int OEngine::InitTests(shared_ptr<OTest> Test)
 	LOG(Engine, Log, "Engine::Run")
 
 	Tests[Test->GetWindow()->GetHWND()] = Test;
+	GetCommandQueue()->TryResetCommandList();
 	Test->Initialize();
+	GetCommandQueue()->ExecuteCommandListAndWait();
 	PostTestInit();
 	return 0;
 }
@@ -778,7 +788,7 @@ D3D12_SHADER_BYTECODE OEngine::GetShaderByteCode(const string& ShaderName)
 	};
 }
 
-D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetSkyPSO()
+D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetSkyPSODesc()
 {
 	auto skyPSO = GetOpaquePSODesc();
 	skyPSO.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
@@ -897,7 +907,7 @@ void OEngine::BuildPSOs()
 	CreatePSO(SPSOType::WavesUpdate, GetWavesUpdatePSODesc());
 	CreatePSO(SPSOType::WavesRender, GetWavesRenderPSODesc());
 	CreatePSO(SPSOType::Highlight, GetHighlightPSODesc());
-	CreatePSO(SPSOType::Sky, GetSkyPSO());
+	CreatePSO(SPSOType::Sky, GetSkyPSODesc());
 	BuildBlurPSO();
 	CreatePSO(SPSOType::BilateralBlur, GetBilateralBlurPSODesc());
 }
@@ -906,10 +916,7 @@ D3D12_COMPUTE_PIPELINE_STATE_DESC OEngine::GetBilateralBlurPSODesc()
 {
 	D3D12_COMPUTE_PIPELINE_STATE_DESC bilateralBlurPSO = {};
 	bilateralBlurPSO.pRootSignature = BilateralBlurRootSignature.Get();
-	bilateralBlurPSO.CS = {
-		reinterpret_cast<BYTE*>(GetShader(SShaderTypes::CSBilateralBlur)->GetBufferPointer()),
-		GetShader(SShaderTypes::CSBilateralBlur)->GetBufferSize()
-	};
+	bilateralBlurPSO.CS = GetShaderByteCode(SShaderTypes::CSBilateralBlur);
 	bilateralBlurPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 	return bilateralBlurPSO;
 }
@@ -981,6 +988,9 @@ void OEngine::BuildShadersAndInputLayouts()
 	BuildShader(L"Shaders/BezierTesselation.hlsl", SShaderTypes::HSTesselation, EShaderLevel::HullShader);
 	BuildShader(L"Shaders/BezierTesselation.hlsl", SShaderTypes::DSTesselation, EShaderLevel::DomainShader);
 	BuildShader(L"Shaders/BezierTesselation.hlsl", SShaderTypes::PSTesselation, EShaderLevel::PixelShader);
+	BuildShader(L"Shaders/Sky.hlsl", SShaderTypes::VSSky, EShaderLevel::VertexShader);
+	BuildShader(L"Shaders/Sky.hlsl", SShaderTypes::PSSky, EShaderLevel::PixelShader);
+
 	InputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -1409,6 +1419,11 @@ SRenderItem* OEngine::GetPickedItem() const
 	return PickedItem;
 }
 
+ODynamicCubeMapRenderTarget* OEngine::GetCubeRenderTarget() const
+{
+	return CubeRenderTarget;
+}
+
 D3D12_GPU_DESCRIPTOR_HANDLE OEngine::GetSRVDescHandleForTexture(STexture* Texture) const
 {
 	auto desc = SRVDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
@@ -1664,7 +1679,7 @@ vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, 
 	newItem->Instances.resize(Params.NumberOfInstances, defaultInstance);
 	newItem->RenderLayer = Category;
 	newItem->Geometry = Mesh;
-	newItem->bTraceable = Params.bVisible;
+	newItem->bTraceable = Params.Pickable;
 	const auto itemptr = newItem.get();
 	auto submesh = Params.Submesh;
 	if (submesh.empty())
