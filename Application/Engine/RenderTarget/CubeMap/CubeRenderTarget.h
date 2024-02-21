@@ -30,7 +30,7 @@ private:
 	D3D12_VIEWPORT Viewport;
 	D3D12_RECT ScissorRect;
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE HCpuSrv;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE HGpuSrv;
-	vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> HCpuRtv{ GetNumRTVRequired() };
+	SDescriptorPair SRVHandle;
+	SDescriptorPair DSVHandle;
+	vector<SDescriptorPair> RTVHandle;
 };

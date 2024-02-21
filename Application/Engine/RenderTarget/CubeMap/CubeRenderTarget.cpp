@@ -34,8 +34,9 @@ void OCubeRenderTarget::BuildDescriptors(IDescriptor* Descriptor)
 	{
 		return;
 	}
-	descriptor->OffsetSRV(HCpuSrv, HGpuSrv);
-	descriptor->OffsetRTV(HCpuRtv, GetNumRTVRequired());
+	descriptor->SRVHandle.Offset(SRVHandle);
+	descriptor->RTVHandle.Offset(RTVHandle, GetNumRTVRequired());
+	descriptor->DSVHandle.Offset(DSVHandle);
 	BuildDescriptors();
 }
 
@@ -87,7 +88,7 @@ void OCubeRenderTarget::BuildDescriptors()
 	srvDesc.TextureCube.MostDetailedMip = 0;
 	srvDesc.TextureCube.MipLevels = 1;
 	srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
-	Device->CreateShaderResourceView(RenderTarget.Get(), &srvDesc, HCpuSrv);
+	Device->CreateShaderResourceView(RenderTarget.Get(), &srvDesc, SRVHandle.CPUHandle);
 
 	for (int i = 0; i < GetNumRTVRequired(); i++)
 	{
@@ -104,6 +105,6 @@ void OCubeRenderTarget::BuildDescriptors()
 		rtvDesc.Texture2DArray.ArraySize = 1;
 
 		// Create RTV to ith cubemap face.
-		Device->CreateRenderTargetView(RenderTarget.Get(), &rtvDesc, HCpuRtv[i]);
+		Device->CreateRenderTargetView(RenderTarget.Get(), &rtvDesc, RTVHandle[i].CPUHandle);
 	}
 }

@@ -812,8 +812,6 @@ D3D12_COMPUTE_PIPELINE_STATE_DESC OEngine::GetSobelPSODesc()
 
 void OEngine::BuildDescriptorHeap()
 {
-	auto numBackBuffers = SRenderConstants::RenderBuffersCount;
-
 	// create srv heap counting all the textures in it
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
 	srvHeapDesc.NumDescriptors = GetDesiredCountOfSRVs();
@@ -834,15 +832,16 @@ void OEngine::BuildDescriptorHeap()
 	for (const auto& texture : TextureManager->GetTextures() | std::views::values)
 	{
 		auto resourceSRV = texture->GetSRVDesc();
-		auto [cpu, gpu] = SRVDescriptor.OffsetSRV();
+		auto [cpu, gpu] = SRVDescriptor.SRVHandle.Offset();
 		Device->CreateShaderResourceView(texture->Resource.Get(), &resourceSRV, cpu);
 		texture->HeapIdx = texturesOffset;
 		texturesOffset++;
 	}
 
+	auto numBackBuffers = SRenderConstants::RenderBuffersCount;
 	// All the other objcts, SRVs, UAVs and RTVs
-	SRVDescriptor.OffsetRTV(numBackBuffers);
 
+	SRVDescriptor.RTVHandle.Offset(numBackBuffers);
 	for (const auto& rObject : RenderObjects | std::views::values)
 	{
 		rObject->BuildDescriptors(&SRVDescriptor);
@@ -1073,7 +1072,7 @@ OSobelFilter* OEngine::GetSobelFilter()
 SRenderObjectDescriptor OEngine::GetObjectDescriptor() const
 {
 	SRenderObjectDescriptor desc;
-	desc.Init(SRVDescriptorHeap.Get(), CBVSRVUAVDescriptorSize, Window->RTVHeap.Get(), RTVDescriptorSize);
+	desc.Init(SRVDescriptorHeap.Get(), Window->DSVHeap.Get(), Window->RTVHeap.Get(), CBVSRVUAVDescriptorSize, RTVDescriptorSize, DSVDescriptorSize);
 	return desc;
 }
 
@@ -1330,12 +1329,6 @@ void OEngine::BuildWavesRootSignature()
 	                                              D3D12_ROOT_SIGNATURE_FLAG_NONE);
 
 	Utils::BuildRootSignature(Device.Get(), WavesRootSignature, rootSigDesc);
-}
-
-uint32_t OEngine::GetNumOffscrenRT() const
-{
-	// TODO move RT to array
-	return 1;
 }
 
 void OEngine::Pick(int32_t SX, int32_t SY)
