@@ -73,7 +73,7 @@ public:
 	void OnWindowDestroyed();
 	bool IsTearingSupported() const;
 
-	ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(UINT NumDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE Type) const;
+	ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(UINT NumDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE Type, D3D12_DESCRIPTOR_HEAP_FLAGS Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE) const;
 
 	shared_ptr<OCommandQueue> GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type = D3D12_COMMAND_LIST_TYPE_DIRECT);
 
@@ -212,6 +212,10 @@ public:
 	void SetLightSources(const vector<SLight>& Lights);
 	void SetAmbientLight(const DirectX::XMFLOAT3& Color);
 
+	SDescriptorResourceData GetRTVDescriptorData() const;
+	SDescriptorResourceData GetDSVDescriptorData() const;
+	SDescriptorResourceData GetSRVDescriptorData() const;
+
 	void RebuildGeometry(string Name);
 	void TryUpdateGeometry();
 	void UpdateGeometryRequest(string Name);
@@ -241,8 +245,10 @@ public:
 	SOnFrameResourceChanged OnFrameResourceChanged;
 	ODynamicCubeMapRenderTarget* GetCubeRenderTarget() const;
 	ODynamicCubeMapRenderTarget* BuildCubeRenderTarget(DirectX::XMFLOAT3 Center);
+	void DrawRenderItems(string PSOType, string RenderLayer);
 
 protected:
+	void DrawRenderItemsImpl(ComPtr<ID3D12GraphicsCommandList> CommandList, const vector<SRenderItem*>& RenderItems);
 	template<typename T, typename... Args>
 	TUUID BuildRenderObjectImpl(Args&&... Params);
 
@@ -259,11 +265,11 @@ protected:
 	void BuildBlurRootSignature();
 	void BuildWavesRootSignature();
 	void BuildBilateralBlurRootSignature();
-
-	uint32_t GetNumOffscrenRT() const;
+	void UpdateFrameResource();
 
 private:
 	void BuildFrameResource(uint32_t Count = 1);
+
 	uint32_t PassCount = 1;
 	uint32_t CurrentPass = 0;
 	uint32_t CurrentNumMaterials = 0;
@@ -311,6 +317,7 @@ private:
 
 	ComPtr<ID3D12DescriptorHeap> SRVDescriptorHeap;
 	SRenderObjectDescriptor SRVDescriptor;
+	uint32_t SRVDescNum = 0;
 
 	bool HasInitializedTests = false;
 	STimer TickTimer;
@@ -337,6 +344,7 @@ template<typename T, typename... Args>
 TUUID OEngine::BuildRenderObjectImpl(Args&&... Params)
 {
 	auto object = new T(std::forward<Args>(Params)...);
+	object->Init();
 	auto uuid = GenerateUUID();
 	RenderObjects[uuid] = unique_ptr<IRenderObject>(object);
 	return uuid;

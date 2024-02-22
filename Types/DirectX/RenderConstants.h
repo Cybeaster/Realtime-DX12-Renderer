@@ -34,6 +34,7 @@ struct SRenderConstants
 struct SRenderLayer
 {
 	RENDER_TYPE(Opaque);
+	RENDER_TYPE(OpaqueDynamicReflections);
 	RENDER_TYPE(Transparent);
 	RENDER_TYPE(AlphaTested);
 	RENDER_TYPE(Shadow);

@@ -613,7 +613,7 @@
       }
     },
     {
-      "Name": "white1x1",
+      "Name": "White",
       "Data": {
         "TexturePath": "Resources\/Textures\/white1x1.dds",
         "Diffuse": {

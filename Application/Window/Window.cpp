@@ -25,18 +25,23 @@ OWindow::OWindow(HWND hWnd, const SWindowInfo& _WindowInfo)
 void OWindow::Init()
 {
 	Camera = make_shared<OCamera>(shared_from_this());
+	BuildResources();
+}
+
+void OWindow::BuildResources()
+{
 	const auto engine = OEngine::Get();
+	auto device = engine->GetDevice();
 	SwapChain = CreateSwapChain();
-	RTVHeap = engine->CreateDescriptorHeap(OEngine::Get()->GetDesiredCountOfRTVs(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	RTVDescNum = OEngine::Get()->GetDesiredCountOfRTVs();
+	DSVDescNum = OEngine::Get()->GetDesiredCountOfDSVs();
+
 	RTVDescriptorSize = engine->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
-	dsvHeapDesc.NumDescriptors = OEngine::Get()->GetDesiredCountOfDSVs();
-	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	dsvHeapDesc.NodeMask = 0;
-	THROW_IF_FAILED(engine->GetDevice()->CreateDescriptorHeap(
-	    &dsvHeapDesc, IID_PPV_ARGS(DSVHeap.GetAddressOf())));
+	RTVHeap = engine->CreateDescriptorHeap(RTVDescNum, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	DSVHeap = engine->CreateDescriptorHeap(DSVDescNum, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+
+	LOG(Render, Log, "RTV and DSV heaps created. {} RTVs and {} DSVs", RTVDescNum, DSVDescNum);
 
 	UpdateRenderTargetViews();
 }
@@ -78,6 +83,11 @@ D3D12_CPU_DESCRIPTOR_HANDLE OWindow::CurrentBackBufferView() const
 ComPtr<ID3D12Resource> OWindow::GetCurrentBackBuffer() const
 {
 	return BackBuffers[CurrentBackBufferIndex];
+}
+
+Microsoft::WRL::ComPtr<ID3D12Resource> OWindow::GetCurrentDepthStencilBuffer() const
+{
+	return DepthBuffer;
 }
 
 bool OWindow::IsVSync() const
@@ -326,27 +336,30 @@ void OWindow::OnUpdateWindowSize(ResizeEventArgs& Event)
 
 void OWindow::OnResize(ResizeEventArgs& Event)
 {
-	Camera->SetLens(0.25 * DirectX::XM_PI, GetAspectRatio(), 1.0f, 1000.0f);
-	const auto engine = OEngine::Get();
-	engine->FlushGPU();
-	engine->GetCommandQueue()->TryResetCommandList();
-
-	for (int i = 0; i < SRenderConstants::RenderBuffersCount; ++i)
+	if (Camera)
 	{
-		// Flush any GPU commands that might be referencing the back buffers
-		BackBuffers[i].Reset();
+		Camera->SetLens(0.25 * DirectX::XM_PI, GetAspectRatio(), 1.0f, 1000.0f);
+		const auto engine = OEngine::Get();
+		engine->FlushGPU();
+		engine->GetCommandQueue()->TryResetCommandList();
+
+		for (int i = 0; i < SRenderConstants::RenderBuffersCount; ++i)
+		{
+			// Flush any GPU commands that might be referencing the back buffers
+			BackBuffers[i].Reset();
+		}
+		DepthBuffer.Reset();
+
+		THROW_IF_FAILED(SwapChain->ResizeBuffers(SRenderConstants::RenderBuffersCount, WindowInfo.ClientWidth, WindowInfo.ClientHeight, SRenderConstants::BackBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
+		CurrentBackBufferIndex = 0;
+
+		UpdateRenderTargetViews();
+		ResizeDepthBuffer();
+
+		engine->GetCommandQueue()->ExecuteCommandListAndWait();
+		Viewport = D3D12_VIEWPORT(0.0f, 0.0f, static_cast<float>(WindowInfo.ClientWidth), static_cast<float>(WindowInfo.ClientHeight), 0.0f, 1.0f);
+		ScissorRect = CD3DX12_RECT(0, 0, WindowInfo.ClientWidth, WindowInfo.ClientHeight);
 	}
-	DepthBuffer.Reset();
-
-	THROW_IF_FAILED(SwapChain->ResizeBuffers(SRenderConstants::RenderBuffersCount, WindowInfo.ClientWidth, WindowInfo.ClientHeight, SRenderConstants::BackBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
-	CurrentBackBufferIndex = 0;
-
-	UpdateRenderTargetViews();
-	ResizeDepthBuffer();
-
-	engine->GetCommandQueue()->ExecuteCommandListAndWait();
-	Viewport = D3D12_VIEWPORT(0.0f, 0.0f, static_cast<float>(WindowInfo.ClientWidth), static_cast<float>(WindowInfo.ClientHeight), 0.0f, 1.0f);
-	ScissorRect = CD3DX12_RECT(0, 0, WindowInfo.ClientWidth, WindowInfo.ClientHeight);
 }
 
 float OWindow::GetLastXMousePos() const
@@ -364,7 +377,17 @@ shared_ptr<OCamera> OWindow::GetCamera()
 	return Camera;
 }
 
-bool OWindow::HasCapturedLeftMouseButton()
+uint32_t OWindow::GetDSVDescNum() const
+{
+	return DSVDescNum;
+}
+
+uint32_t OWindow::GetRTVDescNum() const
+{
+	return RTVDescNum;
+}
+
+bool OWindow::HasCapturedLeftMouseButton() const
 {
 	return LeftButtonPressedTime > 0 && OEngine::Get()->GetTime() - LeftButtonPressedTime > CameraLeftMoveTime;
 }

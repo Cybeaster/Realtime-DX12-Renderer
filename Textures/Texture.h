@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/RenderObject/RenderObject.h"
 #include "Windows.h"
 
 #include <Types.h>
@@ -11,8 +12,8 @@ struct STexture
 	string Name;
 	wstring FileName;
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> Resource = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12Resource> UploadHeap = nullptr;
+	ComPtr<ID3D12Resource> Resource = nullptr;
+	ComPtr<ID3D12Resource> UploadHeap = nullptr;
 
 	int64_t HeapIdx = -1;
 	virtual D3D12_SHADER_RESOURCE_VIEW_DESC GetSRVDesc() const

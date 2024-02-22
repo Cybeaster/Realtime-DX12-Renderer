@@ -65,20 +65,6 @@ void OTextureWaves::OnUpdate(const UpdateEventArgs& Event)
 	Super::OnUpdate(Event);
 	IsInputBlocked = Event.IsUIInfocus;
 
-	auto engine = Engine;
-	engine->CurrentFrameResourceIndex = (engine->CurrentFrameResourceIndex + 1) % SRenderConstants::NumFrameResources;
-	engine->CurrentFrameResources = engine->FrameResources[engine->CurrentFrameResourceIndex].get();
-
-	// Has the GPU finished processing the commands of the current frame
-	// resource. If not, wait until the GPU has completed commands up to
-	// this fence point.
-
-	if (engine->CurrentFrameResources->Fence != 0 && engine->GetCommandQueue()->GetFence()->GetCompletedValue() < engine->CurrentFrameResources->Fence)
-	{
-		engine->GetCommandQueue()->WaitForFenceValue(engine->CurrentFrameResources->Fence);
-	}
-
-	// AnimateMaterials(Event.Timer);
 	UpdateMaterialCB();
 }
 
@@ -288,13 +274,8 @@ void OTextureWaves::OnRender(const UpdateEventArgs& Event)
 
 	Waves->Update(Event.Timer, engine->GetWavesRootSignature(), engine->GetPSO(SPSOType::WavesUpdate).Get());
 
-	// GetEngine()->SetPipelineState(SPSOType::Opaque);
-	commandList->SetGraphicsRootShaderResourceView(1, engine->CurrentFrameResources->MaterialBuffer->GetResource()->GetGPUVirtualAddress());
-	commandList->SetGraphicsRootConstantBufferView(2, engine->CurrentFrameResources->PassCB->GetResource()->GetGPUVirtualAddress());
-	commandList->SetGraphicsRootDescriptorTable(3, engine->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart());
-
 	UpdateWave(Event.Timer);
-	commandList->SetGraphicsRootDescriptorTable(4, Waves->GetDisplacementMap());
+	commandList->SetGraphicsRootDescriptorTable(4, Waves->GetDisplacementMapHandle());
 
 	GetEngine()->SetPipelineState(SPSOType::Opaque);
 	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Opaque));

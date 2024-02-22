@@ -3,6 +3,9 @@
 //
 
 #include "DynamicCubeMapTarget.h"
+
+#include "Engine/Engine.h"
+
 void ODynamicCubeMapRenderTarget::Init()
 {
 	using namespace DirectX;

@@ -21,7 +21,7 @@ void OUIManager::InitContext(ID3D12Device2* Device, HWND Hwnd, UINT NumFramesInL
 	KeyMap();
 
 	ImGui_ImplWin32_Init(Hwnd);
-	auto [cpu, gpu] = OutDescriptor.OffsetSRV(GetNumSRVRequired());
+	auto [cpu, gpu] = OutDescriptor.SRVHandle.Offset(GetNumSRVRequired());
 	ImGui_ImplDX12_Init(
 	    Device,
 	    NumFramesInLight,

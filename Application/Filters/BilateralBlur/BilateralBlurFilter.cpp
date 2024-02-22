@@ -20,11 +20,10 @@ void OBilateralBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
 		return;
 	}
 
-	descriptor->OffsetSRV(BlurOutputCpuSrv, BlurOutputGpuSrv);
-	descriptor->OffsetSRV(BlurOutputCpuSrv, BlurOutputGpuSrv);
-	descriptor->OffsetSRV(BlurOutputCpuUav, BlurOutputGpuUav);
-	descriptor->OffsetSRV(BlurInputCpuSrv, BlurInputGpuSrv);
-	descriptor->OffsetSRV(BlurInputCpuUav, BlurInputGpuUav);
+	descriptor->SRVHandle.Offset(BlurOutputSrvHandle);
+	descriptor->SRVHandle.Offset(BlurOutputUavHandle);
+	descriptor->SRVHandle.Offset(BlurInputSrvHandle);
+	descriptor->SRVHandle.Offset(BlurInputUavHandle);
 
 	BuildDescriptors();
 }
@@ -49,11 +48,11 @@ void OBilateralBlurFilter::BuildDescriptors() const
 	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 	uavDesc.Texture2D.MipSlice = 0;
 
-	Device->CreateShaderResourceView(OutputTexture.Get(), &srvDesc, BlurOutputCpuSrv);
-	Device->CreateUnorderedAccessView(OutputTexture.Get(), nullptr, &uavDesc, BlurOutputCpuUav);
+	Device->CreateShaderResourceView(OutputTexture.Get(), &srvDesc, BlurOutputSrvHandle.CPUHandle);
+	Device->CreateUnorderedAccessView(OutputTexture.Get(), nullptr, &uavDesc, BlurOutputUavHandle.CPUHandle);
 
-	Device->CreateShaderResourceView(InputTexture.Get(), &srvDesc, BlurInputCpuSrv);
-	Device->CreateUnorderedAccessView(InputTexture.Get(), nullptr, &uavDesc, BlurInputCpuUav);
+	Device->CreateShaderResourceView(InputTexture.Get(), &srvDesc, BlurInputSrvHandle.CPUHandle);
+	Device->CreateUnorderedAccessView(InputTexture.Get(), nullptr, &uavDesc, BlurInputUavHandle.CPUHandle);
 }
 
 void OBilateralBlurFilter::BuildResource()
@@ -112,8 +111,8 @@ void OBilateralBlurFilter::Execute(ID3D12RootSignature* RootSignature, ID3D12Pip
 
 	CMDList->SetPipelineState(PSO);
 
-	CMDList->SetComputeRootDescriptorTable(2, BlurInputGpuSrv);
-	CMDList->SetComputeRootDescriptorTable(3, BlurOutputGpuUav);
+	CMDList->SetComputeRootDescriptorTable(2, BlurInputSrvHandle.GPUHandle);
+	CMDList->SetComputeRootDescriptorTable(3, BlurOutputUavHandle.GPUHandle);
 
 	CMDList->Dispatch(Width / 32 + 1, Height / 32 + 1, 1);
 

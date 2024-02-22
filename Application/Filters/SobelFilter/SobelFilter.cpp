@@ -11,7 +11,7 @@ OSobelFilter::OSobelFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List
 
 CD3DX12_GPU_DESCRIPTOR_HANDLE OSobelFilter::OutputSRV() const
 {
-	return GPUSRV;
+	return SRVHandle.GPUHandle;
 }
 
 void OSobelFilter::BuildDescriptors() const
@@ -28,8 +28,8 @@ void OSobelFilter::BuildDescriptors() const
 	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 	uavDesc.Texture2D.MipSlice = 0;
 
-	Device->CreateShaderResourceView(Output.Get(), &srvDesc, CPUSRV);
-	Device->CreateUnorderedAccessView(Output.Get(), nullptr, &uavDesc, CPUUAV);
+	Device->CreateShaderResourceView(Output.Get(), &srvDesc, SRVHandle.CPUHandle);
+	Device->CreateUnorderedAccessView(Output.Get(), nullptr, &uavDesc, UAVHandle.CPUHandle);
 }
 
 void OSobelFilter::BuildResource()
@@ -68,7 +68,7 @@ std::pair<bool, CD3DX12_GPU_DESCRIPTOR_HANDLE> OSobelFilter::Execute(ID3D12RootS
 	CMDList->SetPipelineState(PSO);
 
 	CMDList->SetComputeRootDescriptorTable(0, Input);
-	CMDList->SetComputeRootDescriptorTable(2, GPUUAV);
+	CMDList->SetComputeRootDescriptorTable(2, UAVHandle.GPUHandle);
 
 	Utils::ResourceBarrier(CMDList, Output.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
@@ -77,7 +77,7 @@ std::pair<bool, CD3DX12_GPU_DESCRIPTOR_HANDLE> OSobelFilter::Execute(ID3D12RootS
 	CMDList->Dispatch(numGroupsX, numGroupsY, 1);
 
 	Utils::ResourceBarrier(CMDList, Output.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
-	return { true, GPUSRV };
+	return { true, SRVHandle.GPUHandle };
 }
 
 void OSobelFilter::BuildDescriptors(IDescriptor* Descriptor)
@@ -87,8 +87,8 @@ void OSobelFilter::BuildDescriptors(IDescriptor* Descriptor)
 	{
 		return;
 	}
-	descriptor->OffsetSRV(CPUSRV, GPUSRV);
-	descriptor->OffsetSRV(CPUUAV, GPUUAV);
+	descriptor->SRVHandle.Offset(SRVHandle);
+	descriptor->SRVHandle.Offset(UAVHandle);
 
 	BuildDescriptors();
 }

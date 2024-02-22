@@ -33,17 +33,10 @@ public:
 	}
 
 private:
-	CD3DX12_CPU_DESCRIPTOR_HANDLE BlurOutputCpuSrv;
-	CD3DX12_CPU_DESCRIPTOR_HANDLE BlurOutputCpuUav;
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE BlurInputCpuSrv;
-	CD3DX12_CPU_DESCRIPTOR_HANDLE BlurInputCpuUav;
-
-	CD3DX12_GPU_DESCRIPTOR_HANDLE BlurOutputGpuSrv;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE BlurOutputGpuUav;
-
-	CD3DX12_GPU_DESCRIPTOR_HANDLE BlurInputGpuSrv;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE BlurInputGpuUav;
+	SDescriptorPair BlurOutputSrvHandle;
+	SDescriptorPair BlurOutputUavHandle;
+	SDescriptorPair BlurInputSrvHandle;
+	SDescriptorPair BlurInputUavHandle;
 
 	ComPtr<ID3D12Resource> InputTexture;
 	ComPtr<ID3D12Resource> OutputTexture;

@@ -9,7 +9,7 @@ OCubeRenderTarget::OCubeRenderTarget(ID3D12Device* Device, int Width, int Height
 	BuildViewport();
 }
 
-OCubeRenderTarget::OCubeRenderTarget(SRenderTargetParams Params)
+OCubeRenderTarget::OCubeRenderTarget(const SRenderTargetParams& Params)
     : ORenderTargetBase(Params)
 {
 	BuildViewport();
@@ -52,6 +52,7 @@ uint32_t OCubeRenderTarget::GetNumDSVRequired()
 
 void OCubeRenderTarget::Init()
 {
+	ORenderTargetBase::Init();
 	BuildResource();
 }
 

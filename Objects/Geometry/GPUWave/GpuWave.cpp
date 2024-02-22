@@ -129,29 +129,21 @@ void OGPUWave::BuildDescriptors(IDescriptor* Descriptor)
 	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 	uavDesc.Texture2D.MipSlice = 0;
 
-	auto [prevCPU, prevGPU] = descriptor->OffsetSRV();
-	auto [curCPU, curGPU] = descriptor->OffsetSRV();
-	auto [nextCPU, nextGPU] = descriptor->OffsetSRV();
-	auto [prevCPUUAV, prevGPUUAV] = descriptor->OffsetSRV();
-	auto [curCPUUAV, curGPUUAV] = descriptor->OffsetSRV();
-	auto [nextCPUUAV, nextGPUUAV] = descriptor->OffsetSRV();
+	descriptor->SRVHandle.Offset(PrevSolSRVHandle);
+	descriptor->SRVHandle.Offset(CurrSolSRVHandle);
+	descriptor->SRVHandle.Offset(NextSolSRVHandle);
 
-	Device->CreateShaderResourceView(PrevSol.Get(), &srvDesc, prevCPU);
-	Device->CreateShaderResourceView(CurrSol.Get(), &srvDesc, curCPU);
-	Device->CreateShaderResourceView(NextSol.Get(), &srvDesc, nextCPU);
+	descriptor->SRVHandle.Offset(PrevSolUAVHandle);
+	descriptor->SRVHandle.Offset(CurrSolUAVHandle);
+	descriptor->SRVHandle.Offset(NextSolUAVHandle);
 
-	Device->CreateUnorderedAccessView(PrevSol.Get(), nullptr, &uavDesc, prevCPUUAV);
-	Device->CreateUnorderedAccessView(CurrSol.Get(), nullptr, &uavDesc, curCPUUAV);
-	Device->CreateUnorderedAccessView(NextSol.Get(), nullptr, &uavDesc, nextCPUUAV);
+	Device->CreateShaderResourceView(PrevSol.Get(), &srvDesc, PrevSolSRVHandle.CPUHandle);
+	Device->CreateShaderResourceView(CurrSol.Get(), &srvDesc, CurrSolSRVHandle.CPUHandle);
+	Device->CreateShaderResourceView(NextSol.Get(), &srvDesc, NextSolSRVHandle.CPUHandle);
 
-	//save references to gpu resources
-	PrevSolSrv = prevGPU;
-	CurrSolSrv = curGPU;
-	NextSolSrv = nextGPU;
-
-	PrevSolUav = prevGPUUAV;
-	CurrSolUav = curGPUUAV;
-	NextSolUav = nextGPUUAV;
+	Device->CreateUnorderedAccessView(PrevSol.Get(), nullptr, &uavDesc, PrevSolUAVHandle.CPUHandle);
+	Device->CreateUnorderedAccessView(CurrSol.Get(), nullptr, &uavDesc, CurrSolUAVHandle.CPUHandle);
+	Device->CreateUnorderedAccessView(NextSol.Get(), nullptr, &uavDesc, NextSolUAVHandle.CPUHandle);
 }
 
 void OGPUWave::Update(const STimer& Gt, ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO)
@@ -167,9 +159,9 @@ void OGPUWave::Update(const STimer& Gt, ID3D12RootSignature* RootSignature, ID3D
 	{
 		CMDList->SetComputeRoot32BitConstants(0, 3, mK, 0);
 
-		CMDList->SetComputeRootDescriptorTable(1, PrevSolSrv);
-		CMDList->SetComputeRootDescriptorTable(2, CurrSolUav);
-		CMDList->SetComputeRootDescriptorTable(3, NextSolUav);
+		CMDList->SetComputeRootDescriptorTable(1, PrevSolSRVHandle.GPUHandle);
+		CMDList->SetComputeRootDescriptorTable(2, CurrSolUAVHandle.GPUHandle);
+		CMDList->SetComputeRootDescriptorTable(3, NextSolUAVHandle.GPUHandle);
 
 		// How many groups do we need to dispatch to cover the wave grid.
 		// Note that mNumRows and mNumCols should be divisible by 16
@@ -191,15 +183,15 @@ void OGPUWave::Update(const STimer& Gt, ID3D12RootSignature* RootSignature, ID3D
 		CurrSol = NextSol;
 		NextSol = resTmp;
 
-		auto srvTmp = PrevSolSrv;
-		PrevSolSrv = CurrSolSrv;
-		CurrSolSrv = NextSolSrv;
-		NextSolSrv = srvTmp;
+		auto srvTmp = PrevSolSRVHandle;
+		PrevSolSRVHandle = CurrSolSRVHandle;
+		CurrSolSRVHandle = NextSolSRVHandle;
+		NextSolSRVHandle = srvTmp;
 
-		auto uavTemp = PrevSolUav;
-		PrevSolUav = CurrSolUav;
-		CurrSolUav = NextSolUav;
-		NextSolUav = uavTemp;
+		auto uavTemp = PrevSolUAVHandle;
+		PrevSolUAVHandle = CurrSolUAVHandle;
+		CurrSolUAVHandle = NextSolUAVHandle;
+		NextSolUAVHandle = uavTemp;
 
 		t = 0.0;
 
@@ -217,7 +209,7 @@ void OGPUWave::Disturb(ID3D12RootSignature* RootSignature, ID3D12PipelineState* 
 	CMDList->SetComputeRoot32BitConstants(0, 1, &Magnitude, 3);
 	CMDList->SetComputeRoot32BitConstants(0, 2, disturbIdx, 4);
 
-	CMDList->SetComputeRootDescriptorTable(3, CurrSolUav);
+	CMDList->SetComputeRootDescriptorTable(3, CurrSolUAVHandle.GPUHandle);
 
 	// The current solution is in the GENERIC_READ state so it can be read by the vertex shader.
 	// Change it to UNORDERED_ACCESS for the compute shader.  Note that a UAV can still be

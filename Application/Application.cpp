@@ -50,7 +50,6 @@ shared_ptr<OWindow> OApplication::CreateWindow()
 		return nullptr;
 	}
 	auto window = make_shared<OWindow>(hWnd, DefaultWindowInfo);
-	window->Init();
 	return window;
 }
 

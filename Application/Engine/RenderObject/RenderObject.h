@@ -1,5 +1,6 @@
 #pragma once
 #include "../Types/DirectX/DXHelper.h"
+#include "Logger.h"
 
 struct IDescriptor
 {
@@ -9,18 +10,31 @@ using TDescPairRef = pair<CD3DX12_CPU_DESCRIPTOR_HANDLE&, CD3DX12_GPU_DESCRIPTOR
 
 struct SDescriptorPair
 {
-	CD3DX12_CPU_DESCRIPTOR_HANDLE CPUHandle;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE GPUHandle;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE CPUHandle = {};
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GPUHandle = {};
+};
+
+struct SDescriptorResourceData
+{
+	ID3D12DescriptorHeap* Heap;
+	UINT Size;
+	UINT Count;
 };
 
 struct TDescriptorHandle
 {
 	void Offset(CD3DX12_CPU_DESCRIPTOR_HANDLE& OutCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& OutGPUHandle)
 	{
+		CurrentOffset++;
 		OutCPUHandle = CPUHandle;
 		OutGPUHandle = GPUHandle;
-		GPUHandle.Offset(1);
-		CPUHandle.Offset(1);
+		CPUHandle.Offset(1, DescSize);
+
+		if (GPUHandle.ptr != 0)
+		{
+			GPUHandle.Offset(1, DescSize);
+		}
+		Check();
 	}
 
 	void Offset(SDescriptorPair& OutHandle)
@@ -54,21 +68,58 @@ struct TDescriptorHandle
 
 	SDescriptorPair Offset(uint32_t Value = 1)
 	{
+		CurrentOffset += Value;
 		const auto oldCPU = CPUHandle;
 		const auto oldGPU = GPUHandle;
 		CPUHandle.Offset(Value, DescSize);
-		GPUHandle.Offset(Value, DescSize);
+		if (GPUHandle.ptr != 0)
+		{
+			GPUHandle.Offset(Value, DescSize);
+		}
+		Check();
 		return { oldCPU, oldGPU };
 	}
+	void Check() const
+	{
+		if (CurrentOffset > MaxOffset)
+		{
+			LOG(Render, Error, "Descriptor heap overflow");
+		}
 
+		if (!bIsInitized)
+		{
+			LOG(Render, Error, "Descriptor heap not initized");
+		}
+
+		if (MaxOffset == 0)
+		{
+			LOG(Render, Error, "Descriptor heap max count not initized");
+		}
+	}
+
+	void Init(SDescriptorResourceData Data)
+	{
+		bIsInitized = true;
+		MaxOffset = Data.Count;
+		DescSize = Data.Size;
+		CPUHandle = Data.Heap->GetCPUDescriptorHandleForHeapStart();
+		if (Data.Heap->GetDesc().Flags == D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE)
+		{
+			GPUHandle = Data.Heap->GetGPUDescriptorHandleForHeapStart();
+		}
+	}
+
+	bool bIsInitized = false;
 	uint32_t DescSize;
 	CD3DX12_CPU_DESCRIPTOR_HANDLE CPUHandle;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GPUHandle;
+	uint32_t CurrentOffset = 0;
+	uint32_t MaxOffset = 0;
 };
 
 struct SRenderObjectDescriptor : IDescriptor
 {
-	void Init(ID3D12DescriptorHeap* SRVHeap, ID3D12DescriptorHeap* DSVHeap, ID3D12DescriptorHeap* RTVHeap, UINT SRVSize, UINT RTVSize, UINT DSVSize);
+	void Init(SDescriptorResourceData SRV, SDescriptorResourceData RTV, SDescriptorResourceData DSV);
 
 	TDescriptorHandle SRVHandle;
 	TDescriptorHandle RTVHandle;
@@ -80,6 +131,7 @@ class IRenderObject
 public:
 	virtual ~IRenderObject() = default;
 	virtual void BuildDescriptors(IDescriptor* Descriptor){};
+	virtual void Init(){};
 	virtual uint32_t GetNumSRVRequired() const = 0;
 	virtual uint32_t GetNumRTVRequired() { return 0; }
 	virtual uint32_t GetNumDSVRequired() { return 0; }

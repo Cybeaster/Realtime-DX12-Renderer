@@ -5,6 +5,11 @@
 #include "RenderTarget.h"
 
 #include "../../../Utils/Statics.h"
+#include "Engine/Engine.h"
+
+void ORenderTargetBase::Init()
+{
+}
 
 OOffscreenTexture::OOffscreenTexture(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format)
     : ORenderTargetBase(Device, Width, Height, Format)
@@ -15,8 +20,8 @@ void OOffscreenTexture::BuildDescriptors(IDescriptor* Descriptor)
 {
 	if (const auto descriptor = Cast<SRenderObjectDescriptor>(Descriptor))
 	{
-		descriptor->OffsetSRV(CpuSrv, GpuSrv);
-		descriptor->OffsetRTV(CpuRtv);
+		descriptor->SRVHandle.Offset(SRVHandle);
+		descriptor->RTVHandle.Offset(RTVHandle);
 		BuildDescriptors();
 	}
 }
@@ -35,6 +40,7 @@ void OOffscreenTexture::OnResize(UINT NewWidth, UINT NewHeight)
 
 void OOffscreenTexture::Init()
 {
+	ORenderTargetBase::Init();
 	BuildResource();
 }
 
@@ -47,8 +53,8 @@ void OOffscreenTexture::BuildDescriptors()
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.MipLevels = 1;
 
-	Device->CreateShaderResourceView(RenderTarget.Get(), &srvDesc, CpuSrv);
-	Device->CreateRenderTargetView(RenderTarget.Get(), nullptr, CpuRtv);
+	Device->CreateShaderResourceView(RenderTarget.Get(), &srvDesc, SRVHandle.CPUHandle);
+	Device->CreateRenderTargetView(RenderTarget.Get(), nullptr, RTVHandle.CPUHandle);
 }
 
 void OOffscreenTexture::BuildResource()

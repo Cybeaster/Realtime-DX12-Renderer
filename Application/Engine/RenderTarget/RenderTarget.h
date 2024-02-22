@@ -39,11 +39,11 @@ public:
 	{
 		return 1;
 	}
-	virtual void Init() = 0;
+	virtual void Init();
 
 protected:
-	UINT Width = 0;
-	UINT Height = 0;
+	LONG Width = 0;
+	LONG Height = 0;
 	DXGI_FORMAT Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 
 	// Two for ping-ponging the textures.
@@ -64,8 +64,8 @@ public:
 
 	~OOffscreenTexture() = default;
 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE GetSRV() const { return GpuSrv; }
-	CD3DX12_CPU_DESCRIPTOR_HANDLE GetRTV() const { return CpuRtv; }
+	SDescriptorPair GetSRV() const { return SRVHandle; }
+	SDescriptorPair GetRTV() const { return RTVHandle; }
 
 	void BuildDescriptors(IDescriptor* Descriptor) override;
 	void OnResize(UINT NewWidth, UINT NewHeight);
@@ -76,7 +76,6 @@ protected:
 	void BuildResource() override;
 
 private:
-	CD3DX12_CPU_DESCRIPTOR_HANDLE CpuSrv;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE GpuSrv;
-	CD3DX12_CPU_DESCRIPTOR_HANDLE CpuRtv;
+	SDescriptorPair SRVHandle;
+	SDescriptorPair RTVHandle;
 };

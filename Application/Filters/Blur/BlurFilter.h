@@ -40,17 +40,11 @@ private:
 private:
 	const uint32_t MaxBlurRadius = 5;
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE Blur0CpuSrv;
-	CD3DX12_CPU_DESCRIPTOR_HANDLE Blur0CpuUav;
+	SDescriptorPair SRV0Handle;
+	SDescriptorPair UAV0Handle;
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE Blur1CpuSrv;
-	CD3DX12_CPU_DESCRIPTOR_HANDLE Blur1CpuUav;
-
-	CD3DX12_GPU_DESCRIPTOR_HANDLE Blur0GpuSrv;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE Blur0GpuUav;
-
-	CD3DX12_GPU_DESCRIPTOR_HANDLE Blur1GpuSrv;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE Blur1GpuUav;
+	SDescriptorPair SRV1Handle;
+	SDescriptorPair UAV1Handle;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> BlurMap0 = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> BlurMap1 = nullptr;

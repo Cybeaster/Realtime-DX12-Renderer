@@ -121,17 +121,60 @@ TUUID OEngine::AddRenderObject(IRenderObject* RenderObject)
 
 void OEngine::BuildOffscreenRT()
 {
-	const auto RT = new OOffscreenTexture(Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
-	RT->Init();
-	AddRenderObject(RT);
-	OffscreenRT = RT;
+	OffscreenRT = BuildRenderObject<OOffscreenTexture>(Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
 }
 
 ODynamicCubeMapRenderTarget* OEngine::BuildCubeRenderTarget(XMFLOAT3 Center)
 {
 	auto resulution = SRenderConstants::CubeMapDefaultResolution;
-	CubeRenderTarget = BuildRenderObject<ODynamicCubeMapRenderTarget>({ Device.Get(), resulution.x, resulution.y, SRenderConstants::BackBufferFormat }, Center);
+	SRenderTargetParams cubeParams;
+	cubeParams.Width = resulution.x;
+	cubeParams.Height = resulution.y;
+	cubeParams.Format = SRenderConstants::BackBufferFormat;
+	cubeParams.Device = Device.Get();
+	CubeRenderTarget = BuildRenderObject<ODynamicCubeMapRenderTarget>(cubeParams, Center);
 	return CubeRenderTarget;
+}
+
+void OEngine::DrawRenderItems(string PSOType, string RenderLayer)
+{
+	const auto commandList = GetCommandQueue()->GetCommandList();
+	const auto& renderItems = GetRenderItems(RenderLayer);
+	SetPipelineState(PSOType);
+	DrawRenderItemsImpl(commandList, renderItems);
+}
+
+void OEngine::DrawRenderItemsImpl(ComPtr<ID3D12GraphicsCommandList> CommandList, const vector<SRenderItem*>& RenderItems)
+{
+	for (size_t i = 0; i < RenderItems.size(); i++)
+	{
+		const auto renderItem = RenderItems[i];
+		if (!renderItem->IsValidChecked())
+		{
+			continue;
+		}
+		if (!renderItem->Instances.empty() && renderItem->Geometry)
+		{
+			auto vertexView = renderItem->Geometry->VertexBufferView();
+			auto indexView = renderItem->Geometry->IndexBufferView();
+
+			CommandList->IASetVertexBuffers(0, 1, &vertexView);
+			CommandList->IASetIndexBuffer(&indexView);
+			CommandList->IASetPrimitiveTopology(renderItem->PrimitiveType);
+
+			// Offset to the CBV in the descriptor heap for this object and
+			// for this frame resource.
+			auto instanceBuffer = Engine->CurrentFrameResources->InstanceBuffer->GetResource();
+			auto location = instanceBuffer->GetGPUVirtualAddress() + renderItem->StartInstanceLocation * sizeof(SInstanceData);
+			CommandList->SetGraphicsRootShaderResourceView(0, location);
+			CommandList->DrawIndexedInstanced(
+			    renderItem->IndexCount,
+			    renderItem->VisibleInstanceCount,
+			    renderItem->StartIndexLocation,
+			    renderItem->BaseVertexLocation,
+			    0);
+		}
+	}
 }
 
 OOffscreenTexture* OEngine::GetOffscreenRT() const
@@ -201,6 +244,7 @@ int OEngine::InitTests(shared_ptr<OTest> Test)
 
 void OEngine::PostTestInit()
 {
+	Window->Init();
 	BuildFrameResource(1);
 	BuildDescriptorHeap();
 	InitUIManager();
@@ -277,19 +321,10 @@ void OEngine::OnPreRender()
 		commandList->RSSetViewports(1, &window->Viewport);
 		commandList->RSSetScissorRects(1, &window->ScissorRect);
 
-		const auto dsv = window->GetDepthStensilView();
-		const auto rtv = OffscreenRT->GetRTV();
-
-		Utils::ResourceBarrier(commandList.Get(), OffscreenRT->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-		// Clear the back buffer and depth buffer.
-		commandList->ClearRenderTargetView(rtv, reinterpret_cast<float*>(&MainPassCB.FogColor), 0, nullptr);
-		commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-
-		// Specify the buffers we are going to render to.
-		commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
-
 		commandList->SetGraphicsRootSignature(DefaultRootSignature.Get());
+		commandList->SetGraphicsRootShaderResourceView(1, CurrentFrameResources->MaterialBuffer->GetResource()->GetGPUVirtualAddress());
+		commandList->SetGraphicsRootConstantBufferView(2, CurrentFrameResources->PassCB->GetResource()->GetGPUVirtualAddress());
+		commandList->SetGraphicsRootDescriptorTable(3, GetSRVHeap()->GetGPUDescriptorHandleForHeapStart());
 	}
 }
 
@@ -325,8 +360,24 @@ void OEngine::Update(UpdateEventArgs& Args)
 	}
 }
 
+void OEngine::UpdateFrameResource()
+{
+	CurrentFrameResourceIndex = (CurrentFrameResourceIndex + 1) % SRenderConstants::NumFrameResources;
+	CurrentFrameResources = FrameResources[CurrentFrameResourceIndex].get();
+
+	// Has the GPU finished processing the commands of the current frame
+	// resource. If not, wait until the GPU has completed commands up to
+	// this fence point.
+	if (CurrentFrameResources->Fence != 0 && GetCommandQueue()->GetFence()->GetCompletedValue() < CurrentFrameResources->Fence)
+	{
+		GetCommandQueue()->WaitForFenceValue(CurrentFrameResources->Fence);
+	}
+}
+
 void OEngine::OnUpdate(UpdateEventArgs& Args)
 {
+	UpdateFrameResource();
+
 	GetWindow()->OnUpdate(Args);
 	PerformFrustrumCulling();
 	if (CurrentFrameResources)
@@ -361,7 +412,7 @@ void OEngine::PostProcess(HWND Handler)
 
 	if (auto [executed, srv] = GetSobelFilter()->Execute(PostProcessRootSignature.Get(),
 	                                                     PSOs[SPSOType::SobelFilter].Get(),
-	                                                     OffscreenRT->GetSRV());
+	                                                     OffscreenRT->GetSRV().GPUHandle);
 	    executed)
 	{
 		DrawCompositeShader(srv);
@@ -404,7 +455,7 @@ void OEngine::DrawCompositeShader(CD3DX12_GPU_DESCRIPTOR_HANDLE Input)
 	const auto commandList = GetCommandQueue()->GetCommandList();
 	commandList->SetGraphicsRootSignature(PostProcessRootSignature.Get());
 	SetPipelineState(SPSOType::Composite);
-	commandList->SetGraphicsRootDescriptorTable(0, OffscreenRT->GetSRV());
+	commandList->SetGraphicsRootDescriptorTable(0, OffscreenRT->GetSRV().GPUHandle);
 	commandList->SetGraphicsRootDescriptorTable(1, Input);
 	DrawFullScreenQuad();
 }
@@ -595,7 +646,6 @@ void OEngine::CreateWindow()
 {
 	Window = OApplication::Get()->CreateWindow();
 	WindowsMap[Window->GetHWND()] = Window;
-
 	Window->RegsterWindow();
 }
 
@@ -812,20 +862,11 @@ D3D12_COMPUTE_PIPELINE_STATE_DESC OEngine::GetSobelPSODesc()
 
 void OEngine::BuildDescriptorHeap()
 {
-	// create srv heap counting all the textures in it
-	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = GetDesiredCountOfSRVs();
-	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	THROW_IF_FAILED(Device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&SRVDescriptorHeap)));
-
+	SRVDescNum = GetDesiredCountOfSRVs();
+	SRVDescriptorHeap = CreateDescriptorHeap(SRVDescNum,
+	                                         D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+	                                         D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	SRVDescriptor = GetObjectDescriptor();
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.MipLevels = -1;
 
 	// Textures, SRV offset only
 	uint32_t texturesOffset = 0;
@@ -838,10 +879,6 @@ void OEngine::BuildDescriptorHeap()
 		texturesOffset++;
 	}
 
-	auto numBackBuffers = SRenderConstants::RenderBuffersCount;
-	// All the other objcts, SRVs, UAVs and RTVs
-
-	SRVDescriptor.RTVHandle.Offset(numBackBuffers);
 	for (const auto& rObject : RenderObjects | std::views::values)
 	{
 		rObject->BuildDescriptors(&SRVDescriptor);
@@ -1072,7 +1109,10 @@ OSobelFilter* OEngine::GetSobelFilter()
 SRenderObjectDescriptor OEngine::GetObjectDescriptor() const
 {
 	SRenderObjectDescriptor desc;
-	desc.Init(SRVDescriptorHeap.Get(), Window->DSVHeap.Get(), Window->RTVHeap.Get(), CBVSRVUAVDescriptorSize, RTVDescriptorSize, DSVDescriptorSize);
+
+	desc.Init(GetSRVDescriptorData(), GetRTVDescriptorData(), GetDSVDescriptorData());
+	desc.RTVHandle.Offset(SRenderConstants::RenderBuffersCount);
+	desc.DSVHandle.Offset(1); // TODO calc number of dsv automatically. 1 is for depth buffer
 	return desc;
 }
 
@@ -1108,12 +1148,12 @@ void OEngine::Destroy()
 	OApplication::Get()->DestroyWindow(Window);
 }
 
-ComPtr<ID3D12DescriptorHeap> OEngine::CreateDescriptorHeap(UINT NumDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE Type) const
+ComPtr<ID3D12DescriptorHeap> OEngine::CreateDescriptorHeap(UINT NumDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE Type, D3D12_DESCRIPTOR_HEAP_FLAGS Flags) const
 {
 	D3D12_DESCRIPTOR_HEAP_DESC desc = {};
 	desc.Type = Type;
 	desc.NumDescriptors = NumDescriptors;
-	desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	desc.Flags = Flags;
 	desc.NodeMask = 0;
 
 	ComPtr<ID3D12DescriptorHeap> descriptorHeap;
@@ -1241,7 +1281,10 @@ void OEngine::BuildDefaultRootSignature()
 	CD3DX12_DESCRIPTOR_RANGE displacementTable;
 	displacementTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 7, 0);
 
-	constexpr auto size = 5;
+	CD3DX12_DESCRIPTOR_RANGE cubeMapTable;
+	cubeMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 8, 0);
+
+	constexpr auto size = 6;
 	CD3DX12_ROOT_PARAMETER slotRootParameter[size];
 
 	slotRootParameter[0].InitAsShaderResourceView(0, 1);
@@ -1251,6 +1294,7 @@ void OEngine::BuildDefaultRootSignature()
 
 	slotRootParameter[3].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[4].InitAsDescriptorTable(1, &displacementTable, D3D12_SHADER_VISIBILITY_VERTEX);
+	slotRootParameter[5].InitAsDescriptorTable(1, &cubeMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	const auto staticSamples
 	    = Utils::GetStaticSamplers();
@@ -1575,6 +1619,21 @@ void OEngine::SetLightSources(const vector<SLight>& Lights)
 void OEngine::SetAmbientLight(const DirectX::XMFLOAT3& Color)
 {
 	MainPassCB.AmbientLight = XMFLOAT4(Color.x, Color.y, Color.z, 1);
+}
+
+SDescriptorResourceData OEngine::GetRTVDescriptorData() const
+{
+	return { Window->RTVHeap.Get(), RTVDescriptorSize, Window->GetRTVDescNum() };
+}
+
+SDescriptorResourceData OEngine::GetDSVDescriptorData() const
+{
+	return { Window->DSVHeap.Get(), DSVDescriptorSize, Window->GetDSVDescNum() };
+}
+
+SDescriptorResourceData OEngine::GetSRVDescriptorData() const
+{
+	return { SRVDescriptorHeap.Get(), CBVSRVUAVDescriptorSize, SRVDescNum };
 }
 
 void OEngine::UpdateMainPass(const STimer& Timer)

@@ -20,7 +20,7 @@ public:
 	float GetDepth() const { return NumRows * SpatialStep; }
 	float GetSpatialStep() const { return SpatialStep; }
 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE GetDisplacementMap() const { return CurrSolSrv; }
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GetDisplacementMapHandle() const { return CurrSolSRVHandle.GPUHandle; }
 	auto GetDiplacementMapTexelSize() const
 	{
 		return DirectX::XMFLOAT2(1.0f / NumCols, 1.0f / NumRows);
@@ -73,13 +73,13 @@ private:
 	ID3D12Device* Device = nullptr;
 	ID3D12GraphicsCommandList* CMDList = nullptr;
 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE PrevSolSrv;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE CurrSolSrv;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE NextSolSrv;
+	SDescriptorPair PrevSolSRVHandle;
+	SDescriptorPair CurrSolSRVHandle;
+	SDescriptorPair NextSolSRVHandle;
 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE PrevSolUav;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE CurrSolUav;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE NextSolUav;
+	SDescriptorPair PrevSolUAVHandle;
+	SDescriptorPair CurrSolUAVHandle;
+	SDescriptorPair NextSolUAVHandle;
 
 	// Two for ping-ponging the textures.
 	ComPtr<ID3D12Resource> PrevSol = nullptr;

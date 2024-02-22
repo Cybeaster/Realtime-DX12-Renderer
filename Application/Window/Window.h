@@ -51,11 +51,9 @@ public:
 	 * Get the render target view for the current back buffer.
 	 */
 	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView() const;
-
-	/**
-	 * Get the back buffer resource for the current back buffer.
-	 */
 	Microsoft::WRL::ComPtr<ID3D12Resource> GetCurrentBackBuffer() const;
+	Microsoft::WRL::ComPtr<ID3D12Resource> GetCurrentDepthStencilBuffer() const;
+	D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStensilView() const;
 
 	/**
 	 * Should this window be rendered with vertical refresh synchronization.
@@ -90,7 +88,6 @@ public:
 
 	HWND GetHWND() const;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> GetDSVDescriptorHeap() const;
-	D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStensilView() const;
 
 	D3D12_VIEWPORT Viewport;
 	D3D12_RECT ScissorRect;
@@ -132,8 +129,13 @@ public:
 	float GetLastYMousePos() const;
 	shared_ptr<OCamera> GetCamera();
 
+	uint32_t GetDSVDescNum() const;
+	uint32_t GetRTVDescNum() const;
+
 protected:
-	bool HasCapturedLeftMouseButton();
+	void BuildResources();
+
+	bool HasCapturedLeftMouseButton() const;
 	// The Window procedure needs to call protected methods of this class.
 	friend LRESULT CALLBACK
 	WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -145,6 +147,9 @@ protected:
 	void ResizeDepthBuffer();
 
 private:
+	uint32_t RTVDescNum;
+	uint32_t DSVDescNum;
+
 	shared_ptr<OInputHandler> InputHandler;
 	shared_ptr<OCamera> Camera;
 

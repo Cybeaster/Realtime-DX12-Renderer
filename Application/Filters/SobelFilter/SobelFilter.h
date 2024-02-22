@@ -27,11 +27,8 @@ public:
 	}
 
 private:
-	CD3DX12_CPU_DESCRIPTOR_HANDLE CPUSRV;
-	CD3DX12_CPU_DESCRIPTOR_HANDLE CPUUAV;
-
-	CD3DX12_GPU_DESCRIPTOR_HANDLE GPUSRV;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE GPUUAV;
+	SDescriptorPair SRVHandle;
+	SDescriptorPair UAVHandle;
 
 	ComPtr<ID3D12Resource> Output = nullptr;
 	bool bEnabled = true;

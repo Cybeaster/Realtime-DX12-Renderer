@@ -5,14 +5,14 @@ class OCubeRenderTarget : public ORenderTargetBase
 {
 public:
 	OCubeRenderTarget(ID3D12Device* Device, int Width, int Height, DXGI_FORMAT Format);
-	OCubeRenderTarget(SRenderTargetParams Params);
+	OCubeRenderTarget(const SRenderTargetParams& Params);
 	OCubeRenderTarget(const OCubeRenderTarget& rhs) = delete;
 	OCubeRenderTarget& operator=(const OCubeRenderTarget& rhs) = delete;
 
 	~OCubeRenderTarget() = default;
 
-	D3D12_VIEWPORT GetViewport() const { return Viewport; }
-	D3D12_RECT GetScissorRect() const { return ScissorRect; }
+	D3D12_VIEWPORT& GetViewport() { return Viewport; }
+	D3D12_RECT& GetScissorRect() { return ScissorRect; }
 
 	void BuildDescriptors(IDescriptor* Descriptor) override;
 
@@ -20,13 +20,15 @@ public:
 	uint32_t GetNumDSVRequired() override;
 
 	void Init() override;
+	vector<SDescriptorPair>& GetRTVHandle() { return RTVHandle; }
+	SDescriptorPair& GetDSVHandle() { return DSVHandle; }
+	SDescriptorPair& GetSRVHandle() { return SRVHandle; }
 
 private:
 	void BuildViewport();
 	void BuildResource() override;
 	void BuildDescriptors() override;
 
-	ID3D12Device* Device = nullptr;
 	D3D12_VIEWPORT Viewport;
 	D3D12_RECT ScissorRect;
 

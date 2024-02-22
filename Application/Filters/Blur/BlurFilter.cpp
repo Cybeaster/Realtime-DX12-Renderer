@@ -23,10 +23,10 @@ void OBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
 		return;
 	}
 
-	descriptor->OffsetSRV(Blur0CpuSrv, Blur0GpuSrv);
-	descriptor->OffsetSRV(Blur0CpuUav, Blur0GpuUav);
-	descriptor->OffsetSRV(Blur1CpuSrv, Blur1GpuSrv);
-	descriptor->OffsetSRV(Blur1CpuUav, Blur1GpuUav);
+	descriptor->SRVHandle.Offset(SRV0Handle);
+	descriptor->SRVHandle.Offset(UAV0Handle);
+	descriptor->SRVHandle.Offset(SRV1Handle);
+	descriptor->SRVHandle.Offset(UAV1Handle);
 
 	BuildDescriptors();
 }
@@ -45,11 +45,11 @@ void OBlurFilter::BuildDescriptors() const
 	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 	uavDesc.Texture2D.MipSlice = 0;
 
-	Device->CreateShaderResourceView(BlurMap0.Get(), &srvDesc, Blur0CpuSrv);
-	Device->CreateUnorderedAccessView(BlurMap0.Get(), nullptr, &uavDesc, Blur0CpuUav);
+	Device->CreateShaderResourceView(BlurMap0.Get(), &srvDesc, SRV0Handle.CPUHandle);
+	Device->CreateUnorderedAccessView(BlurMap0.Get(), nullptr, &uavDesc, UAV0Handle.CPUHandle);
 
-	Device->CreateShaderResourceView(BlurMap1.Get(), &srvDesc, Blur1CpuSrv);
-	Device->CreateUnorderedAccessView(BlurMap1.Get(), nullptr, &uavDesc, Blur1CpuUav);
+	Device->CreateShaderResourceView(BlurMap1.Get(), &srvDesc, SRV1Handle.CPUHandle);
+	Device->CreateUnorderedAccessView(BlurMap1.Get(), nullptr, &uavDesc, UAV1Handle.CPUHandle);
 }
 
 void OBlurFilter::BuildResource()
@@ -112,8 +112,8 @@ void OBlurFilter::Execute(
 	{
 		//Horizontal blur
 		CMDList->SetPipelineState(HorizontalBlurPSO);
-		CMDList->SetComputeRootDescriptorTable(1, Blur0GpuSrv);
-		CMDList->SetComputeRootDescriptorTable(2, Blur1GpuUav);
+		CMDList->SetComputeRootDescriptorTable(1, SRV0Handle.GPUHandle);
+		CMDList->SetComputeRootDescriptorTable(2, UAV1Handle.GPUHandle);
 
 		// How many groups do we need to dispatch to cover a row of pixels, where each
 		// group covers 256 pixels (the 256 is defined in the ComputeShader).
@@ -126,8 +126,8 @@ void OBlurFilter::Execute(
 
 		// vertical BLur
 		CMDList->SetPipelineState(VerticalBlurPSO);
-		CMDList->SetComputeRootDescriptorTable(1, Blur1GpuSrv);
-		CMDList->SetComputeRootDescriptorTable(2, Blur0GpuUav);
+		CMDList->SetComputeRootDescriptorTable(1, SRV1Handle.GPUHandle);
+		CMDList->SetComputeRootDescriptorTable(2, UAV0Handle.GPUHandle);
 
 		// How many groups do we need to dispatch to cover a row of pixels, where each
 		// group covers 256 pixels (the 256 is defined in the ComputeShader).
