@@ -7,6 +7,21 @@
 #include "../../../Utils/Statics.h"
 #include "Engine/Engine.h"
 
+ID3D12Resource* ORenderTargetBase::GetResource() const
+{
+	return RenderTarget.Get();
+}
+
+uint32_t ORenderTargetBase::GetNumSRVRequired() const
+{
+	return 1;
+}
+
+uint32_t ORenderTargetBase::GetNumRTVRequired()
+{
+	return 1;
+}
+
 void ORenderTargetBase::Init()
 {
 }

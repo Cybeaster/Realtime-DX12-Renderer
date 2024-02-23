@@ -2,17 +2,56 @@
 #include "CubeRenderTarget.h"
 
 #include "../../../../Utils/Statics.h"
+#include "Engine/Engine.h"
 
-OCubeRenderTarget::OCubeRenderTarget(ID3D12Device* Device, int Width, int Height, DXGI_FORMAT Format)
-    : ORenderTargetBase(Device, Width, Height, Format)
+OCubeRenderTarget::OCubeRenderTarget(ID3D12Device* Device, int Width, int Height, DXGI_FORMAT Format, const DirectX::XMUINT2 Res)
+    : ORenderTargetBase(Device, Width, Height, Format), Resolution(Res)
 {
 	BuildViewport();
 }
 
-OCubeRenderTarget::OCubeRenderTarget(const SRenderTargetParams& Params)
-    : ORenderTargetBase(Params)
+OCubeRenderTarget::OCubeRenderTarget(const SRenderTargetParams& Params, const DirectX::XMUINT2 Res)
+    : ORenderTargetBase(Params), Resolution(Res)
 {
 	BuildViewport();
+}
+
+uint32_t OCubeRenderTarget::GetNumPassesRequired()
+{
+	return 6;
+}
+
+void OCubeRenderTarget::BuildDepthStencilBuffer()
+{
+	// Create the depth/stencil buffer and view.
+	D3D12_RESOURCE_DESC depthStencilDesc;
+	depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	depthStencilDesc.Alignment = 0;
+	depthStencilDesc.Width = Resolution.x;
+	depthStencilDesc.Height = Resolution.y;
+	depthStencilDesc.DepthOrArraySize = 1;
+	depthStencilDesc.MipLevels = 1;
+	depthStencilDesc.Format = SRenderConstants::DepthBufferFormat;
+	depthStencilDesc.SampleDesc.Count = 1;
+	depthStencilDesc.SampleDesc.Quality = 0;
+	depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+	D3D12_CLEAR_VALUE optClear;
+	optClear.Format = SRenderConstants::DepthBufferFormat;
+	optClear.DepthStencil.Depth = 1.0f;
+	optClear.DepthStencil.Stencil = 0;
+	auto heapProp = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	THROW_IF_FAILED(Device->CreateCommittedResource(
+	    &heapProp,
+	    D3D12_HEAP_FLAG_NONE,
+	    &depthStencilDesc,
+	    D3D12_RESOURCE_STATE_COMMON,
+	    &optClear,
+	    IID_PPV_ARGS(CubeDepthStencilBuffer.GetAddressOf())));
+
+	Device->CreateDepthStencilView(CubeDepthStencilBuffer.Get(), nullptr, DSVHandle.CPUHandle);
+	Utils::ResourceBarrier(OEngine::Get()->GetCommandQueue()->GetCommandList().Get(), CubeDepthStencilBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 }
 
 void OCubeRenderTarget::BuildViewport()
@@ -38,6 +77,7 @@ void OCubeRenderTarget::BuildDescriptors(IDescriptor* Descriptor)
 	descriptor->RTVHandle.Offset(RTVHandle, GetNumRTVRequired());
 	descriptor->DSVHandle.Offset(DSVHandle);
 	BuildDescriptors();
+	BuildDepthStencilBuffer();
 }
 
 uint32_t OCubeRenderTarget::GetNumRTVRequired()

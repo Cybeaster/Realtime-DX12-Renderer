@@ -9,6 +9,7 @@
 #include "../Types/Types.h"
 #include "../Window/Window.h"
 #include "DirectX/FrameResource.h"
+#include "ExitHelper.h"
 #include "Filters/BilateralBlur/BilateralBlurFilter.h"
 #include "Filters/Blur/BlurFilter.h"
 #include "Filters/SobelFilter/SobelFilter.h"
@@ -68,7 +69,6 @@ public:
 
 	int InitTests(shared_ptr<class OTest> Test);
 	void PostTestInit();
-
 	void DestroyWindow();
 	void OnWindowDestroyed();
 	bool IsTearingSupported() const;
@@ -189,7 +189,6 @@ public:
 	OBlurFilter* GetBlurFilter();
 	OBilateralBlurFilter* GetBilateralBlurFilter();
 	OSobelFilter* GetSobelFilter();
-
 	void BuildFilters();
 
 	template<typename T, typename... Args>
@@ -207,7 +206,7 @@ public:
 	template<typename T>
 	T* GetObjectByUUID(TUUID UUID, bool Checked = false);
 
-	SRenderObjectDescriptor GetObjectDescriptor() const;
+	void SetObjectDescriptor();
 	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVDescHandleForTexture(STexture* Texture) const;
 	void SetLightSources(const vector<SLight>& Lights);
 	void SetAmbientLight(const DirectX::XMFLOAT3& Color);
@@ -215,6 +214,7 @@ public:
 	SDescriptorResourceData GetRTVDescriptorData() const;
 	SDescriptorResourceData GetDSVDescriptorData() const;
 	SDescriptorResourceData GetSRVDescriptorData() const;
+	uint32_t GetPassCountRequired() const;
 
 	void RebuildGeometry(string Name);
 	void TryUpdateGeometry();
@@ -246,9 +246,11 @@ public:
 	ODynamicCubeMapRenderTarget* GetCubeRenderTarget() const;
 	ODynamicCubeMapRenderTarget* BuildCubeRenderTarget(DirectX::XMFLOAT3 Center);
 	void DrawRenderItems(string PSOType, string RenderLayer);
+	void UpdateMaterialCB() const;
+	void UpdateObjectCB() const;
 
 protected:
-	void DrawRenderItemsImpl(ComPtr<ID3D12GraphicsCommandList> CommandList, const vector<SRenderItem*>& RenderItems);
+	void DrawRenderItemsImpl(const ComPtr<ID3D12GraphicsCommandList>& CommandList, const vector<SRenderItem*>& RenderItems);
 	template<typename T, typename... Args>
 	TUUID BuildRenderObjectImpl(Args&&... Params);
 
@@ -316,7 +318,7 @@ private:
 	TUUID BilateralFilterUUID;
 
 	ComPtr<ID3D12DescriptorHeap> SRVDescriptorHeap;
-	SRenderObjectDescriptor SRVDescriptor;
+	SRenderObjectDescriptor ObjectDescriptors;
 	uint32_t SRVDescNum = 0;
 
 	bool HasInitializedTests = false;

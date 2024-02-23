@@ -5,10 +5,11 @@
 class ODynamicCubeMapRenderTarget final : public OCubeRenderTarget
 {
 public:
-	ODynamicCubeMapRenderTarget(const SRenderTargetParams& Params, DirectX::XMFLOAT3 Center)
-	    : OCubeRenderTarget(Params), Position(Center) {}
+	ODynamicCubeMapRenderTarget(const SRenderTargetParams& Params, DirectX::XMFLOAT3 Center, const DirectX::XMUINT2& Res)
+	    : OCubeRenderTarget(Params, Res), Position(Center) {}
 
-	virtual void Init() override;
+	void Init() override;
+	void UpdatePass(const SPassConstantsData& Data) override;
 
 private:
 	DirectX::XMFLOAT3 Position;

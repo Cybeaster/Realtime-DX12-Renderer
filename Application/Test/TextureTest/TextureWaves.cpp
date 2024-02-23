@@ -366,28 +366,6 @@ void OTextureWaves::BuildPSOGeosphere()
 
 void OTextureWaves::UpdateMaterialCB()
 {
-	const auto currentMaterialCB = Engine->CurrentFrameResources->MaterialBuffer.get();
-	for (auto& materials = GetMaterials(); const auto& val : materials | std::views::values)
-	{
-		if (const auto material = val.get())
-		{
-			if (material->NumFramesDirty > 0)
-			{
-				const auto matTransform = XMLoadFloat4x4(&material->MatTransform);
-
-				SMaterialData matConstants;
-				matConstants.MaterialSurface.DiffuseAlbedo = material->MaterialSurface.DiffuseAlbedo;
-				matConstants.MaterialSurface.FresnelR0 = material->MaterialSurface.FresnelR0;
-				matConstants.MaterialSurface.Roughness = material->MaterialSurface.Roughness;
-				matConstants.DiffuseMapIndex = material->DiffuseTexture->HeapIdx;
-
-				XMStoreFloat4x4(&matConstants.MatTransform, XMMatrixTranspose(matTransform));
-
-				currentMaterialCB->CopyData(material->MaterialCBIndex, matConstants);
-				material->NumFramesDirty--;
-			}
-		}
-	}
 }
 
 void OTextureWaves::BuildShadersAndInputLayout()

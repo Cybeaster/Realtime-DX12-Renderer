@@ -5,7 +5,7 @@
 #include <Types.h>
 #include <d3d12.h>
 #include <wrl/client.h>
-
+#pragma optimize("", off)
 struct STexture
 {
 	virtual ~STexture() = default;
@@ -27,9 +27,9 @@ struct STexture
 	}
 };
 
-struct SCubeMapTexture final : STexture
+struct SCubeMapTexture final : public STexture
 {
-	virtual D3D12_SHADER_RESOURCE_VIEW_DESC GetSRVDesc() const override
+	D3D12_SHADER_RESOURCE_VIEW_DESC GetSRVDesc() const override
 	{
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
 		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;

@@ -1,17 +1,20 @@
 #pragma once
+#include "../../../Utils/Statics.h"
 #include "../Types/DirectX/DXHelper.h"
+#include "Engine/UploadBuffer/UploadBuffer.h"
 #include "Logger.h"
+#include "ObjectConstants.h"
 
 struct IDescriptor
 {
 	virtual ~IDescriptor() = default;
 };
-using TDescPairRef = pair<CD3DX12_CPU_DESCRIPTOR_HANDLE&, CD3DX12_GPU_DESCRIPTOR_HANDLE&>;
 
 struct SDescriptorPair
 {
 	CD3DX12_CPU_DESCRIPTOR_HANDLE CPUHandle = {};
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GPUHandle = {};
+	uint32_t Index = -1;
 };
 
 struct SDescriptorResourceData
@@ -23,11 +26,12 @@ struct SDescriptorResourceData
 
 struct TDescriptorHandle
 {
-	void Offset(CD3DX12_CPU_DESCRIPTOR_HANDLE& OutCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& OutGPUHandle)
+	void Offset(CD3DX12_CPU_DESCRIPTOR_HANDLE& OutCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& OutGPUHandle, uint32_t& OutIndex)
 	{
-		CurrentOffset++;
 		OutCPUHandle = CPUHandle;
 		OutGPUHandle = GPUHandle;
+		OutIndex = CurrentOffset;
+		CurrentOffset++;
 		CPUHandle.Offset(1, DescSize);
 
 		if (GPUHandle.ptr != 0)
@@ -39,45 +43,46 @@ struct TDescriptorHandle
 
 	void Offset(SDescriptorPair& OutHandle)
 	{
-		Offset(OutHandle.CPUHandle, OutHandle.GPUHandle);
+		Offset(OutHandle.CPUHandle, OutHandle.GPUHandle, OutHandle.Index);
 	}
 
 	void Offset(vector<SDescriptorPair>& OutHandle, uint32_t NumDesc)
 	{
 		for (uint32_t i = 0; i < NumDesc; i++)
 		{
-			auto [cpu, gpu] = Offset();
+			auto pair = Offset();
 			if (i >= OutHandle.size())
 			{
-				OutHandle.push_back({ cpu, gpu });
+				OutHandle.push_back(pair);
 			}
 			else
 			{
-				OutHandle[i] = { cpu, gpu };
+				OutHandle[i] = pair;
 			}
 		}
 	}
 
-	void Offset(const vector<TDescPairRef>& OutHandle)
+	void Offset(vector<SDescriptorPair>& OutHandle)
 	{
 		for (auto& handle : OutHandle)
 		{
-			Offset(handle.first, handle.second);
+			Offset(handle.CPUHandle, handle.GPUHandle, handle.Index);
 		}
 	}
 
-	SDescriptorPair Offset(uint32_t Value = 1)
+	SDescriptorPair Offset(const uint32_t Value = 1)
 	{
-		CurrentOffset += Value;
 		const auto oldCPU = CPUHandle;
 		const auto oldGPU = GPUHandle;
+		const auto oldOffset = CurrentOffset;
+		CurrentOffset += Value;
 		CPUHandle.Offset(Value, DescSize);
 		if (GPUHandle.ptr != 0)
 		{
 			GPUHandle.Offset(Value, DescSize);
 		}
 		Check();
-		return { oldCPU, oldGPU };
+		return { oldCPU, oldGPU, oldOffset };
 	}
 	void Check() const
 	{
@@ -126,6 +131,13 @@ struct SRenderObjectDescriptor : IDescriptor
 	TDescriptorHandle DSVHandle;
 };
 
+struct SPassConstantsData
+{
+	int32_t StartIndex = -1;
+	int32_t EndIndex = INT32_MAX;
+	OUploadBuffer<SPassConstants>* Buffer = nullptr;
+};
+
 class IRenderObject
 {
 public:
@@ -135,4 +147,6 @@ public:
 	virtual uint32_t GetNumSRVRequired() const = 0;
 	virtual uint32_t GetNumRTVRequired() { return 0; }
 	virtual uint32_t GetNumDSVRequired() { return 0; }
+	virtual uint32_t GetNumPassesRequired() { return 0; }
+	virtual void UpdatePass(const SPassConstantsData& Data) {}
 };

@@ -112,3 +112,37 @@ inline DirectX::XMFLOAT4X4 Translate(const DirectX::XMFLOAT4X4& Other, DirectX::
 	XMStoreFloat4x4(&other, DirectX::XMMatrixTranslation(TranslationFactor.x, TranslationFactor.y, TranslationFactor.z));
 	return other;
 }
+
+inline DirectX::XMMATRIX Inverse(const DirectX::XMMATRIX& Mat)
+{
+	auto det = XMMatrixDeterminant(Mat);
+	return XMMatrixInverse(&det, Mat);
+}
+
+inline void Inverse(DirectX::XMMATRIX& OutMat)
+{
+	auto det = XMMatrixDeterminant(OutMat);
+	OutMat = XMMatrixInverse(&det, OutMat);
+}
+
+inline void Transpose(DirectX::XMMATRIX& OutMat)
+{
+	OutMat = XMMatrixTranspose(OutMat);
+}
+
+inline DirectX::XMMATRIX Transpose(const DirectX::XMMATRIX& Mat)
+{
+	return XMMatrixTranspose(Mat);
+}
+
+inline void Put(DirectX::XMFLOAT4X4& OutOther, const DirectX::XMMATRIX& Mat)
+{
+	XMStoreFloat4x4(&OutOther, Mat);
+}
+
+inline DirectX::XMFLOAT4X4 MatCast(const DirectX::XMMATRIX& Mat)
+{
+	DirectX::XMFLOAT4X4 other;
+	XMStoreFloat4x4(&other, Mat);
+	return other;
+}

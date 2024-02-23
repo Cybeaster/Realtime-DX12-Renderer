@@ -227,6 +227,21 @@ std::tuple<XMVECTOR /*ray_origin*/, XMVECTOR /*ray dir*/, XMMATRIX /*invView*/> 
 	XMMATRIX invView = XMMatrixInverse(&det, view);
 	return { rayOrigin, rayDir, invView };
 }
+void OCamera::FillPassConstant(SPassConstants& OutOther) const
+{
+	const XMMATRIX viewProj = XMMatrixMultiply(GetView(), GetProj());
+	const XMMATRIX invView = Inverse(GetView());
+	const XMMATRIX invProj = Inverse(GetProj());
+	const XMMATRIX invViewProj = Inverse(viewProj);
+
+	Put(OutOther.View, Transpose(GetView()));
+	Put(OutOther.InvView, Transpose(invView));
+	Put(OutOther.Proj, Transpose(GetProj()));
+	Put(OutOther.InvProj, Transpose(invProj));
+	Put(OutOther.ViewProj, Transpose(viewProj));
+	Put(OutOther.InvViewProj, Transpose(invViewProj));
+	OutOther.EyePosW = GetPosition3f();
+}
 
 DirectX::XMVECTOR OCamera::GetUp() const
 {

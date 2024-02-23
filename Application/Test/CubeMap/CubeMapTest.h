@@ -10,6 +10,7 @@ public:
 	bool Initialize() override;
 	void OnUpdate(const UpdateEventArgs& Event) override;
 	void OnRender(const UpdateEventArgs& Event) override;
+
 	void BuildRenderItems();
 	void DrawSceneToCubeMap();
 };

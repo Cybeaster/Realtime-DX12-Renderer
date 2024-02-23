@@ -1,6 +1,7 @@
 #pragma once
 #include "DXHelper.h"
 #include "Engine/RenderObject/RenderObject.h"
+#include "Engine/UploadBuffer/UploadBuffer.h"
 
 struct SRenderTargetParams
 {
@@ -28,17 +29,9 @@ public:
 	virtual void BuildDescriptors() = 0;
 	virtual void BuildResource() = 0;
 
-	ID3D12Resource* GetResource() const { return RenderTarget.Get(); }
-
-	uint32_t GetNumSRVRequired() const override
-	{
-		return 1;
-	}
-
-	uint32_t GetNumRTVRequired() override
-	{
-		return 1;
-	}
+	ID3D12Resource* GetResource() const;
+	uint32_t GetNumSRVRequired() const override;
+	uint32_t GetNumRTVRequired() override;
 	virtual void Init();
 
 protected:

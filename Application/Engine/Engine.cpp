@@ -26,6 +26,13 @@
 using namespace Microsoft::WRL;
 using namespace DirectX;
 
+#define CMD_LIST_EXEC_SCOPE()                             \
+	auto __cmd_queue = OEngine::Get()->GetCommandQueue(); \
+	__cmd_queue->TryResetCommandList();                   \
+	SExitHelper __cmd_exit_helper([__cmd_queue]() {       \
+		__cmd_queue->ExecuteCommandListAndWait();         \
+	});
+
 void OEngine::RemoveWindow(HWND Hwnd)
 {
 	const auto windowIter = WindowsMap.find(Hwnd);
@@ -132,7 +139,7 @@ ODynamicCubeMapRenderTarget* OEngine::BuildCubeRenderTarget(XMFLOAT3 Center)
 	cubeParams.Height = resulution.y;
 	cubeParams.Format = SRenderConstants::BackBufferFormat;
 	cubeParams.Device = Device.Get();
-	CubeRenderTarget = BuildRenderObject<ODynamicCubeMapRenderTarget>(cubeParams, Center);
+	CubeRenderTarget = BuildRenderObject<ODynamicCubeMapRenderTarget>(cubeParams, Center, resulution);
 	return CubeRenderTarget;
 }
 
@@ -144,7 +151,33 @@ void OEngine::DrawRenderItems(string PSOType, string RenderLayer)
 	DrawRenderItemsImpl(commandList, renderItems);
 }
 
-void OEngine::DrawRenderItemsImpl(ComPtr<ID3D12GraphicsCommandList> CommandList, const vector<SRenderItem*>& RenderItems)
+void OEngine::UpdateMaterialCB() const
+{
+	const auto currentMaterialCB = CurrentFrameResources->MaterialBuffer.get();
+	for (auto& materials = GetMaterials(); const auto& val : materials | std::views::values)
+	{
+		if (const auto material = val.get())
+		{
+			if (material->NumFramesDirty > 0)
+			{
+				const auto matTransform = XMLoadFloat4x4(&material->MatTransform);
+
+				SMaterialData matConstants;
+				matConstants.MaterialSurface.DiffuseAlbedo = material->MaterialSurface.DiffuseAlbedo;
+				matConstants.MaterialSurface.FresnelR0 = material->MaterialSurface.FresnelR0;
+				matConstants.MaterialSurface.Roughness = material->MaterialSurface.Roughness;
+				matConstants.DiffuseMapIndex = material->DiffuseTexture->HeapIdx;
+
+				Put(matConstants.MatTransform, Transpose(matTransform));
+
+				currentMaterialCB->CopyData(material->MaterialCBIndex, matConstants);
+				material->NumFramesDirty--;
+			}
+		}
+	}
+}
+
+void OEngine::DrawRenderItemsImpl(const ComPtr<ID3D12GraphicsCommandList>& CommandList, const vector<SRenderItem*>& RenderItems)
 {
 	for (size_t i = 0; i < RenderItems.size(); i++)
 	{
@@ -195,7 +228,7 @@ void OEngine::DrawFullScreenQuad()
 
 void OEngine::InitUIManager()
 {
-	UIManager->InitContext(Device.Get(), Window->GetHWND(), SRenderConstants::NumFrameResources, GetSRVHeap().Get(), SRVDescriptor, this);
+	UIManager->InitContext(Device.Get(), Window->GetHWND(), SRenderConstants::NumFrameResources, GetSRVHeap().Get(), ObjectDescriptors, this);
 }
 
 void OEngine::SetFogColor(DirectX::XMFLOAT4 Color)
@@ -244,8 +277,9 @@ int OEngine::InitTests(shared_ptr<OTest> Test)
 
 void OEngine::PostTestInit()
 {
+	CMD_LIST_EXEC_SCOPE()
 	Window->Init();
-	BuildFrameResource(1);
+	BuildFrameResource(GetPassCountRequired());
 	BuildDescriptorHeap();
 	InitUIManager();
 
@@ -326,6 +360,27 @@ void OEngine::OnPreRender()
 		commandList->SetGraphicsRootConstantBufferView(2, CurrentFrameResources->PassCB->GetResource()->GetGPUVirtualAddress());
 		commandList->SetGraphicsRootDescriptorTable(3, GetSRVHeap()->GetGPUDescriptorHandleForHeapStart());
 	}
+
+	/*
+	* 	CD3DX12_DESCRIPTOR_RANGE texTable;
+	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 7, 0, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE displacementTable;
+	displacementTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 7, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE cubeMapTable;
+	cubeMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 8, 0);
+
+	constexpr auto size = 6;
+	CD3DX12_ROOT_PARAMETER slotRootParameter[size];
+
+	slotRootParameter[0].InitAsShaderResourceView(0, 1);
+	slotRootParameter[1].InitAsShaderResourceView(1, 1);
+	slotRootParameter[2].InitAsConstantBufferView(0);
+	slotRootParameter[3].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[4].InitAsDescriptorTable(1, &displacementTable, D3D12_SHADER_VISIBILITY_VERTEX);
+	slotRootParameter[5].InitAsDescriptorTable(1, &cubeMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	 */
 }
 
 void OEngine::Draw(UpdateEventArgs& Args)
@@ -374,6 +429,32 @@ void OEngine::UpdateFrameResource()
 	}
 }
 
+void OEngine::UpdateObjectCB() const
+{
+	auto res = CurrentFrameResources->PassCB.get();
+	int32_t idx = 1; //TODO calc frame resource automatically.
+	for (auto& val : RenderObjects | std::views::values)
+	{
+		if (val->GetNumPassesRequired() == 0)
+		{
+			continue;
+		}
+
+		if (idx > PassCount)
+		{
+			LOG(Engine, Error, "Pass count exceeded!")
+			break;
+		}
+
+		SPassConstantsData data;
+		data.StartIndex = idx;
+		data.EndIndex = idx + SCast<int32_t>(val->GetNumPassesRequired());
+		data.Buffer = res;
+		val->UpdatePass(data);
+		idx += data.EndIndex;
+	}
+}
+
 void OEngine::OnUpdate(UpdateEventArgs& Args)
 {
 	UpdateFrameResource();
@@ -383,6 +464,8 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 	if (CurrentFrameResources)
 	{
 		UpdateMainPass(Args.Timer);
+		UpdateMaterialCB();
+		UpdateObjectCB();
 	}
 
 	if (UIManager)
@@ -393,7 +476,7 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 
 void OEngine::PostProcess(HWND Handler)
 {
-	const auto commandList = GetCommandQueue()->GetCommandList();
+	/*const auto commandList = GetCommandQueue()->GetCommandList();
 	const auto backBuffer = GetWindowByHWND(Handler)->GetCurrentBackBuffer().Get();
 
 	Utils::ResourceBarrier(commandList.Get(),
@@ -446,7 +529,7 @@ void OEngine::PostProcess(HWND Handler)
 	Utils::ResourceBarrier(commandList.Get(),
 	                       backBuffer,
 	                       D3D12_RESOURCE_STATE_COPY_DEST,
-	                       D3D12_RESOURCE_STATE_RENDER_TARGET);
+	                       D3D12_RESOURCE_STATE_RENDER_TARGET);*/
 }
 
 void OEngine::DrawCompositeShader(CD3DX12_GPU_DESCRIPTOR_HANDLE Input)
@@ -866,22 +949,21 @@ void OEngine::BuildDescriptorHeap()
 	SRVDescriptorHeap = CreateDescriptorHeap(SRVDescNum,
 	                                         D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
 	                                         D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-	SRVDescriptor = GetObjectDescriptor();
-
+	SetObjectDescriptor();
 	// Textures, SRV offset only
 	uint32_t texturesOffset = 0;
 	for (const auto& texture : TextureManager->GetTextures() | std::views::values)
 	{
 		auto resourceSRV = texture->GetSRVDesc();
-		auto [cpu, gpu] = SRVDescriptor.SRVHandle.Offset();
-		Device->CreateShaderResourceView(texture->Resource.Get(), &resourceSRV, cpu);
+		auto pair = ObjectDescriptors.SRVHandle.Offset();
+		Device->CreateShaderResourceView(texture->Resource.Get(), &resourceSRV, pair.CPUHandle);
 		texture->HeapIdx = texturesOffset;
 		texturesOffset++;
 	}
 
 	for (const auto& rObject : RenderObjects | std::views::values)
 	{
-		rObject->BuildDescriptors(&SRVDescriptor);
+		rObject->BuildDescriptors(&ObjectDescriptors);
 	}
 }
 
@@ -1106,14 +1188,11 @@ OSobelFilter* OEngine::GetSobelFilter()
 	return GetObjectByUUID<OSobelFilter>(SobelFilterUUID);
 }
 
-SRenderObjectDescriptor OEngine::GetObjectDescriptor() const
+void OEngine::SetObjectDescriptor()
 {
-	SRenderObjectDescriptor desc;
-
-	desc.Init(GetSRVDescriptorData(), GetRTVDescriptorData(), GetDSVDescriptorData());
-	desc.RTVHandle.Offset(SRenderConstants::RenderBuffersCount);
-	desc.DSVHandle.Offset(1); // TODO calc number of dsv automatically. 1 is for depth buffer
-	return desc;
+	ObjectDescriptors.Init(GetSRVDescriptorData(), GetRTVDescriptorData(), GetDSVDescriptorData());
+	ObjectDescriptors.RTVHandle.Offset(SRenderConstants::RenderBuffersCount);
+	ObjectDescriptors.DSVHandle.Offset(1); // TODO calc number of dsv automatically. 1 is for depth buffer
 }
 
 shared_ptr<OTest> OEngine::GetTestByHWND(HWND Handler)
@@ -1289,9 +1368,7 @@ void OEngine::BuildDefaultRootSignature()
 
 	slotRootParameter[0].InitAsShaderResourceView(0, 1);
 	slotRootParameter[1].InitAsShaderResourceView(1, 1);
-
 	slotRootParameter[2].InitAsConstantBufferView(0);
-
 	slotRootParameter[3].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[4].InitAsDescriptorTable(1, &displacementTable, D3D12_SHADER_VISIBILITY_VERTEX);
 	slotRootParameter[5].InitAsDescriptorTable(1, &cubeMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
@@ -1504,7 +1581,7 @@ OEngine::TRenderLayer& OEngine::GetRenderLayers()
 
 void OEngine::PerformFrustrumCulling()
 {
-	if (CurrentFrameResources == nullptr)
+	if (CurrentFrameResources == nullptr || !FrustrumCullingEnabled)
 	{
 		return;
 	}
@@ -1518,7 +1595,7 @@ void OEngine::PerformFrustrumCulling()
 	for (auto& e : AllRenderItems)
 	{
 		const auto& instData = e->Instances;
-		if (e->Instances.size() == 0)
+		if (e->Instances.size() == 0 || !e->bFrustrumCoolingEnabled)
 		{
 			continue;
 		}
@@ -1540,7 +1617,7 @@ void OEngine::PerformFrustrumCulling()
 			BoundingFrustum localSpaceFrustum;
 			camera->GetFrustrum().Transform(localSpaceFrustum, viewToLocal);
 
-			if (!FrustrumCullingEnabled || !e->bFrustrumCoolingEnabled || localSpaceFrustum.Contains(e->Bounds) != DirectX::DISJOINT)
+			if (localSpaceFrustum.Contains(e->Bounds) != DirectX::DISJOINT)
 			{
 				SInstanceData data;
 				XMStoreFloat4x4(&data.World, XMMatrixTranspose(world));
@@ -1634,6 +1711,13 @@ SDescriptorResourceData OEngine::GetDSVDescriptorData() const
 SDescriptorResourceData OEngine::GetSRVDescriptorData() const
 {
 	return { SRVDescriptorHeap.Get(), CBVSRVUAVDescriptorSize, SRVDescNum };
+}
+
+uint32_t OEngine::GetPassCountRequired() const
+{
+	return std::accumulate(RenderObjects.begin(), RenderObjects.end(), 1, [](int acc, const auto& renderObject) {
+		return acc + renderObject.second->GetNumPassesRequired();
+	});
 }
 
 void OEngine::UpdateMainPass(const STimer& Timer)

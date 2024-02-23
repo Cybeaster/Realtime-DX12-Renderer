@@ -21,14 +21,14 @@ void OUIManager::InitContext(ID3D12Device2* Device, HWND Hwnd, UINT NumFramesInL
 	KeyMap();
 
 	ImGui_ImplWin32_Init(Hwnd);
-	auto [cpu, gpu] = OutDescriptor.SRVHandle.Offset(GetNumSRVRequired());
+	auto [CPUHandle, GPUHandle, Index] = OutDescriptor.SRVHandle.Offset(GetNumSRVRequired());
 	ImGui_ImplDX12_Init(
 	    Device,
 	    NumFramesInLight,
 	    SRenderConstants::BackBufferFormat,
 	    SRVDescriptorHeap,
-	    cpu,
-	    gpu);
+	    CPUHandle,
+	    GPUHandle);
 
 	ImGui::StyleColorsDark();
 	InitWidgets(Engine);

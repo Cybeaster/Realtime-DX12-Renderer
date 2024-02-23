@@ -1,4 +1,5 @@
 #pragma once
+#include "ObjectConstants.h"
 #include "Types.h"
 
 #include <DirectXMath.h>
@@ -68,6 +69,7 @@ public:
 	DirectX::BoundingFrustum& GetFrustrum() { return Frustum; };
 
 	std::tuple<DirectX::XMVECTOR /*ray_origin*/, DirectX::XMVECTOR /*ray dir*/, DirectX::XMMATRIX /*invView*/> Pick(int32_t Sx, int32_t Sy) const;
+	void FillPassConstant(SPassConstants& OutOther) const;
 
 private:
 	DirectX::XMFLOAT3 Position = { 0.0f, 0.0f, 0.0f };

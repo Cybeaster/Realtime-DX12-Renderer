@@ -116,7 +116,7 @@ void OCommandQueue::TryResetCommandList()
 {
 	if (IsReset)
 	{
-		LOG(Engine, Error, "Command list is already reset!");
+		LOG(Engine, Warning, "Command list is already reset!");
 		return;
 	}
 	IsReset = true;

@@ -40,10 +40,10 @@ void OWindow::BuildResources()
 
 	RTVHeap = engine->CreateDescriptorHeap(RTVDescNum, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	DSVHeap = engine->CreateDescriptorHeap(DSVDescNum, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-
 	LOG(Render, Log, "RTV and DSV heaps created. {} RTVs and {} DSVs", RTVDescNum, DSVDescNum);
 
 	UpdateRenderTargetViews();
+	ResizeDepthBuffer();
 }
 
 const wstring& OWindow::GetName() const
@@ -348,7 +348,6 @@ void OWindow::OnResize(ResizeEventArgs& Event)
 			// Flush any GPU commands that might be referencing the back buffers
 			BackBuffers[i].Reset();
 		}
-		DepthBuffer.Reset();
 
 		THROW_IF_FAILED(SwapChain->ResizeBuffers(SRenderConstants::RenderBuffersCount, WindowInfo.ClientWidth, WindowInfo.ClientHeight, SRenderConstants::BackBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 		CurrentBackBufferIndex = 0;
