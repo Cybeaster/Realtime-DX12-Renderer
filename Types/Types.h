@@ -81,17 +81,3 @@ struct SLitEnum
 	}
 
 ENUM(ETextureType, Diffuse, Normal, Specular, Roughness, Metallic, AmbientOcclusion, Emissive, Opacity, Height, Displacement, Lightmap, Reflection, BaseColor, Unknown)
-DEFINE_LIT_ENUM(ETextureType, { { ETextureType::Diffuse, "Diffuse" },
-                                { ETextureType::Normal, "Normal" },
-                                { ETextureType::Specular, "Specular" },
-                                { ETextureType::Roughness, "Roughness" },
-                                { ETextureType::Metallic, "Metallic" },
-                                { ETextureType::AmbientOcclusion, "AmbientOcclusion" },
-                                { ETextureType::Emissive, "Emissive" },
-                                { ETextureType::Opacity, "Opacity" },
-                                { ETextureType::Height, "Height" },
-                                { ETextureType::Displacement, "Displacement" },
-                                { ETextureType::Lightmap, "Lightmap" },
-                                { ETextureType::Reflection, "Reflection" },
-                                { ETextureType::BaseColor, "BaseColor" },
-                                { ETextureType::Unknown, "Unknown" } })

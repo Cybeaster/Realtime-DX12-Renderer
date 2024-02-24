@@ -12,6 +12,6 @@ public:
 	}
 
 	void AddTexture(STexture* Texture);
-	void AddTextures(vector<STexture*> Textures);
+	void AddTextures(const vector<STexture*>& Textures);
 	vector<STexture*> LoadTextures();
 };

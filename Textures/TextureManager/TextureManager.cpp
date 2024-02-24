@@ -1,43 +1,52 @@
 #include "TextureManager.h"
 
 #include "../DDSTextureLoader/DDSTextureLoader.h"
+#include "Application.h"
 #include "CommandQueue/CommandQueue.h"
 #include "Exception.h"
 #include "Logger.h"
 #include "Settings.h"
 
 #include <filesystem>
+#include <ranges>
 #include <unordered_set>
 OTextureManager::OTextureManager(ID3D12Device* Device, OCommandQueue* Queue)
     : Device(Device), CommandQueue(Queue)
 {
-	CommandQueue->TryResetCommandList();
+	Parser = make_unique<OTexturesParser>(OApplication::Get()->GetConfigPath("TexturesConfigPath"));
 	LoadLocalTextures();
-	CommandQueue->ExecuteCommandListAndWait();
 }
 
 void OTextureManager::LoadLocalTextures()
 {
-	const std::filesystem::path path = SConfig::TexturesFolder;
-	if (!exists(path))
+	CommandQueue->TryResetCommandList();
+	RemoveAllTextures();
+	for (const auto& texture : Parser->LoadTextures())
 	{
-		LOG(Engine, Error, "Textures folder not found!");
-		return;
+		texture->HeapIdx = Textures.size();
+		TexturesHeapIndicesTable.insert(texture->HeapIdx);
+		AddTexture(make_unique<STexture>(*texture));
 	}
-
-	for (auto& entry : std::filesystem::directory_iterator(path))
-	{
-		if (is_regular_file(entry))
-		{
-			const auto filename = entry.path().filename().wstring();
-			const auto name = entry.path().stem().string();
-			if (entry.path().extension() == L".dds")
-			{
-				CreateTexture(name, entry.path().wstring());
-			}
-		}
-	}
+	CommandQueue->ExecuteCommandListAndWait();
 }
+
+void OTextureManager::RemoveAllTextures()
+{
+	TexturesHeapIndicesTable.clear();
+	Textures.clear();
+	TexturesPath.clear();
+}
+
+void OTextureManager::SaveLocalTextures()
+{
+	vector<STexture*> textures;
+	for (auto& texture : Textures | std::views::values)
+	{
+		textures.push_back(texture.get());
+	}
+	Parser->AddTextures(textures);
+}
+
 void OTextureManager::AddTexture(unique_ptr<STexture> Texture)
 {
 	TexturesPath[Texture->FileName] = Texture.get();
@@ -68,7 +77,6 @@ void OTextureManager::RemoveTexture(const wstring& Path)
 
 STexture* OTextureManager::CreateTexture(string Name, wstring FileName)
 {
-	static std::unordered_set<uint32_t> s;
 	if (Textures.contains(Name))
 	{
 		LOG(Engine, Error, "Texture with this name already exists!");
@@ -79,8 +87,10 @@ STexture* OTextureManager::CreateTexture(string Name, wstring FileName)
 	texture->Name = Name;
 	texture->FileName = FileName;
 	texture->HeapIdx = Textures.size();
-	CWIN_LOG(s.contains(texture->HeapIdx), Engine, Error, "Texture heap index already exists! {}", texture->HeapIdx);
-	s.insert(texture->HeapIdx);
+
+	CWIN_LOG(TexturesHeapIndicesTable.contains(texture->HeapIdx), Engine, Error, "Texture heap index already exists! {}", texture->HeapIdx);
+	TexturesHeapIndicesTable.insert(texture->HeapIdx);
+
 	THROW_IF_FAILED(DirectX::CreateDDSTextureFromFile12(Device,
 	                                                    CommandQueue->GetCommandList().Get(),
 	                                                    texture->FileName.c_str(),

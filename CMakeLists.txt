@@ -141,11 +141,13 @@ set(SRC_FILES
         Application/Test/CubeMap/CubeMapTest.h
         Config/TexturesReader/TexturesParser.cpp
         Config/TexturesReader/TexturesParser.h
+        Application/UI/Material/TextureManager/TextureManager.cpp
+        Application/UI/Material/TextureManager/TextureManager.h
+        Application/UI/Material/TexturePicker.h
+        Application/UI/Base/PickerTable/PickerTableWidget.cpp
+        Application/UI/Base/PickerTable/PickerTableWidget.h
 
 )
-
-file(GLOB IMGUI_SOURCES Externals/imgui/*.cpp Externals/imgui/*.h)
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 
 # Add sources to the project
@@ -153,8 +155,24 @@ add_executable(DXRenderer
         ${SRC_FILES}
         ${SHADER_FILES}
 )
-
+file(GLOB IMGUI_SOURCES Externals/imgui/*.cpp Externals/imgui/*.h)
 add_library(imgui ${IMGUI_SOURCES})
+
+
+#file(GLOB REFLECTOR_SCRIPTS "${CMAKE_CURRENT_SOURCE_DIR}/Reflector/*.py")
+
+
+#[[foreach (SCRIPT ${REFLECTOR_SCRIPTS})
+    get_filename_component(SCRIPT_NAME ${SCRIPT} NAME_WE)
+    add_custom_target(
+            Run_${SCRIPT_NAME} ALL
+            COMMAND ${Python3_EXECUTABLE} ${SCRIPT}
+            COMMENT "Running Python script: ${SCRIPT_NAME}"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    # Make DXRenderer dependent on this script execution to ensure it runs before DXRenderer is built
+    add_dependencies(DXRenderer Run_${SCRIPT_NAME})
+endforeach ()]]
 
 # Include them in your library or executable
 target_sources(imgui PRIVATE ${IMGUI_BACKENDS})
@@ -185,16 +203,6 @@ target_include_directories(DXRenderer PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Types/DirectX
 )
 
-file(GLOB REFLECTOR_SCRIPTS "${CMAKE_CURRENT_SOURCE_DIR}/Reflector/*.py")
-
-foreach (SCRIPT ${REFLECTOR_SCRIPTS})
-    get_filename_component(SCRIPT_NAME ${SCRIPT} NAME_WE)
-    add_custom_command(
-            TARGET DXRenderer PRE_BUILD
-            COMMAND ${Python3_EXECUTABLE} ${SCRIPT} ${ARGUMENTS}
-            COMMENT "Running Python script: ${SCRIPT_NAME}"
-    )
-endforeach ()
 
 # Link necessary libraries
 target_link_libraries(DXRenderer d3d12.lib dxgi.lib dxguid.lib d3dcompiler.lib Shlwapi.lib imgui ${Boost_LIBRARIES} Bcrypt.lib)

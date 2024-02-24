@@ -36,8 +36,12 @@ static const std::string& ToString({enum_name} value) {{
 """)
 
 
-def traverse_and_generate_mappings(src_dir, output_dir):
+def traverse_and_generate_mappings(src_dir, output_dir, exclude_dirs=None):
+    if exclude_dirs is None:
+        exclude_dirs = []
+
     for root, dirs, files in os.walk(src_dir):
+        dirs[:] = [d for d in dirs if os.path.join(root, d) not in exclude_dirs]
         for file in files:
             if file.endswith('.h') or file.endswith('.cpp'):
                 file_path = os.path.join(root, file)
@@ -48,5 +52,7 @@ def traverse_and_generate_mappings(src_dir, output_dir):
 
 if __name__ == "__main__":
     src_dir = "../"
-    output_dir = "../Meta/"
-    traverse_and_generate_mappings(src_dir, output_dir)
+    output_dir = "../Meta"
+    exclude_dirs = [os.path.join(src_dir, "External"), os.path.join(src_dir, "Meta"),
+                    os.path.join(src_dir, "Resources")]
+    traverse_and_generate_mappings(src_dir, output_dir, exclude_dirs)

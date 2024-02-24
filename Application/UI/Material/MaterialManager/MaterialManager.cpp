@@ -1,12 +1,10 @@
-//
-// Created by Cybea on 13/02/2024.
-//
 
 #include "MaterialManager.h"
 
 #include "../../../../Materials/MaterialManager/MaterialManager.h"
 #include "../../../../Utils/EngineHelper.h"
 #include "imgui_internal.h"
+
 void OMaterialManagerWidget::Draw()
 {
 	if (ImGui::CollapsingHeader("Material Manager"))
