@@ -60,7 +60,7 @@ void OCubeMapTest::OnRender(const UpdateEventArgs& Event)
 
 	auto window = OEngine::Get()->GetWindow();
 
-	auto backBuffer = window->GetCurrentBackBuffer();
+	auto backBuffer = GetEngine()->GetRenderTarget();
 	auto depthStencil = window->GetCurrentDepthStencilBuffer();
 
 	auto backbufferView = window->CurrentBackBufferView();

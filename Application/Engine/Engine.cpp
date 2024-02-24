@@ -210,7 +210,7 @@ void OEngine::DrawRenderItemsImpl(const ComPtr<ID3D12GraphicsCommandList>& Comma
 	}
 }
 
-OOffscreenTexture* OEngine::GetOffscreenRT() const
+OOffscreenTexture* OEngine::GetRenderTarget() const
 {
 	return OffscreenRT;
 }
@@ -477,7 +477,7 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 
 void OEngine::PostProcess(HWND Handler)
 {
-	/*const auto commandList = GetCommandQueue()->GetCommandList();
+	const auto commandList = GetCommandQueue()->GetCommandList();
 	const auto backBuffer = GetWindowByHWND(Handler)->GetCurrentBackBuffer().Get();
 
 	Utils::ResourceBarrier(commandList.Get(),
@@ -530,7 +530,7 @@ void OEngine::PostProcess(HWND Handler)
 	Utils::ResourceBarrier(commandList.Get(),
 	                       backBuffer,
 	                       D3D12_RESOURCE_STATE_COPY_DEST,
-	                       D3D12_RESOURCE_STATE_RENDER_TARGET);*/
+	                       D3D12_RESOURCE_STATE_RENDER_TARGET);
 }
 
 void OEngine::DrawCompositeShader(CD3DX12_GPU_DESCRIPTOR_HANDLE Input)

@@ -197,7 +197,7 @@ public:
 	TUUID AddRenderObject(IRenderObject* RenderObject);
 
 	void BuildOffscreenRT();
-	OOffscreenTexture* GetOffscreenRT() const;
+	OOffscreenTexture* GetRenderTarget() const;
 	void DrawFullScreenQuad();
 
 	template<typename T>
