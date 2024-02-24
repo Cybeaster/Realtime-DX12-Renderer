@@ -15,14 +15,16 @@ bool OCubeMapTest::Initialize()
 void OCubeMapTest::OnUpdate(const UpdateEventArgs& Event)
 {
 	OTest::OnUpdate(Event);
+	AnimateSkull(Event);
 }
 
 void OCubeMapTest::DrawSceneToCubeMap()
 {
 	auto cmdList = OEngine::Get()->GetCommandQueue()->GetCommandList();
+
 	auto cubeMap = OEngine::Get()->GetCubeRenderTarget();
 
-	//cmdList->SetGraphicsRootDescriptorTable(5, OEngine::Get()->GetSRVDescHandleForTexture(FindTextureByName("grasscube1024")));
+	cmdList->SetGraphicsRootDescriptorTable(5, OEngine::Get()->GetSRVDescHandleForTexture(FindTextureByName("grasscube1024")));
 
 	cmdList->RSSetViewports(1, &cubeMap->GetViewport());
 	cmdList->RSSetScissorRects(1, &cubeMap->GetScissorRect());
@@ -50,6 +52,7 @@ void OCubeMapTest::DrawSceneToCubeMap()
 void OCubeMapTest::OnRender(const UpdateEventArgs& Event)
 {
 	auto cmdList = OEngine::Get()->GetCommandQueue()->GetCommandList();
+
 	DrawSceneToCubeMap();
 
 	cmdList->RSSetViewports(1, &OEngine::Get()->GetWindow()->Viewport);
@@ -77,70 +80,85 @@ void OCubeMapTest::OnRender(const UpdateEventArgs& Event)
 	cmdList->SetGraphicsRootDescriptorTable(5, cubeMap->GetSRVHandle().GPUHandle);
 
 	OEngine::Get()->DrawRenderItems(SPSOType::Opaque, SRenderLayer::OpaqueDynamicReflections);
-	cmdList->SetGraphicsRootDescriptorTable(5, OEngine::Get()->GetSRVDescHandleForTexture(FindTextureByName("grasscube1024")));
 
+	cmdList->SetGraphicsRootDescriptorTable(5, OEngine::Get()->GetSRVDescHandleForTexture(FindTextureByName("grasscube1024")));
 	OEngine::Get()->DrawRenderItems(SPSOType::Opaque, SRenderLayer::Opaque);
 	OEngine::Get()->DrawRenderItems(SPSOType::Sky, SRenderLayer::Sky);
 }
 
+void OCubeMapTest::AnimateSkull(const UpdateEventArgs& Event)
+{
+	using namespace DirectX;
+	XMMATRIX skullScale = XMMatrixScaling(0.2f, 0.2f, 0.2f);
+	XMMATRIX skullOffset = XMMatrixTranslation(3.0f, 2.0f, 0.0f);
+	XMMATRIX skullLocalRotate = XMMatrixRotationY(2.0f * Event.Timer.GetTime());
+	XMMATRIX skullGlobalRotate = XMMatrixRotationY(0.5f * Event.Timer.GetTime());
+	XMStoreFloat4x4(&SkullRitem->World, skullScale * skullLocalRotate * skullOffset * skullGlobalRotate);
+}
+
 void OCubeMapTest::BuildRenderItems()
 {
-	auto sky = CreateSphereRenderItem(SRenderLayer::Sky,
-	                                  "Sky",
-	                                  0.5f,
-	                                  20,
-	                                  20,
-	                                  FindMaterial("GrassSky"));
+	auto& sky = CreateSphereRenderItem(SRenderLayer::Sky,
+	                                   "Sky",
+	                                   0.5f,
+	                                   20,
+	                                   20,
+	                                   FindMaterial("GrassSky"));
 	Scale(sky[0].World, { 5000.0f, 5000.0f, 5000.0f });
 
-	CreateRenderItem(SRenderLayer::Opaque,
-	                 "Skull",
-	                 "Resources/Models/skull.txt",
-	                 EParserType::Custom,
-	                 ETextureMapType::Spherical,
-	                 SRenderItemParams{ FindMaterial("White") });
+	auto& skull = CreateRenderItem(SRenderLayer::Opaque,
+	                               "Skull",
+	                               "Resources/Models/skull.txt",
+	                               EParserType::Custom,
+	                               ETextureMapType::Spherical,
+	                               SRenderItemParams{ FindMaterial("White") });
+	Scale(skull[0].World, { 0.5f, 0.5f, 0.5f });
+	SkullRitem = &skull[0];
 
-	auto box = CreateBoxRenderItem(SRenderLayer::Opaque,
-	                               "Box",
-	                               1.0f,
-	                               1.0f,
-	                               1.0f,
-	                               3,
-	                               FindMaterial("Tile"));
+	auto& box = CreateBoxRenderItem(SRenderLayer::Opaque,
+	                                "Box",
+	                                1.0f,
+	                                1.0f,
+	                                1.0f,
+	                                3,
+	                                FindMaterial("Tile"));
 	box[0].World = Scale(Translate(box[0].World, { 2.0f, 1.0f, 2.0f }), { 1.0f, 2.0f, 1.0f });
 
-	auto globe = CreateSphereRenderItem(SRenderLayer::OpaqueDynamicReflections,
-	                                    "Globe",
-	                                    0.5f,
-	                                    20,
-	                                    20,
-	                                    FindMaterial("Mirror"));
-	globe[0].World = Translate(Scale(globe[0].World, { 2.0f, 2.0f, 2.0f }), { 0, 2, 0 });
+	auto& globe = CreateSphereRenderItem(SRenderLayer::OpaqueDynamicReflections,
+	                                     "Globe",
+	                                     0.5f,
+	                                     20,
+	                                     20,
+	                                     FindMaterial("Mirror"));
 
-	auto grid = CreateGridRenderItem(SRenderLayer::Opaque,
-	                                 "Grid",
-	                                 20.0f,
-	                                 30.0f,
-	                                 60,
-	                                 40,
-	                                 FindMaterial("Tile"));
+	Scale(globe[0].World, { 3, 3, 3 });
+	Translate(globe[0].World, { 0, 3, 0 });
+
+	auto& grid
+	    = CreateGridRenderItem(SRenderLayer::Opaque,
+	                           "Grid",
+	                           20.0f,
+	                           30.0f,
+	                           60,
+	                           40,
+	                           FindMaterial("Tile"));
 	Scale(grid[0].TexTransform, { 8, 8, 1.0f });
 
-	auto cylinder = CreateCylinderRenderItem(SRenderLayer::Opaque,
-	                                         "Cylinder",
-	                                         0.5f,
-	                                         0.5f,
-	                                         3.0f,
-	                                         20,
-	                                         20,
-	                                         { FindMaterial("Bricks"), 10 });
+	auto& cylinder = CreateCylinderRenderItem(SRenderLayer::Opaque,
+	                                          "Cylinder",
+	                                          0.5f,
+	                                          0.5f,
+	                                          3.0f,
+	                                          20,
+	                                          20,
+	                                          { FindMaterial("Bricks"), 10 });
 
-	auto spheres = CreateSphereRenderItem(SRenderLayer::Opaque,
-	                                      "Spheres",
-	                                      0.5f,
-	                                      20,
-	                                      20,
-	                                      { FindMaterial("Mirror"), 10 });
+	auto& spheres = CreateSphereRenderItem(SRenderLayer::Opaque,
+	                                       "Spheres",
+	                                       0.5f,
+	                                       20,
+	                                       20,
+	                                       { FindMaterial("Mirror"), 10 });
 
 	using namespace DirectX;
 	XMMATRIX brickTexTransform = XMMatrixScaling(1.5f, 2.0f, 1.0f);
@@ -152,11 +170,11 @@ void OCubeMapTest::BuildRenderItems()
 		XMMATRIX leftSphereWorld = XMMatrixTranslation(-5.0f, 3.5f, -10.0f + it * 5.0f);
 		XMMATRIX rightSphereWorld = XMMatrixTranslation(+5.0f, 3.5f, -10.0f + it * 5.0f);
 
-		auto leftSphere = spheres[it];
-		auto rightSphere = spheres[it + 1];
+		auto& leftSphere = spheres[it];
+		auto& rightSphere = spheres[it + 1];
 
-		auto leftCylinder = cylinder[it];
-		auto rightCylinder = cylinder[it + 1];
+		auto& leftCylinder = cylinder[it];
+		auto& rightCylinder = cylinder[it + 1];
 
 		Put(leftSphere.World, leftSphereWorld);
 		Put(rightSphere.World, rightSphereWorld);

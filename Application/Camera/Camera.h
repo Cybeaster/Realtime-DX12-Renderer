@@ -62,7 +62,7 @@ public:
 	void UpdateViewMatrix();
 	void UpdateCameraSpeed(float Delta);
 
-	void SetCameraSpeed(float Speed) { CameraSpeed = Speed; }
+	void SetCameraSpeed(float Speed) { CameraSpeed = std::max(Speed, 5.f); }
 	void SetCameraSensivity(float Sensetivity) { CameraSensivity = Sensetivity; }
 	float GetCameraSpeed() const { return CameraSpeed; }
 	float GetCameraSensivity() const { return CameraSensivity; }

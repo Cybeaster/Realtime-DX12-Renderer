@@ -25,6 +25,12 @@ void OTextureManager::LoadLocalTextures()
 	{
 		texture->HeapIdx = Textures.size();
 		TexturesHeapIndicesTable.insert(texture->HeapIdx);
+		THROW_IF_FAILED(DirectX::CreateDDSTextureFromFile12(Device,
+		                                                    CommandQueue->GetCommandList().Get(),
+		                                                    texture->FileName.c_str(),
+		                                                    texture->Resource,
+		                                                    texture->UploadHeap));
+		LOG(Engine, Log, "Texture created from config: Name : {}, Path: {}", TO_STRING(texture->Name), texture->FileName);
 		AddTexture(make_unique<STexture>(*texture));
 	}
 	CommandQueue->ExecuteCommandListAndWait();

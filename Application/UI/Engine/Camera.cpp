@@ -16,7 +16,7 @@ void OCameraWidget::Draw()
 	{
 		if (ImGui::TreeNode("Camera Speed & Sensivity"))
 		{
-			if (ImGui::SliderFloat("Speed", &CameraSpeed, 50.f, GetCamera()->MaxCameraSpeed))
+			if (ImGui::SliderFloat("Speed", &CameraSpeed, 5.f, GetCamera()->MaxCameraSpeed))
 			{
 				bUpdateSpeed = true;
 			}

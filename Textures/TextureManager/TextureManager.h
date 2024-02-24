@@ -37,7 +37,7 @@ private:
 	unique_ptr<OTexturesParser> Parser;
 	ID3D12Device* Device;
 	OCommandQueue* CommandQueue;
-	static std::unordered_set<uint32_t> TexturesHeapIndicesTable;
+	inline static std::unordered_set<uint32_t> TexturesHeapIndicesTable = {};
 	TTexturesMap Textures;
 	TTexturesMapPath TexturesPath;
 };

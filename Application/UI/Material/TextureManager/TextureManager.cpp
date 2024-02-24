@@ -5,18 +5,59 @@
 #include "TextureManager.h"
 
 #include "../../../../Textures/TextureManager/TextureManager.h"
+
+#include <ranges>
+OTextureManagerWidget::OTextureManagerWidget(OTextureManager* Other)
+    : TextureManager(Other)
+{
+	HeadderName = "Textures Manager";
+	ListName = "Textures List";
+	PropertyName = "Texture Properties";
+}
+
 void OTextureManagerWidget::Draw()
 {
-	if (ImGui::CollapsingHeader("Textures"))
+	OPickerTableWidget::Draw();
+}
+
+void OTextureManagerWidget::DrawTable()
+{
+	for (auto& val : TextureManager->GetTextures() | std::views::values)
 	{
-		if (ImGui::Button("Save"))
+		if (ImGui::Selectable(val->Name.c_str()))
 		{
-			TextureManager->SaveLocalTextures();
+			CurrentTexture = val.get();
 		}
-		ImGui::SameLine();
-		if (ImGui::Button("Load"))
+	}
+}
+
+void OTextureManagerWidget::DrawProperty()
+{
+	if (CurrentTexture)
+	{
+		ImGui::Text(CurrentTexture->Name.c_str());
+		ImGui::Text(WStringToUTF8(CurrentTexture->FileName).c_str());
+		ImGui::Text("Heap Index: %d", CurrentTexture->HeapIdx);
+		if (ImGui::BeginCombo("##textureCombo", CurrentTexture->ViewType.c_str()))
 		{
-			TextureManager->LoadLocalTextures();
+			for (const auto& type : STextureViewType::GetTextureTypes())
+			{
+				bool isSelected = CurrentTexture->ViewType == type;
+				if (ImGui::Selectable(type.c_str(), isSelected))
+				{
+					CurrentTexture->ViewType = type;
+				}
+
+				if (isSelected)
+				{
+					ImGui::SetItemDefaultFocus();
+				}
+			}
+			ImGui::EndCombo();
 		}
+	}
+	else
+	{
+		ImGui::Text("No texture selected");
 	}
 }

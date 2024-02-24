@@ -146,6 +146,7 @@ set(SRC_FILES
         Application/UI/Material/TexturePicker.h
         Application/UI/Base/PickerTable/PickerTableWidget.cpp
         Application/UI/Base/PickerTable/PickerTableWidget.h
+        Textures/Texture.cpp
 
 )
 
