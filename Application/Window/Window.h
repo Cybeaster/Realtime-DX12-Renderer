@@ -131,6 +131,8 @@ public:
 
 	uint32_t GetDSVDescNum() const;
 	uint32_t GetRTVDescNum() const;
+	void ResetBuffers();
+	void SetCameraLens();
 
 protected:
 	void BuildResources();

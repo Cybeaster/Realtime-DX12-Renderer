@@ -33,6 +33,7 @@ void OMaterialManager::AddMaterial(string Name, unique_ptr<SMaterial>& Material,
 		LOG(Engine, Warning, "Material with this name already exists!");
 		return;
 	}
+	MaterialsIndicesMap[Material->MaterialCBIndex] = Material.get();
 	Materials[Name] = move(Material);
 	if (Notify)
 	{
@@ -54,6 +55,16 @@ SMaterial* OMaterialManager::FindMaterial(const string& Name) const
 		;
 	}
 	return Materials.at(Name).get();
+}
+
+SMaterial* OMaterialManager::FindMaterial(const uint32_t Index) const
+{
+	if (!MaterialsIndicesMap.contains(Index))
+	{
+		LOG(Engine, Error, "Material not found!");
+		return FindMaterial(STextureNames::Debug);
+	}
+	return MaterialsIndicesMap.at(Index);
 }
 
 uint32_t OMaterialManager::GetMaterialCBIndex(const string& Name)
@@ -82,6 +93,7 @@ void OMaterialManager::LoadMaterialsFromCache()
 		mat->DiffuseTexture = FindOrCreateTexture(val->TexturePath);
 		ENSURE(mat->DiffuseTexture->HeapIdx != -1);
 		mat->MaterialCBIndex = it;
+		MaterialsIndicesMap[it] = val.get();
 		++it;
 	}
 	MaterialsRebuld.Broadcast();

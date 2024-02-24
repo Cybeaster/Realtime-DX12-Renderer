@@ -25,7 +25,9 @@ OWindow::OWindow(HWND hWnd, const SWindowInfo& _WindowInfo)
 void OWindow::Init()
 {
 	Camera = make_shared<OCamera>(shared_from_this());
+	SetCameraLens();
 	BuildResources();
+	ResetBuffers();
 }
 
 void OWindow::BuildResources()
@@ -336,13 +338,15 @@ void OWindow::OnUpdateWindowSize(ResizeEventArgs& Event)
 
 void OWindow::OnResize(ResizeEventArgs& Event)
 {
-	if (Camera)
-	{
-		Camera->SetLens(0.25 * DirectX::XM_PI, GetAspectRatio(), 1.0f, 1000.0f);
-		const auto engine = OEngine::Get();
-		engine->FlushGPU();
-		engine->GetCommandQueue()->TryResetCommandList();
+	SetCameraLens();
+	ResetBuffers();
+}
 
+void OWindow::ResetBuffers()
+{
+	if (SwapChain)
+	{
+		OEngine::Get()->GetCommandQueue()->TryResetCommandList();
 		for (int i = 0; i < SRenderConstants::RenderBuffersCount; ++i)
 		{
 			// Flush any GPU commands that might be referencing the back buffers
@@ -354,10 +358,17 @@ void OWindow::OnResize(ResizeEventArgs& Event)
 
 		UpdateRenderTargetViews();
 		ResizeDepthBuffer();
-
-		engine->GetCommandQueue()->ExecuteCommandListAndWait();
+		OEngine::Get()->GetCommandQueue()->ExecuteCommandListAndWait();
 		Viewport = D3D12_VIEWPORT(0.0f, 0.0f, static_cast<float>(WindowInfo.ClientWidth), static_cast<float>(WindowInfo.ClientHeight), 0.0f, 1.0f);
 		ScissorRect = CD3DX12_RECT(0, 0, WindowInfo.ClientWidth, WindowInfo.ClientHeight);
+	}
+}
+
+void OWindow::SetCameraLens()
+{
+	if (Camera)
+	{
+		Camera->SetLens(0.25 * DirectX::XM_PI, GetAspectRatio(), 1.0f, 1000.0f);
 	}
 }
 
@@ -449,8 +460,7 @@ void OWindow::ResizeDepthBuffer()
 {
 	// Flush any GPU commands that might be referencing the depth buffer.
 	const auto engine = OEngine::Get();
-	engine->FlushGPU();
-
+	engine->GetCommandQueue()->TryResetCommandList();
 	auto list = engine->GetCommandQueue()->GetCommandList();
 	UINT quality;
 	auto mxaaEnabled = engine->GetMSAAState(quality);
@@ -498,6 +508,7 @@ void OWindow::ResizeDepthBuffer()
 	device->CreateDepthStencilView(DepthBuffer.Get(), &dsvDesc, GetDepthStensilView());
 
 	TransitionResource(engine->GetCommandQueue()->GetCommandList(), DepthBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	engine->GetCommandQueue()->ExecuteCommandListAndWait();
 }
 
 HWND OWindow::GetHWND() const

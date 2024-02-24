@@ -53,6 +53,8 @@ using namespace Microsoft::WRL;
 
 #include <directxcollision.h>
 
+#define RENDER_TYPE(type) inline static const string type = #type
+
 inline void ReportLiveObjects()
 {
 	IDXGIDebug1* dxgiDebug;

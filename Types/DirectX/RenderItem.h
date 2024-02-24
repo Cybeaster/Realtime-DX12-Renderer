@@ -81,6 +81,6 @@ struct SRenderItemParams
 	string Submesh;
 	SMaterialParams MaterialParams;
 	size_t NumberOfInstances = 1;
-	bool bFrustrumCoolingEnabled = true;
+	bool bFrustrumCoolingEnabled = false;
 	bool Pickable = false;
 };

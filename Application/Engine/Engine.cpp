@@ -272,17 +272,18 @@ int OEngine::InitTests(shared_ptr<OTest> Test)
 	Test->Initialize();
 	GetCommandQueue()->ExecuteCommandListAndWait();
 	PostTestInit();
+
 	return 0;
 }
 
 void OEngine::PostTestInit()
 {
-	CMD_LIST_EXEC_SCOPE()
 	Window->Init();
 	BuildFrameResource(GetPassCountRequired());
+	GetCommandQueue()->TryResetCommandList();
 	BuildDescriptorHeap();
 	InitUIManager();
-
+	GetCommandQueue()->ExecuteCommandListAndWait();
 	HasInitializedTests = true;
 }
 
@@ -1581,7 +1582,7 @@ OEngine::TRenderLayer& OEngine::GetRenderLayers()
 
 void OEngine::PerformFrustrumCulling()
 {
-	if (CurrentFrameResources == nullptr || !FrustrumCullingEnabled)
+	if (CurrentFrameResources == nullptr)
 	{
 		return;
 	}
@@ -1595,7 +1596,7 @@ void OEngine::PerformFrustrumCulling()
 	for (auto& e : AllRenderItems)
 	{
 		const auto& instData = e->Instances;
-		if (e->Instances.size() == 0 || !e->bFrustrumCoolingEnabled)
+		if (e->Instances.size() == 0)
 		{
 			continue;
 		}
@@ -1617,7 +1618,7 @@ void OEngine::PerformFrustrumCulling()
 			BoundingFrustum localSpaceFrustum;
 			camera->GetFrustrum().Transform(localSpaceFrustum, viewToLocal);
 
-			if (localSpaceFrustum.Contains(e->Bounds) != DirectX::DISJOINT)
+			if (localSpaceFrustum.Contains(e->Bounds) != DirectX::DISJOINT || !FrustrumCullingEnabled)
 			{
 				SInstanceData data;
 				XMStoreFloat4x4(&data.World, XMMatrixTranspose(world));

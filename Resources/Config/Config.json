@@ -1,4 +1,5 @@
 {
   "LogConfigPath": "Resources/Config/LogConfig.json",
-  "MaterialsConfigPath": "Resources/Config/MaterialsConfig.json"
+  "MaterialsConfigPath": "Resources/Config/MaterialsConfig.json",
+  "TexturesConfigPath": "Resources/Config/TexturesConfig.json"
 }

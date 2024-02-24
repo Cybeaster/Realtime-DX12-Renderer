@@ -329,7 +329,7 @@ private:
 	unique_ptr<OUIManager> UIManager;
 	map<TUUID, unique_ptr<IRenderObject>> RenderObjects;
 	int32_t LightCount = 0;
-	bool FrustrumCullingEnabled = true;
+	bool FrustrumCullingEnabled = false;
 
 	unique_ptr<OMeshGenerator> MeshGenerator;
 	unique_ptr<OTextureManager> TextureManager;

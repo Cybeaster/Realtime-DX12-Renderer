@@ -5,7 +5,26 @@
 #include <Types.h>
 #include <d3d12.h>
 #include <wrl/client.h>
-#pragma optimize("", off)
+
+struct STextureViewType
+{
+	static D3D12_SRV_DIMENSION GetViewDimension(const string Type)
+	{
+		if (Type == Texture2D)
+		{
+			return D3D12_SRV_DIMENSION_TEXTURE2D;
+		}
+		if (Type == TextureCube)
+		{
+			return D3D12_SRV_DIMENSION_TEXTURECUBE;
+		}
+		return D3D12_SRV_DIMENSION_UNKNOWN;
+	}
+
+	RENDER_TYPE(Texture2D);
+	RENDER_TYPE(TextureCube);
+};
+
 struct STexture
 {
 	virtual ~STexture() = default;
@@ -14,30 +33,16 @@ struct STexture
 
 	ComPtr<ID3D12Resource> Resource = nullptr;
 	ComPtr<ID3D12Resource> UploadHeap = nullptr;
-
+	const string ViewType;
 	int64_t HeapIdx = -1;
+
 	virtual D3D12_SHADER_RESOURCE_VIEW_DESC GetSRVDesc() const
 	{
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		srvDesc.Format = Resource->GetDesc().Format;
-		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+		srvDesc.ViewDimension = STextureViewType::GetViewDimension(ViewType);
 		srvDesc.Texture2D.MipLevels = Resource->GetDesc().MipLevels;
-		return srvDesc;
-	}
-};
-
-struct SCubeMapTexture final : public STexture
-{
-	D3D12_SHADER_RESOURCE_VIEW_DESC GetSRVDesc() const override
-	{
-		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
-		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-		srvDesc.TextureCube.MostDetailedMip = 0;
-		srvDesc.TextureCube.MipLevels = Resource->GetDesc().MipLevels;
-		srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
-		srvDesc.Format = Resource->GetDesc().Format;
 		return srvDesc;
 	}
 };

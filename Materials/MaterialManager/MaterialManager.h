@@ -16,13 +16,13 @@ public:
 
 	OMaterialManager();
 	using TMaterialsMap = std::unordered_map<string, unique_ptr<SMaterial>>;
-
+	using TMaterialsIndexMap = std::unordered_map<uint32_t, SMaterial*>;
 	void AddMaterial(string Name, unique_ptr<SMaterial>& Material, bool Notify = false /*= false*/);
 	void CreateMaterial(const string& Name, STexture* Texture, const SMaterialSurface& Surface, bool Notify = false /*= false*/);
 
 	const TMaterialsMap& GetMaterials() const;
 	SMaterial* FindMaterial(const string& Name) const;
-
+	SMaterial* FindMaterial(uint32_t Index) const;
 	uint32_t GetMaterialCBIndex(const string& Name);
 	uint32_t GetNumMaterials();
 
@@ -35,5 +35,6 @@ public:
 private:
 	SMutex MaterialsLock;
 	TMaterialsMap Materials;
+	TMaterialsIndexMap MaterialsIndicesMap;
 	unique_ptr<OMaterialsConfigParser> MaterialsConfigParser;
 };

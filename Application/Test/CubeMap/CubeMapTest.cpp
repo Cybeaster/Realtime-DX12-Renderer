@@ -22,10 +22,11 @@ void OCubeMapTest::DrawSceneToCubeMap()
 	auto cmdList = OEngine::Get()->GetCommandQueue()->GetCommandList();
 	auto cubeMap = OEngine::Get()->GetCubeRenderTarget();
 
-	cmdList->SetGraphicsRootDescriptorTable(5, OEngine::Get()->GetSRVDescHandleForTexture(FindTextureByName("grasscube1024")));
+	//cmdList->SetGraphicsRootDescriptorTable(5, OEngine::Get()->GetSRVDescHandleForTexture(FindTextureByName("grasscube1024")));
 
 	cmdList->RSSetViewports(1, &cubeMap->GetViewport());
 	cmdList->RSSetScissorRects(1, &cubeMap->GetScissorRect());
+
 	Utils::ResourceBarrier(cmdList.Get(), cubeMap->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	UINT passCBByteSize = Utils::CalcBufferByteSize(sizeof(SPassConstants));
 	auto resource = OEngine::Get()->CurrentFrameResources->PassCB->GetResource()->GetGPUVirtualAddress();
@@ -39,15 +40,17 @@ void OCubeMapTest::DrawSceneToCubeMap()
 		cmdList->ClearDepthStencilView(dsv.CPUHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 		cmdList->OMSetRenderTargets(1, &rtv.CPUHandle, true, &dsv.CPUHandle);
 		cmdList->SetGraphicsRootConstantBufferView(2, resource + (i + 1) * passCBByteSize);
+
 		OEngine::Get()->DrawRenderItems(SPSOType::Opaque, SRenderLayer::Opaque);
 		OEngine::Get()->DrawRenderItems(SPSOType::Sky, SRenderLayer::Sky);
 	}
 	Utils::ResourceBarrier(cmdList.Get(), cubeMap->GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ);
 }
+
 void OCubeMapTest::OnRender(const UpdateEventArgs& Event)
 {
 	auto cmdList = OEngine::Get()->GetCommandQueue()->GetCommandList();
-	//DrawSceneToCubeMap();
+	DrawSceneToCubeMap();
 
 	cmdList->RSSetViewports(1, &OEngine::Get()->GetWindow()->Viewport);
 	cmdList->RSSetScissorRects(1, &OEngine::Get()->GetWindow()->ScissorRect);
@@ -73,10 +76,10 @@ void OCubeMapTest::OnRender(const UpdateEventArgs& Event)
 	auto cubeMap = OEngine::Get()->GetCubeRenderTarget();
 	cmdList->SetGraphicsRootDescriptorTable(5, cubeMap->GetSRVHandle().GPUHandle);
 
-	/*OEngine::Get()->DrawRenderItems(SPSOType::Opaque, SRenderLayer::OpaqueDynamicReflections);
+	OEngine::Get()->DrawRenderItems(SPSOType::Opaque, SRenderLayer::OpaqueDynamicReflections);
 	cmdList->SetGraphicsRootDescriptorTable(5, OEngine::Get()->GetSRVDescHandleForTexture(FindTextureByName("grasscube1024")));
-	OEngine::Get()->DrawRenderItems(SPSOType::Opaque, SRenderLayer::Opaque);*/
 
+	OEngine::Get()->DrawRenderItems(SPSOType::Opaque, SRenderLayer::Opaque);
 	OEngine::Get()->DrawRenderItems(SPSOType::Sky, SRenderLayer::Sky);
 }
 
@@ -88,7 +91,7 @@ void OCubeMapTest::BuildRenderItems()
 	                                  20,
 	                                  20,
 	                                  FindMaterial("GrassSky"));
-	XMStoreFloat4x4(&sky[0].World, DirectX::XMMatrixScaling(5000.0f, 5000.0f, 5000.0f));
+	Scale(sky[0].World, { 5000.0f, 5000.0f, 5000.0f });
 
 	CreateRenderItem(SRenderLayer::Opaque,
 	                 "Skull",
@@ -155,11 +158,11 @@ void OCubeMapTest::BuildRenderItems()
 		auto leftCylinder = cylinder[it];
 		auto rightCylinder = cylinder[it + 1];
 
-		XMStoreFloat4x4(&leftSphere.World, leftSphereWorld);
-		XMStoreFloat4x4(&rightSphere.World, rightSphereWorld);
-		XMStoreFloat4x4(&rightCylinder.TexTransform, brickTexTransform);
-		XMStoreFloat4x4(&leftCylinder.TexTransform, brickTexTransform);
-		XMStoreFloat4x4(&leftCylinder.World, leftCylWorld);
-		XMStoreFloat4x4(&rightCylinder.World, rightCylWorld);
+		Put(leftSphere.World, leftSphereWorld);
+		Put(rightSphere.World, rightSphereWorld);
+		Put(rightCylinder.TexTransform, brickTexTransform);
+		Put(leftCylinder.TexTransform, brickTexTransform);
+		Put(leftCylinder.World, leftCylWorld);
+		Put(rightCylinder.World, rightCylWorld);
 	}
 }

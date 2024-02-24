@@ -19,6 +19,11 @@ inline SMaterial* FindMaterial(const string& Name)
 	return OEngine::Get()->GetMaterialManager()->FindMaterial(Name);
 }
 
+inline SMaterial* FindMaterial(int32_t Index)
+{
+	return OEngine::Get()->GetMaterialManager()->FindMaterial(Index);
+}
+
 inline void CreateTexture(const string& Name, wstring FileName)
 {
 	OEngine::Get()->GetTextureManager()->CreateTexture(Name, FileName);

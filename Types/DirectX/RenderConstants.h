@@ -1,7 +1,6 @@
 #pragma once
 #include "DXHelper.h"
 
-#define RENDER_TYPE(type) inline static const string type = #type
 struct SRenderConstants
 {
 	struct SSphere

@@ -139,10 +139,13 @@ set(SRC_FILES
         Application/Engine/RenderTarget/CubeMap/DynamicCubeMap/DynamicCubeMapTarget.h
         Application/Test/CubeMap/CubeMapTest.cpp
         Application/Test/CubeMap/CubeMapTest.h
+        Config/TexturesReader/TexturesParser.cpp
+        Config/TexturesReader/TexturesParser.h
 
 )
 
 file(GLOB IMGUI_SOURCES Externals/imgui/*.cpp Externals/imgui/*.h)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 
 # Add sources to the project
@@ -181,6 +184,17 @@ target_include_directories(DXRenderer PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Application
         ${CMAKE_CURRENT_SOURCE_DIR}/Types/DirectX
 )
+
+file(GLOB REFLECTOR_SCRIPTS "${CMAKE_CURRENT_SOURCE_DIR}/Reflector/*.py")
+
+foreach (SCRIPT ${REFLECTOR_SCRIPTS})
+    get_filename_component(SCRIPT_NAME ${SCRIPT} NAME_WE)
+    add_custom_command(
+            TARGET DXRenderer PRE_BUILD
+            COMMAND ${Python3_EXECUTABLE} ${SCRIPT} ${ARGUMENTS}
+            COMMENT "Running Python script: ${SCRIPT_NAME}"
+    )
+endforeach ()
 
 # Link necessary libraries
 target_link_libraries(DXRenderer d3d12.lib dxgi.lib dxguid.lib d3dcompiler.lib Shlwapi.lib imgui ${Boost_LIBRARIES} Bcrypt.lib)

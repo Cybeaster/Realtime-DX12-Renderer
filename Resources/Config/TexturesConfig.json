@@ -1,0 +1,9 @@
+{
+  "Textures": [
+    {
+      "Name": "texture1",
+      "Path": "texture1.png",
+      "ViewDimensions": "2D"
+    }
+  ]
+}

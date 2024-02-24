@@ -4,6 +4,7 @@
 
 #include "GeometryEntityWidget.h"
 
+#include "../../../../Utils/EngineHelper.h"
 #include "DXHelper.h"
 #include "Engine/Engine.h"
 #include "UI/Geometry/GeometryManager.h"
@@ -105,6 +106,7 @@ void OGeometryEntityWidget::DrawInstanceParameters()
 			ImGui::EndListBox();
 			if (SelectedInstance != "")
 			{
+				MaterialPickerWidget->SetCurrentMaterial(FindMaterial(SelectedInstanceData->MaterialIndex));
 				OHierarchicalWidgetBase::Draw();
 			}
 		}

@@ -14,6 +14,7 @@ public:
 	void Draw() override;
 
 	SMaterialUpdate& GetOnMaterialUpdateDelegate() { return OnMaterialUpdate; }
+	void SetCurrentMaterial(SMaterial* Material) { CurrentMaterial = Material; }
 
 private:
 	SMaterialUpdate OnMaterialUpdate;
