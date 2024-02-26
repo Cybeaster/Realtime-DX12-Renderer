@@ -33,12 +33,12 @@ struct MaterialData
 	float Roughness;
 	float4x4 MatTransform;
 	uint DiffuseMapIndex;
+	int NormalMapIndex;
 	uint MatPad0;
 	uint MatPad1;
-	uint MatPad2;
 };
 
-Texture2D gDiffuseMap[7] : register(t0);
+Texture2D gTextureMaps[7] : register(t0);
 Texture2D gDisplacementMap : register(t7);
 TextureCube gCubeMap : register(t8);
 
@@ -85,3 +85,23 @@ SamplerState gsamLinearWrap : register(s2);
 SamplerState gsamLinearClamp : register(s3);
 SamplerState gsamAnisotropicWrap : register(s4);
 SamplerState gsamAnisotropicClamp : register(s5);
+
+float3 NormalSampleToWorldSpace(float3 NormalMapSample, float3 UnitNormalW, float3 TangentW)
+{
+	float3 normalT = NormalMapSample * 2.0f - 1.0f;
+	float3 N = UnitNormalW;
+	/*
+	*  This code makes sure T is orthonormal to N by subtracting off any
+		component of T along the direction N
+	*/
+	float3 T = normalize(TangentW - dot(TangentW, N) * N);
+	float3 B = cross(N, T);
+	float3x3 TBN = float3x3(T, B, N);
+	float3 bumpedNormal = mul(normalT, TBN);
+	return bumpedNormal;
+}
+
+bool IsTangentValid(float3 TangentW)
+{
+	return TangentW != float3(0.0f, 0.0f, 0.0f);
+}

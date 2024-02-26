@@ -8,7 +8,6 @@
 class OEngine;
 class OUIManager : public OHierarchicalWidgetBase
     , public IRenderObject
-
 {
 public:
 	void InitContext(ID3D12Device2* Device, HWND Hwnd, UINT NumFramesInLight, ID3D12DescriptorHeap* SRVDescriptorHeap, SRenderObjectDescriptor& OutDescriptor, OEngine* Engine);
@@ -22,7 +21,7 @@ public:
 	void OnKeyboardKeyReleased(KeyEventArgs& Args);
 	void OnMouseWheel(MouseWheelEventArgs& Args);
 	void OnResize(ResizeEventArgs& Args);
-
+	void Update(const UpdateEventArgs& Event) override;
 	void KeyMap();
 
 	uint32_t GetNumSRVRequired() const override

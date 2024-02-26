@@ -19,7 +19,7 @@ public:
 	uint32_t GetNumRTVRequired() override;
 	uint32_t GetNumDSVRequired() override;
 
-	void Init() override;
+	void InitRenderObject() override;
 	vector<SDescriptorPair>& GetRTVHandle() { return RTVHandle; }
 	SDescriptorPair& GetDSVHandle() { return DSVHandle; }
 	SDescriptorPair& GetSRVHandle() { return SRVHandle; }
@@ -35,9 +35,6 @@ private:
 	void BuildDescriptors() override;
 
 	ComPtr<ID3D12Resource> CubeDepthStencilBuffer;
-
-	D3D12_VIEWPORT Viewport;
-	D3D12_RECT ScissorRect;
 
 	SDescriptorPair SRVHandle;
 	SDescriptorPair DSVHandle;

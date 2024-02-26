@@ -7,6 +7,11 @@
 #include "../../../Utils/Statics.h"
 #include "Engine/Engine.h"
 
+ORenderTargetBase::ORenderTargetBase(UINT Width, UINT Height)
+    : Width(Width), Height(Height), Format(SRenderConstants::BackBufferFormat), Device(OEngine::Get()->GetDevice().Get())
+{
+}
+
 ID3D12Resource* ORenderTargetBase::GetResource() const
 {
 	return RenderTarget.Get();
@@ -22,8 +27,25 @@ uint32_t ORenderTargetBase::GetNumRTVRequired()
 	return 1;
 }
 
-void ORenderTargetBase::Init()
+void ORenderTargetBase::InitRenderObject()
 {
+}
+
+void ORenderTargetBase::SetViewport(OCommandQueue* CommandQueue) const
+{
+	auto list = CommandQueue->GetCommandList();
+	list->RSSetViewports(1, &Viewport);
+	list->RSSetScissorRects(1, &ScissorRect);
+}
+
+TUUID ORenderTargetBase::GetID()
+{
+	return ID;
+}
+
+void ORenderTargetBase::SetID(TUUID Other)
+{
+	ID = Other;
 }
 
 OOffscreenTexture::OOffscreenTexture(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format)
@@ -53,9 +75,9 @@ void OOffscreenTexture::OnResize(UINT NewWidth, UINT NewHeight)
 	}
 }
 
-void OOffscreenTexture::Init()
+void OOffscreenTexture::InitRenderObject()
 {
-	ORenderTargetBase::Init();
+	ORenderTargetBase::InitRenderObject();
 	BuildResource();
 }
 

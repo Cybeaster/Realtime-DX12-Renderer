@@ -5,7 +5,7 @@
 
 using namespace DirectX;
 
-OCamera::OCamera(const weak_ptr<OWindow>& _Window)
+OCamera::OCamera(OWindow* _Window)
     : Window(_Window)
 {
 }
@@ -217,8 +217,8 @@ std::tuple<XMVECTOR /*ray_origin*/, XMVECTOR /*ray dir*/, XMMATRIX /*invView*/> 
 {
 	XMFLOAT4X4 proj = GetProj4x4f();
 
-	float vx = (+2.0f * Sx / Window.lock()->GetWidth() - 1.0f) / proj(0, 0);
-	float vy = (-2.0f * Sy / Window.lock()->GetHeight() + 1.0f) / proj(1, 1);
+	float vx = (+2.0f * Sx / Window->GetWidth() - 1.0f) / proj(0, 0);
+	float vy = (-2.0f * Sy / Window->GetHeight() + 1.0f) / proj(1, 1);
 
 	XMVECTOR rayOrigin = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 	XMVECTOR rayDir = XMVectorSet(vx, vy, 1.0f, 0.0f);

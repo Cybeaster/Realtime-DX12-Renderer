@@ -8,11 +8,12 @@ struct SMaterial
 {
 	string Name;
 	wstring TexturePath = L"";
+	wstring NormalMapPath = L"";
 	STexture* DiffuseTexture = nullptr;
+	STexture* NormalTexture = nullptr;
 	// Index into constant buffer corresponding to this material.
-	int32_t MaterialCBIndex = -1;
 
-	UINT NormalSrvHeapIndex = -1;
+	int32_t MaterialCBIndex = -1;
 
 	// Dirty flag indicating the material has changed and we need to
 	// update the constant buffer. Because we have a material constant

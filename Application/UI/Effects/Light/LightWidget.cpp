@@ -63,7 +63,7 @@ void OLightWidget::Draw()
 		}
 	}
 }
-void OLightWidget::Init()
+void OLightWidget::InitWidget()
 {
 	SWidgetLight Light1;
 	Light1.Light.Direction = { 0.57735f, -0.57735f, 0.57735f };

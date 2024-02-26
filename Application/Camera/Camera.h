@@ -9,7 +9,7 @@ class OWindow;
 class OCamera
 {
 public:
-	OCamera(const weak_ptr<OWindow>& _Window);
+	OCamera(OWindow* _Window);
 	OCamera();
 	const float MaxCameraSpeed = 300;
 
@@ -91,7 +91,7 @@ private:
 	DirectX::XMFLOAT4X4 ProjectionMatrix;
 
 	bool bViewDirty = true;
-	weak_ptr<class OWindow> Window;
+	OWindow* Window;
 
 	DirectX::BoundingFrustum Frustum;
 };

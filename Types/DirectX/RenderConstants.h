@@ -25,7 +25,7 @@ struct SRenderConstants
 	inline static constexpr uint32_t NumFrameResources = 3;
 	inline static constexpr uint32_t MaxLights = 16;
 	inline static constexpr uint32_t RenderBuffersCount = 2;
-	inline static constexpr DirectX::XMUINT2 CubeMapDefaultResolution = { 512, 512 };
+	inline static constexpr DirectX::XMUINT2 CubeMapDefaultResolution = { 1024, 1024 };
 	inline static constexpr SSphere Sphere;
 	inline static constexpr SCylinder Cylinder;
 };
@@ -45,6 +45,7 @@ struct SRenderLayer
 	RENDER_TYPE(Tesselation);
 	RENDER_TYPE(Highlight);
 	RENDER_TYPE(Sky);
+	RENDER_TYPE(PostProcess);
 };
 
 struct SPSOType

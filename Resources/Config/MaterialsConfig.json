@@ -4,6 +4,7 @@
       "Name": "Debug",
       "Data": {
         "TexturePath": "Resources\/Textures\/white1x1.dds",
+        "NormalMapPath": "Resources\/Textures\/default_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "0",
@@ -22,6 +23,7 @@
       "Name": "GrassSky",
       "Data": {
         "TexturePath": "Resources\/Textures\/grasscube1024.dds",
+        "NormalMapPath": "Resources\/Textures\/grasscube1024_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -40,6 +42,7 @@
       "Name": "DesertSky",
       "Data": {
         "TexturePath": "Resources\/Textures\/desertcube1024.dds",
+        "NormalMapPath": "Resources\/Textures\/desertcube1024_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -55,27 +58,10 @@
       }
     },
     {
-      "Name": "upbody_norm",
-      "Data": {
-        "TexturePath": "Resources\/Textures\/upbody_norm.dds",
-        "Diffuse": {
-          "x": "1",
-          "y": "1",
-          "z": "1",
-          "w": "1"
-        },
-        "Fresnel": {
-          "x": "0.1",
-          "y": "0.1",
-          "z": "0.1"
-        },
-        "Roughness": "0.25"
-      }
-    },
-    {
       "Name": "Bricks",
       "Data": {
         "TexturePath": "Resources\/Textures\/bricks.dds",
+        "NormalMapPath": "Resources\/Textures\/bricks_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -91,45 +77,10 @@
       }
     },
     {
-      "Name": "Bricks2",
-      "Data": {
-        "TexturePath": "Resources\/Textures\/bricks2.dds",
-        "Diffuse": {
-          "x": "1",
-          "y": "1",
-          "z": "1",
-          "w": "1"
-        },
-        "Fresnel": {
-          "x": "0.1",
-          "y": "0.1",
-          "z": "0.1"
-        },
-        "Roughness": "0.25"
-      }
-    },
-    {
       "Name": "Ice",
       "Data": {
         "TexturePath": "Resources\/Textures\/ice.dds",
-        "Diffuse": {
-          "x": "1",
-          "y": "1",
-          "z": "1",
-          "w": "1"
-        },
-        "Fresnel": {
-          "x": "0.1",
-          "y": "0.1",
-          "z": "0.1"
-        },
-        "Roughness": "0.25"
-      }
-    },
-    {
-      "Name": "bricks2_nmap",
-      "Data": {
-        "TexturePath": "Resources\/Textures\/bricks2_nmap.dds",
+        "NormalMapPath": "Resources\/Textures\/ice_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -148,6 +99,7 @@
       "Name": "WoodCrate01",
       "Data": {
         "TexturePath": "Resources\/Textures\/WoodCrate01.dds",
+        "NormalMapPath": "Resources\/Textures\/WoodCrate01_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -166,24 +118,7 @@
       "Name": "bricks3",
       "Data": {
         "TexturePath": "Resources\/Textures\/bricks3.dds",
-        "Diffuse": {
-          "x": "1",
-          "y": "1",
-          "z": "1",
-          "w": "1"
-        },
-        "Fresnel": {
-          "x": "0.1",
-          "y": "0.1",
-          "z": "0.1"
-        },
-        "Roughness": "0.25"
-      }
-    },
-    {
-      "Name": "bricks_nmap",
-      "Data": {
-        "TexturePath": "Resources\/Textures\/bricks_nmap.dds",
+        "NormalMapPath": "Resources\/Textures\/bricks_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -202,24 +137,7 @@
       "Name": "checkboard",
       "Data": {
         "TexturePath": "Resources\/Textures\/checkboard.dds",
-        "Diffuse": {
-          "x": "1",
-          "y": "1",
-          "z": "1",
-          "w": "1"
-        },
-        "Fresnel": {
-          "x": "0.1",
-          "y": "0.1",
-          "z": "0.1"
-        },
-        "Roughness": "0.25"
-      }
-    },
-    {
-      "Name": "default_nmap",
-      "Data": {
-        "TexturePath": "Resources\/Textures\/default_nmap.dds",
+        "NormalMapPath": "Resources\/Textures\/checkboard_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -238,6 +156,7 @@
       "Name": "grasscube1024",
       "Data": {
         "TexturePath": "Resources\/Textures\/grasscube1024.dds",
+        "NormalMapPath": "Resources\/Textures\/grasscube1024_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -256,6 +175,7 @@
       "Name": "desertcube1024",
       "Data": {
         "TexturePath": "Resources\/Textures\/desertcube1024.dds",
+        "NormalMapPath": "Resources\/Textures\/desertcube1024_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -274,6 +194,7 @@
       "Name": "Fireball",
       "Data": {
         "TexturePath": "Resources\/Textures\/Fireball.dds",
+        "NormalMapPath": "Resources\/Textures\/default_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -292,6 +213,7 @@
       "Name": "grass",
       "Data": {
         "TexturePath": "Resources\/Textures\/grass.dds",
+        "NormalMapPath": "Resources\/Textures\/grass_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -310,24 +232,7 @@
       "Name": "head_diff",
       "Data": {
         "TexturePath": "Resources\/Textures\/head_diff.dds",
-        "Diffuse": {
-          "x": "1",
-          "y": "1",
-          "z": "1",
-          "w": "1"
-        },
-        "Fresnel": {
-          "x": "0.1",
-          "y": "0.1",
-          "z": "0.1"
-        },
-        "Roughness": "0.25"
-      }
-    },
-    {
-      "Name": "head_norm",
-      "Data": {
-        "TexturePath": "Resources\/Textures\/head_norm.dds",
+        "NormalMapPath": "Resources\/Textures\/head_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -346,6 +251,7 @@
       "Name": "stone",
       "Data": {
         "TexturePath": "Resources\/Textures\/stone.dds",
+        "NormalMapPath": "Resources\/Textures\/stone_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -364,6 +270,7 @@
       "Name": "jacket_diff",
       "Data": {
         "TexturePath": "Resources\/Textures\/jacket_diff.dds",
+        "NormalMapPath": "Resources\/Textures\/jacket_norm.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -382,24 +289,7 @@
       "Name": "tree01S",
       "Data": {
         "TexturePath": "Resources\/Textures\/tree01S.dds",
-        "Diffuse": {
-          "x": "1",
-          "y": "1",
-          "z": "1",
-          "w": "1"
-        },
-        "Fresnel": {
-          "x": "0.1",
-          "y": "0.1",
-          "z": "0.1"
-        },
-        "Roughness": "0.25"
-      }
-    },
-    {
-      "Name": "jacket_norm",
-      "Data": {
-        "TexturePath": "Resources\/Textures\/jacket_norm.dds",
+        "NormalMapPath": "Resources\/Textures\/tree01S_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -418,24 +308,7 @@
       "Name": "pants_diff",
       "Data": {
         "TexturePath": "Resources\/Textures\/pants_diff.dds",
-        "Diffuse": {
-          "x": "1",
-          "y": "1",
-          "z": "1",
-          "w": "1"
-        },
-        "Fresnel": {
-          "x": "0.1",
-          "y": "0.1",
-          "z": "0.1"
-        },
-        "Roughness": "0.25"
-      }
-    },
-    {
-      "Name": "pants_norm",
-      "Data": {
-        "TexturePath": "Resources\/Textures\/pants_norm.dds",
+        "NormalMapPath": "Resources\/Textures\/pants_norm.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -454,6 +327,7 @@
       "Name": "snowcube1024",
       "Data": {
         "TexturePath": "Resources\/Textures\/snowcube1024.dds",
+        "NormalMapPath": "Resources\/Textures\/snowcube1024_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -472,6 +346,7 @@
       "Name": "sunsetcube1024",
       "Data": {
         "TexturePath": "Resources\/Textures\/sunsetcube1024.dds",
+        "NormalMapPath": "Resources\/Textures\/sunsetcube1024_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -490,6 +365,7 @@
       "Name": "Tile",
       "Data": {
         "TexturePath": "Resources\/Textures\/tile.dds",
+        "NormalMapPath": "Resources\/Textures\/tile_nmap.dds",
         "Diffuse": {
           "x": "0.9",
           "y": "0.9",
@@ -505,27 +381,10 @@
       }
     },
     {
-      "Name": "tile_nmap",
-      "Data": {
-        "TexturePath": "Resources\/Textures\/tile_nmap.dds",
-        "Diffuse": {
-          "x": "1",
-          "y": "1",
-          "z": "1",
-          "w": "1"
-        },
-        "Fresnel": {
-          "x": "0.1",
-          "y": "0.1",
-          "z": "0.1"
-        },
-        "Roughness": "0.25"
-      }
-    },
-    {
       "Name": "tree02S",
       "Data": {
         "TexturePath": "Resources\/Textures\/tree02S.dds",
+        "NormalMapPath": "Resources\/Textures\/tree02S_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -544,6 +403,7 @@
       "Name": "tree35S",
       "Data": {
         "TexturePath": "Resources\/Textures\/tree35S.dds",
+        "NormalMapPath": "Resources\/Textures\/tree35S_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -562,6 +422,7 @@
       "Name": "treearray",
       "Data": {
         "TexturePath": "Resources\/Textures\/treearray.dds",
+        "NormalMapPath": "Resources\/Textures\/treearray_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -580,6 +441,7 @@
       "Name": "upBody_diff",
       "Data": {
         "TexturePath": "Resources\/Textures\/upBody_diff.dds",
+        "NormalMapPath": "Resources\/Textures\/upBody_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -598,6 +460,7 @@
       "Name": "treeArray2",
       "Data": {
         "TexturePath": "Resources\/Textures\/treeArray2.dds",
+        "NormalMapPath": "Resources\/Textures\/treeArray2_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -616,6 +479,7 @@
       "Name": "White",
       "Data": {
         "TexturePath": "Resources\/Textures\/white1x1.dds",
+        "NormalMapPath": "Resources/Textures/default_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -634,6 +498,7 @@
       "Name": "WireFence",
       "Data": {
         "TexturePath": "Resources\/Textures\/WireFence.dds",
+        "NormalMapPath": "Resources\/Textures\/WireFence_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -652,6 +517,7 @@
       "Name": "WoodCrate02",
       "Data": {
         "TexturePath": "Resources\/Textures\/WoodCrate02.dds",
+        "NormalMapPath": "Resources\/Textures\/WoodCrate02_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -670,6 +536,7 @@
       "Name": "Picked",
       "Data": {
         "TexturePath": "Resources\/Textures\/white1x1.dds",
+        "NormalMapPath": "Resources/Textures/default_nmap.dds",
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -688,6 +555,7 @@
       "Name": "Gold",
       "Data": {
         "TexturePath": "Resources/Textures/white1x1.dds",
+        "NormalMapPath": "Resources/Textures/default_nmap.dds",
         "Diffuse": {
           "x": "1.0",
           "y": "0.765",
@@ -706,6 +574,7 @@
       "Name": "Silver",
       "Data": {
         "TexturePath": "Resources/Textures/white1x1.dds",
+        "NormalMapPath": "Resources/Textures/default_nmap.dds",
         "Diffuse": {
           "x": "0.972",
           "y": "0.960",
@@ -724,6 +593,7 @@
       "Name": "Bronze",
       "Data": {
         "TexturePath": "Resources/Textures/white1x1.dds",
+        "NormalMapPath": "Resources/Textures/default_nmap.dds",
         "Diffuse": {
           "x": "0.804",
           "y": "0.498",
@@ -742,6 +612,7 @@
       "Name": "Lambertian",
       "Data": {
         "TexturePath": "Resources/Textures/white1x1.dds",
+        "NormalMapPath": "Resources/Textures/default_nmap.dds",
         "Diffuse": {
           "x": "0.8",
           "y": "0.8",
@@ -760,6 +631,7 @@
       "Name": "Metallic",
       "Data": {
         "TexturePath": "Resources/Textures/white1x1.dds",
+        "NormalMapPath": "Resources/Textures/default_nmap.dds",
         "Diffuse": {
           "x": "0.8",
           "y": "0.8",
@@ -778,6 +650,7 @@
       "Name": "Mirror",
       "Data": {
         "TexturePath": "Resources/Textures/white1x1.dds",
+        "NormalMapPath": "Resources/Textures/default_nmap.dds",
         "Diffuse": {
           "x": "0.0",
           "y": "0.0",
@@ -796,6 +669,7 @@
       "Name": "Glass",
       "Data": {
         "TexturePath": "Resources/Textures/white1x1.dds",
+        "NormalMapPath": "Resources/Textures/default_nmap.dds",
         "Diffuse": {
           "x": "0.6",
           "y": "0.7",
@@ -814,6 +688,7 @@
       "Name": "Water",
       "Data": {
         "TexturePath": "Resources/Textures/water1.dds",
+        "NormalMapPath": "Resources/Textures/water1_nmap.dds",
         "Diffuse": {
           "x": "0.2",
           "y": "0.4",
@@ -832,19 +707,155 @@
       "Name": "Debug",
       "Data": {
         "TexturePath": "Resources/Textures/white1x1.dds",
+        "NormalMapPath": "Resources/Textures/default_nmap.dds",
         "Diffuse": {
-          "x": "1.0",
-          "y": "1.0",
-          "z": "1.0",
-          "w": "1.0"
+          "x": "1",
+          "y": "0",
+          "z": "0",
+          "w": "1"
         },
         "Fresnel": {
-          "x": "0.0",
-          "y": "0.0",
-          "z": "0.0"
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
         },
         "Roughness": "1.0"
+      }
+    },
+    {
+      "Name": "GrassSky",
+      "Data": {
+        "TexturePath": "Resources/Textures/grasscube1024.dds",
+        "NormalMapPath": "Resources/Textures/grasscube1024_nmap.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "1.0"
+      }
+    },
+    {
+      "Name": "DesertSky",
+      "Data": {
+        "TexturePath": "Resources/Textures/desertcube1024.dds",
+        "NormalMapPath": "Resources/Textures/desertcube1024_nmap.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "1.0"
+      }
+    },
+    {
+      "Name": "upbody_norm",
+      "Data": {
+        "TexturePath": "Resources/Textures/upbody_norm.dds",
+        "NormalMapPath": "Resources/Textures/upbody_norm_nmap.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "Bricks",
+      "Data": {
+        "TexturePath": "Resources/Textures/bricks.dds",
+        "NormalMapPath": "Resources/Textures/bricks_nmap.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.3"
+      }
+    },
+    {
+      "Name": "Bricks2",
+      "Data": {
+        "TexturePath": "Resources/Textures/bricks2.dds",
+        "NormalMapPath": "Resources/Textures/bricks2_nmap.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "Ice",
+      "Data": {
+        "TexturePath": "Resources/Textures/ice.dds",
+        "NormalMapPath": "Resources/Textures/ice_nmap.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
+      }
+    },
+    {
+      "Name": "WoodCrate01",
+      "Data": {
+        "TexturePath": "Resources/Textures/WoodCrate01.dds",
+        "NormalMapPath": "Resources/Textures/WoodCrate01_nmap.dds",
+        "Diffuse": {
+          "x": "1",
+          "y": "1",
+          "z": "1",
+          "w": "1"
+        },
+        "Fresnel": {
+          "x": "0.1",
+          "y": "0.1",
+          "z": "0.1"
+        },
+        "Roughness": "0.25"
       }
     }
   ]
 }
+
+

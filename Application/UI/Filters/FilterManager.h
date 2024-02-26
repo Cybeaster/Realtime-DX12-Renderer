@@ -13,7 +13,7 @@ public:
 	~OFilterManagerWidget() = default;
 
 	void Draw() override;
-	void Init() override;
+	void InitWidget() override;
 
 private:
 	OEngine* Engine = nullptr;
@@ -26,9 +26,9 @@ inline void OFilterManagerWidget::Draw()
 		OHierarchicalWidgetBase::Draw();
 	}
 }
-inline void OFilterManagerWidget::Init()
+inline void OFilterManagerWidget::InitWidget()
 {
-	OHierarchicalWidgetBase::Init();
+	OHierarchicalWidgetBase::InitWidget();
 	MakeWidget<OBilateralBlurFilterWidget>(Engine->GetBilateralBlurFilter());
 	MakeWidget<OGaussianBlurWidget>(Engine->GetBlurFilter());
 	MakeWidget<OSobelFilterWidget>(Engine->GetSobelFilter());

@@ -19,7 +19,7 @@ public:
 	    : Engine(Arg){};
 
 	void Draw() override;
-	void Init() override;
+	void InitWidget() override;
 	void Update() override;
 
 private:

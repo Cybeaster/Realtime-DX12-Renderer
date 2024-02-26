@@ -19,9 +19,7 @@ class OTextureWaves : public OTest
 	using Super = OTest;
 
 public:
-	OTextureWaves(const shared_ptr<OWindow>& _Window);
-
-	void UpdateWave(const STimer& Timer) const;
+	OTextureWaves(OWindow* _Window);
 	bool Initialize() override;
 	void OnUpdate(const UpdateEventArgs& Event) override;
 	void OnRender(const UpdateEventArgs& Event) override;

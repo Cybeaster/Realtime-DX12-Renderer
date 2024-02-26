@@ -22,7 +22,7 @@ using namespace Microsoft::WRL;
 
 using namespace DirectX;
 
-OTextureWaves::OTextureWaves(const shared_ptr<OWindow>& _Window)
+OTextureWaves::OTextureWaves(OWindow* _Window)
     : OTest(_Window)
 {
 }
@@ -41,23 +41,6 @@ bool OTextureWaves::Initialize()
 	                                            0.2f);
 	BuildRenderItems();
 	return true;
-}
-
-void OTextureWaves::UpdateWave(const STimer& Timer) const
-{
-	auto commandList = Engine->GetCommandQueue()->GetCommandList();
-	const auto wavesRootSignature = Engine->GetWavesRootSignature();
-	static float tBase = 0.0f;
-	if (Timer.GetTime() - tBase >= 0.25)
-	{
-		tBase += 0.25;
-		int i = Utils::Math::Random(4, Waves->GetRowCount() - 5);
-		int j = Utils::Math::Random(4, Waves->GetColumnCount() - 5);
-		float r = Utils::Math::Random(1.f, 2.f);
-
-		Waves->Disturb(wavesRootSignature, Engine->GetPSO(SPSOType::WavesDisturb).Get(), i, j, r);
-	}
-	Waves->Update(Timer, wavesRootSignature, Engine->GetPSO(SPSOType::WavesUpdate).Get());
 }
 
 void OTextureWaves::OnUpdate(const UpdateEventArgs& Event)
@@ -272,9 +255,6 @@ void OTextureWaves::OnRender(const UpdateEventArgs& Event)
 	const auto engine = Engine;
 	const auto commandList = engine->GetCommandQueue()->GetCommandList();
 
-	Waves->Update(Event.Timer, engine->GetWavesRootSignature(), engine->GetPSO(SPSOType::WavesUpdate).Get());
-
-	UpdateWave(Event.Timer);
 	commandList->SetGraphicsRootDescriptorTable(4, Waves->GetDisplacementMapHandle());
 
 	GetEngine()->SetPipelineState(SPSOType::Opaque);
@@ -395,6 +375,7 @@ void OTextureWaves::BuildLandGeometry()
 		vertices[i].Position.y = GetHillsHeight(p.x, p.z);
 		vertices[i].Normal = GetHillsNormal(p.x, p.z);
 		vertices[i].TexC = grid.Vertices[i].TexC;
+		vertices[i].TangentU = grid.Vertices[i].TangentU;
 	}
 
 	const UINT vbByteSize = static_cast<UINT>(vertices.size() * sizeof(SVertex));

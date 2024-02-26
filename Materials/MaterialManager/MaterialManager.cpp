@@ -91,7 +91,9 @@ void OMaterialManager::LoadMaterialsFromCache()
 	{
 		auto& mat = val;
 		mat->DiffuseTexture = FindOrCreateTexture(val->TexturePath);
+		mat->NormalTexture = FindOrCreateTexture(val->NormalMapPath);
 		ENSURE(mat->DiffuseTexture->HeapIdx != -1);
+
 		mat->MaterialCBIndex = it;
 		MaterialsIndicesMap[it] = val.get();
 		++it;

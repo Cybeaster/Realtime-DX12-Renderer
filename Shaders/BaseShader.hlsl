@@ -5,6 +5,7 @@ struct VertexIn
 	float3 PosL : POSITION;
 	float3 NormalL : NORMAL;
 	float2 TexC : TEXCOORD;
+	float3 TangentU : TANGENT;
 };
 
 struct VertexOut
@@ -12,6 +13,7 @@ struct VertexOut
 	float4 PosH : SV_POSITION;
 	float3 PosW : POSITION;
 	float3 NormalW : NORMAL;
+	float3 TangentW : TANGENT;
 	float2 TexC : TEXCOORD;
 
 	nointerpolation uint MaterialIndex : MATERIALINDEX;
@@ -51,9 +53,16 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	// Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
 
 	vout.NormalW = mul(Vin.NormalL, (float3x3)world);
+	if (!IsTangentValid(Vin.TangentU))
+	{
+		vout.TangentW = float3(0.0f, 0.0f, 0.0f);
+	}
+	else
+	{
+		vout.TangentW = mul(Vin.TangentU, (float3x3)world);
+	}
 
 	// Transform to homogeneous clip space.
-
 	vout.PosH = mul(posW, gViewProj);
 
 	// Output vertex attributes for interpolation across triangle.
@@ -71,9 +80,10 @@ float4 PS(VertexOut pin)
 	float3 fresnelR0 = matData.FresnelR0;
 	float roughness = matData.Roughness;
 	uint diffuseMapIndex = matData.DiffuseMapIndex;
+	int normalMapIndex = matData.NormalMapIndex;
 
 	// Dynamically look up the texture in the array.
-	diffuseAlbedo *= gDiffuseMap[diffuseMapIndex].Sample(gsamLinearWrap, pin.TexC);
+	diffuseAlbedo *= gTextureMaps[diffuseMapIndex].Sample(gsamLinearWrap, pin.TexC);
 #ifdef ALPHA_TEST
 	// Discard pixel if texture alpha < 0.1.  We do this test as soon
 	// as possible in the shader so that we can potentially exit the
@@ -84,6 +94,18 @@ float4 PS(VertexOut pin)
 	// Interpolating normal can unnormalize it, so renormalize it.
 
 	pin.NormalW = normalize(pin.NormalW);
+	float4 normalMapSample;
+	float3 bumpedNormalW; // better avoid these branches
+	if (normalMapIndex >= 0 && IsTangentValid(pin.TangentW))
+	{
+		normalMapSample = gTextureMaps[normalMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
+		bumpedNormalW = NormalSampleToWorldSpace(normalMapSample.rgb, pin.NormalW, pin.TangentW);
+	}
+	else
+	{
+		normalMapSample = float4(0.0f, 0.0f, 1.0f, 1.0f);
+		bumpedNormalW = pin.NormalW;
+	}
 
 	// Vector from point being lit to eye.
 	float3 toEyeW = gEyePosW - pin.PosW;
@@ -91,25 +113,24 @@ float4 PS(VertexOut pin)
 	toEyeW /= distToEye; // normalize
 
 	// Light terms.
-
 	float4 ambient = gAmbientLight * diffuseAlbedo;
 
-	const float shininess = 1.0f - roughness;
+	const float shininess = (1.0f - roughness) * normalMapSample.a;
 	Material mat = { diffuseAlbedo, fresnelR0, shininess };
 	float3 shadowFactor = 1.0f;
-	float4 directLight = ComputeLighting(gLights, mat, pin.PosW, pin.NormalW, toEyeW, shadowFactor);
+	float4 directLight = ComputeLighting(gLights, mat, pin.PosW, bumpedNormalW, toEyeW, shadowFactor);
 
 	float4 litColor = ambient + directLight;
 
-#ifdef FOG
-	float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
-	litColor = lerp(litColor, gFogColor, fogAmount);
-#endif
-	float3 reflection = reflect(-toEyeW, pin.NormalW);
+	float3 reflection = reflect(-toEyeW, bumpedNormalW);
 	float4 reflectionColor = gCubeMap.Sample(gsamLinearWrap, reflection);
-	float3 fresnelFactor = SchlickFresnel(fresnelR0, pin.NormalW, toEyeW);
+	float3 fresnelFactor = SchlickFresnel(fresnelR0, bumpedNormalW, toEyeW);
 	litColor.rgb += shininess * fresnelFactor * reflectionColor.rgb;
 
+#ifdef FOG
+	float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
+	litColor = lerp(litColor, gFogColor, fogAmount); //TODO fix fog
+#endif
 	// Common convention to take alpha from diffuse albedo.
 	litColor.a = diffuseAlbedo.a;
 	return litColor;

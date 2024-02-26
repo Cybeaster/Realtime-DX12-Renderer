@@ -3,6 +3,7 @@
 #include "Engine/RenderObject/RenderObject.h"
 #include "Engine/UploadBuffer/UploadBuffer.h"
 
+class OCommandQueue;
 struct SRenderTargetParams
 {
 	ID3D12Device* Device;
@@ -11,7 +12,7 @@ struct SRenderTargetParams
 	DXGI_FORMAT Format;
 };
 
-class ORenderTargetBase : public IRenderObject
+class ORenderTargetBase : public ORenderObjectBase
 {
 public:
 	ORenderTargetBase(ID3D12Device* Device,
@@ -26,22 +27,29 @@ public:
 	{
 	}
 
+	ORenderTargetBase(UINT Width, UINT Height);
+
 	virtual void BuildDescriptors() = 0;
 	virtual void BuildResource() = 0;
 
 	ID3D12Resource* GetResource() const;
 	uint32_t GetNumSRVRequired() const override;
 	uint32_t GetNumRTVRequired() override;
-	virtual void Init();
+	virtual void InitRenderObject();
+	TUUID GetID() override;
+	void SetID(TUUID) override;
+	void SetViewport(OCommandQueue* CommandQueue) const;
 
 protected:
+	D3D12_VIEWPORT Viewport;
+	D3D12_RECT ScissorRect;
+
 	LONG Width = 0;
 	LONG Height = 0;
 	DXGI_FORMAT Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 
 	// Two for ping-ponging the textures.
 	ComPtr<ID3D12Resource> RenderTarget = nullptr;
-
 	ID3D12Device* Device = nullptr;
 };
 
@@ -59,10 +67,9 @@ public:
 
 	SDescriptorPair GetSRV() const { return SRVHandle; }
 	SDescriptorPair GetRTV() const { return RTVHandle; }
-
 	void BuildDescriptors(IDescriptor* Descriptor) override;
 	void OnResize(UINT NewWidth, UINT NewHeight);
-	void Init() override;
+	void InitRenderObject() override;
 
 protected:
 	void BuildDescriptors() override;

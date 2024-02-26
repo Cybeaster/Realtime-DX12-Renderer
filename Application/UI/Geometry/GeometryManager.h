@@ -13,7 +13,7 @@ public:
 	    : Engine(_Engine), RenderLayers(Map) {}
 
 	void Draw() override;
-	void Init() override;
+	void InitWidget() override;
 	void RebuildRequest() const;
 
 private:

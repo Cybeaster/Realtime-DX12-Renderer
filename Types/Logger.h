@@ -2,6 +2,7 @@
 
 #include "DirectX/DXHelper.h"
 
+#include <boost/uuid/uuid.hpp>
 #include <fstream>
 #include <iostream>
 
@@ -161,6 +162,11 @@ struct SLogUtils
 	static std::wstring ToString(string Argument) noexcept
 	{
 		return std::wstring(Argument.begin(), Argument.end());
+	}
+
+	static std::wstring ToString(boost::uuids::uuid ID) noexcept
+	{
+		return wstring(ID.begin(), ID.end());
 	}
 };
 

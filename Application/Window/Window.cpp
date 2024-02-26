@@ -17,35 +17,46 @@
 using namespace Microsoft::WRL;
 
 OWindow::OWindow(HWND hWnd, const SWindowInfo& _WindowInfo)
-    : Hwnd(hWnd)
-    , WindowInfo{ _WindowInfo }
+    : ORenderTargetBase(WindowInfo.ClientWidth, WindowInfo.ClientHeight), Hwnd(hWnd), WindowInfo{ _WindowInfo }
 {
 }
 
-void OWindow::Init()
+void OWindow::InitRenderObject()
 {
-	Camera = make_shared<OCamera>(shared_from_this());
+	Camera = make_shared<OCamera>(this);
 	SetCameraLens();
-	BuildResources();
-	ResetBuffers();
+	BuildResource();
 }
 
-void OWindow::BuildResources()
+void OWindow::BuildResource()
 {
 	const auto engine = OEngine::Get();
 	auto device = engine->GetDevice();
 	SwapChain = CreateSwapChain();
-	RTVDescNum = OEngine::Get()->GetDesiredCountOfRTVs();
-	DSVDescNum = OEngine::Get()->GetDesiredCountOfDSVs();
+	TotalRTVDescNum = OEngine::Get()->GetDesiredCountOfRTVs();
+	TotalDSVDescNum = OEngine::Get()->GetDesiredCountOfDSVs();
 
 	RTVDescriptorSize = engine->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-	RTVHeap = engine->CreateDescriptorHeap(RTVDescNum, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	DSVHeap = engine->CreateDescriptorHeap(DSVDescNum, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-	LOG(Render, Log, "RTV and DSV heaps created. {} RTVs and {} DSVs", RTVDescNum, DSVDescNum);
-
+	RTVHeap = engine->CreateDescriptorHeap(TotalRTVDescNum, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	DSVHeap = engine->CreateDescriptorHeap(TotalDSVDescNum, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+	LOG(Render, Log, "RTV and DSV heaps created. {} RTVs and {} DSVs", TotalRTVDescNum, TotalDSVDescNum);
 	UpdateRenderTargetViews();
 	ResizeDepthBuffer();
+}
+
+void OWindow::BuildDescriptors(IDescriptor* Descriptor)
+{
+	/*auto descriptor = Cast<SRenderObjectDescriptor>(Descriptor);
+	if (!descriptor)
+	{
+		return;
+	}
+	RTVHandle = descriptor->RTVHandle.Offset(2);
+	DSVHandle = descriptor->DSVHandle.Offset(1);
+	UpdateRenderTargetViews();
+	ResizeDepthBuffer();*/
+	BuildDescriptors();
 }
 
 const wstring& OWindow::GetName() const
@@ -206,7 +217,7 @@ void OWindow::OnRender(const UpdateEventArgs& Event)
 {
 }
 
-void OWindow::OnUpdate(const UpdateEventArgs& Event)
+void OWindow::Update(const UpdateEventArgs& Event)
 {
 	if (Event.IsUIInfocus)
 	{
@@ -371,6 +382,15 @@ void OWindow::SetCameraLens()
 		Camera->SetLens(0.25 * DirectX::XM_PI, GetAspectRatio(), 1.0f, 1000.0f);
 	}
 }
+uint32_t OWindow::GetNumDSVRequired()
+{
+	return 1;
+}
+
+uint32_t OWindow::GetNumRTVRequired()
+{
+	return 2;
+}
 
 float OWindow::GetLastXMousePos() const
 {
@@ -389,12 +409,12 @@ shared_ptr<OCamera> OWindow::GetCamera()
 
 uint32_t OWindow::GetDSVDescNum() const
 {
-	return DSVDescNum;
+	return TotalDSVDescNum;
 }
 
 uint32_t OWindow::GetRTVDescNum() const
 {
-	return RTVDescNum;
+	return TotalRTVDescNum;
 }
 
 bool OWindow::HasCapturedLeftMouseButton() const
@@ -509,6 +529,11 @@ void OWindow::ResizeDepthBuffer()
 
 	TransitionResource(engine->GetCommandQueue()->GetCommandList(), DepthBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 	engine->GetCommandQueue()->ExecuteCommandListAndWait();
+}
+
+void OWindow::BuildDescriptors()
+{
+	ResetBuffers();
 }
 
 HWND OWindow::GetHWND() const

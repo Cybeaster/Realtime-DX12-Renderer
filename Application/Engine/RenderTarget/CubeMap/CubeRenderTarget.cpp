@@ -23,6 +23,7 @@ uint32_t OCubeRenderTarget::GetNumPassesRequired()
 
 void OCubeRenderTarget::BuildDepthStencilBuffer()
 {
+	OEngine::Get()->GetCommandQueue()->TryResetCommandList();
 	// Create the depth/stencil buffer and view.
 	D3D12_RESOURCE_DESC depthStencilDesc;
 	depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -52,6 +53,8 @@ void OCubeRenderTarget::BuildDepthStencilBuffer()
 
 	Device->CreateDepthStencilView(CubeDepthStencilBuffer.Get(), nullptr, DSVHandle.CPUHandle);
 	Utils::ResourceBarrier(OEngine::Get()->GetCommandQueue()->GetCommandList().Get(), CubeDepthStencilBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	OEngine::Get()->GetCommandQueue()->ExecuteCommandListAndWait();
+
 }
 
 void OCubeRenderTarget::BuildViewport()
@@ -90,9 +93,9 @@ uint32_t OCubeRenderTarget::GetNumDSVRequired()
 	return 1;
 }
 
-void OCubeRenderTarget::Init()
+void OCubeRenderTarget::InitRenderObject()
 {
-	ORenderTargetBase::Init();
+	ORenderTargetBase::InitRenderObject();
 	BuildResource();
 }
 

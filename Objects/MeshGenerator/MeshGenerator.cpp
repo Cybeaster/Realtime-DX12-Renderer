@@ -59,6 +59,7 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(string Name, const OGeometr
 		vertices[i].Position = Data.Vertices[i].Position;
 		vertices[i].Normal = Data.Vertices[i].Normal;
 		vertices[i].TexC = Data.Vertices[i].TexC;
+		vertices[i].TangentU = Data.Vertices[i].TangentU;
 		auto pos = XMLoadFloat3(&vertices[i].Position);
 		positions[i] = vertices[i].Position;
 		vMax = XMVectorMax(vMax, pos);

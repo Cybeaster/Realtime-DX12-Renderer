@@ -1,6 +1,7 @@
 #pragma once
 #include "../../Utils/Math.h"
 #include "../InputHandler/InputHandler.h"
+#include "Engine/RenderTarget/RenderTarget.h"
 #include "Events.h"
 #include "RenderConstants.h"
 
@@ -27,7 +28,8 @@ struct SWindowInfo
 
 class OEngine;
 
-class OWindow : public std::enable_shared_from_this<OWindow>
+class OWindow : public ORenderTargetBase
+    , public std::enable_shared_from_this<OWindow>
 {
 public:
 	virtual ~OWindow() = default;
@@ -35,7 +37,7 @@ public:
 	OWindow() = default;
 
 	OWindow(HWND hWnd, const SWindowInfo& _WindowInfo);
-	void Init();
+	void InitRenderObject();
 	const wstring& GetName() const;
 	uint32_t GetWidth() const;
 	uint32_t GetHeight() const;
@@ -89,8 +91,6 @@ public:
 	HWND GetHWND() const;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> GetDSVDescriptorHeap() const;
 
-	D3D12_VIEWPORT Viewport;
-	D3D12_RECT ScissorRect;
 	uint64_t FenceValues[SRenderConstants::RenderBuffersCount];
 
 	ComPtr<ID3D12Resource> DepthBuffer;
@@ -106,7 +106,7 @@ public:
 
 	// Update and Draw can only be called by the application.
 	virtual void OnRender(const UpdateEventArgs& Event);
-	virtual void OnUpdate(const UpdateEventArgs& Event);
+	virtual void Update(const UpdateEventArgs& Event) override;
 
 	// A keyboard key was pressed
 	virtual void OnKeyPressed(KeyEventArgs& Event);
@@ -131,26 +131,36 @@ public:
 
 	uint32_t GetDSVDescNum() const;
 	uint32_t GetRTVDescNum() const;
+
 	void ResetBuffers();
 	void SetCameraLens();
 
-protected:
-	void BuildResources();
+	uint32_t GetNumDSVRequired() override;
+	uint32_t GetNumRTVRequired() override;
 
+protected:
+	void BuildResource() override;
+	void BuildDescriptors(IDescriptor* Descriptor) override;
 	bool HasCapturedLeftMouseButton() const;
 	// The Window procedure needs to call protected methods of this class.
 	friend LRESULT CALLBACK
 	WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 	// Create the swapchian.
-	Microsoft::WRL::ComPtr<IDXGISwapChain4> CreateSwapChain();
+	ComPtr<IDXGISwapChain4> CreateSwapChain();
 
 	void UpdateRenderTargetViews();
 	void ResizeDepthBuffer();
 
+public:
+	void BuildDescriptors() override;
+
 private:
-	uint32_t RTVDescNum;
-	uint32_t DSVDescNum;
+	uint32_t TotalRTVDescNum;
+	uint32_t TotalDSVDescNum;
+
+	SDescriptorPair RTVHandle;
+	SDescriptorPair DSVHandle;
 
 	shared_ptr<OInputHandler> InputHandler;
 	shared_ptr<OCamera> Camera;

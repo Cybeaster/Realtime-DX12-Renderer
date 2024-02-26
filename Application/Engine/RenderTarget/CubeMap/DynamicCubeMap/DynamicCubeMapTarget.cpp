@@ -6,10 +6,10 @@
 
 #include "Engine/Engine.h"
 
-void ODynamicCubeMapRenderTarget::Init()
+void ODynamicCubeMapRenderTarget::InitRenderObject()
 {
 	using namespace DirectX;
-	OCubeRenderTarget::Init();
+	OCubeRenderTarget::InitRenderObject();
 
 	auto x = Position.x;
 	auto y = Position.y;

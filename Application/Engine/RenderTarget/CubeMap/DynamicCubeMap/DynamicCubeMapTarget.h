@@ -8,7 +8,7 @@ public:
 	ODynamicCubeMapRenderTarget(const SRenderTargetParams& Params, DirectX::XMFLOAT3 Center, const DirectX::XMUINT2& Res)
 	    : OCubeRenderTarget(Params, Res), Position(Center) {}
 
-	void Init() override;
+	void InitRenderObject() override;
 	void UpdatePass(const SPassConstantsData& Data) override;
 
 private:

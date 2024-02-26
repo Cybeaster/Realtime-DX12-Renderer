@@ -767,6 +767,7 @@ unique_ptr<SMeshGeometry> OGeometryGenerator::CreateWaterGeometry(float Width, f
 		vertices[i].Position = grid.Vertices[i].Position;
 		vertices[i].Normal = grid.Vertices[i].Normal;
 		vertices[i].TexC = grid.Vertices[i].TexC;
+		vertices[i].TangentU = grid.Vertices[i].TangentU;
 		auto pos = XMLoadFloat3(&vertices[i].Position);
 
 		vMax = XMVectorMax(vMax, pos);

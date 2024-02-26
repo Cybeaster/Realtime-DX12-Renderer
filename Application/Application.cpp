@@ -24,7 +24,7 @@ void OApplication::Destory()
 	Application = nullptr;
 }
 
-shared_ptr<OWindow> OApplication::CreateWindow()
+OWindow* OApplication::CreateWindow() const
 {
 	RECT windowRect = {
 		0,
@@ -49,7 +49,7 @@ shared_ptr<OWindow> OApplication::CreateWindow()
 		MessageBoxA(NULL, "Failed to create window.", "Error", MB_OK | MB_ICONERROR);
 		return nullptr;
 	}
-	auto window = make_shared<OWindow>(hWnd, DefaultWindowInfo);
+	auto window = new OWindow(hWnd, DefaultWindowInfo);
 	return window;
 }
 

@@ -129,9 +129,9 @@ void OGeometryEntityWidget::Draw()
 	ImGui::End();
 }
 
-void OGeometryEntityWidget::Init()
+void OGeometryEntityWidget::InitWidget()
 {
-	IWidget::Init();
+	IWidget::InitWidget();
 	using namespace DirectX;
 	// Variables to store the decomposed components
 	DirectX::XMVECTOR scale, rotation, translation;

@@ -67,9 +67,9 @@ bool OEngine::Initialize()
 	}
 	if (Device)
 	{
-		DirectCommandQueue = make_shared<OCommandQueue>(Device, D3D12_COMMAND_LIST_TYPE_DIRECT);
-		ComputeCommandQueue = make_shared<OCommandQueue>(Device, D3D12_COMMAND_LIST_TYPE_COMPUTE);
-		CopyCommandQueue = make_shared<OCommandQueue>(Device, D3D12_COMMAND_LIST_TYPE_COPY);
+		DirectCommandQueue = make_unique<OCommandQueue>(Device, D3D12_COMMAND_LIST_TYPE_DIRECT);
+		ComputeCommandQueue = make_unique<OCommandQueue>(Device, D3D12_COMMAND_LIST_TYPE_COMPUTE);
+		CopyCommandQueue = make_unique<OCommandQueue>(Device, D3D12_COMMAND_LIST_TYPE_COPY);
 
 		RTVDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 		DSVDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
@@ -90,8 +90,8 @@ bool OEngine::Initialize()
 
 void OEngine::InitManagers()
 {
-	MeshGenerator = make_unique<OMeshGenerator>(Device.Get(), GetCommandQueue().get());
-	TextureManager = make_unique<OTextureManager>(Device.Get(), GetCommandQueue().get());
+	MeshGenerator = make_unique<OMeshGenerator>(Device.Get(), GetCommandQueue());
+	TextureManager = make_unique<OTextureManager>(Device.Get(), GetCommandQueue());
 	MaterialManager = make_unique<OMaterialManager>();
 	MaterialManager->LoadMaterialsFromCache();
 	MaterialManager->MaterialsRebuld.AddMember(this, &OEngine::TryRebuildFrameResource);
@@ -99,8 +99,7 @@ void OEngine::InitManagers()
 
 void OEngine::PostInitialize()
 {
-	UIManager = make_unique<OUIManager>();
-
+	UIManager = BuildRenderObject<OUIManager>();
 	BuildFilters();
 	BuildOffscreenRT();
 	BuildShadersAndInputLayouts();
@@ -122,6 +121,7 @@ void OEngine::BuildFilters()
 TUUID OEngine::AddRenderObject(IRenderObject* RenderObject)
 {
 	const auto uuid = GenerateUUID();
+	RenderObject->SetID(uuid);
 	RenderObjects[uuid] = unique_ptr<IRenderObject>(RenderObject);
 	return uuid;
 }
@@ -167,6 +167,7 @@ void OEngine::UpdateMaterialCB() const
 				matConstants.MaterialSurface.FresnelR0 = material->MaterialSurface.FresnelR0;
 				matConstants.MaterialSurface.Roughness = material->MaterialSurface.Roughness;
 				matConstants.DiffuseMapIndex = material->DiffuseTexture->HeapIdx;
+				matConstants.NormalMapIndex = material->NormalTexture ? material->NormalTexture->HeapIdx : -1;
 
 				Put(matConstants.MatTransform, Transpose(matTransform));
 
@@ -246,7 +247,7 @@ void OEngine::SetFogRange(float Range)
 	MainPassCB.FogRange = Range;
 }
 
-shared_ptr<OWindow> OEngine::GetWindow() const
+OWindow* OEngine::GetWindow() const
 {
 	return Window;
 }
@@ -278,7 +279,7 @@ int OEngine::InitTests(shared_ptr<OTest> Test)
 
 void OEngine::PostTestInit()
 {
-	Window->Init();
+	Window->InitRenderObject();
 	BuildFrameResource(GetPassCountRequired());
 	GetCommandQueue()->TryResetCommandList();
 	BuildDescriptorHeap();
@@ -287,23 +288,21 @@ void OEngine::PostTestInit()
 	HasInitializedTests = true;
 }
 
-shared_ptr<OCommandQueue> OEngine::GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type)
+OCommandQueue* OEngine::GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type)
 {
-	shared_ptr<OCommandQueue> queue;
-
 	switch (Type)
 	{
 	case D3D12_COMMAND_LIST_TYPE_DIRECT:
-		queue = DirectCommandQueue;
+		return DirectCommandQueue.get();
 		break;
 	case D3D12_COMMAND_LIST_TYPE_COMPUTE:
-		queue = ComputeCommandQueue;
+		return ComputeCommandQueue.get();
 		break;
 	case D3D12_COMMAND_LIST_TYPE_COPY:
-		queue = CopyCommandQueue;
+		return CopyCommandQueue.get();
 		break;
 	}
-	return queue;
+	return nullptr;
 }
 
 void OEngine::OnEnd(shared_ptr<OTest> Test) const
@@ -341,25 +340,38 @@ void OEngine::BuildFrameResource(uint32_t Count)
 	OnFrameResourceChanged.Broadcast();
 }
 
+void OEngine::SetDescriptorHeap()
+{
+	GetCommandQueue()->TryResetCommandList();
+	ID3D12DescriptorHeap* heaps[] = { SRVDescriptorHeap.Get() };
+	GetCommandQueue()->GetCommandList()->SetDescriptorHeaps(_countof(heaps), heaps);
+}
+
 void OEngine::OnPreRender()
 {
 	if (SRVDescriptorHeap)
 	{
 		const auto commandList = GetCommandQueue()->GetCommandList();
-
-		GetCommandQueue()->TryResetCommandList();
-
-		ID3D12DescriptorHeap* heaps[] = { SRVDescriptorHeap.Get() };
-		commandList->SetDescriptorHeaps(_countof(heaps), heaps);
-
-		const auto window = GetWindow();
-		commandList->RSSetViewports(1, &window->Viewport);
-		commandList->RSSetScissorRects(1, &window->ScissorRect);
+		SetDescriptorHeap();
+		Window->SetViewport(GetCommandQueue());
 
 		commandList->SetGraphicsRootSignature(DefaultRootSignature.Get());
 		commandList->SetGraphicsRootShaderResourceView(1, CurrentFrameResources->MaterialBuffer->GetResource()->GetGPUVirtualAddress());
 		commandList->SetGraphicsRootConstantBufferView(2, CurrentFrameResources->PassCB->GetResource()->GetGPUVirtualAddress());
 		commandList->SetGraphicsRootDescriptorTable(3, GetSRVHeap()->GetGPUDescriptorHandleForHeapStart());
+
+		auto rtv = GetRenderTarget()->GetRTV().CPUHandle;
+		auto dsv = GetWindow()->GetDepthStensilView();
+		Utils::ResourceBarrier(commandList.Get(), GetRenderTarget()->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+		// Clear the back buffer and depth buffer.
+		commandList->ClearRenderTargetView(rtv, reinterpret_cast<float*>(&MainPassCB.FogColor), 0, nullptr);
+		commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+		// Specify the buffers we are going to render to.
+		commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
+
+		commandList->SetGraphicsRootSignature(DefaultRootSignature.Get());
 	}
 
 	/*
@@ -382,6 +394,17 @@ void OEngine::OnPreRender()
 	slotRootParameter[4].InitAsDescriptorTable(1, &displacementTable, D3D12_SHADER_VISIBILITY_VERTEX);
 	slotRootParameter[5].InitAsDescriptorTable(1, &cubeMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	 */
+}
+
+void OEngine::PrepareRenderTarget()
+{
+	auto cmdList = GetCommandQueue()->GetCommandList();
+	auto backbufferView = GetRenderTarget()->GetRTV().CPUHandle;
+	auto depthStencilView = GetWindow()->GetDepthStensilView();
+	cmdList->ClearRenderTargetView(backbufferView, DirectX::Colors::LightSteelBlue, 0, nullptr);
+	cmdList->ClearDepthStencilView(depthStencilView, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+	cmdList->OMSetRenderTargets(1, &backbufferView, true, &depthStencilView);
+	Utils::ResourceBarrier(cmdList.Get(), GetRenderTarget()->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
 }
 
 void OEngine::Draw(UpdateEventArgs& Args)
@@ -430,6 +453,12 @@ void OEngine::UpdateFrameResource()
 	}
 }
 
+void OEngine::RemoveRenderObject(TUUID UUID)
+{
+	LOG(Render, Log, "Removing object with UUID: {}", TO_STRING(UUID));
+	RenderObjects.erase(UUID);
+}
+
 void OEngine::UpdateObjectCB() const
 {
 	auto res = CurrentFrameResources->PassCB.get();
@@ -460,7 +489,7 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 {
 	UpdateFrameResource();
 
-	GetWindow()->OnUpdate(Args);
+	GetWindow()->Update(Args);
 	PerformFrustrumCulling();
 	if (CurrentFrameResources)
 	{
@@ -468,10 +497,9 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 		UpdateMaterialCB();
 		UpdateObjectCB();
 	}
-
-	if (UIManager)
+	for (const auto& val : RenderObjects | std::views::values)
 	{
-		UIManager->Update();
+		val->Update(Args);
 	}
 }
 
@@ -575,7 +603,7 @@ void OEngine::OnPostRender()
 
 void OEngine::DestroyWindow()
 {
-	OApplication::Get()->DestroyWindow(Window);
+	RemoveRenderObject(Window->GetID());
 }
 
 void OEngine::OnWindowDestroyed()
@@ -731,6 +759,7 @@ void OEngine::CreateWindow()
 	Window = OApplication::Get()->CreateWindow();
 	WindowsMap[Window->GetHWND()] = Window;
 	Window->RegsterWindow();
+	AddRenderObject(Window);
 }
 
 void OEngine::CheckMSAAQualitySupport()
@@ -1113,7 +1142,8 @@ void OEngine::BuildShadersAndInputLayouts()
 	InputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 	};
 }
 
@@ -1211,7 +1241,7 @@ shared_ptr<OTest> OEngine::GetTestByHWND(HWND Handler)
 	return nullptr;
 }
 
-shared_ptr<OWindow> OEngine::GetWindowByHWND(HWND Handler)
+OWindow* OEngine::GetWindowByHWND(HWND Handler)
 {
 	const auto window = WindowsMap.find(Handler);
 	if (window != WindowsMap.end())
@@ -1225,7 +1255,7 @@ shared_ptr<OWindow> OEngine::GetWindowByHWND(HWND Handler)
 
 void OEngine::Destroy()
 {
-	OApplication::Get()->DestroyWindow(Window);
+	DestroyWindow();
 }
 
 ComPtr<ID3D12DescriptorHeap> OEngine::CreateDescriptorHeap(UINT NumDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE Type, D3D12_DESCRIPTOR_HEAP_FLAGS Flags) const

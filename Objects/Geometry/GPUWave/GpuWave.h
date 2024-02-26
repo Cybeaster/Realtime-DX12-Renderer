@@ -4,7 +4,7 @@
 #include "DXHelper.h"
 #include "Engine/RenderObject/RenderObject.h"
 #include "Timer/Timer.h"
-class OGPUWave : public IRenderObject
+class OGPUWave : public ORenderObjectBase
 {
 public:
 	OGPUWave(ID3D12Device* _Device, ID3D12GraphicsCommandList* _List, int32_t _M, int32_t _N, float dx, float dt, float speed, float damping);
@@ -54,10 +54,12 @@ public:
 
 	void BuildDescriptors(IDescriptor* Descriptor) override;
 
-	void Update(const STimer& Gt, ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO);
 	void Disturb(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO, UINT I, UINT J, float Magnitude);
+	void Update(const UpdateEventArgs& Event) override;
 
 private:
+	void Update(const STimer& Gt, ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO);
+
 	UINT NumRows;
 	UINT NumCols;
 

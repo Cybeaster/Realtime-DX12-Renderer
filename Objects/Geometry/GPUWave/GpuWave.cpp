@@ -218,3 +218,20 @@ void OGPUWave::Disturb(ID3D12RootSignature* RootSignature, ID3D12PipelineState* 
 	Utils::ResourceBarrier(CMDList, CurrSol.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 	CMDList->Dispatch(1, 1, 1);
 }
+void OGPUWave::Update(const UpdateEventArgs& Event)
+{
+	auto engine = OEngine::Get();
+	auto commandList = engine->GetCommandQueue()->GetCommandList();
+	const auto wavesRootSignature = engine->GetWavesRootSignature();
+	static float tBase = 0.0f;
+	if (Event.Timer.GetTime() - tBase >= 0.25)
+	{
+		tBase += 0.25;
+		int i = Utils::Math::Random(4, GetRowCount() - 5);
+		int j = Utils::Math::Random(4, GetColumnCount() - 5);
+		float r = Utils::Math::Random(1.f, 2.f);
+
+		Disturb(wavesRootSignature, engine->GetPSO(SPSOType::WavesDisturb).Get(), i, j, r);
+	}
+	Update(Event.Timer, wavesRootSignature, engine->GetPSO(SPSOType::WavesUpdate).Get());
+}

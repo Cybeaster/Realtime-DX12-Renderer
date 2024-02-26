@@ -18,7 +18,7 @@ public:
 	    : RenderItem(_RItem), Engine(_Engine), Manager(_OwningWidget) {}
 
 	void Draw() override;
-	void Init() override;
+	void InitWidget() override;
 	SMeshGeometry* GetGeometry() const
 	{
 		if (RenderItem)

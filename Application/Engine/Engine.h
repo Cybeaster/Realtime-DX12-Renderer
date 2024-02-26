@@ -29,7 +29,7 @@ class OEngine : public std::enable_shared_from_this<OEngine>
 public:
 	DECLARE_DELEGATE(SOnFrameResourceChanged);
 
-	using TWindowPtr = std::shared_ptr<OWindow>;
+	using TWindowPtr = OWindow*;
 	using TWindowMap = std::map<HWND, TWindowPtr>;
 	using WindowNameMap = std::map<std::wstring, TWindowPtr>;
 	using TSceneGeometryMap = std::unordered_map<string, unique_ptr<SMeshGeometry>>;
@@ -62,7 +62,7 @@ public:
 	void SetFogStart(float Start);
 	void SetFogRange(float Range);
 
-	shared_ptr<OWindow> GetWindow() const;
+	OWindow* GetWindow() const;
 	ComPtr<ID3D12Device2> GetDevice() const;
 
 	void FlushGPU() const;
@@ -75,7 +75,7 @@ public:
 
 	ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(UINT NumDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE Type, D3D12_DESCRIPTOR_HEAP_FLAGS Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE) const;
 
-	shared_ptr<OCommandQueue> GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type = D3D12_COMMAND_LIST_TYPE_DIRECT);
+	OCommandQueue* GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type = D3D12_COMMAND_LIST_TYPE_DIRECT);
 
 	UINT GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE Type) const;
 
@@ -83,11 +83,11 @@ public:
 
 	void TryRebuildFrameResource();
 	void OnPreRender();
+	void PrepareRenderTarget();
 	void Draw(UpdateEventArgs& Args);
 	void Render(UpdateEventArgs& Args);
 	void Update(UpdateEventArgs& Args);
 	void OnUpdate(UpdateEventArgs& Args);
-
 	void OnPostRender();
 	void PostProcess(HWND Handler);
 	void DrawCompositeShader(CD3DX12_GPU_DESCRIPTOR_HANDLE Input);
@@ -248,6 +248,7 @@ public:
 	void DrawRenderItems(string PSOType, string RenderLayer);
 	void UpdateMaterialCB() const;
 	void UpdateObjectCB() const;
+	void SetDescriptorHeap();
 
 protected:
 	void DrawRenderItemsImpl(const ComPtr<ID3D12GraphicsCommandList>& CommandList, const vector<SRenderItem*>& RenderItems);
@@ -255,10 +256,10 @@ protected:
 	TUUID BuildRenderObjectImpl(Args&&... Params);
 
 	shared_ptr<OTest> GetTestByHWND(HWND Handler);
-	shared_ptr<OWindow> GetWindowByHWND(HWND Handler);
+	OWindow* GetWindowByHWND(HWND Handler);
 	void Destroy();
 
-	shared_ptr<OWindow> Window;
+	OWindow* Window;
 	ComPtr<IDXGIAdapter4> GetAdapter(bool UseWarp);
 	ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> Adapter);
 
@@ -270,6 +271,7 @@ protected:
 	void UpdateFrameResource();
 
 private:
+	void RemoveRenderObject(TUUID UUID);
 	void BuildFrameResource(uint32_t Count = 1);
 
 	uint32_t PassCount = 1;
@@ -284,9 +286,9 @@ private:
 	ComPtr<IDXGIAdapter4> Adapter;
 	ComPtr<ID3D12Device2> Device;
 
-	shared_ptr<OCommandQueue> DirectCommandQueue;
-	shared_ptr<OCommandQueue> ComputeCommandQueue;
-	shared_ptr<OCommandQueue> CopyCommandQueue;
+	unique_ptr<OCommandQueue> DirectCommandQueue;
+	unique_ptr<OCommandQueue> ComputeCommandQueue;
+	unique_ptr<OCommandQueue> CopyCommandQueue;
 
 	bool bIsTearingSupported = false;
 
@@ -326,7 +328,7 @@ private:
 	OOffscreenTexture* OffscreenRT = nullptr;
 	ODynamicCubeMapRenderTarget* CubeRenderTarget = nullptr;
 
-	unique_ptr<OUIManager> UIManager;
+	OUIManager* UIManager;
 	map<TUUID, unique_ptr<IRenderObject>> RenderObjects;
 	int32_t LightCount = 0;
 	bool FrustrumCullingEnabled = false;
@@ -345,9 +347,10 @@ private:
 template<typename T, typename... Args>
 TUUID OEngine::BuildRenderObjectImpl(Args&&... Params)
 {
-	auto object = new T(std::forward<Args>(Params)...);
-	object->Init();
 	auto uuid = GenerateUUID();
+	auto object = new T(std::forward<Args>(Params)...);
+	object->SetID(uuid);
+	object->InitRenderObject();
 	RenderObjects[uuid] = unique_ptr<IRenderObject>(object);
 	return uuid;
 }

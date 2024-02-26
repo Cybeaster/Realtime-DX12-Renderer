@@ -42,9 +42,9 @@ void OGeometryManagerWidget::Draw()
 	}
 }
 
-void OGeometryManagerWidget::Init()
+void OGeometryManagerWidget::InitWidget()
 {
-	IWidget::Init();
+	IWidget::InitWidget();
 	PickedRenderItemWidget = MakeWidget<OPickedRenderItemWidget>();
 	for (auto& layer : *RenderLayers)
 	{

@@ -89,6 +89,13 @@ STexture* OTextureManager::CreateTexture(string Name, wstring FileName)
 		return nullptr;
 	}
 
+	std::filesystem::path path(FileName);
+	if (!exists(path))
+	{
+		LOG(Engine, Warning, "Texture file not found!");
+		return nullptr;
+	}
+
 	auto texture = make_unique<STexture>();
 	texture->Name = Name;
 	texture->FileName = FileName;

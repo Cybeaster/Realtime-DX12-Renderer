@@ -2,8 +2,10 @@
 #include "../../../Utils/Statics.h"
 #include "../Types/DirectX/DXHelper.h"
 #include "Engine/UploadBuffer/UploadBuffer.h"
+#include "Events.h"
 #include "Logger.h"
 #include "ObjectConstants.h"
+#include "Timer/Timer.h"
 
 struct IDescriptor
 {
@@ -143,10 +145,29 @@ class IRenderObject
 public:
 	virtual ~IRenderObject() = default;
 	virtual void BuildDescriptors(IDescriptor* Descriptor){};
-	virtual void Init(){};
+	virtual void InitRenderObject(){};
 	virtual uint32_t GetNumSRVRequired() const = 0;
 	virtual uint32_t GetNumRTVRequired() { return 0; }
 	virtual uint32_t GetNumDSVRequired() { return 0; }
 	virtual uint32_t GetNumPassesRequired() { return 0; }
 	virtual void UpdatePass(const SPassConstantsData& Data) {}
+	virtual void Update(const UpdateEventArgs& Event) {}
+	virtual TUUID GetID() { return {}; }
+	virtual void SetID(TUUID ID) {}
+};
+
+class ORenderObjectBase : public IRenderObject
+{
+public:
+	void SetID(TUUID ID) override
+	{
+		this->ID = ID;
+	}
+	TUUID GetID() override
+	{
+		return ID;
+	}
+
+protected:
+	TUUID ID = {};
 };

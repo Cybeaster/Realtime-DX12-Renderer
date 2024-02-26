@@ -1,10 +1,11 @@
 #pragma once
 #include "Test/Test.h"
 
+class OGPUWave;
 class OCubeMapTest : public OTest
 {
 public:
-	OCubeMapTest(const shared_ptr<OWindow>& Window)
+	OCubeMapTest(OWindow* Window)
 	    : OTest(Window) {}
 
 	bool Initialize() override;
@@ -15,5 +16,7 @@ public:
 	void DrawSceneToCubeMap();
 
 private:
+	OGPUWave* Waves = nullptr;
+
 	SInstanceData* SkullRitem = nullptr;
 };

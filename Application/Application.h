@@ -14,9 +14,9 @@ public:
 	static OApplication* Get();
 	void Destory();
 
-	shared_ptr<OWindow> CreateWindow();
+	OWindow* CreateWindow() const;
 
-	void DestroyWindow(shared_ptr<OWindow> Window)
+	void DestroyWindow(unique_ptr<OWindow> Window)
 	{
 		Window.reset();
 	}

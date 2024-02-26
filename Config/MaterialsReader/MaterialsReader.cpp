@@ -11,7 +11,7 @@ std::unordered_map<string, unique_ptr<SMaterial>> OMaterialsConfigParser::LoadMa
 		auto& data = val.get_child("Data");
 
 		material->TexturePath = UTF8ToWString(data.get<string>("TexturePath"));
-
+		material->NormalMapPath = UTF8ToWString(data.get<string>("NormalMapPath"));
 		auto& diffChild = data.get_child("Diffuse");
 		material->MaterialSurface.DiffuseAlbedo.x = diffChild.get<float>("x");
 		material->MaterialSurface.DiffuseAlbedo.y = diffChild.get<float>("y");

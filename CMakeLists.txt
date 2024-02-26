@@ -147,6 +147,10 @@ set(SRC_FILES
         Application/UI/Base/PickerTable/PickerTableWidget.cpp
         Application/UI/Base/PickerTable/PickerTableWidget.h
         Textures/Texture.cpp
+        Application/RenderGraph/Graph/RenderGraph.cpp
+        Application/RenderGraph/Graph/RenderGraph.h
+        Application/RenderGraph/Nodes/RenderNode.cpp
+        Application/RenderGraph/Nodes/RenderNode.h
 
 )
 

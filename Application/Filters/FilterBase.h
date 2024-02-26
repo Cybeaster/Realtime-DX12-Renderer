@@ -3,7 +3,7 @@
 #include "DirectX/DXHelper.h"
 #include "Engine/RenderObject/RenderObject.h"
 
-class OFilterBase : public IRenderObject
+class OFilterBase : public ORenderObjectBase
 {
 public:
 	virtual ~OFilterBase() = default;
@@ -12,13 +12,13 @@ public:
 	    : Device(Device), CMDList(List), Width(Width), Height(Height), Format(Format)
 	{
 	}
-	void Init();
+	void InitRenderObject();
 
 	template<typename T>
 	static T* CreateFilter(ID3D12Device* _Device, ID3D12GraphicsCommandList* _List, UINT _Width, UINT _Height, DXGI_FORMAT _Format)
 	{
 		auto newFilter = new T(_Device, _List, _Width, _Height, _Format);
-		newFilter->Init();
+		newFilter->InitRenderObject();
 		return newFilter;
 	}
 
@@ -30,13 +30,12 @@ protected:
 
 	ID3D12GraphicsCommandList* CMDList = nullptr;
 	ID3D12Device* Device = nullptr;
-
 	uint32_t Width = 0;
 	uint32_t Height = 0;
 	DXGI_FORMAT Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 };
 
-inline void OFilterBase::Init()
+inline void OFilterBase::InitRenderObject()
 {
 	BuildResource();
 }

@@ -11,7 +11,7 @@ class IWidget
 {
 public:
 	virtual ~IWidget() = default;
-	virtual void Init(){};
+	virtual void InitWidget(){};
 	virtual void Update() {}
 	virtual void Draw() = 0;
 	virtual bool IsInFocus() { return false; }
@@ -28,7 +28,7 @@ public:
 	WidgetType* MakeWidget(Params&&... Args)
 	{
 		auto newWidget = make_unique<WidgetType>(std::forward<Params>(Args)...);
-		newWidget->Init();
+		newWidget->InitWidget();
 		auto result = newWidget.get();
 		Widgets.push_back(move(newWidget));
 		return result;

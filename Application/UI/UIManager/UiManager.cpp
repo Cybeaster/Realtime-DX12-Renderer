@@ -136,6 +136,10 @@ void OUIManager::OnResize(ResizeEventArgs& Args)
 		IO->DisplaySize = ImVec2(static_cast<float>(Args.Width), static_cast<float>(Args.Height));
 	}
 }
+void OUIManager::Update(const UpdateEventArgs& Event)
+{
+	OHierarchicalWidgetBase::Update();
+}
 
 void OUIManager::KeyMap()
 {

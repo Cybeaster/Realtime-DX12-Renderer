@@ -4,10 +4,20 @@
 
 #include "CubeMapTest.h"
 
+#include "../../../Objects/Geometry/GPUWave/GpuWave.h"
 #include "../../../Utils/EngineHelper.h"
 bool OCubeMapTest::Initialize()
 {
 	OEngine::Get()->BuildCubeRenderTarget({ 0, 2, 0 });
+	auto queue = OEngine::Get()->GetCommandQueue();
+	/*Waves = OEngine::Get()->BuildRenderObject<OGPUWave>(OEngine::Get()->GetDevice().Get(),
+	                                                    queue->GetCommandList().Get(),
+	                                                    256,
+	                                                    256,
+	                                                    0.25f,
+	                                                    0.03f,
+	                                                    2.0f,
+	                                                    0.2f);*/
 	BuildRenderItems();
 	return true;
 }
@@ -26,8 +36,7 @@ void OCubeMapTest::DrawSceneToCubeMap()
 
 	cmdList->SetGraphicsRootDescriptorTable(5, OEngine::Get()->GetSRVDescHandleForTexture(FindTextureByName("grasscube1024")));
 
-	cmdList->RSSetViewports(1, &cubeMap->GetViewport());
-	cmdList->RSSetScissorRects(1, &cubeMap->GetScissorRect());
+	cubeMap->SetViewport(OEngine::Get()->GetCommandQueue());
 
 	Utils::ResourceBarrier(cmdList.Get(), cubeMap->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	UINT passCBByteSize = Utils::CalcBufferByteSize(sizeof(SPassConstants));
@@ -38,9 +47,11 @@ void OCubeMapTest::DrawSceneToCubeMap()
 		auto& dsv = cubeMap->GetDSVHandle();
 		CHECK(rtv.CPUHandle.ptr != 0);
 		CHECK(dsv.CPUHandle.ptr != 0);
+
 		cmdList->ClearRenderTargetView(rtv.CPUHandle, DirectX::Colors::LightSteelBlue, 0, nullptr);
 		cmdList->ClearDepthStencilView(dsv.CPUHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 		cmdList->OMSetRenderTargets(1, &rtv.CPUHandle, true, &dsv.CPUHandle);
+
 		cmdList->SetGraphicsRootConstantBufferView(2, resource + (i + 1) * passCBByteSize);
 
 		OEngine::Get()->DrawRenderItems(SPSOType::Opaque, SRenderLayer::Opaque);
@@ -51,27 +62,10 @@ void OCubeMapTest::DrawSceneToCubeMap()
 
 void OCubeMapTest::OnRender(const UpdateEventArgs& Event)
 {
-	auto cmdList = OEngine::Get()->GetCommandQueue()->GetCommandList();
-
 	DrawSceneToCubeMap();
-
-	cmdList->RSSetViewports(1, &OEngine::Get()->GetWindow()->Viewport);
-	cmdList->RSSetScissorRects(1, &OEngine::Get()->GetWindow()->ScissorRect);
-
-	auto window = OEngine::Get()->GetWindow();
-
-	auto backBuffer = GetEngine()->GetRenderTarget();
-	auto depthStencil = window->GetCurrentDepthStencilBuffer();
-
-	auto backbufferView = window->CurrentBackBufferView();
-	auto depthStencilView = window->GetDepthStensilView();
-
-	Utils::ResourceBarrier(cmdList.Get(), window->GetCurrentBackBuffer().Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-	// Clear the back buffer and depth buffer.
-	cmdList->ClearRenderTargetView(backbufferView, DirectX::Colors::LightSteelBlue, 0, nullptr);
-	cmdList->ClearDepthStencilView(depthStencilView, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-	cmdList->OMSetRenderTargets(1, &backbufferView, true, &depthStencilView);
+	auto cmdList = OEngine::Get()->GetCommandQueue()->GetCommandList();
+	OEngine::Get()->GetWindow()->SetViewport(OEngine::Get()->GetCommandQueue());
+	GetEngine()->PrepareRenderTarget();
 
 	auto passCB = OEngine::Get()->CurrentFrameResources->PassCB->GetResource();
 	cmdList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
@@ -183,4 +177,12 @@ void OCubeMapTest::BuildRenderItems()
 		Put(leftCylinder.World, leftCylWorld);
 		Put(rightCylinder.World, rightCylWorld);
 	}
+
+	/*CreateGridRenderItem(SRenderLayer::Waves,
+	                     "Water",
+	                     160,
+	                     160,
+	                     Waves->GetRowCount(),
+	                     Waves->GetColumnCount(),
+	                     Waves->GetRIParams());*/
 }
