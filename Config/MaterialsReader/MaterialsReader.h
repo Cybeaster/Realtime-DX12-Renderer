@@ -15,4 +15,5 @@ public:
 	/*Adds or modifies the material in the tree*/
 	void AddMaterial(const SMaterial* Material);
 	void AddMaterials(const std::unordered_map<string, SMaterial*>& Materials);
+	static vector<STexturePath> GetTexturePaths(const boost::property_tree::ptree& Node, const string& Key);
 };

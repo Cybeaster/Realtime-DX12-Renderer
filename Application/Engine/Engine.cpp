@@ -153,6 +153,13 @@ void OEngine::DrawRenderItems(string PSOType, string RenderLayer)
 
 void OEngine::UpdateMaterialCB() const
 {
+	auto copyIndicesTo = [](const vector<uint32_t>& Source, uint32_t* Destination, size_t Size) {
+		if (Source.size() <= Size)
+		{
+			std::ranges::copy(Source, Destination);
+		}
+	};
+
 	const auto currentMaterialCB = CurrentFrameResources->MaterialBuffer.get();
 	for (auto& materials = GetMaterials(); const auto& val : materials | std::views::values)
 	{
@@ -162,12 +169,22 @@ void OEngine::UpdateMaterialCB() const
 			{
 				const auto matTransform = XMLoadFloat4x4(&material->MatTransform);
 
+				auto diffuseIndices = material->GetDiffuseMapIndices();
+				auto normalIndices = material->GetNormalMapIndices();
+				auto heightIndices = material->GetHeightMapIndices();
+
 				SMaterialData matConstants;
 				matConstants.MaterialSurface.DiffuseAlbedo = material->MaterialSurface.DiffuseAlbedo;
 				matConstants.MaterialSurface.FresnelR0 = material->MaterialSurface.FresnelR0;
 				matConstants.MaterialSurface.Roughness = material->MaterialSurface.Roughness;
-				matConstants.DiffuseMapIndex = material->DiffuseTexture->HeapIdx;
-				matConstants.NormalMapIndex = material->NormalTexture ? material->NormalTexture->HeapIdx : -1;
+
+				matConstants.DiffuseMapCount = diffuseIndices.size();
+				matConstants.NormalMapCount = normalIndices.size();
+				matConstants.HeightMapCount = heightIndices.size();
+
+				copyIndicesTo(diffuseIndices, matConstants.DiffuseMapIndex, SRenderConstants::MaxDiffuseMapsPerMaterial);
+				copyIndicesTo(normalIndices, matConstants.NormalMapIndex, SRenderConstants::MaxNormalMapsPerMaterial);
+				copyIndicesTo(heightIndices, matConstants.HeightMapIndex, SRenderConstants::MaxHeightMapsPerMaterial);
 
 				Put(matConstants.MatTransform, Transpose(matTransform));
 
@@ -352,7 +369,6 @@ void OEngine::OnPreRender()
 	if (SRVDescriptorHeap)
 	{
 		const auto commandList = GetCommandQueue()->GetCommandList();
-		SetDescriptorHeap();
 		Window->SetViewport(GetCommandQueue());
 
 		commandList->SetGraphicsRootSignature(DefaultRootSignature.Get());
@@ -411,6 +427,7 @@ void OEngine::Draw(UpdateEventArgs& Args)
 {
 	if (HasInitializedTests)
 	{
+		SetDescriptorHeap();
 		Update(Args);
 		Render(Args);
 	}
@@ -489,7 +506,6 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 {
 	UpdateFrameResource();
 
-	GetWindow()->Update(Args);
 	PerformFrustrumCulling();
 	if (CurrentFrameResources)
 	{
@@ -497,6 +513,7 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 		UpdateMaterialCB();
 		UpdateObjectCB();
 	}
+
 	for (const auto& val : RenderObjects | std::views::values)
 	{
 		val->Update(Args);
@@ -1938,11 +1955,6 @@ void OEngine::BuildPSShader(const wstring& ShaderPath, const string& ShaderName,
 void OEngine::BuildGSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines)
 {
 	Shaders[ShaderName] = Utils::CompileShader(ShaderPath, Defines, "GS", "gs_5_1");
-}
-
-void OEngine::BuildCSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines)
-{
-	Shaders[ShaderName] = Utils::CompileShader(ShaderPath, Defines, "CS", "cs_5_1");
 }
 
 void OEngine::BuildShader(const wstring& ShaderPath, const string& ShaderName, EShaderLevel ShaderType, std::optional<string> ShaderEntry, const D3D_SHADER_MACRO* Defines)

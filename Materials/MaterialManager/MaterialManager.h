@@ -27,6 +27,7 @@ public:
 	uint32_t GetNumMaterials();
 
 	void LoadMaterialsFromCache();
+	static void LoadTexturesFromPaths(vector<STexturePath>& OutTextures);
 	void SaveMaterials() const;
 	void BuildMaterialsFromTextures(const std::unordered_map<string, unique_ptr<STexture>>& Textures);
 	OnMaterialsChanged MaterialsRebuld;

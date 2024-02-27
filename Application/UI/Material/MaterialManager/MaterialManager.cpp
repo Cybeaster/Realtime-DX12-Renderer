@@ -38,14 +38,15 @@ void OMaterialManagerWidget::DrawProperty()
 			MaterialManager->OnMaterialChanged(CurrentMaterial->Name);
 		}
 		ImGui::SeparatorText("Diffuse Texture");
-		const auto texture = FindTextureByPath(CurrentMaterial->TexturePath);
+
+		/*const auto texture = FindTextureByPath(CurrentMaterial->TexturePath);
 		const auto difTextureName = texture ? WStringToUTF8(texture->FileName) : string("No texture selected");
 		ImGui::Text(difTextureName.c_str());
 		if (texture)
 		{
 			auto srv = reinterpret_cast<void*>(OEngine::Get()->GetSRVDescHandleForTexture(texture).ptr);
 			ImGui::Image(srv, ImVec2(100, 100));
-		}
+		}*/
 	}
 	else
 	{

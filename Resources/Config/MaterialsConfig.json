@@ -3,8 +3,13 @@
     {
       "Name": "Debug",
       "Data": {
-        "TexturePath": "Resources\/Textures\/white1x1.dds",
-        "NormalMapPath": "Resources\/Textures\/default_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/white1x1.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/default_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "0",
@@ -22,8 +27,13 @@
     {
       "Name": "GrassSky",
       "Data": {
-        "TexturePath": "Resources\/Textures\/grasscube1024.dds",
-        "NormalMapPath": "Resources\/Textures\/grasscube1024_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/grasscube1024.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/grasscube1024_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -41,8 +51,13 @@
     {
       "Name": "DesertSky",
       "Data": {
-        "TexturePath": "Resources\/Textures\/desertcube1024.dds",
-        "NormalMapPath": "Resources\/Textures\/desertcube1024_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/desertcube1024.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/desertcube1024_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -60,8 +75,13 @@
     {
       "Name": "Bricks",
       "Data": {
-        "TexturePath": "Resources\/Textures\/bricks.dds",
-        "NormalMapPath": "Resources\/Textures\/bricks_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/bricks.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/bricks_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -79,8 +99,13 @@
     {
       "Name": "Ice",
       "Data": {
-        "TexturePath": "Resources\/Textures\/ice.dds",
-        "NormalMapPath": "Resources\/Textures\/ice_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/ice.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/ice_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -98,8 +123,13 @@
     {
       "Name": "WoodCrate01",
       "Data": {
-        "TexturePath": "Resources\/Textures\/WoodCrate01.dds",
-        "NormalMapPath": "Resources\/Textures\/WoodCrate01_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/WoodCrate01.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/WoodCrate01_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -117,8 +147,13 @@
     {
       "Name": "bricks3",
       "Data": {
-        "TexturePath": "Resources\/Textures\/bricks3.dds",
-        "NormalMapPath": "Resources\/Textures\/bricks_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/bricks3.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/bricks_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -136,8 +171,13 @@
     {
       "Name": "checkboard",
       "Data": {
-        "TexturePath": "Resources\/Textures\/checkboard.dds",
-        "NormalMapPath": "Resources\/Textures\/checkboard_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/checkboard.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/checkboard_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -155,8 +195,13 @@
     {
       "Name": "grasscube1024",
       "Data": {
-        "TexturePath": "Resources\/Textures\/grasscube1024.dds",
-        "NormalMapPath": "Resources\/Textures\/grasscube1024_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/grasscube1024.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/grasscube1024_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -174,8 +219,13 @@
     {
       "Name": "desertcube1024",
       "Data": {
-        "TexturePath": "Resources\/Textures\/desertcube1024.dds",
-        "NormalMapPath": "Resources\/Textures\/desertcube1024_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/desertcube1024.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/desertcube1024_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -193,8 +243,13 @@
     {
       "Name": "Fireball",
       "Data": {
-        "TexturePath": "Resources\/Textures\/Fireball.dds",
-        "NormalMapPath": "Resources\/Textures\/default_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/Fireball.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/default_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -212,8 +267,13 @@
     {
       "Name": "grass",
       "Data": {
-        "TexturePath": "Resources\/Textures\/grass.dds",
-        "NormalMapPath": "Resources\/Textures\/grass_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/grass.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/grass_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -231,8 +291,13 @@
     {
       "Name": "head_diff",
       "Data": {
-        "TexturePath": "Resources\/Textures\/head_diff.dds",
-        "NormalMapPath": "Resources\/Textures\/head_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/head_diff.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/head_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -250,8 +315,13 @@
     {
       "Name": "stone",
       "Data": {
-        "TexturePath": "Resources\/Textures\/stone.dds",
-        "NormalMapPath": "Resources\/Textures\/stone_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/stone.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/stone_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -269,8 +339,13 @@
     {
       "Name": "jacket_diff",
       "Data": {
-        "TexturePath": "Resources\/Textures\/jacket_diff.dds",
-        "NormalMapPath": "Resources\/Textures\/jacket_norm.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/jacket_diff.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/jacket_norm.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -288,8 +363,13 @@
     {
       "Name": "tree01S",
       "Data": {
-        "TexturePath": "Resources\/Textures\/tree01S.dds",
-        "NormalMapPath": "Resources\/Textures\/tree01S_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/tree01S.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/tree01S_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -307,8 +387,13 @@
     {
       "Name": "pants_diff",
       "Data": {
-        "TexturePath": "Resources\/Textures\/pants_diff.dds",
-        "NormalMapPath": "Resources\/Textures\/pants_norm.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/pants_diff.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/pants_norm.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -326,8 +411,13 @@
     {
       "Name": "snowcube1024",
       "Data": {
-        "TexturePath": "Resources\/Textures\/snowcube1024.dds",
-        "NormalMapPath": "Resources\/Textures\/snowcube1024_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/snowcube1024.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/snowcube1024_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -345,8 +435,13 @@
     {
       "Name": "sunsetcube1024",
       "Data": {
-        "TexturePath": "Resources\/Textures\/sunsetcube1024.dds",
-        "NormalMapPath": "Resources\/Textures\/sunsetcube1024_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/sunsetcube1024.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/sunsetcube1024_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -364,8 +459,13 @@
     {
       "Name": "Tile",
       "Data": {
-        "TexturePath": "Resources\/Textures\/tile.dds",
-        "NormalMapPath": "Resources\/Textures\/tile_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/tile.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/tile_nmap.dds"
+        ],
         "Diffuse": {
           "x": "0.9",
           "y": "0.9",
@@ -383,8 +483,13 @@
     {
       "Name": "tree02S",
       "Data": {
-        "TexturePath": "Resources\/Textures\/tree02S.dds",
-        "NormalMapPath": "Resources\/Textures\/tree02S_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/tree02S.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/tree02S_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -402,8 +507,13 @@
     {
       "Name": "tree35S",
       "Data": {
-        "TexturePath": "Resources\/Textures\/tree35S.dds",
-        "NormalMapPath": "Resources\/Textures\/tree35S_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/tree35S.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/tree35S_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -421,8 +531,13 @@
     {
       "Name": "treearray",
       "Data": {
-        "TexturePath": "Resources\/Textures\/treearray.dds",
-        "NormalMapPath": "Resources\/Textures\/treearray_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/treearray.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/treearray_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -440,8 +555,13 @@
     {
       "Name": "upBody_diff",
       "Data": {
-        "TexturePath": "Resources\/Textures\/upBody_diff.dds",
-        "NormalMapPath": "Resources\/Textures\/upBody_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/upBody_diff.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/upBody_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -459,8 +579,13 @@
     {
       "Name": "treeArray2",
       "Data": {
-        "TexturePath": "Resources\/Textures\/treeArray2.dds",
-        "NormalMapPath": "Resources\/Textures\/treeArray2_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/treeArray2.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/treeArray2_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -478,8 +603,13 @@
     {
       "Name": "White",
       "Data": {
-        "TexturePath": "Resources\/Textures\/white1x1.dds",
-        "NormalMapPath": "Resources/Textures/default_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/white1x1.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources/Textures/default_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -497,8 +627,13 @@
     {
       "Name": "WireFence",
       "Data": {
-        "TexturePath": "Resources\/Textures\/WireFence.dds",
-        "NormalMapPath": "Resources\/Textures\/WireFence_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/WireFence.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/WireFence_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -516,8 +651,13 @@
     {
       "Name": "WoodCrate02",
       "Data": {
-        "TexturePath": "Resources\/Textures\/WoodCrate02.dds",
-        "NormalMapPath": "Resources\/Textures\/WoodCrate02_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/WoodCrate02.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources\/Textures\/WoodCrate02_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -535,8 +675,13 @@
     {
       "Name": "Picked",
       "Data": {
-        "TexturePath": "Resources\/Textures\/white1x1.dds",
-        "NormalMapPath": "Resources/Textures/default_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources\/Textures\/white1x1.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources/Textures/default_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -554,8 +699,13 @@
     {
       "Name": "Gold",
       "Data": {
-        "TexturePath": "Resources/Textures/white1x1.dds",
-        "NormalMapPath": "Resources/Textures/default_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources/Textures/white1x1.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources/Textures/default_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1.0",
           "y": "0.765",
@@ -573,8 +723,13 @@
     {
       "Name": "Silver",
       "Data": {
-        "TexturePath": "Resources/Textures/white1x1.dds",
-        "NormalMapPath": "Resources/Textures/default_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources/Textures/white1x1.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources/Textures/default_nmap.dds"
+        ],
         "Diffuse": {
           "x": "0.972",
           "y": "0.960",
@@ -592,8 +747,13 @@
     {
       "Name": "Bronze",
       "Data": {
-        "TexturePath": "Resources/Textures/white1x1.dds",
-        "NormalMapPath": "Resources/Textures/default_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources/Textures/white1x1.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources/Textures/default_nmap.dds"
+        ],
         "Diffuse": {
           "x": "0.804",
           "y": "0.498",
@@ -611,8 +771,13 @@
     {
       "Name": "Lambertian",
       "Data": {
-        "TexturePath": "Resources/Textures/white1x1.dds",
-        "NormalMapPath": "Resources/Textures/default_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources/Textures/white1x1.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources/Textures/default_nmap.dds"
+        ],
         "Diffuse": {
           "x": "0.8",
           "y": "0.8",
@@ -630,8 +795,13 @@
     {
       "Name": "Metallic",
       "Data": {
-        "TexturePath": "Resources/Textures/white1x1.dds",
-        "NormalMapPath": "Resources/Textures/default_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources/Textures/white1x1.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources/Textures/default_nmap.dds"
+        ],
         "Diffuse": {
           "x": "0.8",
           "y": "0.8",
@@ -649,8 +819,13 @@
     {
       "Name": "Mirror",
       "Data": {
-        "TexturePath": "Resources/Textures/white1x1.dds",
-        "NormalMapPath": "Resources/Textures/default_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources/Textures/white1x1.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources/Textures/default_nmap.dds"
+        ],
         "Diffuse": {
           "x": "0.0",
           "y": "0.0",
@@ -668,8 +843,13 @@
     {
       "Name": "Glass",
       "Data": {
-        "TexturePath": "Resources/Textures/white1x1.dds",
-        "NormalMapPath": "Resources/Textures/default_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources/Textures/white1x1.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources/Textures/default_nmap.dds"
+        ],
         "Diffuse": {
           "x": "0.6",
           "y": "0.7",
@@ -687,8 +867,13 @@
     {
       "Name": "Water",
       "Data": {
-        "TexturePath": "Resources/Textures/water1.dds",
-        "NormalMapPath": "Resources/Textures/water1_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources/Textures/water1.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources/Textures/water1_nmap.dds"
+        ],
         "Diffuse": {
           "x": "0.2",
           "y": "0.4",
@@ -706,8 +891,13 @@
     {
       "Name": "Debug",
       "Data": {
-        "TexturePath": "Resources/Textures/white1x1.dds",
-        "NormalMapPath": "Resources/Textures/default_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources/Textures/white1x1.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources/Textures/default_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "0",
@@ -725,8 +915,13 @@
     {
       "Name": "GrassSky",
       "Data": {
-        "TexturePath": "Resources/Textures/grasscube1024.dds",
-        "NormalMapPath": "Resources/Textures/grasscube1024_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources/Textures/grasscube1024.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources/Textures/grasscube1024_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -744,8 +939,13 @@
     {
       "Name": "DesertSky",
       "Data": {
-        "TexturePath": "Resources/Textures/desertcube1024.dds",
-        "NormalMapPath": "Resources/Textures/desertcube1024_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources/Textures/desertcube1024.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources/Textures/desertcube1024_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -763,8 +963,13 @@
     {
       "Name": "upbody_norm",
       "Data": {
-        "TexturePath": "Resources/Textures/upbody_norm.dds",
-        "NormalMapPath": "Resources/Textures/upbody_norm_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources/Textures/upbody_norm.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources/Textures/upbody_norm_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -782,8 +987,13 @@
     {
       "Name": "Bricks",
       "Data": {
-        "TexturePath": "Resources/Textures/bricks.dds",
-        "NormalMapPath": "Resources/Textures/bricks_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources/Textures/bricks.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources/Textures/bricks_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -801,8 +1011,13 @@
     {
       "Name": "Bricks2",
       "Data": {
-        "TexturePath": "Resources/Textures/bricks2.dds",
-        "NormalMapPath": "Resources/Textures/bricks2_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources/Textures/bricks2.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources/Textures/bricks2_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -820,8 +1035,13 @@
     {
       "Name": "Ice",
       "Data": {
-        "TexturePath": "Resources/Textures/ice.dds",
-        "NormalMapPath": "Resources/Textures/ice_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources/Textures/ice.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources/Textures/ice_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",
@@ -839,8 +1059,13 @@
     {
       "Name": "WoodCrate01",
       "Data": {
-        "TexturePath": "Resources/Textures/WoodCrate01.dds",
-        "NormalMapPath": "Resources/Textures/WoodCrate01_nmap.dds",
+        "HeightMapPaths": [],
+        "DiffuseMapPaths": [
+          "Resources/Textures/WoodCrate01.dds"
+        ],
+        "NormalMapPaths": [
+          "Resources/Textures/WoodCrate01_nmap.dds"
+        ],
         "Diffuse": {
           "x": "1",
           "y": "1",

@@ -1,5 +1,17 @@
 #include "MaterialsReader.h"
 
+vector<STexturePath> OMaterialsConfigParser::GetTexturePaths(const boost::property_tree::ptree& Node, const string& Key)
+{
+	vector<STexturePath> paths;
+	for (const auto& val : Node.get_child(Key) | std::views::values)
+	{
+		STexturePath path;
+		path.Path = UTF8ToWString(val.data());
+		paths.push_back(path);
+	}
+	return paths;
+}
+
 std::unordered_map<string, unique_ptr<SMaterial>> OMaterialsConfigParser::LoadMaterials()
 {
 	std::unordered_map<string, unique_ptr<SMaterial>> Materials;
@@ -10,8 +22,10 @@ std::unordered_map<string, unique_ptr<SMaterial>> OMaterialsConfigParser::LoadMa
 		material->Name = val.get<string>("Name");
 		auto& data = val.get_child("Data");
 
-		material->TexturePath = UTF8ToWString(data.get<string>("TexturePath"));
-		material->NormalMapPath = UTF8ToWString(data.get<string>("NormalMapPath"));
+		material->DiffuseMaps = GetTexturePaths(data, "DiffuseMapPaths");
+		material->NormalMaps = GetTexturePaths(data, "NormalMapPaths");
+		material->HeightMaps = GetTexturePaths(data, "HeightMapPaths");
+
 		auto& diffChild = data.get_child("Diffuse");
 		material->MaterialSurface.DiffuseAlbedo.x = diffChild.get<float>("x");
 		material->MaterialSurface.DiffuseAlbedo.y = diffChild.get<float>("y");
@@ -31,9 +45,6 @@ std::unordered_map<string, unique_ptr<SMaterial>> OMaterialsConfigParser::LoadMa
 
 void OMaterialsConfigParser::AddDataToNode(const SMaterial* Mat, boost::property_tree::ptree& OutNode)
 {
-	ENSURE(Mat->TexturePath.size() > 0);
-	OutNode.put("TexturePath", WStringToUTF8(Mat->TexturePath));
-
 	OutNode.put("Diffuse.x", Mat->MaterialSurface.DiffuseAlbedo.x);
 	OutNode.put("Diffuse.y", Mat->MaterialSurface.DiffuseAlbedo.y);
 	OutNode.put("Diffuse.z", Mat->MaterialSurface.DiffuseAlbedo.z);

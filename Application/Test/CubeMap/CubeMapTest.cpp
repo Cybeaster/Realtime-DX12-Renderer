@@ -10,14 +10,14 @@ bool OCubeMapTest::Initialize()
 {
 	OEngine::Get()->BuildCubeRenderTarget({ 0, 2, 0 });
 	auto queue = OEngine::Get()->GetCommandQueue();
-	/*Waves = OEngine::Get()->BuildRenderObject<OGPUWave>(OEngine::Get()->GetDevice().Get(),
+	Waves = OEngine::Get()->BuildRenderObject<OGPUWave>(OEngine::Get()->GetDevice().Get(),
 	                                                    queue->GetCommandList().Get(),
 	                                                    256,
 	                                                    256,
 	                                                    0.25f,
 	                                                    0.03f,
 	                                                    2.0f,
-	                                                    0.2f);*/
+	                                                    0.2f);
 	BuildRenderItems();
 	return true;
 }
@@ -55,6 +55,7 @@ void OCubeMapTest::DrawSceneToCubeMap()
 		cmdList->SetGraphicsRootConstantBufferView(2, resource + (i + 1) * passCBByteSize);
 
 		OEngine::Get()->DrawRenderItems(SPSOType::Opaque, SRenderLayer::Opaque);
+		OEngine::Get()->DrawRenderItems(SPSOType::WavesRender, SRenderLayer::Waves);
 		OEngine::Get()->DrawRenderItems(SPSOType::Sky, SRenderLayer::Sky);
 	}
 	Utils::ResourceBarrier(cmdList.Get(), cubeMap->GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ);
@@ -62,8 +63,10 @@ void OCubeMapTest::DrawSceneToCubeMap()
 
 void OCubeMapTest::OnRender(const UpdateEventArgs& Event)
 {
-	DrawSceneToCubeMap();
 	auto cmdList = OEngine::Get()->GetCommandQueue()->GetCommandList();
+	cmdList->SetGraphicsRootDescriptorTable(4, Waves->GetDisplacementMapHandle());
+
+	DrawSceneToCubeMap();
 	OEngine::Get()->GetWindow()->SetViewport(OEngine::Get()->GetCommandQueue());
 	GetEngine()->PrepareRenderTarget();
 
@@ -77,6 +80,8 @@ void OCubeMapTest::OnRender(const UpdateEventArgs& Event)
 
 	cmdList->SetGraphicsRootDescriptorTable(5, OEngine::Get()->GetSRVDescHandleForTexture(FindTextureByName("grasscube1024")));
 	OEngine::Get()->DrawRenderItems(SPSOType::Opaque, SRenderLayer::Opaque);
+	OEngine::Get()->DrawRenderItems(SPSOType::WavesRender, SRenderLayer::Waves);
+
 	OEngine::Get()->DrawRenderItems(SPSOType::Sky, SRenderLayer::Sky);
 }
 
@@ -178,11 +183,11 @@ void OCubeMapTest::BuildRenderItems()
 		Put(rightCylinder.World, rightCylWorld);
 	}
 
-	/*CreateGridRenderItem(SRenderLayer::Waves,
+	CreateGridRenderItem(SRenderLayer::Waves,
 	                     "Water",
 	                     160,
 	                     160,
 	                     Waves->GetRowCount(),
 	                     Waves->GetColumnCount(),
-	                     Waves->GetRIParams());*/
+	                     Waves->GetRIParams());
 }

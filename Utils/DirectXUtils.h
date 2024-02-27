@@ -28,4 +28,6 @@ array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 void ResourceBarrier(ID3D12GraphicsCommandList* CMDList, ID3D12Resource* Resource, D3D12_RESOURCE_STATES Before, D3D12_RESOURCE_STATES After);
 D3D12_RESOURCE_STATES ResourceBarrier(ID3D12GraphicsCommandList* CMDList, ID3D12Resource* Resource, D3D12_RESOURCE_STATES After);
 void BuildRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>& RootSignature, const D3D12_ROOT_SIGNATURE_DESC& Desc);
+
+inline DXGI_FORMAT MaskToFormat(uint32_t Mask);
 } // namespace Utils

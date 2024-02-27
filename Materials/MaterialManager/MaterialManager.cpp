@@ -15,8 +15,6 @@ void OMaterialManager::CreateMaterial(const string& Name, STexture* Texture, con
 	auto mat = make_unique<SMaterial>();
 	mat->Name = Name;
 	mat->MaterialCBIndex = Materials.size();
-	mat->TexturePath = Texture->FileName;
-	mat->DiffuseTexture = Texture;
 	mat->MaterialSurface = Surface;
 	AddMaterial(Name, mat, Notify);
 }
@@ -90,15 +88,26 @@ void OMaterialManager::LoadMaterialsFromCache()
 	for (auto& val : Materials | std::views::values)
 	{
 		auto& mat = val;
-		mat->DiffuseTexture = FindOrCreateTexture(val->TexturePath);
-		mat->NormalTexture = FindOrCreateTexture(val->NormalMapPath);
-		ENSURE(mat->DiffuseTexture->HeapIdx != -1);
-
+		LoadTexturesFromPaths(mat->DiffuseMaps);
+		LoadTexturesFromPaths(mat->NormalMaps);
+		LoadTexturesFromPaths(mat->HeightMaps);
 		mat->MaterialCBIndex = it;
 		MaterialsIndicesMap[it] = val.get();
 		++it;
 	}
 	MaterialsRebuld.Broadcast();
+}
+
+void OMaterialManager::LoadTexturesFromPaths(vector<STexturePath>& OutTextures)
+{
+	for (auto& [Texture, Path] : OutTextures)
+	{
+		Texture = FindOrCreateTexture(Path);
+		if (!Texture)
+		{
+			LOG(Engine, Warning, "Texture with path {} not found!", Path);
+		}
+	}
 }
 
 void OMaterialManager::SaveMaterials() const

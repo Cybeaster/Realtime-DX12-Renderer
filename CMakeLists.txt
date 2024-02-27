@@ -151,6 +151,14 @@ set(SRC_FILES
         Application/RenderGraph/Graph/RenderGraph.h
         Application/RenderGraph/Nodes/RenderNode.cpp
         Application/RenderGraph/Nodes/RenderNode.h
+        Application/Engine/Shader/Shader.cpp
+        Application/Engine/Shader/Shader.h
+        Application/Engine/InputLayour/InputLayout.cpp
+        Application/Engine/InputLayour/InputLayout.h
+        Application/ShaderCompiler/Compiler.cpp
+        Application/ShaderCompiler/Compiler.h
+        Application/GraphicsPipeline/GraphicsPipeline.cpp
+        Application/GraphicsPipeline/GraphicsPipeline.h
 
 )
 

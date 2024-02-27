@@ -10,10 +10,20 @@
 #endif
 
 #ifndef NUM_SPOT_LIGHTS
-
 #define NUM_SPOT_LIGHTS 0
 #endif
 
+#ifndef MAX_DIFFUSE_MAPS
+#define MAX_DIFFUSE_MAPS 3
+#endif
+
+#ifndef MAX_NORMAL_MAPS
+#define MAX_NORMAL_MAPS 3
+#endif
+
+#ifndef MAX_HEIGHT_MAPS
+#define MAX_HEIGHT_MAPS 3
+#endif
 // Include structures and functions for lighting.
 #include "LightingUtils.hlsl"
 
@@ -32,10 +42,12 @@ struct MaterialData
 	float3 FresnelR0;
 	float Roughness;
 	float4x4 MatTransform;
-	uint DiffuseMapIndex;
-	int NormalMapIndex;
-	uint MatPad0;
-	uint MatPad1;
+	uint DiffuseMapCount;
+	uint NormalMapCount;
+	uint HeightMapCount;
+	uint DiffuseMapIndex[MAX_DIFFUSE_MAPS];
+	uint NormalMapIndex[MAX_NORMAL_MAPS];
+	uint HeightMapIndex[MAX_HEIGHT_MAPS];
 };
 
 Texture2D gTextureMaps[7] : register(t0);
@@ -104,4 +116,61 @@ float3 NormalSampleToWorldSpace(float3 NormalMapSample, float3 UnitNormalW, floa
 bool IsTangentValid(float3 TangentW)
 {
 	return TangentW != float3(0.0f, 0.0f, 0.0f);
+}
+
+float3 ComputeNormalMaps(float3 NormalW, float3 TangentW, MaterialData matData, float2 TexC, out float NormalMapSampleA)
+{
+	float3 bumpedNormalW = NormalW;
+	float4 normalMapSample = float4(0.f, 0.f, 1.0f, 1.0f);
+	NormalMapSampleA = 1.0f;
+	if (IsTangentValid(TangentW))
+	{
+		uint numNormalMaps = matData.NormalMapCount;
+		for (int i = 0; i < numNormalMaps; ++i)
+		{
+			int normalMapIndex = matData.NormalMapIndex[i];
+			normalMapSample = gTextureMaps[normalMapIndex].Sample(gsamAnisotropicWrap, TexC);
+			bumpedNormalW = NormalSampleToWorldSpace(normalMapSample.rgb, NormalW, TangentW);
+			NormalMapSampleA *= normalMapSample.a;
+		}
+	}
+	return bumpedNormalW;
+}
+
+float3 ComputeNormalMap(uint Index, float3 NormalW, float3 TangentW, MaterialData matData, float2 TexC, out float NormalMapSampleA)
+{
+	float3 bumpedNormalW = NormalW;
+	float4 normalMapSample = float4(0.f, 0.f, 1.0f, 1.0f);
+	NormalMapSampleA = 1.0f;
+	if (IsTangentValid(TangentW))
+	{
+		int normalMapIndex = matData.NormalMapIndex[Index];
+		normalMapSample = gTextureMaps[normalMapIndex].Sample(gsamAnisotropicWrap, TexC);
+		bumpedNormalW = NormalSampleToWorldSpace(normalMapSample.rgb, NormalW, TangentW);
+		NormalMapSampleA = normalMapSample.a;
+	}
+	return bumpedNormalW;
+}
+
+float3 ComputeHeightMaps(MaterialData matData, float3 NormalW, float3 TangentW, float2 TexC, inout float3 PosW)
+{
+	uint numHeightMaps = matData.HeightMapCount;
+	for (int j = 0; j < numHeightMaps; ++j)
+	{
+		int heightMapIndex = matData.HeightMapIndex[j];
+		float heightMapSample = gTextureMaps[heightMapIndex].Sample(gsamLinearClamp, TexC).r;
+		PosW += NormalW * heightMapSample;
+	}
+	return PosW;
+}
+
+float4 ComputeDiffuseMaps(MaterialData MatData, float4 DiffuseAlbedo, float2 TexC)
+{
+	uint numDiffuseMaps = MatData.DiffuseMapCount;
+	for (int k = 0; k < numDiffuseMaps; ++k)
+	{
+		int diffuseMapIndex = MatData.DiffuseMapIndex[k];
+		DiffuseAlbedo *= gTextureMaps[diffuseMapIndex].Sample(gsamLinearWrap, TexC);
+	}
+	return DiffuseAlbedo;
 }

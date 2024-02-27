@@ -38,7 +38,8 @@ public:
 			MessageBox(nullptr, __exception.ToString().c_str(), L"HR Failed", MB_OK); \
 			throw __exception;                                                        \
 		}                                                                             \
-	}
+	}                                                                                 \
+	hr
 #endif
 
 #define CHECK_MSG(condition, Message)      \
