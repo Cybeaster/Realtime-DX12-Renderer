@@ -3,6 +3,7 @@
 #include "../Types/TextureConstants.h"
 #include "DirectX/RenderItem.h"
 #include "Engine/Engine.h"
+#include "GraphicsPipeline/GraphicsPipeline.h"
 
 inline void CreateMaterial(const string& Name, STexture* Texture, const SMaterialSurface& Constants, bool Notify = false)
 {
@@ -109,4 +110,9 @@ inline auto& CreateQuadRenderItem(string Category, string Name, float X, float Y
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
 	return engine->BuildRenderItemFromMesh(Category, generator->CreateQuadMesh(Name, X, Y, Width, Height, Depth), Params);
+}
+
+inline auto CompilerShader(const SShaderDefinition& Definition, const wstring& ShaderPath, SPipelineInfo& OutPipelineInfo)
+{
+	return OEngine::Get()->GetShaderCompiler()->CompilerShader(Definition, ShaderPath, OutPipelineInfo);
 }

@@ -5,11 +5,13 @@
 
 #include <d3d12shader.h> // Contains functions and structures useful in accessing shader information.
 #include <dxcapi.h>
+
+struct SPipelineInfo;
 class OShaderCompiler
 {
 public:
 	void Init();
-	unique_ptr<OShader> CompilerShader(SShaderInfo Info);
+	unique_ptr<OShader> CompilerShader(const SShaderDefinition& Definition, wstring ShaderPath, SPipelineInfo& OutPipelineInfo);
 
 private:
 	ComPtr<IDxcCompiler3> Compiler;

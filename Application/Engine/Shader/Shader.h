@@ -1,27 +1,27 @@
 #pragma once
 #include "DXHelper.h"
+#include "Logger.h"
 #include "ShaderTypes.h"
 #include "Types.h"
 
 #include <dxcapi.h>
 
-struct SShaderInfo
+struct SShaderDefinition
 {
-	wstring ShaderPath;
-	wstring EntryPoint;
-	wstring TargetProfile;
-	vector<D3D_SHADER_MACRO> Defines;
+	void TypeFromString(const string& Other);
+
 	EShaderLevel ShaderType;
-	uint32_t NumDescriptor;
+	string TargetProfile;
+	string ShaderEntry;
 };
 
 class OShader
 {
 public:
-	void Init(const SShaderInfo& Info, const ComPtr<IDxcBlob>& Blob, const D3D12_VERSIONED_ROOT_SIGNATURE_DESC& Desc);
+	void Init(const SShaderDefinition& Info, const ComPtr<IDxcBlob>& Blob, D3D12_INPUT_LAYOUT_DESC Desc);
 
 private:
-	SShaderInfo ShaderInfo = {};
+	SShaderDefinition ShaderInfo = {};
 	ComPtr<IDxcBlob> ShaderBlob;
-	D3D12_VERSIONED_ROOT_SIGNATURE_DESC RootSignatureDesc = {};
+	D3D12_INPUT_LAYOUT_DESC LayoutDesc = {};
 };

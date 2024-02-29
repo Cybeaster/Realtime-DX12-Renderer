@@ -82,6 +82,9 @@ bool OEngine::Initialize()
 
 	bIsTearingSupported = CheckTearingSupport();
 
+	ShaderCompiler = make_unique<OShaderCompiler>();
+	ShaderCompiler->Init();
+
 	InitManagers();
 	CreateWindow();
 	PostInitialize();
@@ -362,6 +365,11 @@ void OEngine::SetDescriptorHeap()
 	GetCommandQueue()->TryResetCommandList();
 	ID3D12DescriptorHeap* heaps[] = { SRVDescriptorHeap.Get() };
 	GetCommandQueue()->GetCommandList()->SetDescriptorHeaps(_countof(heaps), heaps);
+}
+
+OShaderCompiler* OEngine::GetShaderCompiler() const
+{
+	return ShaderCompiler.get();
 }
 
 void OEngine::OnPreRender()
@@ -839,6 +847,7 @@ D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetAlphaTestedPSODesc()
 	alphaTestedPSO.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 	return alphaTestedPSO;
 }
+
 D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetTransparentPSODesc()
 {
 	auto transparent = GetOpaquePSODesc();
@@ -1055,28 +1064,6 @@ D3D12_COMPUTE_PIPELINE_STATE_DESC OEngine::GetWavesUpdatePSODesc()
 	wavesPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 	return wavesPSO;
 }
-
-void OEngine::BuildPSOs()
-{
-	CreatePSO(SPSOType::Opaque, GetOpaquePSODesc());
-	CreatePSO(SPSOType::Debug, GetDebugPSODesc());
-	CreatePSO(SPSOType::Transparent, GetTransparentPSODesc());
-	CreatePSO(SPSOType::AlphaTested, GetAlphaTestedPSODesc());
-	CreatePSO(SPSOType::StencilMirrors, GetMirrorPSODesc());
-	CreatePSO(SPSOType::StencilReflection, GetReflectedPSODesc());
-	CreatePSO(SPSOType::Shadow, GetShadowPSODesc());
-	CreatePSO(SPSOType::Composite, GetCompositePSODesc());
-	CreatePSO(SPSOType::SobelFilter, GetSobelPSODesc());
-
-	CreatePSO(SPSOType::WavesDisturb, GetWavesDisturbPSODesc());
-	CreatePSO(SPSOType::WavesUpdate, GetWavesUpdatePSODesc());
-	CreatePSO(SPSOType::WavesRender, GetWavesRenderPSODesc());
-	CreatePSO(SPSOType::Highlight, GetHighlightPSODesc());
-	CreatePSO(SPSOType::Sky, GetSkyPSODesc());
-	BuildBlurPSO();
-	CreatePSO(SPSOType::BilateralBlur, GetBilateralBlurPSODesc());
-}
-
 D3D12_COMPUTE_PIPELINE_STATE_DESC OEngine::GetBilateralBlurPSODesc()
 {
 	D3D12_COMPUTE_PIPELINE_STATE_DESC bilateralBlurPSO = {};
@@ -1106,6 +1093,26 @@ void OEngine::BuildBlurPSO()
 	};
 	verticalBlurPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 	CreatePSO(SPSOType::VerticalBlur, verticalBlurPSO);
+}
+void OEngine::BuildPSOs()
+{
+	CreatePSO(SPSOType::Opaque, GetOpaquePSODesc());
+	CreatePSO(SPSOType::Debug, GetDebugPSODesc());
+	CreatePSO(SPSOType::Transparent, GetTransparentPSODesc());
+	CreatePSO(SPSOType::AlphaTested, GetAlphaTestedPSODesc());
+	CreatePSO(SPSOType::StencilMirrors, GetMirrorPSODesc());
+	CreatePSO(SPSOType::StencilReflection, GetReflectedPSODesc());
+	CreatePSO(SPSOType::Shadow, GetShadowPSODesc());
+	CreatePSO(SPSOType::Composite, GetCompositePSODesc());
+	CreatePSO(SPSOType::SobelFilter, GetSobelPSODesc());
+
+	CreatePSO(SPSOType::WavesDisturb, GetWavesDisturbPSODesc());
+	CreatePSO(SPSOType::WavesUpdate, GetWavesUpdatePSODesc());
+	CreatePSO(SPSOType::WavesRender, GetWavesRenderPSODesc());
+	CreatePSO(SPSOType::Highlight, GetHighlightPSODesc());
+	CreatePSO(SPSOType::Sky, GetSkyPSODesc());
+	BuildBlurPSO();
+	CreatePSO(SPSOType::BilateralBlur, GetBilateralBlurPSODesc());
 }
 
 void OEngine::BuildShadersAndInputLayouts()

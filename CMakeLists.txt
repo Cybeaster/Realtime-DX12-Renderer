@@ -159,6 +159,14 @@ set(SRC_FILES
         Application/ShaderCompiler/Compiler.h
         Application/GraphicsPipeline/GraphicsPipeline.cpp
         Application/GraphicsPipeline/GraphicsPipeline.h
+        Config/ShaderReader/ShaderReader.cpp
+        Config/ShaderReader/ShaderReader.h
+        Application/GraphicsPipelineManager/GraphicsPipelineManager.cpp
+        Application/GraphicsPipelineManager/GraphicsPipelineManager.h
+        Types/DirectX/PSODescription.h
+        Config/PSOReader/PsoReader.cpp
+        Config/PSOReader/PsoReader.h
+        Types/DirectX/ShaderArray.h
 
 )
 

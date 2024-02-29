@@ -1,0 +1,134 @@
+{
+  "Shaders": [
+    {
+      "Path": "Resources/Shaders/BaseShader.hlsl",
+      "Name": "Base",
+      "Pipeline": [
+        {
+          "Type": "Vertex",
+          "EntryPoint": "VS",
+          "Defines": []
+        },
+        {
+          "Type": "Pixel",
+          "EntryPoint": "PS",
+          "Defines": []
+        }
+      ]
+    },
+    {
+      "Path": "Resources/Shaders/BaseShader.hlsl",
+      "Name": "AlphaTested",
+      "Pipeline": [
+        {
+          "Type": "Vertex",
+          "EntryPoint": "VS",
+          "Defines": []
+        },
+        {
+          "Type": "Pixel",
+          "EntryPoint": "PS",
+          "Defines": [
+            "ALPHA_TEST"
+          ]
+        }
+      ]
+    },
+    {
+      "Path": "Resources/Shaders/WaveDrawSimulation.hlsl",
+      "Name": "WaveSimulation",
+      "Pipeline": [
+        {
+          "Type": "Vertex",
+          "EntryPoint": "VS"
+        },
+        {
+          "Type": "Pixel",
+          "EntryPoint": "PS"
+        }
+      ]
+    },
+    {
+      "Path": "Resources/Shaders/WaveUpdateSimulation.hlsl",
+      "Name": "WaveUpdateSimulation",
+      "Pipeline": [
+        {
+          "Type": "Compute",
+          "EntryPoint": "UpdateWavesCS"
+        },
+        {
+          "Type": "Compute",
+          "EntryPoint": "DisturbWavesCS"
+        }
+      ]
+    },
+    {
+      "Path": "Resources/Shaders/Sobel.hlsl",
+      "Name": "Sobel",
+      "Pipeline": [
+        {
+          "Type": "Compute",
+          "EntryPoint": "SobelCS"
+        }
+      ]
+    },
+    {
+      "Path": "Resources/Shaders/Blur.hlsl",
+      "Name": "HorizontalBlur",
+      "Pipeline": [
+        {
+          "Type": "Compute",
+          "EntryPoint": "HorzBlurCS"
+        }
+      ]
+    },
+    {
+      "Path": "Resources/Shaders/Blur.hlsl",
+      "Name": "VerticalBlur",
+      "Pipeline": [
+        {
+          "Type": "Compute",
+          "EntryPoint": "VertBlurCS"
+        }
+      ]
+    },
+    {
+      "Path": "Resources/Shaders/Composite.hlsl",
+      "Name": "Composite",
+      "Pipeline": [
+        {
+          "Type": "Vertex",
+          "EntryPoint": "VS"
+        },
+        {
+          "Type": "Pixel",
+          "EntryPoint": "PS"
+        }
+      ]
+    },
+    {
+      "Path": "Resources/Shaders/BilateralBlur.hlsl",
+      "Name": "BilateralBlur",
+      "Pipeline": [
+        {
+          "Type": "Compute",
+          "EntryPoint": "BilateralBlur"
+        }
+      ]
+    },
+    {
+      "Path": "Resources/Shaders/Sky.hlsl",
+      "Name": "Sky",
+      "Pipeline": [
+        {
+          "Type": "Vertex",
+          "EntryPoint": "VS"
+        },
+        {
+          "Type": "Pixel",
+          "EntryPoint": "PS"
+        }
+      ]
+    }
+  ]
+}

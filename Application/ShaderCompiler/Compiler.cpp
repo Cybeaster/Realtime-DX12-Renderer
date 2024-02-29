@@ -6,6 +6,7 @@
 
 #include "../../Utils/DirectXUtils.h"
 #include "Engine/Shader/Shader.h"
+#include "GraphicsPipeline/GraphicsPipeline.h"
 #include "Logger.h"
 
 #include <ranges>
@@ -16,13 +17,13 @@ void OShaderCompiler::Init()
 	THROW_IF_FAILED(Utils->CreateDefaultIncludeHandler(&IncludeHandler));
 }
 
-unique_ptr<OShader> OShaderCompiler::CompilerShader(SShaderInfo Info)
+unique_ptr<OShader> OShaderCompiler::CompilerShader(const SShaderDefinition& Definition, wstring ShaderPath, SPipelineInfo& OutPipelineInfo)
 {
 	CompilationArgs = {
 		L"-E",
-		Info.EntryPoint.c_str(),
+		UTF8ToWString(Definition.ShaderEntry).c_str(),
 		L"-T",
-		Info.TargetProfile.c_str(),
+		UTF8ToWString(Definition.TargetProfile).c_str(),
 		DXC_ARG_PACK_MATRIX_ROW_MAJOR,
 		DXC_ARG_WARNINGS_ARE_ERRORS,
 		DXC_ARG_ALL_RESOURCES_BOUND,
@@ -39,7 +40,7 @@ unique_ptr<OShader> OShaderCompiler::CompilerShader(SShaderInfo Info)
 	}
 
 	ComPtr<IDxcBlobEncoding> sourceBlob;
-	THROW_IF_FAILED(Utils->LoadFile(Info.ShaderPath.c_str(), nullptr, &sourceBlob));
+	THROW_IF_FAILED(Utils->LoadFile(ShaderPath.c_str(), nullptr, &sourceBlob));
 	DxcBuffer sourceBuffer{
 		.Ptr = sourceBlob->GetBufferPointer(),
 		.Size = sourceBlob->GetBufferSize(),
@@ -54,7 +55,7 @@ unique_ptr<OShader> OShaderCompiler::CompilerShader(SShaderInfo Info)
 
 	if (FAILED(hr))
 	{
-		WIN_LOG(Engine, Error, "Failed to compile shader: {}", Info.ShaderPath);
+		WIN_LOG(Engine, Error, "Failed to compile shader: {}", ShaderPath);
 	}
 
 	ComPtr<IDxcBlobUtf8> errors{};
@@ -77,8 +78,8 @@ unique_ptr<OShader> OShaderCompiler::CompilerShader(SShaderInfo Info)
 	Utils->CreateReflection(&reflectionBuffer, IID_PPV_ARGS(&shaderReflection));
 	D3D12_SHADER_DESC shaderDesc{};
 	shaderReflection->GetDesc(&shaderDesc);
-
-	if (Info.ShaderType == EShaderLevel::VertexShader)
+	D3D12_INPUT_LAYOUT_DESC layoutDesc{};
+	if (Definition.ShaderType == EShaderLevel::VertexShader)
 	{
 		vector<string> inputElementSemanticNames;
 		vector<D3D12_INPUT_ELEMENT_DESC> inputElementDescs;
@@ -103,14 +104,11 @@ unique_ptr<OShader> OShaderCompiler::CompilerShader(SShaderInfo Info)
 
 			});
 		}
-		D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{
+		layoutDesc = {
 			.NumElements = static_cast<uint32_t>(inputElementDescs.size()),
 			.pInputElementDescs = inputElementDescs.data()
 		};
 	}
-	std::unordered_map<wstring, uint32_t> rootParamIndexMap;
-	vector<D3D12_ROOT_PARAMETER1> rootParameters;
-	vector<D3D12_DESCRIPTOR_RANGE1> descriptorRanges;
 
 	for (const uint32_t i : std::views::iota(0u, shaderDesc.BoundResources))
 	{
@@ -119,7 +117,7 @@ unique_ptr<OShader> OShaderCompiler::CompilerShader(SShaderInfo Info)
 
 		if (bindDesc.Type == D3D_SIT_CBUFFER)
 		{
-			rootParamIndexMap[UTF8ToWString(bindDesc.Name)] = bindDesc.BindPoint;
+			OutPipelineInfo.RootParamIndexMap[UTF8ToWString(bindDesc.Name)] = bindDesc.BindPoint;
 			ID3D12ShaderReflectionConstantBuffer* shaderReflectionConstantBuffer = shaderReflection->GetConstantBufferByIndex(i);
 			D3D12_SHADER_BUFFER_DESC constantBufferDesc{};
 			shaderReflectionConstantBuffer->GetDesc(&constantBufferDesc);
@@ -132,12 +130,12 @@ unique_ptr<OShader> OShaderCompiler::CompilerShader(SShaderInfo Info)
 				    .Flags = D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
 				},
 			};
-			rootParameters.push_back(rootParameter);
+			OutPipelineInfo.RootParameters.push_back(rootParameter);
 		}
 
 		if (bindDesc.Type == D3D_SIT_TEXTURE)
 		{
-			rootParamIndexMap[UTF8ToWString(bindDesc.Name)] = bindDesc.BindPoint;
+			OutPipelineInfo.RootParamIndexMap[UTF8ToWString(bindDesc.Name)] = bindDesc.BindPoint;
 			D3D12_DESCRIPTOR_RANGE1 texturesDescriptorRange = {
 				.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
 				.NumDescriptors = 9, // gTextureMaps[7], gDisplacementMap, gCubeMap
@@ -146,16 +144,16 @@ unique_ptr<OShader> OShaderCompiler::CompilerShader(SShaderInfo Info)
 				.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
 			};
 
-			descriptorRanges.push_back(texturesDescriptorRange);
+			OutPipelineInfo.DescriptorRanges.push_back(texturesDescriptorRange);
 			const D3D12_ROOT_PARAMETER1 rootParameter{
 				.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
 				.DescriptorTable{
 				    .NumDescriptorRanges = 1u,
-				    .pDescriptorRanges = &descriptorRanges.back(),
+				    .pDescriptorRanges = &OutPipelineInfo.DescriptorRanges.back(),
 				},
 				.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL
 			};
-			rootParameters.push_back(rootParameter);
+			OutPipelineInfo.RootParameters.push_back(rootParameter);
 
 			// For Structured Buffers in space1, define descriptor ranges and root parameters individually
 			std::array<D3D12_DESCRIPTOR_RANGE1, 2> sbDescriptorRanges = { {
@@ -187,7 +185,7 @@ unique_ptr<OShader> OShaderCompiler::CompilerShader(SShaderInfo Info)
 					},
 					.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL,
 				};
-				rootParameters.push_back(sbTableParam);
+				OutPipelineInfo.RootParameters.push_back(sbTableParam);
 			}
 		}
 	}
@@ -196,16 +194,16 @@ unique_ptr<OShader> OShaderCompiler::CompilerShader(SShaderInfo Info)
 
 	auto shader = make_unique<OShader>();
 	auto samplers = Utils::GetStaticSamplers();
-	const D3D12_VERSIONED_ROOT_SIGNATURE_DESC rootSignaureDesc = {
+	OutPipelineInfo.RootSignatureDesc = {
 		.Version = D3D_ROOT_SIGNATURE_VERSION_1_1,
 		.Desc_1_1 = {
-		    .NumParameters = static_cast<uint32_t>(rootParameters.size()),
-		    .pParameters = rootParameters.data(),
+		    .NumParameters = static_cast<uint32_t>(OutPipelineInfo.RootParameters.size()),
+		    .pParameters = OutPipelineInfo.RootParameters.data(),
 		    .NumStaticSamplers = samplers.size(),
 		    .pStaticSamplers = samplers.data(),
 		    .Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT,
 		},
 	};
-	shader->Init(Info, compiledShaderBlob, rootSignaureDesc);
+	shader->Init(Definition, compiledShaderBlob, layoutDesc);
 	return std::move(shader);
 }

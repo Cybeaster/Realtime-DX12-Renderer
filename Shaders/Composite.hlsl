@@ -1,8 +1,5 @@
-//***************************************************************************************
-// Composite.hlsl by Frank Luna (C) 2015 All Rights Reserved.
-//
+
 // Combines two images.
-//***************************************************************************************
 
 Texture2D gBaseMap : register(t0);
 Texture2D gEdgeMap : register(t1);

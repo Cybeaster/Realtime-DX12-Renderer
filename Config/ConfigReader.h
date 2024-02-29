@@ -23,7 +23,7 @@ public:
 	}
 
 	template<typename T>
-	T Get(const std::string& Key) const
+	T GetRoot(const std::string& Key) const
 	{
 		CWIN_LOG(!bIsLoaded, Default, Error, "Config file not loaded!");
 		if (PTree.get_child_optional(Key) == boost::none)
@@ -33,8 +33,7 @@ public:
 		return PTree.get<T>(Key);
 	}
 
-	template<typename T>
-	T GetChild(const std::string& Key, const std::string& ChildKey) const
+	auto GetRootChild(const std::string& Key) const
 	{
 		CWIN_LOG(!bIsLoaded, Default, Error, "Config file not loaded!");
 		if (PTree.get_child_optional(Key) == boost::none)
@@ -42,12 +41,52 @@ public:
 			LOG(Debug, Error, "Key not found: {}", TO_STRING(Key));
 		}
 
-		if (PTree.get_child(Key).get_child_optional(ChildKey) == boost::none)
+		return PTree.get_child(Key);
+	}
+
+	auto GetChild(const std::string& Key, const boost::property_tree::ptree& Tree) const
+	{
+		CWIN_LOG(!bIsLoaded, Default, Error, "Config file not loaded!");
+		if (Tree.get_child_optional(Key) == boost::none)
 		{
-			LOG(Debug, Error, "Child key not found: {}", TO_STRING(ChildKey));
+			LOG(Debug, Error, "Key not found: {}", TO_STRING(Key));
 		}
 
-		return PTree.get_child(Key).get<T>(ChildKey);
+		return Tree.get_child(Key);
+	}
+
+	template<typename T>
+	static T GetOptionalOr(const boost::property_tree::ptree& Tree, const std::string& Key, const T& Default)
+	{
+		if (auto Optional = Tree.get_optional<T>(Key))
+		{
+			return Optional.get();
+		}
+		return Default;
+	}
+
+	template<typename T>
+	static T GetOptionalOr(const boost::optional<const boost::property_tree::ptree&>& Tree, const std::string& Key, const T& Default)
+	{
+		if (Tree)
+		{
+			return GetOptionalOr<T>(Tree.get(), Key, Default);
+		}
+		return Default;
+	}
+
+	static string GetOptionalOr(const boost::property_tree::ptree& Tree, const std::string& Key, const char* Default)
+	{
+		return GetOptionalOr<string>(Tree, Key, Default);
+	}
+
+	static string GetOptionalOr(const boost::optional<const boost::property_tree::ptree&>& Tree, const std::string& Key, const char* Default)
+	{
+		if (Tree)
+		{
+			return GetOptionalOr<string>(Tree.get(), Key, Default);
+		}
+		return Default;
 	}
 
 protected:

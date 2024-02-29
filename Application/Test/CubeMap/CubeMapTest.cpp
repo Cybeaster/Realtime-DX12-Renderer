@@ -79,7 +79,9 @@ void OCubeMapTest::OnRender(const UpdateEventArgs& Event)
 	OEngine::Get()->DrawRenderItems(SPSOType::Opaque, SRenderLayer::OpaqueDynamicReflections);
 
 	cmdList->SetGraphicsRootDescriptorTable(5, OEngine::Get()->GetSRVDescHandleForTexture(FindTextureByName("grasscube1024")));
+
 	OEngine::Get()->DrawRenderItems(SPSOType::Opaque, SRenderLayer::Opaque);
+
 	OEngine::Get()->DrawRenderItems(SPSOType::WavesRender, SRenderLayer::Waves);
 
 	OEngine::Get()->DrawRenderItems(SPSOType::Sky, SRenderLayer::Sky);

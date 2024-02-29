@@ -4,9 +4,41 @@
 
 #include "Shader.h"
 
-void OShader::Init(const SShaderInfo& Info, const ComPtr<IDxcBlob>& Blob, const D3D12_VERSIONED_ROOT_SIGNATURE_DESC& Desc)
+void SShaderDefinition::TypeFromString(const string& Other)
+{
+	if (Other == "Vertex")
+	{
+		ShaderType = EShaderLevel::VertexShader;
+	}
+	else if (Other == "Pixel")
+	{
+		ShaderType = EShaderLevel::PixelShader;
+	}
+	else if (Other == "Compute")
+	{
+		ShaderType = EShaderLevel::ComputeShader;
+	}
+	else if (Other == "Geometry")
+	{
+		ShaderType = EShaderLevel::GeometryShader;
+	}
+	else if (Other == "Hull")
+	{
+		ShaderType = EShaderLevel::HullShader;
+	}
+	else if (Other == "Domain")
+	{
+		ShaderType = EShaderLevel::DomainShader;
+	}
+	else
+	{
+		WIN_LOG(Default, Error, "Unknown shader type: {}", TO_STRING(Other));
+	}
+}
+
+void OShader::Init(const SShaderDefinition& Info, const ComPtr<IDxcBlob>& Blob, D3D12_INPUT_LAYOUT_DESC Desc)
 {
 	ShaderBlob = Blob;
-	RootSignatureDesc = Desc;
 	ShaderInfo = Info;
+	LayoutDesc = Desc;
 }

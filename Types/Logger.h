@@ -36,6 +36,13 @@ struct SLogCategories
 	LOG_CATEGORY Test = L"Test";
 	LOG_CATEGORY Input = L"Input";
 	LOG_CATEGORY Geometry = L"Geometry";
+	LOG_CATEGORY Material = L"Material";
+	LOG_CATEGORY Light = L"Light";
+	LOG_CATEGORY Camera = L"Camera";
+	LOG_CATEGORY Audio = L"Audio";
+	LOG_CATEGORY Physics = L"Physics";
+	LOG_CATEGORY Animation = L"Animation";
+	LOG_CATEGORY Config = L"Config";
 };
 #define CWIN_LOG(Condition, Category, LogType, String, ...)                           \
 	if (Condition)                                                                    \
@@ -70,7 +77,8 @@ struct SLogUtils
 		{ SLogCategories::Debug, true },
 		{ SLogCategories::Test, false },
 		{ SLogCategories::Engine, true },
-		{ SLogCategories::Input, true }
+		{ SLogCategories::Input, true },
+		{ SLogCategories::Config, true }
 	};
 
 	static void AddCategory(wstring Category)

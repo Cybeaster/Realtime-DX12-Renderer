@@ -17,6 +17,7 @@
 #include "RenderTarget/CubeMap/CubeRenderTarget.h"
 #include "RenderTarget/CubeMap/DynamicCubeMap/DynamicCubeMapTarget.h"
 #include "RenderTarget/RenderTarget.h"
+#include "ShaderCompiler/Compiler.h"
 #include "ShaderTypes.h"
 #include "UI/UIManager/UiManager.h"
 
@@ -127,6 +128,7 @@ public:
 	D3D12_COMPUTE_PIPELINE_STATE_DESC GetWavesDisturbPSODesc();
 	D3D12_COMPUTE_PIPELINE_STATE_DESC GetWavesUpdatePSODesc();
 	D3D12_COMPUTE_PIPELINE_STATE_DESC GetSobelPSODesc();
+
 	D3D12_RENDER_TARGET_BLEND_DESC GetTransparentBlendState();
 	D3D12_SHADER_BYTECODE GetShaderByteCode(const string& ShaderName);
 	void BuildDescriptorHeap();
@@ -249,6 +251,7 @@ public:
 	void UpdateMaterialCB() const;
 	void UpdateObjectCB() const;
 	void SetDescriptorHeap();
+	OShaderCompiler* GetShaderCompiler() const;
 
 protected:
 	void DrawRenderItemsImpl(const ComPtr<ID3D12GraphicsCommandList>& CommandList, const vector<SRenderItem*>& RenderItems);
@@ -342,6 +345,8 @@ private:
 	std::optional<string> GeometryToRebuild;
 
 	SRenderItem* PickedItem = nullptr;
+
+	unique_ptr<OShaderCompiler> ShaderCompiler;
 };
 
 template<typename T, typename... Args>

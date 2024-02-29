@@ -399,5 +399,5 @@ void OApplication::SetAppPaused(bool bPaused)
 
 string OApplication::GetConfigPath(const string& Key) const
 {
-	return RootDirPath.GetPath() + ConfigReader->Get<string>(Key);
+	return RootDirPath.GetPath() + ConfigReader->GetRoot<string>(Key);
 }
