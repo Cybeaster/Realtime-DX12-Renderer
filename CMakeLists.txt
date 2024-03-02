@@ -163,37 +163,22 @@ set(SRC_FILES
         Config/ShaderReader/ShaderReader.h
         Application/GraphicsPipelineManager/GraphicsPipelineManager.cpp
         Application/GraphicsPipelineManager/GraphicsPipelineManager.h
-        Types/DirectX/PSODescription.h
         Config/PSOReader/PsoReader.cpp
         Config/PSOReader/PsoReader.h
-        Types/DirectX/ShaderArray.h
 
 )
 
+set(DXCOMPILER_PATH_DLL ${CMAKE_SOURCE_DIR}/Externals/directx/Compiler/bin/dxcompiler.dll)
+set(DXCOMPILER_PATH_LIB ${CMAKE_SOURCE_DIR}/Externals/directx/Compiler/bin/dxcompiler.lib)
 
 # Add sources to the project
 add_executable(DXRenderer
         ${SRC_FILES}
-        ${SHADER_FILES}
-)
+        ${SHADER_FILES})
+
 file(GLOB IMGUI_SOURCES Externals/imgui/*.cpp Externals/imgui/*.h)
 add_library(imgui ${IMGUI_SOURCES})
 
-
-#file(GLOB REFLECTOR_SCRIPTS "${CMAKE_CURRENT_SOURCE_DIR}/Reflector/*.py")
-
-
-#[[foreach (SCRIPT ${REFLECTOR_SCRIPTS})
-    get_filename_component(SCRIPT_NAME ${SCRIPT} NAME_WE)
-    add_custom_target(
-            Run_${SCRIPT_NAME} ALL
-            COMMAND ${Python3_EXECUTABLE} ${SCRIPT}
-            COMMENT "Running Python script: ${SCRIPT_NAME}"
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-    # Make DXRenderer dependent on this script execution to ensure it runs before DXRenderer is built
-    add_dependencies(DXRenderer Run_${SCRIPT_NAME})
-endforeach ()]]
 
 # Include them in your library or executable
 target_sources(imgui PRIVATE ${IMGUI_BACKENDS})
@@ -216,6 +201,7 @@ add_custom_command(TARGET DXRenderer POST_BUILD
         ${CMAKE_SOURCE_DIR}/Resources $<TARGET_FILE_DIR:DXRenderer>/Resources/)
 
 include_directories(IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Externals/imgui)
+include_directories(IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Externals/directx/Compiler/inc)
 
 target_include_directories(DXRenderer PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Externals/directx
@@ -224,6 +210,11 @@ target_include_directories(DXRenderer PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Types/DirectX
 )
 
+# Copy dxcompiler.dll to the output directory
+add_custom_command(TARGET DXRenderer POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${DXCOMPILER_PATH_DLL}
+        $<TARGET_FILE_DIR:DXRenderer>)
 
-# Link necessary libraries
-target_link_libraries(DXRenderer d3d12.lib dxgi.lib dxguid.lib d3dcompiler.lib Shlwapi.lib imgui ${Boost_LIBRARIES} Bcrypt.lib)
+
+target_link_libraries(DXRenderer d3d12.lib dxgi.lib dxguid.lib d3dcompiler.lib Shlwapi.lib imgui ${Boost_LIBRARIES} Bcrypt.lib ${DXCOMPILER_PATH_LIB})
