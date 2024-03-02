@@ -96,7 +96,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> Utils::CreateDefaultBuffer(ID3D12Device* 
 	// The caller can Release the uploadBuffer after it knows the copy has been executed.
 	return defaultBuffer;
 }
-array<const CD3DX12_STATIC_SAMPLER_DESC, 6> Utils::GetStaticSamplers()
+vector<CD3DX12_STATIC_SAMPLER_DESC> Utils::GetStaticSamplers()
 {
 	//clang-format off
 	// Applications usually only need a handful of samplers.  So just define them all up front
@@ -212,14 +212,31 @@ void Utils::BuildRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>
 	                                         serializedRootSig.GetAddressOf(),
 	                                         errorBlob.GetAddressOf());
 
-	if (errorBlob != nullptr)
+	CreateRootSignature(Device, RootSignature, serializedRootSig, errorBlob);
+}
+
+void Utils::BuildRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>& RootSignature, const D3D12_VERSIONED_ROOT_SIGNATURE_DESC& Desc)
+{
+	// Create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
+	ComPtr<ID3DBlob> serializedRootSig = nullptr;
+	ComPtr<ID3DBlob> errorBlob = nullptr;
+
+	THROW_IF_FAILED(D3D12SerializeVersionedRootSignature(&Desc,
+	                                                     serializedRootSig.GetAddressOf(),
+	                                                     errorBlob.GetAddressOf()));
+	CreateRootSignature(Device, RootSignature, serializedRootSig, errorBlob);
+}
+
+void Utils::CreateRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>& RootSignature, const ComPtr<ID3DBlob>& SerializedRootSig, const ComPtr<ID3DBlob>& ErrorBlob)
+{
+	if (ErrorBlob != nullptr)
 	{
-		::OutputDebugStringA(static_cast<char*>(errorBlob->GetBufferPointer()));
+		::OutputDebugStringA(static_cast<char*>(ErrorBlob->GetBufferPointer()));
 	}
-	THROW_IF_FAILED(hr);
+
 	THROW_IF_FAILED(Device->CreateRootSignature(0,
-	                                            serializedRootSig->GetBufferPointer(),
-	                                            serializedRootSig->GetBufferSize(),
+	                                            SerializedRootSig->GetBufferPointer(),
+	                                            SerializedRootSig->GetBufferSize(),
 	                                            IID_PPV_ARGS(&RootSignature)));
 }
 

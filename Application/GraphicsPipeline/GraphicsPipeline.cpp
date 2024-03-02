@@ -2,17 +2,11 @@
 
 #include "../../Utils/EngineHelper.h"
 
-void OGraphicsPipeline::BuildShaders(const SShaderInfo& ShaderInfo)
+D3D12_SHADER_BYTECODE SPipelineStage::GetShaderByteCode() const
 {
-	for (const auto& info : ShaderInfo.Definitions)
+	if (Shader)
 	{
-		SPipelineInfo localInfo = {};
-		auto shader = CompilerShader(info, ShaderInfo.ShaderPath, localInfo);
-		if (PipelineInfo.RootParameters.empty())
-		{
-			PipelineInfo = std::move(localInfo);
-		}
-
-		Shaders.push_back(std::move(shader));
+		return Shader->GetShaderByteCode();
 	}
+	return {};
 }

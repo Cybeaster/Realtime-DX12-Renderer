@@ -1,4 +1,5 @@
 #pragma once
+#include "../../Config/PSOReader/PsoReader.h"
 #include "../../Config/ShaderReader/ShaderReader.h"
 #include "GraphicsPipeline/GraphicsPipeline.h"
 #include "Types.h"
@@ -12,36 +13,22 @@ struct SRootSignature
 
 class OGraphicsPipelineManager
 {
+	using SGlobalPipelineMap = unordered_map<string, SShadersPipeline>;
+	using SGlobalShaderMap = unordered_map<string, unordered_map<EShaderLevel, unique_ptr<OShader>>>;
+
 public:
 	void LoadPipelines();
 	void Init();
 
 protected:
 	SRootSignature* FindRootSignature(const D3D12_VERSIONED_ROOT_SIGNATURE_DESC& RootSignatureDesc);
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetOpaquePSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetAlphaTestedPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetTransparentPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetShadowPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetReflectedPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetMirrorPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetDebugPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetCompositePSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetSkyPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetTreeSpritePSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetIcosahedronPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetWavesRenderPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetHighlightPSODesc();
-	D3D12_COMPUTE_PIPELINE_STATE_DESC GetBilateralBlurPSODesc();
-	D3D12_COMPUTE_PIPELINE_STATE_DESC GetWavesDisturbPSODesc();
-	D3D12_COMPUTE_PIPELINE_STATE_DESC GetWavesUpdatePSODesc();
-	D3D12_COMPUTE_PIPELINE_STATE_DESC GetSobelPSODesc();
-
+	void PutShaderContainer(string PipelineName, vector<unique_ptr<OShader>>& Shaders);
 	void LoadShaders();
-
+	SShadersPipeline GetPipelineFor(const SShaderArrayText& ShaderArray);
 	unique_ptr<OShaderReader> ShaderReader;
-	map<string, unique_ptr<OGraphicsPipeline>> Pipelines;
-	map<string, SShadersPipeline> ShadersPipelines;
-	unordered_map<string, vector<ComPtr<ID3D12PipelineState>>> PipelineStates;
+	unique_ptr<OPSOReader> PSOReader;
+	SGlobalPipelineMap GlobalPipelineMap;
+	SGlobalShaderMap GlobalShaderMap;
 	unordered_map<string, SRootSignature> RootSignatures;
 };
 

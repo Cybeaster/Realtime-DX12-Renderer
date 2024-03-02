@@ -2,6 +2,7 @@
   "PipelineStateObjects": [
     {
       "Name": "Opaque",
+      "Type": "Graphics",
       "ShaderPipeline": {
         "VertexShader": "BaseShader",
         "PixelShader": "BaseShader"
@@ -31,7 +32,7 @@
             "DestBlendAlpha": "Zero",
             "BlendOpAlpha": "Add",
             "LogicOp": "NoOp",
-            "RenderTargetWriteMask": "All"
+            "RenderTargetWriteMask": 0
           }
         ]
       },
@@ -70,7 +71,78 @@
       }
     },
     {
+      "Name": "Picker",
+      "Type": "Graphics",
+      "ShaderPipeline": {
+        "VertexShader": "BaseShader",
+        "PixelShader": "BaseShader"
+      },
+      "SampleMask": "0xffffffff",
+      "PrimitiveTopologyType": "Triangle",
+      "RenderTargetFormats": [
+        "D24_UNORM_S8_UINT"
+      ],
+      "DepthStencilFormat": "D24_UNORM_S8_UINT",
+      "NumRenderTargets": 1,
+      "SampleDesc": {
+        "Count": 1,
+        "Quality": 0
+      },
+      "BlendState": {
+        "AlphaToCoverageEnable": false,
+        "IndependentBlendEnable": false,
+        "RenderTarget": [
+          {
+            "BlendEnable": false,
+            "LogicOpEnable": true,
+            "SrcBlend": "SrcAlpha",
+            "DestBlend": "InvSrcAlpha",
+            "BlendOp": "Add",
+            "SrcBlendAlpha": "One",
+            "DestBlendAlpha": "Zero",
+            "BlendOpAlpha": "Add",
+            "LogicOp": "NoOp",
+            "RenderTargetWriteMask": 0
+          }
+        ]
+      },
+      "RasterizerState": {
+        "FrontCounterClockwise": false,
+        "FillMode": "Solid",
+        "CullMode": "Back",
+        "DepthBias": 0,
+        "DepthBiasClamp": 0,
+        "SlopeScaledDepthBias": 0,
+        "DepthClipEnable": true,
+        "MultisampleEnable": false,
+        "AntialiasedLineEnable": false,
+        "ForcedSampleCount": 0,
+        "ConservativeRaster": "Off"
+      },
+      "DepthStencilState": {
+        "DepthEnable": true,
+        "DepthWriteMask": "All",
+        "DepthFunc": "LessEqual",
+        "StencilEnable": false,
+        "StencilReadMask": 0,
+        "StencilWriteMask": 0,
+        "FrontFace": {
+          "StencilFailOp": "Keep",
+          "StencilDepthFailOp": "Keep",
+          "StencilPassOp": "Keep",
+          "StencilFunc": "Always"
+        },
+        "BackFace": {
+          "StencilFailOp": "Keep",
+          "StencilDepthFailOp": "Keep",
+          "StencilPassOp": "Keep",
+          "StencilFunc": "Always"
+        }
+      }
+    },
+    {
       "Name": "Transparent",
+      "Type": "Graphics",
       "ShaderPipeline": {
         "VertexShader": "BaseShader",
         "PixelShader": "BaseShader"
@@ -100,7 +172,7 @@
             "DestBlendAlpha": "Zero",
             "BlendOpAlpha": "Add",
             "LogicOp": "NoOp",
-            "RenderTargetWriteMask": "All"
+            "RenderTargetWriteMask": 0
           }
         ]
       },
@@ -140,6 +212,7 @@
     },
     {
       "Name": "AlphaTested",
+      "Type": "Graphics",
       "ShaderPipeline": {
         "VertexShader": "AlphaTested",
         "PixelShader": "AlphaTested"
@@ -169,7 +242,7 @@
             "DestBlendAlpha": "Zero",
             "BlendOpAlpha": "Add",
             "LogicOp": "NoOp",
-            "RenderTargetWriteMask": "All"
+            "RenderTargetWriteMask": 0
           }
         ]
       },
@@ -209,6 +282,7 @@
     },
     {
       "Name": "BilateralBlur",
+      "Type": "Compute",
       "ShaderPipeline": {
         "Compute": "BilateralBlur"
       },
@@ -218,6 +292,7 @@
     },
     {
       "Name": "VerticalBlur",
+      "Type": "Compute",
       "ShaderPipeline": {
         "Compute": "VerticalBlur"
       },
@@ -227,6 +302,7 @@
     },
     {
       "Name": "HorizontalBlur",
+      "Type": "Compute",
       "ShaderPipeline": {
         "Compute": "HorizontalBlur"
       },
@@ -236,6 +312,7 @@
     },
     {
       "Name": "Sky",
+      "Type": "Graphics",
       "ShaderPipeline": {
         "VertexShader": "Sky",
         "PixelShader": "Sky"
@@ -265,7 +342,7 @@
             "DestBlendAlpha": "Zero",
             "BlendOpAlpha": "Add",
             "LogicOp": "NoOp",
-            "RenderTargetWriteMask": "All"
+            "RenderTargetWriteMask": 0
           }
         ]
       },
@@ -305,12 +382,293 @@
     },
     {
       "Name": "Sobel",
+      "Type": "Compute",
       "ShaderPipeline": {
         "Compute": "SobelCS"
       },
       "Flags": [
         "None"
       ]
+    },
+    {
+      "Name": "Composite",
+      "Type": "Graphics",
+      "ShaderPipeline": {
+        "VertexShader": "Composite",
+        "PixelShader": "Composite"
+      },
+      "SampleMask": "0xffffffff",
+      "PrimitiveTopologyType": "Triangle",
+      "RenderTargetFormats": [
+        "D24_UNORM_S8_UINT"
+      ],
+      "DepthStencilFormat": "D24_UNORM_S8_UINT",
+      "NumRenderTargets": 1,
+      "SampleDesc": {
+        "Count": 1,
+        "Quality": 0
+      },
+      "BlendState": {
+        "AlphaToCoverageEnable": false,
+        "IndependentBlendEnable": false,
+        "RenderTarget": [
+          {
+            "BlendEnable": false,
+            "LogicOpEnable": false,
+            "SrcBlend": "One",
+            "DestBlend": "Zero",
+            "BlendOp": "Add",
+            "SrcBlendAlpha": "One",
+            "DestBlendAlpha": "Zero",
+            "BlendOpAlpha": "Add",
+            "LogicOp": "NoOp",
+            "RenderTargetWriteMask": 0
+          }
+        ]
+      },
+      "RasterizerState": {
+        "FrontCounterClockwise": false,
+        "FillMode": "Solid",
+        "CullMode": "Back",
+        "DepthBias": 0,
+        "DepthBiasClamp": 0,
+        "SlopeScaledDepthBias": 0,
+        "DepthClipEnable": true,
+        "MultisampleEnable": false,
+        "AntialiasedLineEnable": false,
+        "ForcedSampleCount": 0,
+        "ConservativeRaster": "Off"
+      },
+      "DepthStencilState": {
+        "DepthEnable": false,
+        "DepthWriteMask": "Zero",
+        "DepthFunc": "Always",
+        "StencilEnable": false,
+        "StencilReadMask": 0,
+        "StencilWriteMask": 0,
+        "FrontFace": {
+          "StencilFailOp": "Keep",
+          "StencilDepthFailOp": "Keep",
+          "StencilPassOp": "Keep",
+          "StencilFunc": "Always"
+        },
+        "BackFace": {
+          "StencilFailOp": "Keep",
+          "StencilDepthFailOp": "Keep",
+          "StencilPassOp": "Keep",
+          "StencilFunc": "Always"
+        }
+      }
+    },
+    {
+      "Name": "Debug",
+      "Type": "Graphics",
+      "ShaderPipeline": {
+        "VertexShader": "Composite",
+        "PixelShader": "Composite"
+      },
+      "SampleMask": "0xffffffff",
+      "PrimitiveTopologyType": "Triangle",
+      "RenderTargetFormats": [
+        "D24_UNORM_S8_UINT"
+      ],
+      "DepthStencilFormat": "D24_UNORM_S8_UINT",
+      "NumRenderTargets": 1,
+      "SampleDesc": {
+        "Count": 1,
+        "Quality": 0
+      },
+      "BlendState": {
+        "AlphaToCoverageEnable": false,
+        "IndependentBlendEnable": false,
+        "RenderTarget": [
+          {
+            "BlendEnable": false,
+            "LogicOpEnable": false,
+            "SrcBlend": "One",
+            "DestBlend": "Zero",
+            "BlendOp": "Add",
+            "SrcBlendAlpha": "One",
+            "DestBlendAlpha": "Zero",
+            "BlendOpAlpha": "Add",
+            "LogicOp": "NoOp",
+            "RenderTargetWriteMask": 0
+          }
+        ]
+      },
+      "RasterizerState": {
+        "FrontCounterClockwise": false,
+        "FillMode": "Wireframe",
+        "CullMode": "Back",
+        "DepthBias": 0,
+        "DepthBiasClamp": 0,
+        "SlopeScaledDepthBias": 0,
+        "DepthClipEnable": true,
+        "MultisampleEnable": false,
+        "AntialiasedLineEnable": false,
+        "ForcedSampleCount": 0,
+        "ConservativeRaster": "Off"
+      },
+      "DepthStencilState": {
+        "DepthEnable": false,
+        "DepthWriteMask": "Zero",
+        "DepthFunc": "Always",
+        "StencilEnable": false,
+        "StencilReadMask": 0,
+        "StencilWriteMask": 0,
+        "FrontFace": {
+          "StencilFailOp": "Keep",
+          "StencilDepthFailOp": "Keep",
+          "StencilPassOp": "Keep",
+          "StencilFunc": "Always"
+        },
+        "BackFace": {
+          "StencilFailOp": "Keep",
+          "StencilDepthFailOp": "Keep",
+          "StencilPassOp": "Keep",
+          "StencilFunc": "Always"
+        }
+      }
+    },
+    {
+      "Name": "Mirror",
+      "Type": "Graphics",
+      "ShaderPipeline": {
+        "VertexShader": "BaseShader",
+        "PixelShader": "BaseShader"
+      },
+      "SampleMask": "0xffffffff",
+      "PrimitiveTopologyType": "Triangle",
+      "RenderTargetFormats": [
+        "D24_UNORM_S8_UINT"
+      ],
+      "DepthStencilFormat": "D24_UNORM_S8_UINT",
+      "NumRenderTargets": 1,
+      "SampleDesc": {
+        "Count": 1,
+        "Quality": 0
+      },
+      "BlendState": {
+        "AlphaToCoverageEnable": false,
+        "IndependentBlendEnable": false,
+        "RenderTarget": [
+          {
+            "BlendEnable": false,
+            "LogicOpEnable": false,
+            "SrcBlend": "One",
+            "DestBlend": "Zero",
+            "BlendOp": "Add",
+            "SrcBlendAlpha": "One",
+            "DestBlendAlpha": "Zero",
+            "BlendOpAlpha": "Add",
+            "LogicOp": "NoOp",
+            "RenderTargetWriteMask": 0
+          }
+        ]
+      },
+      "RasterizerState": {
+        "FrontCounterClockwise": false,
+        "FillMode": "Solid",
+        "CullMode": "Back",
+        "DepthBias": 0,
+        "DepthBiasClamp": 0,
+        "SlopeScaledDepthBias": 0,
+        "DepthClipEnable": true,
+        "MultisampleEnable": false,
+        "AntialiasedLineEnable": false,
+        "ForcedSampleCount": 0,
+        "ConservativeRaster": "Off"
+      },
+      "DepthStencilState": {
+        "DepthEnable": true,
+        "DepthWriteMask": "Zero",
+        "DepthFunc": "Less",
+        "StencilEnable": true,
+        "StencilReadMask": 255,
+        "StencilWriteMask": 255,
+        "FrontFace": {
+          "StencilFailOp": "Keep",
+          "StencilDepthFailOp": "Keep",
+          "StencilPassOp": "Replace",
+          "StencilFunc": "Always"
+        },
+        "BackFace": {
+          "StencilFailOp": "Keep",
+          "StencilDepthFailOp": "Keep",
+          "StencilPassOp": "Replace",
+          "StencilFunc": "Always"
+        }
+      }
+    },
+    {
+      "Name": "Reflected",
+      "Type": "Graphics",
+      "ShaderPipeline": {
+        "VertexShader": "BaseShader",
+        "PixelShader": "BaseShader"
+      },
+      "SampleMask": "0xffffffff",
+      "PrimitiveTopologyType": "Triangle",
+      "RenderTargetFormats": [
+        "D24_UNORM_S8_UINT"
+      ],
+      "DepthStencilFormat": "D24_UNORM_S8_UINT",
+      "NumRenderTargets": 1,
+      "SampleDesc": {
+        "Count": 1,
+        "Quality": 0
+      },
+      "BlendState": {
+        "AlphaToCoverageEnable": false,
+        "IndependentBlendEnable": false,
+        "RenderTarget": [
+          {
+            "BlendEnable": false,
+            "LogicOpEnable": false,
+            "SrcBlend": "One",
+            "DestBlend": "Zero",
+            "BlendOp": "Add",
+            "SrcBlendAlpha": "One",
+            "DestBlendAlpha": "Zero",
+            "BlendOpAlpha": "Add",
+            "LogicOp": "NoOp",
+            "RenderTargetWriteMask": 0
+          }
+        ]
+      },
+      "RasterizerState": {
+        "FrontCounterClockwise": true,
+        "FillMode": "Solid",
+        "CullMode": "Back",
+        "DepthBias": 0,
+        "DepthBiasClamp": 0,
+        "SlopeScaledDepthBias": 0,
+        "DepthClipEnable": true,
+        "MultisampleEnable": false,
+        "AntialiasedLineEnable": false,
+        "ForcedSampleCount": 0,
+        "ConservativeRaster": "Off"
+      },
+      "DepthStencilState": {
+        "DepthEnable": true,
+        "DepthWriteMask": "All",
+        "DepthFunc": "Less",
+        "StencilEnable": true,
+        "StencilReadMask": 255,
+        "StencilWriteMask": 255,
+        "FrontFace": {
+          "StencilFailOp": "Keep",
+          "StencilDepthFailOp": "Keep",
+          "StencilPassOp": "Keep",
+          "StencilFunc": "Equal"
+        },
+        "BackFace": {
+          "StencilFailOp": "Keep",
+          "StencilDepthFailOp": "Keep",
+          "StencilPassOp": "Keep",
+          "StencilFunc": "Equal"
+        }
+      }
     }
   ]
 }

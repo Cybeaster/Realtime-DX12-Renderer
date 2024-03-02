@@ -24,10 +24,11 @@ Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(
     UINT64 ByteSize,
     ComPtr<ID3D12Resource>& UploadBuffer);
 
-array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
+vector<CD3DX12_STATIC_SAMPLER_DESC> GetStaticSamplers();
 void ResourceBarrier(ID3D12GraphicsCommandList* CMDList, ID3D12Resource* Resource, D3D12_RESOURCE_STATES Before, D3D12_RESOURCE_STATES After);
 D3D12_RESOURCE_STATES ResourceBarrier(ID3D12GraphicsCommandList* CMDList, ID3D12Resource* Resource, D3D12_RESOURCE_STATES After);
 void BuildRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>& RootSignature, const D3D12_ROOT_SIGNATURE_DESC& Desc);
-
-inline DXGI_FORMAT MaskToFormat(uint32_t Mask);
+void BuildRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>& RootSignature, const D3D12_VERSIONED_ROOT_SIGNATURE_DESC& Desc);
+void CreateRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>& RootSignature, const ComPtr<ID3DBlob>& SerializedRootSig, const ComPtr<ID3DBlob>& ErrorBlob);
+DXGI_FORMAT MaskToFormat(uint32_t Mask);
 } // namespace Utils

@@ -114,5 +114,5 @@ inline auto& CreateQuadRenderItem(string Category, string Name, float X, float Y
 
 inline auto CompilerShader(const SShaderDefinition& Definition, const wstring& ShaderPath, SPipelineInfo& OutPipelineInfo)
 {
-	return OEngine::Get()->GetShaderCompiler()->CompilerShader(Definition, ShaderPath, OutPipelineInfo);
+	return OEngine::Get()->GetShaderCompiler()->CompileShader(Definition, ShaderPath, OutPipelineInfo);
 }

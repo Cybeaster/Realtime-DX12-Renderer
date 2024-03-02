@@ -2,29 +2,53 @@
 
 #include <ranges>
 
-vector<SPSODescription> OPSOReader::LoadPSOs()
+vector<shared_ptr<SPSODescriptionBase>> OPSOReader::LoadPSOs() const
 {
-	vector<SPSODescription> PSOs;
+	vector<shared_ptr<SPSODescriptionBase>> PSOs;
 	for (auto val : GetRootChild("PipelineStateObjects") | std::views::values)
 	{
-		SPSODescription PSODesc;
-		auto& desc = PSODesc.PSODesc;
-		PSODesc.Name = val.get<string>("Name");
-		PSODesc.ShaderPipeline = GetShaderArray(val.get_child("ShaderPipeline"));
-
-		desc.Flags = GetFlags(val);
-		desc.SampleMask = val.get_optional<UINT>("SampleMask").value_or(UINT_MAX);
-		desc.PrimitiveTopologyType = GetTopologyType(val);
-		desc.NumRenderTargets = val.get<UINT>("NumRenderTargets");
-		SetRenderTargetFormats(desc.RTVFormats, val);
-		desc.DSVFormat = GetFormat(val);
-		desc.SampleDesc = GetSampleDescription(val);
-		desc.BlendState = GetBlendDesc(val);
-		desc.RasterizerState = GetRasterizerDesc(val);
-		desc.DepthStencilState = GetDepthStencilDesc(val);
-		PSOs.push_back(PSODesc);
+		auto type = val.get<string>("Type");
+		if (type == "Graphics")
+		{
+			PSOs.push_back(LoadGraphicsPSO(val));
+		}
+		else if (type == "Compute")
+		{
+			PSOs.push_back(LoadComputePSO(val));
+		}
 	}
 	return PSOs;
+}
+
+shared_ptr<SPSODescription<SGraphicsPSODesc>> OPSOReader::LoadGraphicsPSO(const boost::property_tree::ptree& Node) const
+{
+	auto PSODesc = make_shared<SPSODescription<SGraphicsPSODesc>>();
+	PSODesc->Type = EPSOType::Graphics;
+	auto& desc = PSODesc->PSODesc;
+	PSODesc->Name = Node.get<string>("Name");
+	PSODesc->ShaderPipeline = GetShaderArray(Node.get_child("ShaderPipeline"));
+	desc.Flags = GetFlags(Node);
+	desc.SampleMask = GetOptionalOr(Node, "SampleMask", UINT_MAX);
+	desc.PrimitiveTopologyType = GetTopologyType(Node);
+	desc.NumRenderTargets = GetOptionalOr(Node, "NumRenderTargets", 1);
+	SetRenderTargetFormats(desc.RTVFormats, Node);
+	desc.DSVFormat = GetFormat(Node);
+	desc.SampleDesc = GetSampleDescription(Node);
+	desc.BlendState = GetBlendDesc(Node);
+	desc.RasterizerState = GetRasterizerDesc(Node);
+	desc.DepthStencilState = GetDepthStencilDesc(Node);
+	return PSODesc;
+}
+
+shared_ptr<SPSODescription<SComputePSODesc>> OPSOReader::LoadComputePSO(const boost::property_tree::ptree& Node) const
+{
+	auto PSODesc = make_shared<SPSODescription<SComputePSODesc>>();
+	PSODesc->Type = EPSOType::Compute;
+	auto& desc = PSODesc->PSODesc;
+	PSODesc->Name = Node.get<string>("Name");
+	PSODesc->ShaderPipeline = GetShaderArray(Node.get_child("ShaderPipeline"));
+	desc.Flags = GetFlags(Node);
+	return PSODesc;
 }
 
 DXGI_SAMPLE_DESC OPSOReader::GetSampleDescription(const boost::property_tree::ptree& Node)
@@ -47,20 +71,23 @@ CD3DX12_BLEND_DESC OPSOReader::GetBlendDesc(const boost::property_tree::ptree& N
 		desc.AlphaToCoverageEnable = GetOptionalOr(optional, "AlphaToCoverageEnable", false);
 		desc.IndependentBlendEnable = GetOptionalOr(optional, "IndependentBlendEnable", false);
 		uint32_t counter = 0;
-		for (auto renderTarget : optional->get_child_optional("RenderTarget"))
+		if (const auto renderTargetOptional = optional->get_child_optional("RenderTarget"))
 		{
-			auto& target = desc.RenderTarget[counter];
-			target.BlendEnable = GetOptionalOr(optional, "BlendEnable", false);
-			target.LogicOpEnable = GetOptionalOr(optional, "LogicOpEnable", false);
-			target.SrcBlend = GetBlend(GetOptionalOr(optional, "SrcBlend", "One"));
-			target.DestBlend = GetBlend(GetOptionalOr(optional, "DestBlend", "Zero"));
-			target.BlendOp = GetBlendOp(GetOptionalOr(optional, "BlendOp", "Add"));
-			target.SrcBlendAlpha = GetBlend(GetOptionalOr(optional, "SrcBlendAlpha", "One"));
-			target.DestBlendAlpha = GetBlend(GetOptionalOr(optional, "DestBlendAlpha", "Zero"));
-			target.BlendOpAlpha = GetBlendOp(GetOptionalOr(optional, "BlendOpAlpha", "Add"));
-			target.LogicOp = GetLogicOp(GetOptionalOr(optional, "LogicOp", "Clear"));
-			target.RenderTargetWriteMask = GetOptionalOr(optional, "RenderTargetWriteMask", 0);
-			counter++;
+			for (auto& renderTarget : renderTargetOptional->get_child("RenderTarget"))
+			{
+				auto& target = desc.RenderTarget[counter];
+				target.BlendEnable = GetOptionalOr(renderTarget.second, "BlendEnable", false);
+				target.LogicOpEnable = GetOptionalOr(renderTarget.second, "LogicOpEnable", false);
+				target.SrcBlend = GetBlend(GetOptionalOr(renderTarget.second, "SrcBlend", "One"));
+				target.DestBlend = GetBlend(GetOptionalOr(renderTarget.second, "DestBlend", "Zero"));
+				target.BlendOp = GetBlendOp(GetOptionalOr(renderTarget.second, "BlendOp", "Add"));
+				target.SrcBlendAlpha = GetBlend(GetOptionalOr(renderTarget.second, "SrcBlendAlpha", "One"));
+				target.DestBlendAlpha = GetBlend(GetOptionalOr(renderTarget.second, "DestBlendAlpha", "Zero"));
+				target.BlendOpAlpha = GetBlendOp(GetOptionalOr(renderTarget.second, "BlendOpAlpha", "Add"));
+				target.LogicOp = GetLogicOp(GetOptionalOr(renderTarget.second, "LogicOp", "Clear"));
+				target.RenderTargetWriteMask = GetOptionalOr(renderTarget.second, "RenderTargetWriteMask", 0);
+				counter++;
+			}
 		}
 
 		return desc;
@@ -381,9 +408,9 @@ D3D12_STENCIL_OP OPSOReader::GetStencilOp(const string& StencilOpString)
 	return D3D12_STENCIL_OP_KEEP;
 }
 
-SShaderArray OPSOReader::GetShaderArray(const boost::property_tree::ptree& Node)
+SShaderArrayText OPSOReader::GetShaderArray(const boost::property_tree::ptree& Node)
 {
-	SShaderArray shaderArray;
+	SShaderArrayText shaderArray;
 	if (auto optional = Node.get_optional<string>("VertexShader"))
 	{
 		shaderArray.VertexShaderName = optional.value();

@@ -36,9 +36,16 @@ void SShaderDefinition::TypeFromString(const string& Other)
 	}
 }
 
-void OShader::Init(const SShaderDefinition& Info, const ComPtr<IDxcBlob>& Blob, D3D12_INPUT_LAYOUT_DESC Desc)
+void OShader::Init(const SShaderDefinition& Info, const ComPtr<IDxcBlob>& Blob)
 {
 	ShaderBlob = Blob;
 	ShaderInfo = Info;
-	LayoutDesc = Desc;
+}
+
+D3D12_SHADER_BYTECODE OShader::GetShaderByteCode() const
+{
+	return {
+		static_cast<BYTE*>(ShaderBlob->GetBufferPointer()),
+		ShaderBlob->GetBufferSize()
+	};
 }

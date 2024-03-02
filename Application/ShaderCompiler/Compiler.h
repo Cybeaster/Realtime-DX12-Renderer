@@ -10,10 +10,19 @@ struct SPipelineInfo;
 class OShaderCompiler
 {
 public:
+	unique_ptr<OShader> CompileShader(const SShaderDefinition& Definition, wstring ShaderPath, SPipelineInfo& OutPipelineInfo);
+	vector<unique_ptr<OShader>> CompileShaders(const vector<SPipelineStage>& OutPipelines, SPipelineInfo& OutShadersPipeline);
 	void Init();
-	unique_ptr<OShader> CompilerShader(const SShaderDefinition& Definition, wstring ShaderPath, SPipelineInfo& OutPipelineInfo);
 
 private:
+	ComPtr<ID3D12RootSignature> BuildRootSignature(vector<D3D12_ROOT_PARAMETER1>& RootParameter, const vector<CD3DX12_STATIC_SAMPLER_DESC>& StaticSamplers, D3D12_VERSIONED_ROOT_SIGNATURE_DESC& OutDescription);
+	D3D12_SHADER_DESC BuildReflection(DxcBuffer Buffer, ComPtr<ID3D12ShaderReflection>& OutReflection);
+	D3D12_INPUT_LAYOUT_DESC GetInputLayoutDesc(const ComPtr<ID3D12ShaderReflection>& Reflection);
+	void SetCompilationArgs(const SShaderDefinition& Definition);
+	void ResolveBoundResources(const ComPtr<ID3D12ShaderReflection>& Reflection, const D3D12_SHADER_DESC& ShaderDescription, SPipelineInfo& OutPipelineInfo);
+	void ResolveConstantBuffers(int32_t ResourceIdx, const ComPtr<ID3D12ShaderReflection>& Reflection, const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SPipelineInfo& OutPipelineInfo);
+	void ResolveDescriptorRanges(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SPipelineInfo& OutPipelineInfo);
+	std::tuple<DxcBuffer, ComPtr<IDxcResult>> CreateDxcBuffer(const wstring& ShaderPath);
 	ComPtr<IDxcCompiler3> Compiler;
 	ComPtr<IDxcUtils> Utils;
 	ComPtr<IDxcIncludeHandler> IncludeHandler;

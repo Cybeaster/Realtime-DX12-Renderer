@@ -1,16 +1,19 @@
 #pragma once
 #include "../ConfigReader.h"
-#include "PSODescription.h"
-#include "ShaderArray.h"
+#include "ShaderTypes.h"
+
 class OPSOReader : public OConfigReader
 {
+public:
 	OPSOReader(const string& FileName)
 	    : OConfigReader(FileName) {}
 
-	vector<SPSODescription> LoadPSOs();
+	vector<shared_ptr<SPSODescriptionBase>> LoadPSOs() const;
+	shared_ptr<SPSODescription<SGraphicsPSODesc>> LoadGraphicsPSO(const boost::property_tree::ptree& Node) const;
+	shared_ptr<SPSODescription<SComputePSODesc>> LoadComputePSO(const boost::property_tree::ptree& Node) const;
 
 private:
-	static SShaderArray GetShaderArray(const boost::property_tree::ptree& Node);
+	static SShaderArrayText GetShaderArray(const boost::property_tree::ptree& Node);
 	static D3D12_PIPELINE_STATE_FLAGS GetFlags(const boost::property_tree::ptree& Node);
 	static D3D12_PRIMITIVE_TOPOLOGY_TYPE GetTopologyType(const boost::property_tree::ptree& Node);
 	static void SetRenderTargetFormats(DXGI_FORMAT* Formats, const boost::property_tree::ptree& Node);
