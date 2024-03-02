@@ -125,7 +125,7 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const string& Name, const s
 
 	OGeometryGenerator::SMeshData data;
 	const bool successful = parser->ParseMesh(Path, data, GenTexels);
-	CWIN_LOG(!successful, Geometry, Warning, "Failed to parse the mesh: {}", TO_STRING(Path));
+	CWIN_LOG(!successful, Geometry, Warning, "Failed to parse the mesh: {}", TEXT(Path));
 	if (successful)
 	{
 		return CreateMesh(Name, data);

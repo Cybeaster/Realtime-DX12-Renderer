@@ -24,22 +24,27 @@ vector<unique_ptr<OShader>> OShaderCompiler::CompileShaders(const vector<SPipeli
 		shader.Shader = temp.get();
 		shaders.push_back(std::move(temp));
 	}
+	BuildRootSignature(OutShadersPipeline.RootSignatureParams.RootParameters, Utils::GetStaticSamplers(), OutShadersPipeline.RootSignatureParams.RootSignatureDesc);
 	return shaders;
 }
 
 void OShaderCompiler::SetCompilationArgs(const SShaderDefinition& Definition)
 {
+	Entry = Definition.ShaderEntry;
+	TargetProfile = Definition.TargetProfile;
 	CompilationArgs = {
 		L"-E",
-		UTF8ToWString(Definition.ShaderEntry).c_str(),
+		Entry.c_str(),
 		L"-T",
-		UTF8ToWString(Definition.TargetProfile).c_str(),
+		TargetProfile.c_str(),
 		DXC_ARG_PACK_MATRIX_ROW_MAJOR,
 		DXC_ARG_WARNINGS_ARE_ERRORS,
 		DXC_ARG_ALL_RESOURCES_BOUND,
+		L"-I",
+		L"Shaders/",
 	};
 
-	if constexpr (DEBUG)
+	if constexpr (_DEBUG)
 	{
 		CompilationArgs.push_back(DXC_ARG_DEBUG);
 		CompilationArgs.push_back(DXC_ARG_SKIP_OPTIMIZATIONS);
@@ -56,14 +61,21 @@ void OShaderCompiler::ResolveBoundResources(const ComPtr<ID3D12ShaderReflection>
 	{
 		D3D12_SHADER_INPUT_BIND_DESC bindDesc{};
 		Reflection->GetResourceBindingDesc(i, &bindDesc);
-		if (bindDesc.Type == D3D_SIT_CBUFFER)
+		if (!OutPipelineInfo.TryAddRootParamterName(UTF8ToWString(bindDesc.Name))) //TODO too long names
 		{
-			ResolveConstantBuffers(i, Reflection, bindDesc, OutPipelineInfo);
+			continue;
 		}
 
-		if (bindDesc.Type == D3D_SIT_TEXTURE)
+		switch (bindDesc.Type)
 		{
-			ResolveDescriptorRanges(bindDesc, OutPipelineInfo);
+		case D3D_SIT_CBUFFER:
+			ResolveConstantBuffers(i, Reflection, bindDesc, OutPipelineInfo);
+			break;
+		case D3D_SIT_TEXTURE:
+		case D3D_SIT_STRUCTURED:
+			ResolveTexturesAndStructuredBuffers(bindDesc, OutPipelineInfo);
+			break;
+			// Handle other types as needed, for example, samplers
 		}
 	}
 }
@@ -83,63 +95,31 @@ void OShaderCompiler::ResolveConstantBuffers(const int32_t ResourceIdx, const Co
 		    .Flags = D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
 		},
 	};
-	OutPipelineInfo.RootParameters.push_back(rootParameter);
+	OutPipelineInfo.AddRootParameter(rootParameter);
 }
 
-void OShaderCompiler::ResolveDescriptorRanges(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SPipelineInfo& OutPipelineInfo)
+void OShaderCompiler::ResolveTexturesAndStructuredBuffers(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SPipelineInfo& OutPipelineInfo)
 {
-	OutPipelineInfo.RootParamIndexMap[UTF8ToWString(BindDesc.Name)] = BindDesc.BindPoint;
-	D3D12_DESCRIPTOR_RANGE1 texturesDescriptorRange = {
-		.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		.NumDescriptors = 9, // gTextureMaps[7], gDisplacementMap, gCubeMap
-		.BaseShaderRegister = 0, // Starting at t0
-		.RegisterSpace = 0, // Default space
+	D3D12_DESCRIPTOR_RANGE1 descriptorRange = {
+		.RangeType = (BindDesc.Type == D3D_SIT_CBUFFER) ? D3D12_DESCRIPTOR_RANGE_TYPE_CBV : D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+		.NumDescriptors = BindDesc.BindCount, // Special handling for structured buffers in space1
+		.BaseShaderRegister = BindDesc.BindPoint,
+		.RegisterSpace = BindDesc.Space,
 		.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
 	};
 
-	OutPipelineInfo.DescriptorRanges.push_back(texturesDescriptorRange);
-	const D3D12_ROOT_PARAMETER1 rootParameter{
+	OutPipelineInfo.RootSignatureParams.DescriptorRanges.push_back(descriptorRange);
+
+	D3D12_ROOT_PARAMETER1 rootParameter = {
 		.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-		.DescriptorTable{
-		    .NumDescriptorRanges = 1u,
-		    .pDescriptorRanges = &OutPipelineInfo.DescriptorRanges.back(),
+		.DescriptorTable = {
+		    .NumDescriptorRanges = 1,
+		    .pDescriptorRanges = &OutPipelineInfo.RootSignatureParams.DescriptorRanges.back(),
 		},
-		.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL
+		.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL, // Or specific visibility as needed
 	};
-	OutPipelineInfo.RootParameters.push_back(rootParameter);
 
-	// For Structured Buffers in space1, define descriptor ranges and root parameters individually
-	std::array<D3D12_DESCRIPTOR_RANGE1, 2> sbDescriptorRanges = { {
-		{
-		    // gInstanceData
-		    .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		    .NumDescriptors = 1,
-		    .BaseShaderRegister = 0, // t0 in space1
-		    .RegisterSpace = 1,
-		    .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
-		},
-		{
-		    // gMaterialData
-		    .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		    .NumDescriptors = 1,
-		    .BaseShaderRegister = 1, // t1 in space1
-		    .RegisterSpace = 1,
-		    .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
-		},
-	} };
-
-	for (const auto& range : sbDescriptorRanges)
-	{
-		D3D12_ROOT_PARAMETER1 sbTableParam = {
-			.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-			.DescriptorTable = {
-			    .NumDescriptorRanges = 1,
-			    .pDescriptorRanges = &range,
-			},
-			.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL,
-		};
-		OutPipelineInfo.RootParameters.push_back(sbTableParam);
-	}
+	OutPipelineInfo.RootSignatureParams.RootParameters.push_back(rootParameter);
 }
 
 std::tuple<DxcBuffer, ComPtr<IDxcResult>> OShaderCompiler::CreateDxcBuffer(const wstring& ShaderPath)
@@ -167,7 +147,8 @@ std::tuple<DxcBuffer, ComPtr<IDxcResult>> OShaderCompiler::CreateDxcBuffer(const
 	THROW_IF_FAILED(compiledShaderBuffer->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errors), nullptr));
 	if (errors && errors->GetStringLength() > 0)
 	{
-		WIN_LOG(Engine, Error, "Shader compilation error: {}", TO_STRING(errors->GetStringPointer()));
+		WIN_LOG(Engine, Error, "Shader compilation error: {}", TEXT(errors->GetStringPointer()));
+		return {};
 	}
 
 	ComPtr<IDxcBlob> reflectionBlob{};
@@ -238,7 +219,6 @@ unique_ptr<OShader> OShaderCompiler::CompileShader(const SShaderDefinition& Defi
 	if (Definition.ShaderType == EShaderLevel::VertexShader)
 	{
 		OutPipelineInfo.InputLayoutDesc = GetInputLayoutDesc(shaderReflection);
-		BuildRootSignature(OutPipelineInfo.RootParameters, Utils::GetStaticSamplers(), OutPipelineInfo.RootSignatureDesc);
 	}
 	ComPtr<IDxcBlob> compiledShaderBlob;
 	THROW_IF_FAILED(compiledShaderBuffer->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&compiledShaderBlob), nullptr));

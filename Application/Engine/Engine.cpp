@@ -58,7 +58,7 @@ bool OEngine::Initialize()
 
 	if (!DirectX::XMVerifyCPUSupport())
 	{
-		MessageBox(nullptr, TEXT("Failed to verify DirectX Math library support."), TEXT("Error"), MB_OK | MB_ICONERROR);
+		WIN_LOG(Default, Error, "Failed to verify DirectX Math library support.");
 		return false;
 	}
 	if (const auto adapter = GetAdapter(false))
@@ -82,9 +82,8 @@ bool OEngine::Initialize()
 
 	bIsTearingSupported = CheckTearingSupport();
 
-	ShaderCompiler = make_unique<OShaderCompiler>();
-	ShaderCompiler->Init();
-
+	InitCompiler();
+	InitPipelineManager();
 	InitManagers();
 	CreateWindow();
 	PostInitialize();
@@ -250,6 +249,18 @@ void OEngine::DrawFullScreenQuad()
 void OEngine::InitUIManager()
 {
 	UIManager->InitContext(Device.Get(), Window->GetHWND(), SRenderConstants::NumFrameResources, GetSRVHeap().Get(), ObjectDescriptors, this);
+}
+
+void OEngine::InitCompiler()
+{
+	ShaderCompiler = make_unique<OShaderCompiler>();
+	ShaderCompiler->Init();
+}
+
+void OEngine::InitPipelineManager()
+{
+	PipelineManager = make_unique<OGraphicsPipelineManager>();
+	PipelineManager->Init();
 }
 
 void OEngine::SetFogColor(DirectX::XMFLOAT4 Color)
@@ -480,7 +491,7 @@ void OEngine::UpdateFrameResource()
 
 void OEngine::RemoveRenderObject(TUUID UUID)
 {
-	LOG(Render, Log, "Removing object with UUID: {}", TO_STRING(UUID));
+	LOG(Render, Log, "Removing object with UUID: {}", TEXT(UUID));
 	RenderObjects.erase(UUID);
 }
 

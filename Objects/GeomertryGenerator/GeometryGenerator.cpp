@@ -646,7 +646,7 @@ unique_ptr<SMeshGeometry> OGeometryGenerator::CreateSkullGeometry(string PathToM
 {
 	std::ifstream fin(PathToModel);
 	using namespace Utils::Math;
-	CWIN_LOG(!fin, Geometry, Warning, "Could not open the file: {}", TO_STRING(PathToModel));
+	CWIN_LOG(!fin, Geometry, Warning, "Could not open the file: {}", TEXT(PathToModel));
 
 	UINT vcount = 0;
 	UINT tcount = 0;

@@ -11,7 +11,7 @@ bool OCustomParser::ParseMesh(const string& Path, OGeometryGenerator::SMeshData&
 {
 	std::ifstream fin(Path);
 	using namespace Utils::Math;
-	CWIN_LOG(!fin, Geometry, Warning, "Could not open the file: {}", TO_STRING(Path));
+	CWIN_LOG(!fin, Geometry, Warning, "Could not open the file: {}", TEXT(Path));
 	if (!fin)
 	{
 		return false;

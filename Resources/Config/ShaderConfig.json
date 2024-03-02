@@ -1,132 +1,151 @@
 {
   "Shaders": [
     {
-      "Path": "Resources/Shaders/BaseShader.hlsl",
+      "Path": "Shaders/BaseShader.hlsl",
       "Name": "Base",
       "Pipeline": [
         {
           "Type": "Vertex",
           "EntryPoint": "VS",
+          "TargetProfile": "vs_6_0",
           "Defines": []
         },
         {
           "Type": "Pixel",
           "EntryPoint": "PS",
+          "TargetProfile": "ps_6_0",
           "Defines": []
         }
       ]
     },
     {
-      "Path": "Resources/Shaders/BaseShader.hlsl",
+      "Path": "Shaders/BaseShader.hlsl",
       "Name": "AlphaTested",
       "Pipeline": [
         {
           "Type": "Vertex",
           "EntryPoint": "VS",
+          "TargetProfile": "vs_6_0",
           "Defines": []
         },
         {
           "Type": "Pixel",
           "EntryPoint": "PS",
+          "TargetProfile": "ps_6_0",
           "Defines": [
-            "ALPHA_TEST"
+            {
+              "Name": "ALPHA_TEST",
+              "Value": "1"
+            }
           ]
         }
       ]
     },
     {
-      "Path": "Resources/Shaders/WaveDrawSimulation.hlsl",
+      "Path": "Shaders/WaveDrawSimulation.hlsl",
       "Name": "WaveSimulation",
       "Pipeline": [
         {
           "Type": "Vertex",
-          "EntryPoint": "VS"
+          "EntryPoint": "VS",
+          "TargetProfile": "vs_6_0"
         },
         {
           "Type": "Pixel",
-          "EntryPoint": "PS"
+          "EntryPoint": "PS",
+          "TargetProfile": "ps_6_0"
         }
       ]
     },
     {
-      "Path": "Resources/Shaders/WaveUpdateSimulation.hlsl",
+      "Path": "Shaders/WaveUpdateSimulation.hlsl",
       "Name": "WaveUpdateSimulation",
       "Pipeline": [
         {
           "Type": "Compute",
-          "EntryPoint": "UpdateWavesCS"
+          "EntryPoint": "UpdateWavesCS",
+          "TargetProfile": "cs_6_0"
         },
         {
           "Type": "Compute",
-          "EntryPoint": "DisturbWavesCS"
+          "EntryPoint": "DisturbWavesCS",
+          "TargetProfile": "cs_6_0"
         }
       ]
     },
     {
-      "Path": "Resources/Shaders/Sobel.hlsl",
+      "Path": "Shaders/Sobel.hlsl",
       "Name": "Sobel",
       "Pipeline": [
         {
           "Type": "Compute",
-          "EntryPoint": "SobelCS"
+          "EntryPoint": "SobelCS",
+          "TargetProfile": "cs_6_0"
         }
       ]
     },
     {
-      "Path": "Resources/Shaders/Blur.hlsl",
+      "Path": "Shaders/Blur.hlsl",
       "Name": "HorizontalBlur",
       "Pipeline": [
         {
           "Type": "Compute",
-          "EntryPoint": "HorzBlurCS"
+          "EntryPoint": "HorzBlurCS",
+          "TargetProfile": "cs_6_0"
         }
       ]
     },
     {
-      "Path": "Resources/Shaders/Blur.hlsl",
+      "Path": "Shaders/Blur.hlsl",
       "Name": "VerticalBlur",
       "Pipeline": [
         {
           "Type": "Compute",
-          "EntryPoint": "VertBlurCS"
+          "EntryPoint": "VertBlurCS",
+          "TargetProfile": "cs_6_0"
         }
       ]
     },
     {
-      "Path": "Resources/Shaders/Composite.hlsl",
+      "Path": "Shaders/Composite.hlsl",
       "Name": "Composite",
       "Pipeline": [
         {
           "Type": "Vertex",
-          "EntryPoint": "VS"
+          "EntryPoint": "VS",
+          "TargetProfile": "vs_6_0"
         },
         {
           "Type": "Pixel",
-          "EntryPoint": "PS"
+          "EntryPoint": "PS",
+          "TargetProfile": "ps_6_0"
         }
       ]
     },
     {
-      "Path": "Resources/Shaders/BilateralBlur.hlsl",
+      "Path": "Shaders/BilateralBlur.hlsl",
       "Name": "BilateralBlur",
       "Pipeline": [
         {
           "Type": "Compute",
-          "EntryPoint": "BilateralBlur"
+          "EntryPoint": "BilateralBlur",
+          "TargetProfile": "cs_6_0"
         }
       ]
     },
     {
-      "Path": "Resources/Shaders/Sky.hlsl",
+      "Path": "Shaders/Sky.hlsl",
       "Name": "Sky",
       "Pipeline": [
         {
           "Type": "Vertex",
-          "EntryPoint": "VS"
+          "EntryPoint": "VS",
+          "TargetProfile": "vs_6_0"
         },
         {
           "Type": "Pixel",
-          "EntryPoint": "PS"
+          "EntryPoint": "PS",
+          "TargetProfile": "ps_6_0"
         }
       ]
     }

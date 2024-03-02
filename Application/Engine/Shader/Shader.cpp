@@ -32,7 +32,7 @@ void SShaderDefinition::TypeFromString(const string& Other)
 	}
 	else
 	{
-		WIN_LOG(Default, Error, "Unknown shader type: {}", TO_STRING(Other));
+		WIN_LOG(Default, Error, "Unknown shader type: {}", TEXT(Other));
 	}
 }
 

@@ -246,7 +246,7 @@ void OWindow::Update(const UpdateEventArgs& Event)
 
 void OWindow::OnKeyPressed(KeyEventArgs& Event)
 {
-	LOG(Input, Log, "Key Pressed: {}, new camera position: {}", TO_STRING(Event.Key), TO_STRING(Camera->GetPosition3f()));
+	LOG(Input, Log, "Key Pressed: {}, new camera position: {}", TEXT(Event.Key), TEXT(Camera->GetPosition3f()));
 }
 
 void OWindow::OnKeyReleased(KeyEventArgs& Event)

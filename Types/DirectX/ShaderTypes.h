@@ -1,5 +1,5 @@
 #pragma once
-
+#include "Types.h"
 using SGraphicsPSODesc = D3D12_GRAPHICS_PIPELINE_STATE_DESC;
 using SComputePSODesc = D3D12_COMPUTE_PIPELINE_STATE_DESC;
 
@@ -48,29 +48,43 @@ struct SShaderDefinition
 	void TypeFromString(const string& Other);
 
 	EShaderLevel ShaderType;
-	string TargetProfile;
-	string ShaderEntry;
+	wstring TargetProfile;
+	wstring ShaderEntry;
+};
+
+struct SRootSignatureParams
+{
+	unordered_set<wstring> RootParamNames{};
+	vector<D3D12_ROOT_PARAMETER1> RootParameters{};
+	vector<D3D12_DESCRIPTOR_RANGE1> DescriptorRanges{};
+	D3D12_VERSIONED_ROOT_SIGNATURE_DESC RootSignatureDesc{};
 };
 
 struct SPipelineInfo
 {
 	SPipelineInfo() = default;
 	SPipelineInfo(const SPipelineInfo&) = default;
-	SPipelineInfo& operator=(SPipelineInfo&& Other) noexcept
-	{
-		RootParamIndexMap = std::move(Other.RootParamIndexMap);
-		RootParameters = std::move(Other.RootParameters);
-		DescriptorRanges = std::move(Other.DescriptorRanges);
-		RootSignatureDesc = std::move(Other.RootSignatureDesc);
-		return *this;
-	}
+
 	shared_ptr<SPSODescriptionBase> PSODesc;
 	std::unordered_map<wstring, uint32_t> RootParamIndexMap{};
-	vector<D3D12_ROOT_PARAMETER1> RootParameters{};
-	vector<D3D12_DESCRIPTOR_RANGE1> DescriptorRanges{};
-	D3D12_VERSIONED_ROOT_SIGNATURE_DESC RootSignatureDesc{};
+	SRootSignatureParams RootSignatureParams;
 	ComPtr<ID3D12RootSignature> RootSignature;
 	D3D12_INPUT_LAYOUT_DESC InputLayoutDesc{};
+
+	void AddRootParameter(const D3D12_ROOT_PARAMETER1& RootParameter)
+	{
+		RootSignatureParams.RootParameters.push_back(RootParameter);
+	}
+	bool TryAddRootParamterName(const wstring& Name)
+	{
+		if (RootSignatureParams.RootParamNames.contains(Name))
+		{
+			LOG(Engine, Warning, "Root parameter name already exists: {}", Name);
+			return false;
+		}
+		RootSignatureParams.RootParamNames.insert(Name);
+		return true;
+	}
 };
 
 struct SPipelineStage

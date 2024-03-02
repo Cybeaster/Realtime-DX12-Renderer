@@ -14,9 +14,6 @@
 #undef TEXT
 #endif
 
-#define TEXT(Arg) \
-	L##Arg
-
 enum class ELogType
 {
 	Log,
@@ -65,7 +62,7 @@ struct SLogCategories
 #define DLOG(LogType, String, ...) \
 	SLogUtils::Log(SLogUtils::Format(String, ##__VA_ARGS__), ELogType::LogType, true);
 
-#define TO_STRING(Argument) \
+#define TEXT(Argument) \
 	SLogUtils::ToString(Argument)
 
 struct SLogUtils
@@ -155,6 +152,11 @@ struct SLogUtils
 	static std::wstring ToString(float Argument) noexcept
 	{
 		return std::to_wstring(Argument);
+	}
+
+	static std::wstring ToString(const char* Argument) noexcept
+	{
+		return std::wstring(Argument, Argument + strlen(Argument));
 	}
 
 	static std::wstring ToString(double Argument) noexcept

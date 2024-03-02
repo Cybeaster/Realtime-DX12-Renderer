@@ -21,10 +21,12 @@ private:
 	void SetCompilationArgs(const SShaderDefinition& Definition);
 	void ResolveBoundResources(const ComPtr<ID3D12ShaderReflection>& Reflection, const D3D12_SHADER_DESC& ShaderDescription, SPipelineInfo& OutPipelineInfo);
 	void ResolveConstantBuffers(int32_t ResourceIdx, const ComPtr<ID3D12ShaderReflection>& Reflection, const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SPipelineInfo& OutPipelineInfo);
-	void ResolveDescriptorRanges(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SPipelineInfo& OutPipelineInfo);
+	void ResolveTexturesAndStructuredBuffers(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SPipelineInfo& OutPipelineInfo);
 	std::tuple<DxcBuffer, ComPtr<IDxcResult>> CreateDxcBuffer(const wstring& ShaderPath);
 	ComPtr<IDxcCompiler3> Compiler;
 	ComPtr<IDxcUtils> Utils;
 	ComPtr<IDxcIncludeHandler> IncludeHandler;
 	vector<LPCWSTR> CompilationArgs;
+	wstring Entry;
+	wstring TargetProfile;
 };

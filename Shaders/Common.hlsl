@@ -115,7 +115,7 @@ float3 NormalSampleToWorldSpace(float3 NormalMapSample, float3 UnitNormalW, floa
 
 bool IsTangentValid(float3 TangentW)
 {
-	return TangentW != float3(0.0f, 0.0f, 0.0f);
+	return all(TangentW != float3(0.0f, 0.0f, 0.0f));
 }
 
 float3 ComputeNormalMaps(float3 NormalW, float3 TangentW, MaterialData matData, float2 TexC, out float NormalMapSampleA)

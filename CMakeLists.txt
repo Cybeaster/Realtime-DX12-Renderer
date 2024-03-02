@@ -168,7 +168,7 @@ set(SRC_FILES
 
 )
 
-set(DXCOMPILER_PATH_DLL ${CMAKE_SOURCE_DIR}/Externals/directx/Compiler/bin/dxcompiler.dll)
+set(DXCOMPILER_PATH_DLL ${CMAKE_SOURCE_DIR}/Externals/directx/Compiler/bin)
 set(DXCOMPILER_PATH_LIB ${CMAKE_SOURCE_DIR}/Externals/directx/Compiler/bin/dxcompiler.lib)
 
 # Add sources to the project
@@ -212,7 +212,7 @@ target_include_directories(DXRenderer PUBLIC
 
 # Copy dxcompiler.dll to the output directory
 add_custom_command(TARGET DXRenderer POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${DXCOMPILER_PATH_DLL}
         $<TARGET_FILE_DIR:DXRenderer>)
 

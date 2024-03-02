@@ -30,7 +30,7 @@ void OTextureManager::LoadLocalTextures()
 		                                                    texture->FileName.c_str(),
 		                                                    texture->Resource,
 		                                                    texture->UploadHeap));
-		LOG(Engine, Log, "Texture created from config: Name : {}, Path: {}", TO_STRING(texture->Name), texture->FileName);
+		LOG(Engine, Log, "Texture created from config: Name : {}, Path: {}", TEXT(texture->Name), texture->FileName);
 		AddTexture(make_unique<STexture>(*texture));
 	}
 	CommandQueue->ExecuteCommandListAndWait();
@@ -109,7 +109,7 @@ STexture* OTextureManager::CreateTexture(string Name, wstring FileName)
 	                                                    texture->FileName.c_str(),
 	                                                    texture->Resource,
 	                                                    texture->UploadHeap));
-	LOG(Engine, Log, "Texture created: Name : {}, Path: {}", TO_STRING(Name), FileName);
+	LOG(Engine, Log, "Texture created: Name : {}, Path: {}", TEXT(Name), FileName);
 
 	auto result = texture.get();
 	AddTexture(std::move(texture));

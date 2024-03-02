@@ -10,6 +10,7 @@
 #include <memory>
 #include <queue>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #if defined(min)
@@ -31,6 +32,7 @@ using std::string;
 using std::to_wstring;
 using std::unique_ptr;
 using std::unordered_map;
+using std::unordered_set;
 using std::vector;
 using std::weak_ptr;
 using std::wstring;

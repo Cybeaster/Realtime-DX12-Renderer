@@ -133,7 +133,7 @@ D3D12_LOGIC_OP OPSOReader::GetLogicOp(const string& LogicOpString)
 	{
 		return D3D12_LOGIC_OP_OR;
 	}
-	WIN_LOG(Config, Error, "Unknown logic op: {}", TO_STRING(LogicOpString));
+	WIN_LOG(Config, Error, "Unknown logic op: {}", TEXT(LogicOpString));
 	return D3D12_LOGIC_OP_CLEAR;
 }
 
@@ -159,7 +159,7 @@ D3D12_BLEND_OP OPSOReader::GetBlendOp(const string& BlendOpString)
 	{
 		return D3D12_BLEND_OP_MAX;
 	}
-	WIN_LOG(Config, Error, "Unknown logic op: {}", TO_STRING(BlendOpString));
+	WIN_LOG(Config, Error, "Unknown logic op: {}", TEXT(BlendOpString));
 	return D3D12_BLEND_OP_ADD;
 }
 
@@ -209,7 +209,7 @@ D3D12_BLEND OPSOReader::GetBlend(const string& BlendString)
 	{
 		return D3D12_BLEND_SRC_ALPHA_SAT;
 	}
-	WIN_LOG(Config, Error, "Unknown blend op: {}", TO_STRING(BlendString));
+	WIN_LOG(Config, Error, "Unknown blend op: {}", TEXT(BlendString));
 	return D3D12_BLEND_ZERO;
 }
 
@@ -249,7 +249,7 @@ D3D12_CULL_MODE OPSOReader::GetCullMode(const string& CullModeString)
 	{
 		mode = D3D12_CULL_MODE_BACK;
 	}
-	WIN_LOG(Config, Error, "Unknown cull mode: {}", TO_STRING(CullModeString));
+	WIN_LOG(Config, Error, "Unknown cull mode: {}", TEXT(CullModeString));
 	return mode;
 }
 
@@ -263,7 +263,7 @@ D3D12_CONSERVATIVE_RASTERIZATION_MODE OPSOReader::GetConservativeRasterizationMo
 	{
 		return D3D12_CONSERVATIVE_RASTERIZATION_MODE_ON;
 	}
-	WIN_LOG(Config, Error, "Unknown logic op: {}", TO_STRING(ConservativeRasterizationModeString));
+	WIN_LOG(Config, Error, "Unknown logic op: {}", TEXT(ConservativeRasterizationModeString));
 	return D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 }
 
@@ -277,7 +277,7 @@ D3D12_FILL_MODE OPSOReader::GetFillMode(const string& FillModeString)
 	{
 		return D3D12_FILL_MODE_SOLID;
 	}
-	WIN_LOG(Config, Error, "Unknown fill mode: {}", TO_STRING(FillModeString));
+	WIN_LOG(Config, Error, "Unknown fill mode: {}", TEXT(FillModeString));
 	return D3D12_FILL_MODE_SOLID;
 }
 
@@ -328,7 +328,7 @@ D3D12_DEPTH_WRITE_MASK OPSOReader::GetDepthWriteMask(const string& DepthWriteMas
 	{
 		return D3D12_DEPTH_WRITE_MASK_ALL;
 	}
-	WIN_LOG(Config, Error, "Unknown depth write mask: {}", TO_STRING(DepthWriteMaskString));
+	WIN_LOG(Config, Error, "Unknown depth write mask: {}", TEXT(DepthWriteMaskString));
 	return D3D12_DEPTH_WRITE_MASK_ZERO;
 }
 
@@ -366,7 +366,7 @@ D3D12_COMPARISON_FUNC OPSOReader::GetComparisonFunc(const string& ComparisonFunc
 	{
 		return D3D12_COMPARISON_FUNC_ALWAYS;
 	}
-	WIN_LOG(Config, Error, "Unknown comparison func: {}", TO_STRING(ComparisonFuncString));
+	WIN_LOG(Config, Error, "Unknown comparison func: {}", TEXT(ComparisonFuncString));
 	return D3D12_COMPARISON_FUNC_NEVER;
 }
 
@@ -404,7 +404,7 @@ D3D12_STENCIL_OP OPSOReader::GetStencilOp(const string& StencilOpString)
 	{
 		return D3D12_STENCIL_OP_DECR;
 	}
-	WIN_LOG(Config, Error, "Unknown stencil op: {}", TO_STRING(StencilOpString));
+	WIN_LOG(Config, Error, "Unknown stencil op: {}", TEXT(StencilOpString));
 	return D3D12_STENCIL_OP_KEEP;
 }
 

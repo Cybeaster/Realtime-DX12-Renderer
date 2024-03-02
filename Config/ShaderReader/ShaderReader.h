@@ -12,6 +12,5 @@ public:
 	unordered_map<string, vector<SPipelineStage>> LoadShaders();
 
 private:
-	static string InferTargetProfile(const EShaderLevel& ShaderType);
 	vector<D3D_SHADER_MACRO> FindDefines(const boost::property_tree::ptree& Tree);
 };

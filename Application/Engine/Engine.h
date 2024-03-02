@@ -13,6 +13,7 @@
 #include "Filters/BilateralBlur/BilateralBlurFilter.h"
 #include "Filters/Blur/BlurFilter.h"
 #include "Filters/SobelFilter/SobelFilter.h"
+#include "GraphicsPipelineManager/GraphicsPipelineManager.h"
 #include "RenderItem.h"
 #include "RenderTarget/CubeMap/CubeRenderTarget.h"
 #include "RenderTarget/CubeMap/DynamicCubeMap/DynamicCubeMapTarget.h"
@@ -58,7 +59,8 @@ public:
 	void InitManagers();
 	void PostInitialize();
 	void InitUIManager();
-
+	void InitCompiler();
+	void InitPipelineManager();
 	void SetFogColor(DirectX::XMFLOAT4 Color);
 	void SetFogStart(float Start);
 	void SetFogRange(float Range);
@@ -347,6 +349,7 @@ private:
 	SRenderItem* PickedItem = nullptr;
 
 	unique_ptr<OShaderCompiler> ShaderCompiler;
+	unique_ptr<OGraphicsPipelineManager> PipelineManager;
 };
 
 template<typename T, typename... Args>

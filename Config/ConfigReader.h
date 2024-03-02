@@ -28,7 +28,7 @@ public:
 		CWIN_LOG(!bIsLoaded, Default, Error, "Config file not loaded!");
 		if (PTree.get_child_optional(Key) == boost::none)
 		{
-			LOG(Debug, Error, "Key not found: {}", TO_STRING(Key));
+			LOG(Debug, Error, "Key not found: {}", TEXT(Key));
 		}
 		return PTree.get<T>(Key);
 	}
@@ -38,7 +38,7 @@ public:
 		CWIN_LOG(!bIsLoaded, Default, Error, "Config file not loaded!");
 		if (PTree.get_child_optional(Key) == boost::none)
 		{
-			LOG(Debug, Error, "Key not found: {}", TO_STRING(Key));
+			LOG(Debug, Error, "Key not found: {}", TEXT(Key));
 		}
 
 		return PTree.get_child(Key);
@@ -49,7 +49,7 @@ public:
 		CWIN_LOG(!bIsLoaded, Default, Error, "Config file not loaded!");
 		if (Tree.get_child_optional(Key) == boost::none)
 		{
-			LOG(Debug, Error, "Key not found: {}", TO_STRING(Key));
+			LOG(Debug, Error, "Key not found: {}", TEXT(Key));
 		}
 
 		return Tree.get_child(Key);
