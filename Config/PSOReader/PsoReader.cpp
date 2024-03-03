@@ -73,19 +73,19 @@ CD3DX12_BLEND_DESC OPSOReader::GetBlendDesc(const boost::property_tree::ptree& N
 		uint32_t counter = 0;
 		if (const auto renderTargetOptional = optional->get_child_optional("RenderTarget"))
 		{
-			for (auto& renderTarget : renderTargetOptional->get_child("RenderTarget"))
+			for (const auto& val : *renderTargetOptional | std::views::values)
 			{
 				auto& target = desc.RenderTarget[counter];
-				target.BlendEnable = GetOptionalOr(renderTarget.second, "BlendEnable", false);
-				target.LogicOpEnable = GetOptionalOr(renderTarget.second, "LogicOpEnable", false);
-				target.SrcBlend = GetBlend(GetOptionalOr(renderTarget.second, "SrcBlend", "One"));
-				target.DestBlend = GetBlend(GetOptionalOr(renderTarget.second, "DestBlend", "Zero"));
-				target.BlendOp = GetBlendOp(GetOptionalOr(renderTarget.second, "BlendOp", "Add"));
-				target.SrcBlendAlpha = GetBlend(GetOptionalOr(renderTarget.second, "SrcBlendAlpha", "One"));
-				target.DestBlendAlpha = GetBlend(GetOptionalOr(renderTarget.second, "DestBlendAlpha", "Zero"));
-				target.BlendOpAlpha = GetBlendOp(GetOptionalOr(renderTarget.second, "BlendOpAlpha", "Add"));
-				target.LogicOp = GetLogicOp(GetOptionalOr(renderTarget.second, "LogicOp", "Clear"));
-				target.RenderTargetWriteMask = GetOptionalOr(renderTarget.second, "RenderTargetWriteMask", 0);
+				target.BlendEnable = GetOptionalOr(val, "BlendEnable", false);
+				target.LogicOpEnable = GetOptionalOr(val, "LogicOpEnable", false);
+				target.SrcBlend = GetBlend(GetOptionalOr(val, "SrcBlend", "One"));
+				target.DestBlend = GetBlend(GetOptionalOr(val, "DestBlend", "Zero"));
+				target.BlendOp = GetBlendOp(GetOptionalOr(val, "BlendOp", "Add"));
+				target.SrcBlendAlpha = GetBlend(GetOptionalOr(val, "SrcBlendAlpha", "One"));
+				target.DestBlendAlpha = GetBlend(GetOptionalOr(val, "DestBlendAlpha", "Zero"));
+				target.BlendOpAlpha = GetBlendOp(GetOptionalOr(val, "BlendOpAlpha", "Add"));
+				target.LogicOp = GetLogicOp(GetOptionalOr(val, "LogicOp", "Clear"));
+				target.RenderTargetWriteMask = GetOptionalOr(val, "RenderTargetWriteMask", 0);
 				counter++;
 			}
 		}

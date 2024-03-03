@@ -56,6 +56,7 @@ struct SRootSignatureParams
 {
 	unordered_set<wstring> RootParamNames{};
 	vector<D3D12_ROOT_PARAMETER1> RootParameters{};
+	unordered_map<wstring, D3D12_ROOT_PARAMETER1> RootParamMap{};
 	vector<D3D12_DESCRIPTOR_RANGE1> DescriptorRanges{};
 	D3D12_VERSIONED_ROOT_SIGNATURE_DESC RootSignatureDesc{};
 };
@@ -75,11 +76,13 @@ struct SPipelineInfo
 	{
 		RootSignatureParams.RootParameters.push_back(RootParameter);
 	}
-	bool TryAddRootParamterName(const wstring& Name)
+
+	bool TryAddRootParameterName(const wstring& Name)
 	{
 		if (RootSignatureParams.RootParamNames.contains(Name))
 		{
-			LOG(Engine, Warning, "Root parameter name already exists: {}", Name);
+			LOG(Engine, Log, "Root parameter name already exists: {}", Name);
+			RootSignatureParams.RootParamMap[Name].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 			return false;
 		}
 		RootSignatureParams.RootParamNames.insert(Name);
@@ -135,3 +138,23 @@ struct SShadersPipeline
 		}
 	}
 };
+
+inline D3D12_SHADER_VISIBILITY ShaderTypeToVisibility(EShaderLevel ShaderType)
+{
+	switch (ShaderType)
+	{
+	case EShaderLevel::VertexShader:
+		return D3D12_SHADER_VISIBILITY_VERTEX;
+	case EShaderLevel::PixelShader:
+		return D3D12_SHADER_VISIBILITY_PIXEL;
+	case EShaderLevel::GeometryShader:
+		return D3D12_SHADER_VISIBILITY_GEOMETRY;
+	case EShaderLevel::HullShader:
+		return D3D12_SHADER_VISIBILITY_HULL;
+	case EShaderLevel::DomainShader:
+		return D3D12_SHADER_VISIBILITY_DOMAIN;
+	case EShaderLevel::ComputeShader:
+		return D3D12_SHADER_VISIBILITY_ALL;
+	}
+	return D3D12_SHADER_VISIBILITY_ALL;
+}

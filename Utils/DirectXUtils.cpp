@@ -158,8 +158,6 @@ static map<ID3D12Resource*, D3D12_RESOURCE_STATES> ResourceStateMap = {};
 
 D3D12_RESOURCE_STATES Utils::ResourceBarrier(ID3D12GraphicsCommandList* CMDList, ID3D12Resource* Resource, D3D12_RESOURCE_STATES After)
 {
-	static map<ID3D12Resource*, D3D12_RESOURCE_STATES> ResourceStateMap = {};
-
 	D3D12_RESOURCE_STATES localBefore = {};
 	if (ResourceStateMap.contains(Resource))
 	{
@@ -207,10 +205,10 @@ void Utils::BuildRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>
 	ComPtr<ID3DBlob> serializedRootSig = nullptr;
 	ComPtr<ID3DBlob> errorBlob = nullptr;
 
-	HRESULT hr = D3D12SerializeRootSignature(&Desc,
-	                                         D3D_ROOT_SIGNATURE_VERSION_1,
-	                                         serializedRootSig.GetAddressOf(),
-	                                         errorBlob.GetAddressOf());
+	THROW_IF_FAILED(D3D12SerializeRootSignature(&Desc,
+	                                            D3D_ROOT_SIGNATURE_VERSION_1,
+	                                            serializedRootSig.GetAddressOf(),
+	                                            errorBlob.GetAddressOf()));
 
 	CreateRootSignature(Device, RootSignature, serializedRootSig, errorBlob);
 }
@@ -220,6 +218,19 @@ void Utils::BuildRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>
 	// Create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
 	ComPtr<ID3DBlob> serializedRootSig = nullptr;
 	ComPtr<ID3DBlob> errorBlob = nullptr;
+
+	/*
+#if _DEBUG
+	LOG(Debug, Log, "Building root signature");
+	LOG(Debug, Log, "Root signature version: {}", TEXT(Desc.Version));
+	LOG(Debug, Log, "Root signature flags: {}", TEXT(Desc.Desc_1_1.Flags));
+	LOG(Debug, Log, "Root signature num parameters samplers: {}", TEXT(Desc.Desc_1_1.NumParameters));
+	for (int i = 0; i < Desc.Desc_1_1.NumParameters; i++)
+	{
+		LOG(Debug, Log, "Root signature parameter {}: {}", i, TEXT(Desc.Desc_1_1.pParameters[i]));
+	}
+#endif
+*/
 
 	THROW_IF_FAILED(D3D12SerializeVersionedRootSignature(&Desc,
 	                                                     serializedRootSig.GetAddressOf(),

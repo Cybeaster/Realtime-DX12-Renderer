@@ -10,8 +10,8 @@ struct SPipelineInfo;
 class OShaderCompiler
 {
 public:
-	unique_ptr<OShader> CompileShader(const SShaderDefinition& Definition, wstring ShaderPath, SPipelineInfo& OutPipelineInfo);
-	vector<unique_ptr<OShader>> CompileShaders(const vector<SPipelineStage>& OutPipelines, SPipelineInfo& OutShadersPipeline);
+	unique_ptr<OShader> CompileShader(const SShaderDefinition& Definition, const wstring& ShaderPath, SPipelineInfo& OutPipelineInfo);
+	vector<unique_ptr<OShader>> CompileShaders(vector<SPipelineStage>& OutPipelines, SPipelineInfo& OutShadersPipeline);
 	void Init();
 
 private:
@@ -19,9 +19,10 @@ private:
 	D3D12_SHADER_DESC BuildReflection(DxcBuffer Buffer, ComPtr<ID3D12ShaderReflection>& OutReflection);
 	D3D12_INPUT_LAYOUT_DESC GetInputLayoutDesc(const ComPtr<ID3D12ShaderReflection>& Reflection);
 	void SetCompilationArgs(const SShaderDefinition& Definition);
-	void ResolveBoundResources(const ComPtr<ID3D12ShaderReflection>& Reflection, const D3D12_SHADER_DESC& ShaderDescription, SPipelineInfo& OutPipelineInfo);
+	void ResolveBoundResources(const ComPtr<ID3D12ShaderReflection>& Reflection, const D3D12_SHADER_DESC& ShaderDescription, SPipelineInfo& OutPipelineInfo, EShaderLevel ShaderType);
 	void ResolveConstantBuffers(int32_t ResourceIdx, const ComPtr<ID3D12ShaderReflection>& Reflection, const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SPipelineInfo& OutPipelineInfo);
-	void ResolveTexturesAndStructuredBuffers(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SPipelineInfo& OutPipelineInfo);
+	void ResolveTexturesAndStructuredBuffers(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SPipelineInfo& OutPipelineInfo, EShaderLevel ShaderType);
+	D3D12_DESCRIPTOR_RANGE_TYPE GetRangeType(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc);
 	std::tuple<DxcBuffer, ComPtr<IDxcResult>> CreateDxcBuffer(const wstring& ShaderPath);
 	ComPtr<IDxcCompiler3> Compiler;
 	ComPtr<IDxcUtils> Utils;

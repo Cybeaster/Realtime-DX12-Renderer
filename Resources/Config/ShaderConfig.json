@@ -1,6 +1,39 @@
 {
   "Shaders": [
     {
+      "Path": "Shaders/BilateralBlur.hlsl",
+      "Name": "BilateralBlur",
+      "Pipeline": [
+        {
+          "Type": "Compute",
+          "EntryPoint": "BilateralBlur",
+          "TargetProfile": "cs_6_0"
+        }
+      ]
+    },
+    {
+      "Path": "Shaders/Blur.hlsl",
+      "Name": "VerticalBlur",
+      "Pipeline": [
+        {
+          "Type": "Compute",
+          "EntryPoint": "VertBlurCS",
+          "TargetProfile": "cs_6_0"
+        }
+      ]
+    },
+    {
+      "Path": "Shaders/Blur.hlsl",
+      "Name": "HorizontalBlur",
+      "Pipeline": [
+        {
+          "Type": "Compute",
+          "EntryPoint": "HorzBlurCS",
+          "TargetProfile": "cs_6_0"
+        }
+      ]
+    },
+    {
       "Path": "Shaders/BaseShader.hlsl",
       "Name": "Base",
       "Pipeline": [
@@ -58,7 +91,7 @@
       ]
     },
     {
-      "Path": "Shaders/WaveUpdateSimulation.hlsl",
+      "Path": "Shaders/WaveSimulation.hlsl",
       "Name": "WaveUpdateSimulation",
       "Pipeline": [
         {
@@ -85,28 +118,6 @@
       ]
     },
     {
-      "Path": "Shaders/Blur.hlsl",
-      "Name": "HorizontalBlur",
-      "Pipeline": [
-        {
-          "Type": "Compute",
-          "EntryPoint": "HorzBlurCS",
-          "TargetProfile": "cs_6_0"
-        }
-      ]
-    },
-    {
-      "Path": "Shaders/Blur.hlsl",
-      "Name": "VerticalBlur",
-      "Pipeline": [
-        {
-          "Type": "Compute",
-          "EntryPoint": "VertBlurCS",
-          "TargetProfile": "cs_6_0"
-        }
-      ]
-    },
-    {
       "Path": "Shaders/Composite.hlsl",
       "Name": "Composite",
       "Pipeline": [
@@ -119,17 +130,6 @@
           "Type": "Pixel",
           "EntryPoint": "PS",
           "TargetProfile": "ps_6_0"
-        }
-      ]
-    },
-    {
-      "Path": "Shaders/BilateralBlur.hlsl",
-      "Name": "BilateralBlur",
-      "Pipeline": [
-        {
-          "Type": "Compute",
-          "EntryPoint": "BilateralBlur",
-          "TargetProfile": "cs_6_0"
         }
       ]
     },

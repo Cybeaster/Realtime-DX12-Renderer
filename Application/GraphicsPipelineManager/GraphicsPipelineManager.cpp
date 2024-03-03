@@ -39,9 +39,9 @@ void OGraphicsPipelineManager::LoadShaders()
 {
 	ShaderReader = make_unique<OShaderReader>(OApplication::Get()->GetConfigPath("ShadersConfigPath"));
 	auto pipelines = ShaderReader->LoadShaders();
-	SPipelineInfo newPipeline;
 	for (auto& pipeline : pipelines)
 	{
+		SPipelineInfo newPipeline;
 		auto shaders = OEngine::Get()->GetShaderCompiler()->CompileShaders(pipeline.second, newPipeline);
 		SShadersPipeline shadersPipeline;
 		shadersPipeline.BuildFromStages(pipeline.second);

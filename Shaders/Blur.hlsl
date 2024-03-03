@@ -52,15 +52,17 @@ groupshared float4 Cache[CacheSize];
 		int x = max(DispatchThreadID.x - BlurRadius, 0);
 		Cache[GroupThreadID.x] = Input[int2(x, DispatchThreadID.y)];
 	}
+	uint width, height;
+	Input.GetDimensions(width, height);
 
 	if (GroupThreadID.x >= N - BlurRadius)
 	{
 		// Clamp out of bound samples that occur at image borders.
-		int x = min(DispatchThreadID.x + BlurRadius, Input.Length.x - 1);
+		int x = min(DispatchThreadID.x + BlurRadius, width - 1);
 		Cache[GroupThreadID.x + 2 * BlurRadius] = Input[int2(x, DispatchThreadID.y)];
 	}
 
-	Cache[GroupThreadID.x + BlurRadius] = Input[min(DispatchThreadID.xy, Input.Length.xy - 1)];
+	Cache[GroupThreadID.x + BlurRadius] = Input[min(DispatchThreadID.xy, uint2(width,height) - 1)];
 
 	// Wait for all threads to finish.
 	GroupMemoryBarrierWithGroupSync();
@@ -96,15 +98,18 @@ groupshared float4 Cache[CacheSize];
 		Cache[GroupThreadID.y] = Input[int2(DispatchThreadID.x, y)];
 	}
 
+	uint width, height;
+	Input.GetDimensions(width, height);
+
 	if (GroupThreadID.y >= N - BlurRadius)
 	{
 		// Clamp out of bound samples that occur at image borders.
-		int y = min(DispatchThreadID.y + BlurRadius, Input.Length.y - 1);
+		int y = min(DispatchThreadID.y + BlurRadius, height - 1);
 		Cache[GroupThreadID.y + 2 * BlurRadius] = Input[int2(DispatchThreadID.x, y)];
 	}
 
 	// Clamp out of bound samples that occur at image borders.
-	Cache[GroupThreadID.y + BlurRadius] = Input[min(DispatchThreadID.xy, Input.Length.xy - 1)];
+	Cache[GroupThreadID.y + BlurRadius] = Input[min(DispatchThreadID.xy, uint2(width,height) - 1)];
 	// Wait for all threads to finish.
 	GroupMemoryBarrierWithGroupSync();
 

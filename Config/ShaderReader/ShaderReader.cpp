@@ -8,9 +8,10 @@
 unordered_map<string, vector<SPipelineStage>> OShaderReader::LoadShaders()
 {
 	unordered_map<string, vector<SPipelineStage>> result;
-	vector<SPipelineStage> currentPipeline;
 	for (auto& shader : PTree.get_child("Shaders") | std::views::values)
 	{
+		vector<SPipelineStage> currentPipeline;
+
 		SPipelineStage info;
 		info.ShaderPath = UTF8ToWString(shader.get<string>("Path"));
 		info.ShaderName = shader.get<string>("Name");

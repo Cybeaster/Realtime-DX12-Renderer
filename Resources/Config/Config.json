@@ -2,5 +2,6 @@
   "LogConfigPath": "Resources/Config/LogConfig.json",
   "MaterialsConfigPath": "Resources/Config/MaterialsConfig.json",
   "TexturesConfigPath": "Resources/Config/TexturesConfig.json",
-  "ShadersConfigPath": "Resources/Config/ShaderConfig.json"
+  "ShadersConfigPath": "Resources/Config/ShaderConfig.json",
+  "PSOConfigPath": "Resources/Config/PSOConfig.json"
 }
