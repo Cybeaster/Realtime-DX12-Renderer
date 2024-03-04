@@ -19,6 +19,7 @@ class OGraphicsPipelineManager
 public:
 	void LoadPipelines();
 	void Init();
+	SShadersPipeline* FindPipeline(const string& PipelineName);
 
 protected:
 	SRootSignature* FindRootSignature(const D3D12_VERSIONED_ROOT_SIGNATURE_DESC& RootSignatureDesc);

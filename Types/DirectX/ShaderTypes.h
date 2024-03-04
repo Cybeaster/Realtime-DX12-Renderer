@@ -1,5 +1,8 @@
 #pragma once
+#include "DXHelper.h"
+#include "Logger.h"
 #include "Types.h"
+struct SPipelineInfo;
 using SGraphicsPSODesc = D3D12_GRAPHICS_PIPELINE_STATE_DESC;
 using SComputePSODesc = D3D12_COMPUTE_PIPELINE_STATE_DESC;
 
@@ -52,13 +55,23 @@ struct SShaderDefinition
 	wstring ShaderEntry;
 };
 
+struct SRootParameter
+{
+	D3D12_ROOT_PARAMETER1 RootParameter;
+	wstring Name;
+	D3D12_ROOT_PARAMETER_TYPE Type;
+};
+
 struct SRootSignatureParams
 {
+	friend SPipelineInfo;
 	unordered_set<wstring> RootParamNames{};
-	vector<D3D12_ROOT_PARAMETER1> RootParameters{};
-	unordered_map<wstring, D3D12_ROOT_PARAMETER1> RootParamMap{};
+	unordered_map<wstring, SRootParameter> RootParamMap{};
 	vector<D3D12_DESCRIPTOR_RANGE1> DescriptorRanges{};
 	D3D12_VERSIONED_ROOT_SIGNATURE_DESC RootSignatureDesc{};
+
+private:
+	vector<D3D12_ROOT_PARAMETER1> RootParameters{};
 };
 
 struct SPipelineInfo
@@ -71,23 +84,12 @@ struct SPipelineInfo
 	SRootSignatureParams RootSignatureParams;
 	ComPtr<ID3D12RootSignature> RootSignature;
 	D3D12_INPUT_LAYOUT_DESC InputLayoutDesc{};
+	ComPtr<ID3D12PipelineState> PipelineState;
 
-	void AddRootParameter(const D3D12_ROOT_PARAMETER1& RootParameter)
-	{
-		RootSignatureParams.RootParameters.push_back(RootParameter);
-	}
-
-	bool TryAddRootParameterName(const wstring& Name)
-	{
-		if (RootSignatureParams.RootParamNames.contains(Name))
-		{
-			LOG(Engine, Log, "Root parameter name already exists: {}", Name);
-			RootSignatureParams.RootParamMap[Name].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-			return false;
-		}
-		RootSignatureParams.RootParamNames.insert(Name);
-		return true;
-	}
+	void BuildPipelineState(ID3D12Device* Device);
+	void AddRootParameter(const D3D12_ROOT_PARAMETER1& RootParameter, const wstring& Name);
+	bool TryAddRootParameterName(const wstring& Name);
+	vector<D3D12_ROOT_PARAMETER1>& BuildParameterArray();
 };
 
 struct SPipelineStage
@@ -109,52 +111,8 @@ struct SShadersPipeline
 	SPipelineStage DomainShader;
 	SPipelineStage ComputeShader;
 	SPipelineInfo PipelineInfo;
-
-	void BuildFromStages(const vector<SPipelineStage>& Stages)
-	{
-		for (auto Stage : Stages)
-		{
-			switch (Stage.ShaderDefinition.ShaderType)
-			{
-			case EShaderLevel::VertexShader:
-				VertexShader = std::move(Stage);
-				break;
-			case EShaderLevel::PixelShader:
-				PixelShader = std::move(Stage);
-				break;
-			case EShaderLevel::GeometryShader:
-				GeometryShader = std::move(Stage);
-				break;
-			case EShaderLevel::HullShader:
-				HullShader = std::move(Stage);
-				break;
-			case EShaderLevel::DomainShader:
-				DomainShader = std::move(Stage);
-				break;
-			case EShaderLevel::ComputeShader:
-				ComputeShader = std::move(Stage);
-				break;
-			}
-		}
-	}
+	void SetResource(const string& Name, D3D12_GPU_DESCRIPTOR_HANDLE Handle, ID3D12GraphicsCommandList* CmdList);
+	void BuildFromStages(const vector<SPipelineStage>& Stages);
 };
 
-inline D3D12_SHADER_VISIBILITY ShaderTypeToVisibility(EShaderLevel ShaderType)
-{
-	switch (ShaderType)
-	{
-	case EShaderLevel::VertexShader:
-		return D3D12_SHADER_VISIBILITY_VERTEX;
-	case EShaderLevel::PixelShader:
-		return D3D12_SHADER_VISIBILITY_PIXEL;
-	case EShaderLevel::GeometryShader:
-		return D3D12_SHADER_VISIBILITY_GEOMETRY;
-	case EShaderLevel::HullShader:
-		return D3D12_SHADER_VISIBILITY_HULL;
-	case EShaderLevel::DomainShader:
-		return D3D12_SHADER_VISIBILITY_DOMAIN;
-	case EShaderLevel::ComputeShader:
-		return D3D12_SHADER_VISIBILITY_ALL;
-	}
-	return D3D12_SHADER_VISIBILITY_ALL;
-}
+inline D3D12_SHADER_VISIBILITY ShaderTypeToVisibility(EShaderLevel ShaderType);

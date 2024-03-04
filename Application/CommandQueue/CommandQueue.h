@@ -1,6 +1,8 @@
 #pragma once
 #include <DirectX/DXHelper.h>
 #include <Types.h>
+
+struct SPipelineInfo;
 class OCommandQueue
 {
 public:
@@ -21,6 +23,7 @@ public:
 	void Flush();
 	void TryResetCommandList();
 	ComPtr<ID3D12Fence> GetFence() const;
+	void SetPipelineState(const SPipelineInfo& PSOInfo) const;
 
 protected:
 	ComPtr<ID3D12CommandAllocator> CreateCommandAllocator();

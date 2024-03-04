@@ -49,7 +49,7 @@ set(SRC_FILES
         Utils/Math.h
         Types/DirectX/FrameResource.h
         Types/DirectX/ObjectConstants.h
-        Types/DirectX/RenderItem.h
+        Types/DirectX/RenderItem/RenderItem.h
         Types/DirectX/RenderConstants.h
         Types/DirectX/RenderConstants.h
         Objects/GeomertryGenerator/GeometryGenerator.h
@@ -165,6 +165,11 @@ set(SRC_FILES
         Application/GraphicsPipelineManager/GraphicsPipelineManager.h
         Config/PSOReader/PsoReader.cpp
         Config/PSOReader/PsoReader.h
+        Config/RenderGraphReader/RenderGraphReader.cpp
+        Config/RenderGraphReader/RenderGraphReader.h
+        Types/RenderNodeInfo.h
+        Types/DirectX/RenderItem/RenderItem.cpp
+        Types/DirectX/ShaderTypes.cpp
 
 )
 

@@ -1,6 +1,7 @@
 #include "CommandQueue.h"
 
 #include "Logger.h"
+#include "ShaderTypes.h"
 
 #include <Exception.h>
 
@@ -126,6 +127,12 @@ void OCommandQueue::TryResetCommandList()
 Microsoft::WRL::ComPtr<ID3D12Fence> OCommandQueue::GetFence() const
 {
 	return Fence;
+}
+
+void OCommandQueue::SetPipelineState(const SPipelineInfo& PSOInfo) const
+{
+	LOG(Engine, Log, "Setting pipeline state for PSO: {}", TEXT(PSOInfo.PSODesc->Name));
+	CommandList->SetPipelineState(PSOInfo.PipelineState.Get());
 }
 
 Microsoft::WRL::ComPtr<ID3D12CommandQueue> OCommandQueue::GetCommandQueue()

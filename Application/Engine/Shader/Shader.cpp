@@ -36,6 +36,10 @@ void SShaderDefinition::TypeFromString(const string& Other)
 	}
 }
 
+bool SPipelineInfo::TryAddRootParameterName(const wstring& Name)
+{
+}
+
 void OShader::Init(const SShaderDefinition& Info, const ComPtr<IDxcBlob>& Blob)
 {
 	ShaderBlob = Blob;

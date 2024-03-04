@@ -25,7 +25,7 @@ public:
 	void OnRender(const UpdateEventArgs& Event) override;
 
 	void DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList,
-	                     const vector<SRenderItem*>& RenderItems) const;
+	                     const vector<ORenderItem*>& RenderItems) const;
 
 	OGPUWave* Waves = nullptr;
 
@@ -48,7 +48,7 @@ private:
 
 	DirectX::XMFLOAT3 GetHillsNormal(float X, float Z) const;
 
-	SRenderItem* Geosphere = nullptr;
+	ORenderItem* Geosphere = nullptr;
 	DirectX::XMFLOAT3 GeospherePos = { 0, 0, 5 };
 
 	unique_ptr<OUploadBuffer<SVertex>> WavesVB = nullptr;

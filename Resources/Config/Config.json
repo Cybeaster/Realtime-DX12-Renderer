@@ -3,5 +3,6 @@
   "MaterialsConfigPath": "Resources/Config/MaterialsConfig.json",
   "TexturesConfigPath": "Resources/Config/TexturesConfig.json",
   "ShadersConfigPath": "Resources/Config/ShaderConfig.json",
-  "PSOConfigPath": "Resources/Config/PSOConfig.json"
+  "PSOConfigPath": "Resources/Config/PSOConfig.json",
+  "RenderGraphConfigPath": "Resources/Config/RenderGraphConfig.json"
 }

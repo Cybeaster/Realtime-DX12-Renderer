@@ -14,7 +14,8 @@
 #include "Filters/Blur/BlurFilter.h"
 #include "Filters/SobelFilter/SobelFilter.h"
 #include "GraphicsPipelineManager/GraphicsPipelineManager.h"
-#include "RenderItem.h"
+#include "RenderGraph/Graph/RenderGraph.h"
+#include "RenderItem/RenderItem.h"
 #include "RenderTarget/CubeMap/CubeRenderTarget.h"
 #include "RenderTarget/CubeMap/DynamicCubeMap/DynamicCubeMapTarget.h"
 #include "RenderTarget/RenderTarget.h"
@@ -35,7 +36,7 @@ public:
 	using TWindowMap = std::map<HWND, TWindowPtr>;
 	using WindowNameMap = std::map<std::wstring, TWindowPtr>;
 	using TSceneGeometryMap = std::unordered_map<string, unique_ptr<SMeshGeometry>>;
-	using TRenderLayer = map<string, vector<SRenderItem*>>;
+	using TRenderLayer = map<string, vector<ORenderItem*>>;
 	vector<unique_ptr<SFrameResource>> FrameResources;
 	SFrameResource* CurrentFrameResources = nullptr;
 	UINT CurrentFrameResourceIndex = 0;
@@ -111,7 +112,7 @@ public:
 
 	bool GetMSAAState(UINT& Quality) const;
 
-	vector<SRenderItem*>& GetRenderItems(const string& Type);
+	vector<ORenderItem*>& GetRenderItems(const string& Type);
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetOpaquePSODesc();
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetAlphaTestedPSODesc();
@@ -175,11 +176,12 @@ public:
 	void CreatePSO(const string& PSOName, const D3D12_COMPUTE_PIPELINE_STATE_DESC& PSODesc);
 	ComPtr<ID3D12PipelineState> GetPSO(const string& PSOName);
 
-	void AddRenderItem(string Category, unique_ptr<SRenderItem> RenderItem);
-	void AddRenderItem(const vector<string>& Categories, unique_ptr<SRenderItem> RenderItem);
+	void AddRenderItem(string Category, unique_ptr<ORenderItem> RenderItem);
+	void AddRenderItem(const vector<string>& Categories, unique_ptr<ORenderItem> RenderItem);
 
-	const vector<unique_ptr<SRenderItem>>& GetAllRenderItems();
+	const vector<unique_ptr<ORenderItem>>& GetAllRenderItems();
 	void SetPipelineState(string PSOName);
+	void SetPipelineState(const SPipelineInfo& PSOInfo);
 
 	void SetFog(DirectX::XMFLOAT4 Color, float Start, float Range);
 	SPassConstants& GetMainPassCB();
@@ -244,19 +246,21 @@ public:
 	OMeshGenerator* GetMeshGenerator() const;
 
 	void Pick(int32_t SX, int32_t SY);
-	SRenderItem* GetPickedItem() const;
+	ORenderItem* GetPickedItem() const;
 
 	SOnFrameResourceChanged OnFrameResourceChanged;
 	ODynamicCubeMapRenderTarget* GetCubeRenderTarget() const;
 	ODynamicCubeMapRenderTarget* BuildCubeRenderTarget(DirectX::XMFLOAT3 Center);
 	void DrawRenderItems(string PSOType, string RenderLayer);
+	void DrawRenderItems(ID3D12PipelineState* State, string RenderLayer);
+
 	void UpdateMaterialCB() const;
 	void UpdateObjectCB() const;
 	void SetDescriptorHeap();
 	OShaderCompiler* GetShaderCompiler() const;
 
 protected:
-	void DrawRenderItemsImpl(const ComPtr<ID3D12GraphicsCommandList>& CommandList, const vector<SRenderItem*>& RenderItems);
+	void DrawRenderItemsImpl(const ComPtr<ID3D12GraphicsCommandList>& CommandList, const vector<ORenderItem*>& RenderItems);
 	template<typename T, typename... Args>
 	TUUID BuildRenderObjectImpl(Args&&... Params);
 
@@ -274,6 +278,7 @@ protected:
 	void BuildWavesRootSignature();
 	void BuildBilateralBlurRootSignature();
 	void UpdateFrameResource();
+	void InitRenderGraph();
 
 private:
 	void RemoveRenderObject(TUUID UUID);
@@ -304,7 +309,7 @@ private:
 	ComPtr<IDXGIFactory4> Factory;
 
 	TRenderLayer RenderLayers;
-	vector<unique_ptr<SRenderItem>> AllRenderItems;
+	vector<unique_ptr<ORenderItem>> AllRenderItems;
 
 	std::unordered_map<string, ComPtr<ID3DBlob>> Shaders;
 	std::unordered_map<string, ComPtr<ID3D12PipelineState>> PSOs;
@@ -346,10 +351,11 @@ private:
 
 	std::optional<string> GeometryToRebuild;
 
-	SRenderItem* PickedItem = nullptr;
+	ORenderItem* PickedItem = nullptr;
 
 	unique_ptr<OShaderCompiler> ShaderCompiler;
 	unique_ptr<OGraphicsPipelineManager> PipelineManager;
+	unique_ptr<ORenderGraph> RenderGraph;
 };
 
 template<typename T, typename... Args>

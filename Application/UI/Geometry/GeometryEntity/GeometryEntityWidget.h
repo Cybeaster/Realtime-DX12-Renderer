@@ -1,20 +1,20 @@
 #pragma once
 #include "GeometryTransform.h"
-#include "RenderItem.h"
+#include "RenderItem/RenderItem.h"
 #include "UI/Material/MaterialPicker.h"
 #include "UI/Widget.h"
 
 #include <DirectXMath.h>
 
 struct SMeshGeometry;
-struct SRenderItem;
+struct ORenderItem;
 class OGeometryManagerWidget;
 class OEngine;
 
 class OGeometryEntityWidget : public OHierarchicalWidgetBase
 {
 public:
-	OGeometryEntityWidget(SRenderItem* _RItem, OEngine* _Engine, OGeometryManagerWidget* _OwningWidget)
+	OGeometryEntityWidget(ORenderItem* _RItem, OEngine* _Engine, OGeometryManagerWidget* _OwningWidget)
 	    : RenderItem(_RItem), Engine(_Engine), Manager(_OwningWidget) {}
 
 	void Draw() override;
@@ -34,7 +34,7 @@ private:
 
 	float SliderWidth = 350;
 	OGeometryManagerWidget* Manager = nullptr;
-	SRenderItem* RenderItem = nullptr;
+	ORenderItem* RenderItem = nullptr;
 	OEngine* Engine = nullptr;
 
 	string SelectedSubmesh = "";

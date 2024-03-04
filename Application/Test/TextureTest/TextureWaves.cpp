@@ -8,7 +8,7 @@
 #include "Application.h"
 #include "Camera/Camera.h"
 #include "RenderConstants.h"
-#include "RenderItem.h"
+#include "RenderItem/RenderItem.h"
 #include "Settings.h"
 
 #include <DXHelper.h>
@@ -51,7 +51,7 @@ void OTextureWaves::OnUpdate(const UpdateEventArgs& Event)
 	UpdateMaterialCB();
 }
 
-void OTextureWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList, const vector<SRenderItem*>& RenderItems) const
+void OTextureWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList, const vector<ORenderItem*>& RenderItems) const
 {
 	for (size_t i = 0; i < RenderItems.size(); i++)
 	{

@@ -1,0 +1,44 @@
+{
+  "RenderGraph": [
+    {
+      "Name": "OpaqueDynamicReflections",
+      "PSO": "Opaque",
+      "NextNode": "Opaque",
+      "RenderLayer": "OpaqueDynamicReflections"
+    },
+    {
+      "Name": "Opaque",
+      "PSO": "Opaque",
+      "NextNode": "Transparent",
+      "RenderLayer": "Opaque"
+    },
+    {
+      "Name": "Transparent",
+      "PSO": "Transparent",
+      "NextNode": "PostProcess",
+      "RenderLayer": "Transparent"
+    },
+    {
+      "Name": "PostProcess",
+      "PSO": "PostProcess",
+      "NextNode": "UI",
+      "RenderLayer": "PostProcess"
+    },
+    {
+      "Name": "UI",
+      "PSO": "UI",
+      "RenderLayer": "UI",
+      "NextNode": "Resolve"
+    },
+    {
+      "Name": "Resolve",
+      "PSO": "Resolve",
+      "NextNode": "Present"
+    },
+    {
+      "Name": "Present",
+      "PSO": "Present",
+      "NextNode": ""
+    }
+  ]
+}

@@ -25,7 +25,9 @@ void OGraphicsPipelineManager::LoadPipelines()
 		{
 			compute->PSODesc.CS = pipeline.ComputeShader.GetShaderByteCode();
 		}
+
 		GlobalPipelineMap[pso->Name].PipelineInfo.PSODesc = pso;
+		GlobalPipelineMap[pso->Name].PipelineInfo.BuildPipelineState(OEngine::Get()->GetDevice().Get());
 	}
 }
 
@@ -33,6 +35,16 @@ void OGraphicsPipelineManager::Init()
 {
 	LoadShaders();
 	LoadPipelines();
+}
+
+SShadersPipeline* OGraphicsPipelineManager::FindPipeline(const string& PipelineName)
+{
+	if (GlobalPipelineMap.contains(PipelineName))
+	{
+		return &GlobalPipelineMap[PipelineName];
+	}
+	LOG(Render, Warning, "Pipeline not found: {}", TEXT(PipelineName));
+	return nullptr;
 }
 
 void OGraphicsPipelineManager::LoadShaders()

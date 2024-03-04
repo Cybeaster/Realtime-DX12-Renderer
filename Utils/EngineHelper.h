@@ -1,7 +1,7 @@
 #pragma once
 #include "../Materials/MaterialManager/MaterialManager.h"
 #include "../Types/TextureConstants.h"
-#include "DirectX/RenderItem.h"
+#include "DirectX/RenderItem/RenderItem.h"
 #include "Engine/Engine.h"
 #include "GraphicsPipeline/GraphicsPipeline.h"
 

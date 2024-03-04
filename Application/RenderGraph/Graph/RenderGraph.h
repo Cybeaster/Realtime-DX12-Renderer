@@ -1,17 +1,22 @@
 #pragma once
+#include "../../../Config/RenderGraphReader/RenderGraphReader.h"
 #include "DXHelper.h"
+#include "RenderGraph/Nodes/RenderNode.h"
+#include "RenderNodeInfo.h"
 #include "Types.h"
-struct SNodeInfo
-{
-};
-class ORenderNode;
 
+class OGraphicsPipelineManager;
 class ORenderGraph
 {
-	using ODependencyInfo = unordered_map<ORenderNode*, vector<pair<shared_ptr<SNodeInfo>, ORenderNode*>>>;
-
 public:
+	ORenderGraph();
+	using ODependencyInfo = unordered_map<string, ORenderNode*>;
+	void Initialize(OGraphicsPipelineManager* PipelineManager);
+	void Execute();
+
 private:
+	unique_ptr<ORenderGraphReader> Reader;
 	vector<unique_ptr<ORenderNode>> Nodes;
 	ODependencyInfo Graph;
+	ORenderNode* Head;
 };

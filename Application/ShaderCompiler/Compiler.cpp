@@ -25,7 +25,7 @@ vector<unique_ptr<OShader>> OShaderCompiler::CompileShaders(vector<SPipelineStag
 		shader.Shader = temp.get();
 		shaders.push_back(std::move(temp));
 	}
-	BuildRootSignature(OutShadersPipeline.RootSignatureParams.RootParameters, Utils::GetStaticSamplers(), OutShadersPipeline.RootSignatureParams.RootSignatureDesc);
+	BuildRootSignature(OutShadersPipeline.BuildParameterArray(), Utils::GetStaticSamplers(), OutShadersPipeline.RootSignatureParams.RootSignatureDesc);
 	return shaders;
 }
 
@@ -59,7 +59,6 @@ void OShaderCompiler::SetCompilationArgs(const SShaderDefinition& Definition)
 void OShaderCompiler::ResolveBoundResources(const ComPtr<ID3D12ShaderReflection>& Reflection, const D3D12_SHADER_DESC& ShaderDescription, SPipelineInfo& OutPipelineInfo, EShaderLevel ShaderType)
 {
 	OutPipelineInfo.RootSignatureParams.DescriptorRanges.reserve(50);
-	OutPipelineInfo.RootSignatureParams.RootParameters.reserve(50);
 	for (const uint32_t i : std::views::iota(0u, ShaderDescription.BoundResources))
 	{
 		D3D12_SHADER_INPUT_BIND_DESC bindDesc{};
@@ -106,7 +105,7 @@ void OShaderCompiler::ResolveConstantBuffers(const int32_t ResourceIdx, const Co
 		    .Flags = D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
 		}
 	};
-	OutPipelineInfo.AddRootParameter(rootParameter);
+	OutPipelineInfo.AddRootParameter(rootParameter, name);
 }
 
 void OShaderCompiler::ResolveTexturesAndStructuredBuffers(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SPipelineInfo& OutPipelineInfo, EShaderLevel ShaderType)
@@ -131,7 +130,7 @@ void OShaderCompiler::ResolveTexturesAndStructuredBuffers(const D3D12_SHADER_INP
 		.ShaderVisibility = ShaderTypeToVisibility(ShaderType),
 	};
 
-	OutPipelineInfo.AddRootParameter(rootParameter);
+	OutPipelineInfo.AddRootParameter(rootParameter, name);
 }
 
 D3D12_DESCRIPTOR_RANGE_TYPE OShaderCompiler::GetRangeType(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc)

@@ -9,10 +9,10 @@
 #include <map>
 #include <memory>
 #include <queue>
+#include <ranges>
 #include <string>
 #include <unordered_set>
 #include <vector>
-
 #if defined(min)
 #undef min
 #endif

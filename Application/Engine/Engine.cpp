@@ -83,7 +83,6 @@ bool OEngine::Initialize()
 	bIsTearingSupported = CheckTearingSupport();
 
 	InitCompiler();
-	InitPipelineManager();
 	InitManagers();
 	CreateWindow();
 	PostInitialize();
@@ -92,6 +91,8 @@ bool OEngine::Initialize()
 
 void OEngine::InitManagers()
 {
+	InitPipelineManager();
+	InitRenderGraph();
 	MeshGenerator = make_unique<OMeshGenerator>(Device.Get(), GetCommandQueue());
 	TextureManager = make_unique<OTextureManager>(Device.Get(), GetCommandQueue());
 	MaterialManager = make_unique<OMaterialManager>();
@@ -153,6 +154,12 @@ void OEngine::DrawRenderItems(string PSOType, string RenderLayer)
 	DrawRenderItemsImpl(commandList, renderItems);
 }
 
+void OEngine::DrawRenderItems(ID3D12PipelineState* State, string RenderLayer)
+{
+	auto cmd = GetCommandQueue()->GetCommandList();
+	auto renderItems = GetRenderItems(RenderLayer);
+}
+
 void OEngine::UpdateMaterialCB() const
 {
 	auto copyIndicesTo = [](const vector<uint32_t>& Source, uint32_t* Destination, size_t Size) {
@@ -197,7 +204,7 @@ void OEngine::UpdateMaterialCB() const
 	}
 }
 
-void OEngine::DrawRenderItemsImpl(const ComPtr<ID3D12GraphicsCommandList>& CommandList, const vector<SRenderItem*>& RenderItems)
+void OEngine::DrawRenderItemsImpl(const ComPtr<ID3D12GraphicsCommandList>& CommandList, const vector<ORenderItem*>& RenderItems)
 {
 	for (size_t i = 0; i < RenderItems.size(); i++)
 	{
@@ -208,12 +215,7 @@ void OEngine::DrawRenderItemsImpl(const ComPtr<ID3D12GraphicsCommandList>& Comma
 		}
 		if (!renderItem->Instances.empty() && renderItem->Geometry)
 		{
-			auto vertexView = renderItem->Geometry->VertexBufferView();
-			auto indexView = renderItem->Geometry->IndexBufferView();
-
-			CommandList->IASetVertexBuffers(0, 1, &vertexView);
-			CommandList->IASetIndexBuffer(&indexView);
-			CommandList->IASetPrimitiveTopology(renderItem->PrimitiveType);
+			renderItem->BindResources(CommandList.Get(), Engine->CurrentFrameResources);
 
 			// Offset to the CBV in the descriptor heap for this object and
 			// for this frame resource.
@@ -487,6 +489,12 @@ void OEngine::UpdateFrameResource()
 	{
 		GetCommandQueue()->WaitForFenceValue(CurrentFrameResources->Fence);
 	}
+}
+
+void OEngine::InitRenderGraph()
+{
+	RenderGraph = make_unique<ORenderGraph>();
+	RenderGraph->Initialize(PipelineManager.get());
 }
 
 void OEngine::RemoveRenderObject(TUUID UUID)
@@ -1198,7 +1206,7 @@ D3D12_RENDER_TARGET_BLEND_DESC OEngine::GetTransparentBlendState()
 	return transparencyBlendDesc;
 }
 
-vector<SRenderItem*>& OEngine::GetRenderItems(const string& Type)
+vector<ORenderItem*>& OEngine::GetRenderItems(const string& Type)
 {
 	return RenderLayers[Type];
 }
@@ -1208,13 +1216,13 @@ ComPtr<IDXGIFactory2> OEngine::GetFactory() const
 	return Factory;
 }
 
-void OEngine::AddRenderItem(string Category, unique_ptr<SRenderItem> RenderItem)
+void OEngine::AddRenderItem(string Category, unique_ptr<ORenderItem> RenderItem)
 {
 	RenderLayers[Category].push_back(RenderItem.get());
 	AllRenderItems.push_back(move(RenderItem));
 }
 
-void OEngine::AddRenderItem(const vector<string>& Categories, unique_ptr<SRenderItem> RenderItem)
+void OEngine::AddRenderItem(const vector<string>& Categories, unique_ptr<ORenderItem> RenderItem)
 {
 	for (auto category : Categories)
 	{
@@ -1223,7 +1231,7 @@ void OEngine::AddRenderItem(const vector<string>& Categories, unique_ptr<SRender
 	AllRenderItems.push_back(move(RenderItem));
 }
 
-const vector<unique_ptr<SRenderItem>>& OEngine::GetAllRenderItems()
+const vector<unique_ptr<ORenderItem>>& OEngine::GetAllRenderItems()
 {
 	return AllRenderItems;
 }
@@ -1235,8 +1243,12 @@ void OEngine::SetPipelineState(string PSOName)
 		LOG(Engine, Error, "PSO not found!");
 		return;
 	}
-
 	GetCommandQueue()->GetCommandList()->SetPipelineState(PSOs[PSOName].Get());
+}
+
+void OEngine::SetPipelineState(const SPipelineInfo& PSOInfo)
+{
+	GetCommandQueue()->SetPipelineState(PSOInfo);
 }
 
 OBlurFilter* OEngine::GetBlurFilter()
@@ -1594,7 +1606,7 @@ void OEngine::Pick(int32_t SX, int32_t SY)
 	}
 }
 
-SRenderItem* OEngine::GetPickedItem() const
+ORenderItem* OEngine::GetPickedItem() const
 {
 	return PickedItem;
 }
@@ -1865,7 +1877,7 @@ vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, 
 		LOG(Geometry, Error, "Material not specified!");
 	}
 
-	auto newItem = make_unique<SRenderItem>();
+	auto newItem = make_unique<ORenderItem>();
 	newItem->World = Utils::Math::Identity4x4();
 	newItem->TexTransform = Utils::Math::Identity4x4();
 	newItem->ObjectCBIndex = AllRenderItems.size();
@@ -1908,7 +1920,7 @@ vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, 
 
 void OEngine::BuildPickRenderItem()
 {
-	auto newItem = make_unique<SRenderItem>();
+	auto newItem = make_unique<ORenderItem>();
 	newItem->World = Utils::Math::Identity4x4();
 	newItem->TexTransform = Utils::Math::Identity4x4();
 	newItem->ObjectCBIndex = AllRenderItems.size();
