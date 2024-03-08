@@ -2,9 +2,9 @@
 
 #include <ranges>
 
-vector<shared_ptr<SPSODescriptionBase>> OPSOReader::LoadPSOs() const
+vector<unique_ptr<SPSODescriptionBase>> OPSOReader::LoadPSOs() const
 {
-	vector<shared_ptr<SPSODescriptionBase>> PSOs;
+	vector<unique_ptr<SPSODescriptionBase>> PSOs;
 	for (auto val : GetRootChild("PipelineStateObjects") | std::views::values)
 	{
 		auto type = val.get<string>("Type");
@@ -20,12 +20,13 @@ vector<shared_ptr<SPSODescriptionBase>> OPSOReader::LoadPSOs() const
 	return PSOs;
 }
 
-shared_ptr<SPSODescription<SGraphicsPSODesc>> OPSOReader::LoadGraphicsPSO(const boost::property_tree::ptree& Node) const
+unique_ptr<SPSOGraphicsDescription> OPSOReader::LoadGraphicsPSO(const boost::property_tree::ptree& Node) const
 {
-	auto PSODesc = make_shared<SPSODescription<SGraphicsPSODesc>>();
+	auto PSODesc = make_unique<SPSOGraphicsDescription>();
 	PSODesc->Type = EPSOType::Graphics;
 	auto& desc = PSODesc->PSODesc;
 	PSODesc->Name = Node.get<string>("Name");
+	PSODesc->RootSignatureName = GetAttribute(Node, "RootSignature");
 	PSODesc->ShaderPipeline = GetShaderArray(Node.get_child("ShaderPipeline"));
 	desc.Flags = GetFlags(Node);
 	desc.SampleMask = GetOptionalOr(Node, "SampleMask", UINT_MAX);
@@ -40,13 +41,15 @@ shared_ptr<SPSODescription<SGraphicsPSODesc>> OPSOReader::LoadGraphicsPSO(const 
 	return PSODesc;
 }
 
-shared_ptr<SPSODescription<SComputePSODesc>> OPSOReader::LoadComputePSO(const boost::property_tree::ptree& Node) const
+unique_ptr<SPSOComputeDescription> OPSOReader::LoadComputePSO(const boost::property_tree::ptree& Node) const
 {
-	auto PSODesc = make_shared<SPSODescription<SComputePSODesc>>();
+	auto PSODesc = make_unique<SPSOComputeDescription>();
 	PSODesc->Type = EPSOType::Compute;
 	auto& desc = PSODesc->PSODesc;
-	PSODesc->Name = Node.get<string>("Name");
+	PSODesc->Name = GetAttribute(Node, "Name");
+	PSODesc->RootSignatureName = GetAttribute(Node, "RootSignature");
 	PSODesc->ShaderPipeline = GetShaderArray(Node.get_child("ShaderPipeline"));
+	ENSURE(PSODesc->ShaderPipeline.ComputeShaderName.empty() == false);
 	desc.Flags = GetFlags(Node);
 	return PSODesc;
 }
@@ -216,7 +219,7 @@ D3D12_BLEND OPSOReader::GetBlend(const string& BlendString)
 CD3DX12_RASTERIZER_DESC OPSOReader::GetRasterizerDesc(const boost::property_tree::ptree& Node)
 {
 	CD3DX12_RASTERIZER_DESC desc;
-	if (auto optional = Node.get_child_optional("ResterizerState"))
+	if (auto optional = Node.get_child_optional("RasterizerState"))
 	{
 		const auto& value = optional.get();
 		desc.FrontCounterClockwise = GetOptionalOr(value, "FrontCounterClockwise", false);
@@ -236,21 +239,20 @@ CD3DX12_RASTERIZER_DESC OPSOReader::GetRasterizerDesc(const boost::property_tree
 
 D3D12_CULL_MODE OPSOReader::GetCullMode(const string& CullModeString)
 {
-	D3D12_CULL_MODE mode = D3D12_CULL_MODE_NONE;
 	if (CullModeString == "None")
 	{
-		mode = D3D12_CULL_MODE_NONE;
+		return D3D12_CULL_MODE_NONE;
 	}
 	if (CullModeString == "Front")
 	{
-		mode = D3D12_CULL_MODE_FRONT;
+		return D3D12_CULL_MODE_FRONT;
 	}
 	if (CullModeString == "Back")
 	{
-		mode = D3D12_CULL_MODE_BACK;
+		return D3D12_CULL_MODE_BACK;
 	}
 	WIN_LOG(Config, Error, "Unknown cull mode: {}", TEXT(CullModeString));
-	return mode;
+	return D3D12_CULL_MODE_NONE;
 }
 
 D3D12_CONSERVATIVE_RASTERIZATION_MODE OPSOReader::GetConservativeRasterizationMode(const string& ConservativeRasterizationModeString)
@@ -305,17 +307,12 @@ D3D12_DEPTH_STENCILOP_DESC OPSOReader::GetDepthStencilOp(const boost::optional<c
 		return D3D12_DEPTH_STENCILOP_DESC();
 	}
 
-	if (const auto optional = Node->get_child_optional("DepthStencilOp"))
-	{
-		D3D12_DEPTH_STENCILOP_DESC desc;
-		desc.StencilFailOp = GetStencilOp(GetOptionalOr(optional, "StencilFailOp", "Keep"));
-		desc.StencilDepthFailOp = GetStencilOp(GetOptionalOr(optional, "StencilDepthFailOp", "Keep"));
-		desc.StencilPassOp = GetStencilOp(GetOptionalOr(optional, "StencilPassOp", "Keep"));
-		desc.StencilFunc = GetComparisonFunc(GetOptionalOr(optional, "StencilFunc", "Always"));
-		return desc;
-	}
-
-	return D3D12_DEPTH_STENCILOP_DESC();
+	D3D12_DEPTH_STENCILOP_DESC desc;
+	desc.StencilFailOp = GetStencilOp(GetOptionalOr(Node, "StencilFailOp", "Keep"));
+	desc.StencilDepthFailOp = GetStencilOp(GetOptionalOr(Node, "StencilDepthFailOp", "Keep"));
+	desc.StencilPassOp = GetStencilOp(GetOptionalOr(Node, "StencilPassOp", "Keep"));
+	desc.StencilFunc = GetComparisonFunc(GetOptionalOr(Node, "StencilFunc", "Always"));
+	return desc;
 }
 
 D3D12_DEPTH_WRITE_MASK OPSOReader::GetDepthWriteMask(const string& DepthWriteMaskString)

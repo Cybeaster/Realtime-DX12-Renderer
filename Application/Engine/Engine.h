@@ -57,15 +57,18 @@ public:
 	virtual ~OEngine();
 
 	virtual bool Initialize();
+
+private:
 	void InitManagers();
 	void PostInitialize();
 	void InitUIManager();
 	void InitCompiler();
 	void InitPipelineManager();
+
+public:
 	void SetFogColor(DirectX::XMFLOAT4 Color);
 	void SetFogStart(float Start);
 	void SetFogRange(float Range);
-
 	OWindow* GetWindow() const;
 	ComPtr<ID3D12Device2> GetDevice() const;
 
@@ -87,6 +90,8 @@ public:
 
 	void TryRebuildFrameResource();
 	void OnPreRender();
+	void PrepareRenderTarget(ORenderTargetBase* RenderTarget);
+
 	void PrepareRenderTarget();
 	void Draw(UpdateEventArgs& Args);
 	void Render(UpdateEventArgs& Args);
@@ -181,7 +186,7 @@ public:
 
 	const vector<unique_ptr<ORenderItem>>& GetAllRenderItems();
 	void SetPipelineState(string PSOName);
-	void SetPipelineState(const SPipelineInfo& PSOInfo);
+	void SetPipelineState(const SPSODescriptionBase* PSOInfo);
 
 	void SetFog(DirectX::XMFLOAT4 Color, float Start, float Range);
 	SPassConstants& GetMainPassCB();
@@ -203,7 +208,7 @@ public:
 	TUUID AddRenderObject(IRenderObject* RenderObject);
 
 	void BuildOffscreenRT();
-	OOffscreenTexture* GetRenderTarget() const;
+	OOffscreenTexture* GetOffscreenRT() const;
 	void DrawFullScreenQuad();
 
 	template<typename T>
@@ -258,6 +263,7 @@ public:
 	void UpdateObjectCB() const;
 	void SetDescriptorHeap();
 	OShaderCompiler* GetShaderCompiler() const;
+	OUIManager* GetUIManager() const;
 
 protected:
 	void DrawRenderItemsImpl(const ComPtr<ID3D12GraphicsCommandList>& CommandList, const vector<ORenderItem*>& RenderItems);

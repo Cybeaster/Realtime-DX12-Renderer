@@ -1,17 +1,35 @@
 #pragma once
 #include "DXHelper.h"
+#include "RenderConstants.h"
 #include "RenderNodeInfo.h"
 #include "ShaderTypes.h"
 #include "Types.h"
+
+class ORenderGraph;
+class ORenderTargetBase;
+class OCommandQueue;
+
 class ORenderNode
 {
 public:
-	void Initialize(SShadersPipeline* Other, const SNodeInfo& OtherNodeInfo);
-	string Execute();
-	void SetupCommonResources();
+	ORenderNode() = default;
+	ORenderNode(const ORenderNode& rhs) = delete;
+	ORenderNode& operator=(const ORenderNode& rhs) = delete;
+	virtual ~ORenderNode() = default;
+
+	void Initialize(const SNodeInfo& OtherNodeInfo, OCommandQueue* OtherCommandQueue, ORenderGraph* OtherParentGraph, SPSODescriptionBase* OtherPSO);
+	virtual ORenderTargetBase* Execute(ORenderTargetBase* RenderTarget);
+	virtual void SetupCommonResources();
 	const SNodeInfo& GetNodeInfo() const { return NodeInfo; }
+	auto GetNextNode() const { return NodeInfo.NextNode; }
+	void SetPSO(const string& PSOType) const;
+	SPSODescriptionBase* FindPSOInfo(string Name) const;
+
+protected:
+	OCommandQueue* CommandQueue = nullptr;
+	SPSODescriptionBase* PSO = nullptr;
 
 private:
-	SShadersPipeline* PipelineInfo = nullptr;
 	SNodeInfo NodeInfo;
+	ORenderGraph* ParentGraph;
 };

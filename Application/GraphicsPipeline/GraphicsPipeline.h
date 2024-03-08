@@ -9,6 +9,6 @@ class OGraphicsPipeline
 public:
 private:
 	ComPtr<ID3D12PipelineState> PipelineState;
-	SPipelineInfo PipelineInfo;
+	SShaderPipelineDesc PipelineInfo;
 	vector<OShader*> Shaders;
 };

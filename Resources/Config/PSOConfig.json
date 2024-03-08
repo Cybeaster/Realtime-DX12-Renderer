@@ -3,6 +3,7 @@
     {
       "Name": "Opaque",
       "Type": "Graphics",
+      "RootSignature": "BaseShader",
       "ShaderPipeline": {
         "VertexShader": "BaseShader",
         "PixelShader": "BaseShader"
@@ -73,6 +74,7 @@
     {
       "Name": "Picker",
       "Type": "Graphics",
+      "RootSignature": "BaseShader",
       "ShaderPipeline": {
         "VertexShader": "BaseShader",
         "PixelShader": "BaseShader"
@@ -142,6 +144,7 @@
     },
     {
       "Name": "Transparent",
+      "RootSignature": "BaseShader",
       "Type": "Graphics",
       "ShaderPipeline": {
         "VertexShader": "BaseShader",
@@ -212,6 +215,7 @@
     },
     {
       "Name": "AlphaTested",
+      "RootSignature": "BaseShader",
       "Type": "Graphics",
       "ShaderPipeline": {
         "VertexShader": "AlphaTested",
@@ -282,9 +286,10 @@
     },
     {
       "Name": "BilateralBlur",
+      "RootSignature": "BilateralBlur",
       "Type": "Compute",
       "ShaderPipeline": {
-        "Compute": "BilateralBlur"
+        "ComputeShader": "BilateralBlur"
       },
       "Flags": [
         "None"
@@ -292,9 +297,10 @@
     },
     {
       "Name": "VerticalBlur",
+      "RootSignature": "VerticalBlur",
       "Type": "Compute",
       "ShaderPipeline": {
-        "Compute": "VerticalBlur"
+        "ComputeShader": "VerticalBlur"
       },
       "Flags": [
         "None"
@@ -302,9 +308,10 @@
     },
     {
       "Name": "HorizontalBlur",
+      "RootSignature": "HorizontalBlur",
       "Type": "Compute",
       "ShaderPipeline": {
-        "Compute": "HorizontalBlur"
+        "ComputeShader": "HorizontalBlur"
       },
       "Flags": [
         "None"
@@ -312,6 +319,7 @@
     },
     {
       "Name": "Sky",
+      "RootSignature": "Sky",
       "Type": "Graphics",
       "ShaderPipeline": {
         "VertexShader": "Sky",
@@ -382,9 +390,10 @@
     },
     {
       "Name": "Sobel",
+      "RootSignature": "Sobel",
       "Type": "Compute",
       "ShaderPipeline": {
-        "Compute": "SobelCS"
+        "ComputeShader": "Sobel"
       },
       "Flags": [
         "None"
@@ -392,6 +401,7 @@
     },
     {
       "Name": "Composite",
+      "RootSignature": "Composite",
       "Type": "Graphics",
       "ShaderPipeline": {
         "VertexShader": "Composite",
@@ -462,6 +472,7 @@
     },
     {
       "Name": "Debug",
+      "RootSignature": "BaseShader",
       "Type": "Graphics",
       "ShaderPipeline": {
         "VertexShader": "Composite",
@@ -532,6 +543,7 @@
     },
     {
       "Name": "Mirror",
+      "RootSignature": "BaseShader",
       "Type": "Graphics",
       "ShaderPipeline": {
         "VertexShader": "BaseShader",
@@ -602,6 +614,7 @@
     },
     {
       "Name": "Reflected",
+      "RootSignature": "BaseShader",
       "Type": "Graphics",
       "ShaderPipeline": {
         "VertexShader": "BaseShader",

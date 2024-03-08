@@ -67,6 +67,16 @@ std::pair<bool, CD3DX12_GPU_DESCRIPTOR_HANDLE> OSobelFilter::Execute(ID3D12RootS
 	CMDList->SetComputeRootSignature(RootSignature);
 	CMDList->SetPipelineState(PSO);
 
+	return Execute(Input);
+}
+
+std::pair<bool, CD3DX12_GPU_DESCRIPTOR_HANDLE> OSobelFilter::Execute(const CD3DX12_GPU_DESCRIPTOR_HANDLE Input) const
+{
+	if (!bEnabled)
+	{
+		return { false, CD3DX12_GPU_DESCRIPTOR_HANDLE() };
+	}
+
 	CMDList->SetComputeRootDescriptorTable(0, Input);
 	CMDList->SetComputeRootDescriptorTable(2, UAVHandle.GPUHandle);
 

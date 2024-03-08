@@ -16,7 +16,7 @@ struct SDescriptorPair
 {
 	CD3DX12_CPU_DESCRIPTOR_HANDLE CPUHandle = {};
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GPUHandle = {};
-	uint32_t Index = -1;
+	uint32_t Index = UINT32_MAX;
 };
 
 struct SDescriptorResourceData
@@ -86,6 +86,7 @@ struct TDescriptorHandle
 		Check();
 		return { oldCPU, oldGPU, oldOffset };
 	}
+
 	void Check() const
 	{
 		if (CurrentOffset > MaxOffset)

@@ -9,9 +9,10 @@ vector<SNodeInfo> ORenderGraphReader::LoadRenderGraph()
 	{
 		SNodeInfo info;
 		info.Name = node.get<string>("Name");
-		info.PSOType = node.get<string>("PSOType");
+		info.PSOType = node.get<string>("PSO");
 		info.NextNode = node.get<string>("NextNode");
 		info.RenderLayer = node.get<string>("RenderLayer");
 		result.push_back(info);
 	}
+	return result;
 }

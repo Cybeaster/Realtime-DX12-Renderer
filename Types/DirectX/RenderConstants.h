@@ -33,6 +33,7 @@ struct SRenderConstants
 
 	inline static constexpr SSphere Sphere;
 	inline static constexpr SCylinder Cylinder;
+	inline static const string DefaultSkyTexture = "Textures/grasscube1024";
 };
 
 struct SRenderLayer
@@ -78,7 +79,6 @@ struct SPSOType
 	RENDER_TYPE(Highlight);
 	RENDER_TYPE(Sky);
 };
-
 struct SShaderTypes
 {
 	RENDER_TYPE(VSBaseShader);

@@ -137,7 +137,7 @@ public:
 
 	uint32_t GetNumDSVRequired() override;
 	uint32_t GetNumRTVRequired() override;
-
+ID3D12Resource* GetResource() const override;
 protected:
 	void BuildResource() override;
 	void BuildDescriptors(IDescriptor* Descriptor) override;

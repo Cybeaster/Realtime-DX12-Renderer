@@ -392,6 +392,11 @@ uint32_t OWindow::GetNumRTVRequired()
 	return 2;
 }
 
+ID3D12Resource* OWindow::GetResource() const
+{
+	return GetCurrentBackBuffer().Get();
+}
+
 float OWindow::GetLastXMousePos() const
 {
 	return LastMouseXPos;

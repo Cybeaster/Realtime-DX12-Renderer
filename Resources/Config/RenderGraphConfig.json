@@ -31,14 +31,10 @@
       "NextNode": "Resolve"
     },
     {
-      "Name": "Resolve",
-      "PSO": "Resolve",
-      "NextNode": "Present"
-    },
-    {
       "Name": "Present",
       "PSO": "Present",
-      "NextNode": ""
+      "NextNode": "",
+      "RenderLayer": ""
     }
   ]
 }

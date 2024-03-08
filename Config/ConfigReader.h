@@ -22,6 +22,11 @@ public:
 		}
 	}
 
+	static auto GetAttribute(const boost::property_tree::ptree& Tree, const string& Value)
+	{
+		return Tree.get<string>(Value);
+	}
+
 	template<typename T>
 	T GetRoot(const std::string& Key) const
 	{

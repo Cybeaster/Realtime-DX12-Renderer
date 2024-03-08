@@ -1,24 +1,41 @@
 #include "RenderNode.h"
 
+#include "../../../Utils/EngineHelper.h"
 #include "Engine/Engine.h"
 
-void ORenderNode::Initialize(SShadersPipeline* Other, const SNodeInfo& OtherNodeInfo)
+ORenderTargetBase* ORenderNode::Execute(ORenderTargetBase* RenderTarget)
 {
-	PipelineInfo = Other;
-	NodeInfo = OtherNodeInfo;
-}
-
-string ORenderNode::Execute()
-{
-	OEngine::Get()->DrawRenderItems(PipelineInfo->PipelineInfo.PipelineState.Get(), NodeInfo.RenderLayer);
-	return NodeInfo.NextNode;
+	RenderTarget->PrepareRenderTarget(CommandQueue);
+	OEngine::Get()->DrawRenderItems(PSO->PSO.Get(), NodeInfo.RenderLayer);
+	return RenderTarget;
 }
 
 void ORenderNode::SetupCommonResources()
 {
 	auto resource = OEngine::Get()->CurrentFrameResources;
-	auto cmdList = OEngine::Get()->GetCommandQueue()->GetCommandList();
+	auto cmdList = OEngine::Get()->GetCommandQueue()->GetCommandList().Get();
 	auto passCB = resource->PassCB->GetResource();
-	auto passCBByteSize = Utils::CalcBufferByteSize(sizeof(SPassConstants));
-	auto param = PipelineInfo->PipelineInfo.RootParamIndexMap[L"PassCB"];
+
+	PSO->RootSignature->SetResourceCBView("PassCB", passCB->GetGPUVirtualAddress(), cmdList);
+	PSO->RootSignature->SetResourceCBView("MaterialCB", resource->MaterialBuffer->GetResource()->GetGPUVirtualAddress(), cmdList);
+	PSO->RootSignature->SetDescriptorTable("gTextureMaps", OEngine::Get()->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(), cmdList);
+	PSO->RootSignature->SetDescriptorTable("gCubeMap", GetSkyTextureSRV(), cmdList);
+}
+
+void ORenderNode::SetPSO(const string& PSOType) const
+{
+	ParentGraph->SetPSO(PSOType);
+}
+
+SPSODescriptionBase* ORenderNode::FindPSOInfo(string Name) const
+{
+	return ParentGraph->FindPSOInfo(Name);
+}
+
+void ORenderNode::Initialize(const SNodeInfo& OtherNodeInfo, OCommandQueue* OtherCommandQueue, ORenderGraph* OtherParentGraph, SPSODescriptionBase* OtherPSO)
+{
+	NodeInfo = OtherNodeInfo;
+	CommandQueue = OtherCommandQueue;
+	PSO = OtherPSO;
+	ParentGraph = OtherParentGraph;
 }

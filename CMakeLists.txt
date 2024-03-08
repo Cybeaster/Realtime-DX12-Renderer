@@ -170,6 +170,14 @@ set(SRC_FILES
         Types/RenderNodeInfo.h
         Types/DirectX/RenderItem/RenderItem.cpp
         Types/DirectX/ShaderTypes.cpp
+        Application/RenderGraph/Nodes/PresentNode/PresentNode.cpp
+        Application/RenderGraph/Nodes/PresentNode/PresentNode.h
+        Application/RenderGraph/Nodes/UINode/UiRenderNode.cpp
+        Application/RenderGraph/Nodes/UINode/UiRenderNode.h
+        Application/RenderGraph/Nodes/ReflectionNode/ReflectionNode.cpp
+        Application/RenderGraph/Nodes/ReflectionNode/ReflectionNode.h
+        Application/RenderGraph/Nodes/PostProcessNode/PostProcessNode.cpp
+        Application/RenderGraph/Nodes/PostProcessNode/PostProcessNode.h
 
 )
 

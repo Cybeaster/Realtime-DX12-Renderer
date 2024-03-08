@@ -1,5 +1,7 @@
 #include "CommandQueue.h"
 
+#include "../../Utils/DirectXUtils.h"
+#include "Engine/RenderTarget/RenderTarget.h"
 #include "Logger.h"
 #include "ShaderTypes.h"
 
@@ -129,10 +131,20 @@ Microsoft::WRL::ComPtr<ID3D12Fence> OCommandQueue::GetFence() const
 	return Fence;
 }
 
-void OCommandQueue::SetPipelineState(const SPipelineInfo& PSOInfo) const
+void OCommandQueue::SetPipelineState(const SPSODescriptionBase* PSOInfo) const
 {
-	LOG(Engine, Log, "Setting pipeline state for PSO: {}", TEXT(PSOInfo.PSODesc->Name));
-	CommandList->SetPipelineState(PSOInfo.PipelineState.Get());
+	LOG(Engine, Log, "Setting pipeline state for PSO: {}", TEXT(PSOInfo->Name));
+	CommandList->SetPipelineState(PSOInfo->PSO.Get());
+	CommandList->SetGraphicsRootSignature(PSOInfo->RootSignature->RootSignatureParams.RootSignature.Get());
+}
+
+void OCommandQueue::ResourceBarrier(const ORenderTargetBase* Resource, D3D12_RESOURCE_STATES StateBefore, D3D12_RESOURCE_STATES StateAfter) const
+{
+	Utils::ResourceBarrier(CommandList.Get(), Resource->GetResource(), StateBefore, StateAfter);
+}
+
+void OCommandQueue::CopyResourceTo(const ORenderTargetBase* Dest, ORenderTargetBase* Src) const
+{
 }
 
 Microsoft::WRL::ComPtr<ID3D12CommandQueue> OCommandQueue::GetCommandQueue()

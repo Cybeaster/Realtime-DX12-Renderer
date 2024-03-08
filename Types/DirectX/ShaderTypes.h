@@ -2,7 +2,10 @@
 #include "DXHelper.h"
 #include "Logger.h"
 #include "Types.h"
-struct SPipelineInfo;
+
+struct SRootSignatureParams;
+struct SShadersPipeline;
+struct SShaderPipelineDesc;
 using SGraphicsPSODesc = D3D12_GRAPHICS_PIPELINE_STATE_DESC;
 using SComputePSODesc = D3D12_COMPUTE_PIPELINE_STATE_DESC;
 
@@ -37,13 +40,36 @@ struct SPSODescriptionBase
 	virtual ~SPSODescriptionBase() {}
 	EPSOType Type;
 	string Name;
+	string RootSignatureName;
 	SShaderArrayText ShaderPipeline;
+	shared_ptr<SShaderPipelineDesc> RootSignature;
+	ComPtr<ID3D12PipelineState> PSO;
+
+	virtual void BuildPipelineState(ID3D12Device* Device) = 0;
+	virtual void SetVertexByteCode(const D3D12_SHADER_BYTECODE& ByteCode) {}
+	virtual void SetPixelByteCode(const D3D12_SHADER_BYTECODE& ByteCode) {}
+	virtual void SetGeometryByteCode(const D3D12_SHADER_BYTECODE& ByteCode) {}
+	virtual void SetHullByteCode(const D3D12_SHADER_BYTECODE& ByteCode) {}
+	virtual void SetDomainByteCode(const D3D12_SHADER_BYTECODE& ByteCode) {}
+	virtual void SetComputeByteCode(const D3D12_SHADER_BYTECODE& ByteCode) {}
 };
 
-template<typename T>
-struct SPSODescription : SPSODescriptionBase
+struct SPSOGraphicsDescription : SPSODescriptionBase
 {
-	T PSODesc;
+	SGraphicsPSODesc PSODesc;
+	void BuildPipelineState(ID3D12Device* Device) override;
+	void SetVertexByteCode(const D3D12_SHADER_BYTECODE& ByteCode) override { PSODesc.VS = ByteCode; }
+	void SetPixelByteCode(const D3D12_SHADER_BYTECODE& ByteCode) override { PSODesc.PS = ByteCode; }
+	void SetGeometryByteCode(const D3D12_SHADER_BYTECODE& ByteCode) override { PSODesc.GS = ByteCode; }
+	void SetHullByteCode(const D3D12_SHADER_BYTECODE& ByteCode) override { PSODesc.HS = ByteCode; }
+	void SetDomainByteCode(const D3D12_SHADER_BYTECODE& ByteCode) override { PSODesc.DS = ByteCode; }
+};
+
+struct SPSOComputeDescription : SPSODescriptionBase
+{
+	SComputePSODesc PSODesc;
+	void SetComputeByteCode(const D3D12_SHADER_BYTECODE& ByteCode) override { PSODesc.CS = ByteCode; }
+	void BuildPipelineState(ID3D12Device* Device) override;
 };
 
 struct SShaderDefinition
@@ -64,31 +90,32 @@ struct SRootParameter
 
 struct SRootSignatureParams
 {
-	friend SPipelineInfo;
+	friend SShaderPipelineDesc;
 	unordered_set<wstring> RootParamNames{};
 	unordered_map<wstring, SRootParameter> RootParamMap{};
+	std::unordered_map<wstring, uint32_t> RootParamIndexMap{};
 	vector<D3D12_DESCRIPTOR_RANGE1> DescriptorRanges{};
 	D3D12_VERSIONED_ROOT_SIGNATURE_DESC RootSignatureDesc{};
+	ComPtr<ID3D12RootSignature> RootSignature;
 
 private:
 	vector<D3D12_ROOT_PARAMETER1> RootParameters{};
 };
 
-struct SPipelineInfo
+struct SShaderPipelineDesc
 {
-	SPipelineInfo() = default;
-	SPipelineInfo(const SPipelineInfo&) = default;
+	SShaderPipelineDesc() = default;
+	SShaderPipelineDesc(const SShaderPipelineDesc&) = default;
 
-	shared_ptr<SPSODescriptionBase> PSODesc;
-	std::unordered_map<wstring, uint32_t> RootParamIndexMap{};
+	string PipelineName = "NONE";
 	SRootSignatureParams RootSignatureParams;
-	ComPtr<ID3D12RootSignature> RootSignature;
-	D3D12_INPUT_LAYOUT_DESC InputLayoutDesc{};
-	ComPtr<ID3D12PipelineState> PipelineState;
-
-	void BuildPipelineState(ID3D12Device* Device);
+	D3D12_INPUT_LAYOUT_DESC InputLayoutDesc;
+	vector<string> InputElementSemanticNames;
+	vector<D3D12_INPUT_ELEMENT_DESC> InputElementDescs;
 	void AddRootParameter(const D3D12_ROOT_PARAMETER1& RootParameter, const wstring& Name);
 	bool TryAddRootParameterName(const wstring& Name);
+	void SetResourceCBView(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Handle, ID3D12GraphicsCommandList* CmdList);
+	void SetDescriptorTable(const string& Name, D3D12_GPU_DESCRIPTOR_HANDLE Handle, ID3D12GraphicsCommandList* CmdList);
 	vector<D3D12_ROOT_PARAMETER1>& BuildParameterArray();
 };
 
@@ -110,9 +137,10 @@ struct SShadersPipeline
 	SPipelineStage HullShader;
 	SPipelineStage DomainShader;
 	SPipelineStage ComputeShader;
-	SPipelineInfo PipelineInfo;
-	void SetResource(const string& Name, D3D12_GPU_DESCRIPTOR_HANDLE Handle, ID3D12GraphicsCommandList* CmdList);
+	shared_ptr<SShaderPipelineDesc> PipelineInfo;
+
 	void BuildFromStages(const vector<SPipelineStage>& Stages);
+	ID3D12RootSignature* GetRootSignature() const;
 };
 
-inline D3D12_SHADER_VISIBILITY ShaderTypeToVisibility(EShaderLevel ShaderType);
+D3D12_SHADER_VISIBILITY ShaderTypeToVisibility(EShaderLevel ShaderType);

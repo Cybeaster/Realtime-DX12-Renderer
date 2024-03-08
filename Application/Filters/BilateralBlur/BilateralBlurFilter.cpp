@@ -90,9 +90,14 @@ void OBilateralBlurFilter::BuildResource()
 
 void OBilateralBlurFilter::Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO, ID3D12Resource* Input) const
 {
-	using namespace Utils;
-
 	CMDList->SetComputeRootSignature(RootSignature);
+	CMDList->SetPipelineState(PSO);
+	Execute(Input);
+}
+
+void OBilateralBlurFilter::Execute(ID3D12Resource* Input) const
+{
+	using namespace Utils;
 
 	CMDList->SetComputeRoot32BitConstants(0, 1, &SpatialSigma, 0);
 	CMDList->SetComputeRoot32BitConstants(0, 1, &IntensitySigma, 1);
@@ -108,8 +113,6 @@ void OBilateralBlurFilter::Execute(ID3D12RootSignature* RootSignature, ID3D12Pip
 
 	ResourceBarrier(CMDList, InputTexture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ);
 	ResourceBarrier(CMDList, OutputTexture.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-
-	CMDList->SetPipelineState(PSO);
 
 	CMDList->SetComputeRootDescriptorTable(2, BlurInputSrvHandle.GPUHandle);
 	CMDList->SetComputeRootDescriptorTable(3, BlurOutputUavHandle.GPUHandle);

@@ -12,11 +12,6 @@ ORenderTargetBase::ORenderTargetBase(UINT Width, UINT Height)
 {
 }
 
-ID3D12Resource* ORenderTargetBase::GetResource() const
-{
-	return RenderTarget.Get();
-}
-
 uint32_t ORenderTargetBase::GetNumSRVRequired() const
 {
 	return 1;
@@ -25,6 +20,30 @@ uint32_t ORenderTargetBase::GetNumSRVRequired() const
 uint32_t ORenderTargetBase::GetNumRTVRequired()
 {
 	return 1;
+}
+uint32_t ORenderTargetBase::GetNumDSVRequired()
+{
+	return 1;
+}
+void ORenderTargetBase::CopyTo(const ORenderTargetBase* Dest, const OCommandQueue* CommandQueue)
+{
+	CommandQueue->CopyResourceTo(Dest, this);
+}
+SDescriptorPair ORenderTargetBase::GetSRV() const
+{
+	LOG(Render, Error, "GetSRV not implemented")
+	return {};
+}
+SDescriptorPair ORenderTargetBase::GetRTV() const
+{
+	LOG(Render, Error, "GetRTV not implemented")
+	return {};
+}
+
+SDescriptorPair ORenderTargetBase::GetDSV() const
+{
+	LOG(Render, Error, "GetDSV not implemented")
+	return {};
 }
 
 void ORenderTargetBase::InitRenderObject()
@@ -36,6 +55,23 @@ void ORenderTargetBase::SetViewport(OCommandQueue* CommandQueue) const
 	auto list = CommandQueue->GetCommandList();
 	list->RSSetViewports(1, &Viewport);
 	list->RSSetScissorRects(1, &ScissorRect);
+}
+
+void ORenderTargetBase::PrepareRenderTarget(OCommandQueue* CommandQueue)
+{
+	if (HasBeedPrepared)
+	{
+		return;
+	}
+
+	auto cmdList = CommandQueue->GetCommandList();
+	auto backbufferView = GetRTV().CPUHandle;
+	auto dsv = GetDSV().CPUHandle;
+	cmdList->ClearRenderTargetView(backbufferView, DirectX::Colors::LightSteelBlue, 0, nullptr);
+	cmdList->ClearDepthStencilView(GetDSV().CPUHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+	cmdList->OMSetRenderTargets(1, &backbufferView, true, &dsv);
+	Utils::ResourceBarrier(cmdList.Get(), GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	HasBeedPrepared = true;
 }
 
 TUUID ORenderTargetBase::GetID()
@@ -52,6 +88,9 @@ OOffscreenTexture::OOffscreenTexture(ID3D12Device* Device, UINT Width, UINT Heig
     : ORenderTargetBase(Device, Width, Height, Format)
 {
 }
+OOffscreenTexture::~OOffscreenTexture()
+{
+}
 
 void OOffscreenTexture::BuildDescriptors(IDescriptor* Descriptor)
 {
@@ -59,6 +98,7 @@ void OOffscreenTexture::BuildDescriptors(IDescriptor* Descriptor)
 	{
 		descriptor->SRVHandle.Offset(SRVHandle);
 		descriptor->RTVHandle.Offset(RTVHandle);
+		descriptor->DSVHandle.Offset(DSVHandle);
 		BuildDescriptors();
 	}
 }
@@ -117,4 +157,8 @@ void OOffscreenTexture::BuildResource()
 	                                                D3D12_RESOURCE_STATE_GENERIC_READ,
 	                                                nullptr,
 	                                                IID_PPV_ARGS(&RenderTarget)));
+}
+ID3D12Resource* OOffscreenTexture::GetResource() const
+{
+	return RenderTarget.Get();
 }

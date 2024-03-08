@@ -15,7 +15,7 @@ void OShaderCompiler::Init()
 	THROW_IF_FAILED(Utils->CreateDefaultIncludeHandler(&IncludeHandler));
 }
 
-vector<unique_ptr<OShader>> OShaderCompiler::CompileShaders(vector<SPipelineStage>& OutPipelines, SPipelineInfo& OutShadersPipeline)
+vector<unique_ptr<OShader>> OShaderCompiler::CompileShaders(vector<SPipelineStage>& OutPipelines, SShaderPipelineDesc& OutShadersPipeline)
 {
 	vector<unique_ptr<OShader>> shaders;
 	for (auto& shader : OutPipelines)
@@ -25,7 +25,7 @@ vector<unique_ptr<OShader>> OShaderCompiler::CompileShaders(vector<SPipelineStag
 		shader.Shader = temp.get();
 		shaders.push_back(std::move(temp));
 	}
-	BuildRootSignature(OutShadersPipeline.BuildParameterArray(), Utils::GetStaticSamplers(), OutShadersPipeline.RootSignatureParams.RootSignatureDesc);
+	OutShadersPipeline.RootSignatureParams.RootSignature = BuildRootSignature(OutShadersPipeline.BuildParameterArray(), Utils::GetStaticSamplers(), OutShadersPipeline.RootSignatureParams.RootSignatureDesc);
 	return shaders;
 }
 
@@ -56,7 +56,7 @@ void OShaderCompiler::SetCompilationArgs(const SShaderDefinition& Definition)
 	}
 }
 
-void OShaderCompiler::ResolveBoundResources(const ComPtr<ID3D12ShaderReflection>& Reflection, const D3D12_SHADER_DESC& ShaderDescription, SPipelineInfo& OutPipelineInfo, EShaderLevel ShaderType)
+void OShaderCompiler::ResolveBoundResources(const ComPtr<ID3D12ShaderReflection>& Reflection, const D3D12_SHADER_DESC& ShaderDescription, SShaderPipelineDesc& OutPipelineInfo, EShaderLevel ShaderType)
 {
 	OutPipelineInfo.RootSignatureParams.DescriptorRanges.reserve(50);
 	for (const uint32_t i : std::views::iota(0u, ShaderDescription.BoundResources))
@@ -89,10 +89,10 @@ void OShaderCompiler::ResolveBoundResources(const ComPtr<ID3D12ShaderReflection>
 	}
 }
 
-void OShaderCompiler::ResolveConstantBuffers(const int32_t ResourceIdx, const ComPtr<ID3D12ShaderReflection>& Reflection, const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SPipelineInfo& OutPipelineInfo)
+void OShaderCompiler::ResolveConstantBuffers(const int32_t ResourceIdx, const ComPtr<ID3D12ShaderReflection>& Reflection, const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SShaderPipelineDesc& OutPipelineInfo)
 {
 	auto name = UTF8ToWString(BindDesc.Name);
-	OutPipelineInfo.RootParamIndexMap[UTF8ToWString(BindDesc.Name)] = BindDesc.BindPoint;
+	OutPipelineInfo.RootSignatureParams.RootParamIndexMap[UTF8ToWString(BindDesc.Name)] = BindDesc.BindPoint;
 	ID3D12ShaderReflectionConstantBuffer* shaderReflectionConstantBuffer = Reflection->GetConstantBufferByIndex(ResourceIdx);
 	D3D12_SHADER_BUFFER_DESC constantBufferDesc{};
 	shaderReflectionConstantBuffer->GetDesc(&constantBufferDesc);
@@ -108,7 +108,7 @@ void OShaderCompiler::ResolveConstantBuffers(const int32_t ResourceIdx, const Co
 	OutPipelineInfo.AddRootParameter(rootParameter, name);
 }
 
-void OShaderCompiler::ResolveTexturesAndStructuredBuffers(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SPipelineInfo& OutPipelineInfo, EShaderLevel ShaderType)
+void OShaderCompiler::ResolveTexturesAndStructuredBuffers(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SShaderPipelineDesc& OutPipelineInfo, EShaderLevel ShaderType)
 {
 	auto name = UTF8ToWString(BindDesc.Name);
 	CHECK(BindDesc.BindCount > 0);
@@ -205,25 +205,21 @@ std::tuple<DxcBuffer, ComPtr<IDxcResult>> OShaderCompiler::CreateDxcBuffer(const
 	return { reflectionBuffer, compiledShaderBuffer };
 }
 
-D3D12_INPUT_LAYOUT_DESC OShaderCompiler::GetInputLayoutDesc(const ComPtr<ID3D12ShaderReflection>& Reflection)
+void OShaderCompiler::GetInputLayoutDesc(const ComPtr<ID3D12ShaderReflection>& Reflection, SShaderPipelineDesc& OutPipelineInfo)
 {
-	D3D12_INPUT_LAYOUT_DESC layoutDesc{};
-	vector<string> inputElementSemanticNames;
-	vector<D3D12_INPUT_ELEMENT_DESC> inputElementDescs;
 	D3D12_SHADER_DESC shaderDesc{};
-
 	Reflection->GetDesc(&shaderDesc);
-	inputElementSemanticNames.reserve(shaderDesc.InputParameters);
-	inputElementDescs.reserve(shaderDesc.InputParameters);
+	OutPipelineInfo.InputElementSemanticNames.reserve(shaderDesc.InputParameters);
+	OutPipelineInfo.InputElementDescs.reserve(shaderDesc.InputParameters);
 
 	for (const uint32_t parameterIndex : std::views::iota(0u, shaderDesc.InputParameters))
 	{
 		D3D12_SIGNATURE_PARAMETER_DESC parameterDesc{};
 		Reflection->GetInputParameterDesc(parameterIndex, &parameterDesc);
 
-		inputElementSemanticNames.emplace_back(parameterDesc.SemanticName);
-		inputElementDescs.push_back(D3D12_INPUT_ELEMENT_DESC{
-		    .SemanticName = inputElementSemanticNames.back().c_str(),
+		OutPipelineInfo.InputElementSemanticNames.emplace_back(parameterDesc.SemanticName);
+		OutPipelineInfo.InputElementDescs.push_back(D3D12_INPUT_ELEMENT_DESC{
+		    .SemanticName = OutPipelineInfo.InputElementSemanticNames.back().c_str(),
 		    .SemanticIndex = parameterDesc.SemanticIndex,
 		    .Format = Utils::MaskToFormat(parameterDesc.Mask),
 		    .InputSlot = 0u,
@@ -233,13 +229,6 @@ D3D12_INPUT_LAYOUT_DESC OShaderCompiler::GetInputLayoutDesc(const ComPtr<ID3D12S
 
 		});
 	}
-
-	layoutDesc = {
-		.pInputElementDescs = inputElementDescs.data(),
-		.NumElements = static_cast<uint32_t>(inputElementDescs.size())
-	};
-
-	return layoutDesc;
 }
 
 D3D12_SHADER_DESC OShaderCompiler::BuildReflection(DxcBuffer Buffer, ComPtr<ID3D12ShaderReflection>& OutReflection)
@@ -250,7 +239,7 @@ D3D12_SHADER_DESC OShaderCompiler::BuildReflection(DxcBuffer Buffer, ComPtr<ID3D
 	return shaderDesc;
 }
 
-unique_ptr<OShader> OShaderCompiler::CompileShader(const SShaderDefinition& Definition, const wstring& ShaderPath, SPipelineInfo& OutPipelineInfo)
+unique_ptr<OShader> OShaderCompiler::CompileShader(const SShaderDefinition& Definition, const wstring& ShaderPath, SShaderPipelineDesc& OutPipelineInfo)
 {
 	SetCompilationArgs(Definition);
 	auto [buffer, compiledShaderBuffer] = CreateDxcBuffer(ShaderPath);
@@ -261,7 +250,7 @@ unique_ptr<OShader> OShaderCompiler::CompileShader(const SShaderDefinition& Defi
 	ResolveBoundResources(shaderReflection, shaderDesc, OutPipelineInfo, Definition.ShaderType);
 	if (Definition.ShaderType == EShaderLevel::VertexShader)
 	{
-		OutPipelineInfo.InputLayoutDesc = GetInputLayoutDesc(shaderReflection);
+		GetInputLayoutDesc(shaderReflection, OutPipelineInfo);
 	}
 	ComPtr<IDxcBlob> compiledShaderBlob;
 	THROW_IF_FAILED(compiledShaderBuffer->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&compiledShaderBlob), nullptr));

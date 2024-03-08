@@ -1,8 +1,11 @@
 #pragma once
+#include "Engine/RenderTarget/RenderTarget.h"
+
 #include <DirectX/DXHelper.h>
 #include <Types.h>
 
-struct SPipelineInfo;
+struct SPSODescriptionBase;
+struct SShaderPipelineDesc;
 class OCommandQueue
 {
 public:
@@ -23,7 +26,9 @@ public:
 	void Flush();
 	void TryResetCommandList();
 	ComPtr<ID3D12Fence> GetFence() const;
-	void SetPipelineState(const SPipelineInfo& PSOInfo) const;
+	void SetPipelineState(const SPSODescriptionBase* PSOInfo) const;
+	void ResourceBarrier(const ORenderTargetBase* Resource, D3D12_RESOURCE_STATES StateBefore, D3D12_RESOURCE_STATES StateAfter) const;
+	void CopyResourceTo(const ORenderTargetBase* Dest, ORenderTargetBase* Src) const;
 
 protected:
 	ComPtr<ID3D12CommandAllocator> CreateCommandAllocator();

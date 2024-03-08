@@ -232,7 +232,7 @@ void OEngine::DrawRenderItemsImpl(const ComPtr<ID3D12GraphicsCommandList>& Comma
 	}
 }
 
-OOffscreenTexture* OEngine::GetRenderTarget() const
+OOffscreenTexture* OEngine::GetOffscreenRT() const
 {
 	return OffscreenRT;
 }
@@ -397,9 +397,9 @@ void OEngine::OnPreRender()
 		commandList->SetGraphicsRootConstantBufferView(2, CurrentFrameResources->PassCB->GetResource()->GetGPUVirtualAddress());
 		commandList->SetGraphicsRootDescriptorTable(3, GetSRVHeap()->GetGPUDescriptorHandleForHeapStart());
 
-		auto rtv = GetRenderTarget()->GetRTV().CPUHandle;
+		auto rtv = GetOffscreenRT()->GetRTV().CPUHandle;
 		auto dsv = GetWindow()->GetDepthStensilView();
-		Utils::ResourceBarrier(commandList.Get(), GetRenderTarget()->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		Utils::ResourceBarrier(commandList.Get(), GetOffscreenRT()->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 		// Clear the back buffer and depth buffer.
 		commandList->ClearRenderTargetView(rtv, reinterpret_cast<float*>(&MainPassCB.FogColor), 0, nullptr);
@@ -432,16 +432,20 @@ void OEngine::OnPreRender()
 	slotRootParameter[5].InitAsDescriptorTable(1, &cubeMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	 */
 }
-
-void OEngine::PrepareRenderTarget()
+void OEngine::PrepareRenderTarget(ORenderTargetBase* RenderTarget)
 {
 	auto cmdList = GetCommandQueue()->GetCommandList();
-	auto backbufferView = GetRenderTarget()->GetRTV().CPUHandle;
+	auto backbufferView = RenderTarget->GetRTV().CPUHandle;
 	auto depthStencilView = GetWindow()->GetDepthStensilView();
 	cmdList->ClearRenderTargetView(backbufferView, DirectX::Colors::LightSteelBlue, 0, nullptr);
 	cmdList->ClearDepthStencilView(depthStencilView, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 	cmdList->OMSetRenderTargets(1, &backbufferView, true, &depthStencilView);
-	Utils::ResourceBarrier(cmdList.Get(), GetRenderTarget()->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	Utils::ResourceBarrier(cmdList.Get(), RenderTarget->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
+}
+
+void OEngine::PrepareRenderTarget()
+{
+	PrepareRenderTarget(GetOffscreenRT());
 }
 
 void OEngine::Draw(UpdateEventArgs& Args)
@@ -494,7 +498,12 @@ void OEngine::UpdateFrameResource()
 void OEngine::InitRenderGraph()
 {
 	RenderGraph = make_unique<ORenderGraph>();
-	RenderGraph->Initialize(PipelineManager.get());
+	RenderGraph->Initialize(PipelineManager.get(), GetCommandQueue());
+}
+
+OUIManager* OEngine::GetUIManager() const
+{
+	return UIManager;
 }
 
 void OEngine::RemoveRenderObject(TUUID UUID)
@@ -1246,7 +1255,7 @@ void OEngine::SetPipelineState(string PSOName)
 	GetCommandQueue()->GetCommandList()->SetPipelineState(PSOs[PSOName].Get());
 }
 
-void OEngine::SetPipelineState(const SPipelineInfo& PSOInfo)
+void OEngine::SetPipelineState(const SPSODescriptionBase* PSOInfo)
 {
 	GetCommandQueue()->SetPipelineState(PSOInfo);
 }

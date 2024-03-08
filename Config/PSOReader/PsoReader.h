@@ -8,9 +8,9 @@ public:
 	OPSOReader(const string& FileName)
 	    : OConfigReader(FileName) {}
 
-	vector<shared_ptr<SPSODescriptionBase>> LoadPSOs() const;
-	shared_ptr<SPSODescription<SGraphicsPSODesc>> LoadGraphicsPSO(const boost::property_tree::ptree& Node) const;
-	shared_ptr<SPSODescription<SComputePSODesc>> LoadComputePSO(const boost::property_tree::ptree& Node) const;
+	vector<unique_ptr<SPSODescriptionBase>> LoadPSOs() const;
+	unique_ptr<SPSOGraphicsDescription> LoadGraphicsPSO(const boost::property_tree::ptree& Node) const;
+	unique_ptr<SPSOComputeDescription> LoadComputePSO(const boost::property_tree::ptree& Node) const;
 
 private:
 	static SShaderArrayText GetShaderArray(const boost::property_tree::ptree& Node);

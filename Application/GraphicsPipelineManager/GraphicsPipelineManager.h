@@ -13,24 +13,29 @@ struct SRootSignature
 
 class OGraphicsPipelineManager
 {
-	using SGlobalPipelineMap = unordered_map<string, SShadersPipeline>;
+	using SGlobalShaderPipelineMap = unordered_map<string, SShadersPipeline>;
 	using SGlobalShaderMap = unordered_map<string, unordered_map<EShaderLevel, unique_ptr<OShader>>>;
+	using SGlobalPSOMap = unordered_map<string, unique_ptr<SPSODescriptionBase>>;
 
 public:
-	void LoadPipelines();
 	void Init();
-	SShadersPipeline* FindPipeline(const string& PipelineName);
+	SPSODescriptionBase* FindPSO(const string& PipelineName);
+	SShadersPipeline* FindShadersPipeline(const string& PipelineName);
+	OShader* FindShader(const string& PipelineName, EShaderLevel ShaderType);
 
 protected:
-	SRootSignature* FindRootSignature(const D3D12_VERSIONED_ROOT_SIGNATURE_DESC& RootSignatureDesc);
-	void PutShaderContainer(string PipelineName, vector<unique_ptr<OShader>>& Shaders);
 	void LoadShaders();
-	SShadersPipeline GetPipelineFor(const SShaderArrayText& ShaderArray);
+	void LoadPipelines();
+	void LoadRenderNodes();
+	void PutShaderContainer(const string& PipelineName, vector<unique_ptr<OShader>>& Shaders);
+	SShadersPipeline MakePipelineInfoForPSO(const shared_ptr<SPSODescriptionBase>& PSO);
+	shared_ptr<SShaderPipelineDesc> FindRootSignatureForPipeline(const string& PipelineName);
 	unique_ptr<OShaderReader> ShaderReader;
 	unique_ptr<OPSOReader> PSOReader;
-	SGlobalPipelineMap GlobalPipelineMap;
+	SGlobalShaderPipelineMap GlobalShaderPipelineMap;
 	SGlobalShaderMap GlobalShaderMap;
-	unordered_map<string, SRootSignature> RootSignatures;
+	SGlobalPSOMap GlobalPSOMap;
+	unordered_map<string, shared_ptr<SShaderPipelineDesc>> RootSignatures;
 };
 
 inline bool operator==(const D3D12_VERSIONED_ROOT_SIGNATURE_DESC& Lhs, const D3D12_VERSIONED_ROOT_SIGNATURE_DESC& Rhs)
