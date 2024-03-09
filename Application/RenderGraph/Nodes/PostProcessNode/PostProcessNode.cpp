@@ -1,11 +1,9 @@
-//
-// Created by Cybea on 06/03/2024.
-//
 
 #include "PostProcessNode.h"
 
 #include "CommandQueue/CommandQueue.h"
 #include "Engine/Engine.h"
+#include "Window/Window.h"
 ORenderTargetBase* OPostProcessNode::Execute(ORenderTargetBase* RenderTarget)
 {
 	CommandQueue->ResourceBarrier(RenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ);
@@ -39,7 +37,7 @@ void OPostProcessNode::DrawSobel(ORenderTargetBase*& RenderTarget)
 	RenderTarget = Window;
 }
 
-void OPostProcessNode::DrawBlurFilter(const ORenderTargetBase* RenderTarget)
+void OPostProcessNode::DrawBlurFilter(ORenderTargetBase* RenderTarget)
 {
 	auto horizontal = FindPSOInfo(SPSOType::HorizontalBlur);
 	auto vertical = FindPSOInfo(SPSOType::VerticalBlur);

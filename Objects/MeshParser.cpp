@@ -1,16 +1,13 @@
 #include "MeshParser.h"
 
-#include "../Utils/DirectXUtils.h"
-#include "../Utils/Math.h"
 #include "Logger.h"
-#include "Vertex.h"
+#include "MathUtils.h"
 
 using namespace Utils::Math;
 using namespace DirectX;
 bool OCustomParser::ParseMesh(const string& Path, OGeometryGenerator::SMeshData& MeshData, ETextureMapType Type)
 {
 	std::ifstream fin(Path);
-	using namespace Utils::Math;
 	CWIN_LOG(!fin, Geometry, Warning, "Could not open the file: {}", TEXT(Path));
 	if (!fin)
 	{

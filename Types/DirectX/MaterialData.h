@@ -1,6 +1,5 @@
 #pragma once
-#include "../../Utils/DirectXUtils.h"
-#include "../../Utils/Math.h"
+#include "MathUtils.h"
 #include "RenderConstants.h"
 
 struct SMaterialSurface

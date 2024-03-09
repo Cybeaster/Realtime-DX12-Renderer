@@ -1,6 +1,3 @@
-//
-// Created by Cybea on 28/02/2024.
-//
 
 #include "GraphicsPipelineManager.h"
 

@@ -1,15 +1,15 @@
 #include "TextureManager.h"
 
-#include "../DDSTextureLoader/DDSTextureLoader.h"
 #include "Application.h"
 #include "CommandQueue/CommandQueue.h"
+#include "DDSTextureLoader/DDSTextureLoader.h"
 #include "Exception.h"
 #include "Logger.h"
-#include "Settings.h"
 
 #include <filesystem>
 #include <ranges>
 #include <unordered_set>
+
 OTextureManager::OTextureManager(ID3D12Device* Device, OCommandQueue* Queue)
     : Device(Device), CommandQueue(Queue)
 {

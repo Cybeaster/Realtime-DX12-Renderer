@@ -1,6 +1,5 @@
 #pragma once
 #include "../Widget.h"
-#include "DXHelper.h"
 #include "Engine/RenderObject/RenderObject.h"
 #include "Events.h"
 #include "imgui.h"
@@ -32,6 +31,10 @@ public:
 	void PostInputUpdate();
 
 	bool IsInFocus() override;
+	string GetName() override
+	{
+		return "UIManager";
+	}
 
 private:
 	bool bIsInFocus = false;

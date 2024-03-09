@@ -1,7 +1,5 @@
 #include "BlurFilter.h"
 
-#include "../../../Utils/Statics.h"
-#include "../../Utils/DirectXUtils.h"
 #include "Logger.h"
 
 OBlurFilter::OBlurFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format)
@@ -9,10 +7,10 @@ OBlurFilter::OBlurFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, 
 {
 }
 
-void OBlurFilter::OutputTo(ID3D12Resource* Destination) const
+void OBlurFilter::OutputTo(SResourceInfo* Destination)
 {
 	Utils::ResourceBarrier(CMDList, Destination, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
-	CMDList->CopyResource(Destination, BlurMap0.Get());
+	CMDList->CopyResource(Destination->Resource.Get(), BlurMap0.Resource.Get());
 }
 
 void OBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
@@ -45,11 +43,11 @@ void OBlurFilter::BuildDescriptors() const
 	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 	uavDesc.Texture2D.MipSlice = 0;
 
-	Device->CreateShaderResourceView(BlurMap0.Get(), &srvDesc, SRV0Handle.CPUHandle);
-	Device->CreateUnorderedAccessView(BlurMap0.Get(), nullptr, &uavDesc, UAV0Handle.CPUHandle);
+	Device->CreateShaderResourceView(BlurMap0.Resource.Get(), &srvDesc, SRV0Handle.CPUHandle);
+	Device->CreateUnorderedAccessView(BlurMap0.Resource.Get(), nullptr, &uavDesc, UAV0Handle.CPUHandle);
 
-	Device->CreateShaderResourceView(BlurMap1.Get(), &srvDesc, SRV1Handle.CPUHandle);
-	Device->CreateUnorderedAccessView(BlurMap1.Get(), nullptr, &uavDesc, UAV1Handle.CPUHandle);
+	Device->CreateShaderResourceView(BlurMap1.Resource.Get(), &srvDesc, SRV1Handle.CPUHandle);
+	Device->CreateUnorderedAccessView(BlurMap1.Resource.Get(), nullptr, &uavDesc, UAV1Handle.CPUHandle);
 }
 
 void OBlurFilter::BuildResource()
@@ -68,28 +66,15 @@ void OBlurFilter::BuildResource()
 	texDesc.SampleDesc.Quality = 0;
 	texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-
-	auto commonState = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-	THROW_IF_FAILED(Device->CreateCommittedResource(&commonState,
-	                                                D3D12_HEAP_FLAG_NONE,
-	                                                &texDesc,
-	                                                D3D12_RESOURCE_STATE_COMMON,
-	                                                nullptr,
-	                                                IID_PPV_ARGS(BlurMap0.GetAddressOf())));
-
-	THROW_IF_FAILED(Device->CreateCommittedResource(&commonState,
-	                                                D3D12_HEAP_FLAG_NONE,
-	                                                &texDesc,
-	                                                D3D12_RESOURCE_STATE_COMMON,
-	                                                nullptr,
-	                                                IID_PPV_ARGS(BlurMap1.GetAddressOf())));
+	BlurMap0 = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
+	BlurMap1 = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
 }
 
 void OBlurFilter::Execute(
     ID3D12RootSignature* RootSignature,
     ID3D12PipelineState* HorizontalBlurPSO,
     ID3D12PipelineState* VerticalBlurPSO,
-    ID3D12Resource* Input) const
+    SResourceInfo* Input)
 {
 	using namespace Utils;
 	const auto weights = CalcGaussWeights(Sigma);
@@ -100,13 +85,13 @@ void OBlurFilter::Execute(
 	CMDList->SetComputeRoot32BitConstants(0, 1, &blurRadius, 0);
 	CMDList->SetComputeRoot32BitConstants(0, static_cast<UINT>(weights.size()), weights.data(), 1);
 
-	ResourceBarrier(CMDList, Input, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_SOURCE);
-	ResourceBarrier(CMDList, BlurMap0.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+	ResourceBarrier(CMDList, Input, D3D12_RESOURCE_STATE_COPY_SOURCE);
+	ResourceBarrier(CMDList, &BlurMap0, D3D12_RESOURCE_STATE_COPY_DEST);
 
-	CMDList->CopyResource(BlurMap0.Get(), Input);
+	CMDList->CopyResource(BlurMap0.Resource.Get(), Input->Resource.Get());
 
-	ResourceBarrier(CMDList, BlurMap0.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ);
-	ResourceBarrier(CMDList, BlurMap1.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	ResourceBarrier(CMDList, &BlurMap0, D3D12_RESOURCE_STATE_GENERIC_READ);
+	ResourceBarrier(CMDList, &BlurMap1, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
 	for (int i = 0; i < BlurCount; i++)
 	{
@@ -121,8 +106,8 @@ void OBlurFilter::Execute(
 		const UINT numGroupsX = (UINT)ceilf(Width / 256.0f);
 		CMDList->Dispatch(numGroupsX, Height, 1);
 
-		ResourceBarrier(CMDList, BlurMap0.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		ResourceBarrier(CMDList, BlurMap1.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
+		ResourceBarrier(CMDList, &BlurMap0, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		ResourceBarrier(CMDList, &BlurMap1, D3D12_RESOURCE_STATE_GENERIC_READ);
 
 		// vertical BLur
 		CMDList->SetPipelineState(VerticalBlurPSO);
@@ -135,8 +120,8 @@ void OBlurFilter::Execute(
 		UINT numGroupsY = (UINT)ceilf(Height / 256.0f);
 		CMDList->Dispatch(Width, numGroupsY, 1);
 
-		ResourceBarrier(CMDList, BlurMap0.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
-		ResourceBarrier(CMDList, BlurMap1.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		ResourceBarrier(CMDList, &BlurMap0, D3D12_RESOURCE_STATE_GENERIC_READ);
+		ResourceBarrier(CMDList, &BlurMap1, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 	}
 }
 

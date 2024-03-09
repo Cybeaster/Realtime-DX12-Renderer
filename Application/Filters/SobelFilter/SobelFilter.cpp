@@ -1,9 +1,5 @@
 #include "SobelFilter.h"
 
-#include "../../../Utils/DirectXUtils.h"
-#include "../../../Utils/Statics.h"
-#include "RenderConstants.h"
-
 OSobelFilter::OSobelFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format)
     : OFilterBase(Device, List, Width, Height, Format)
 {
@@ -28,8 +24,8 @@ void OSobelFilter::BuildDescriptors() const
 	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 	uavDesc.Texture2D.MipSlice = 0;
 
-	Device->CreateShaderResourceView(Output.Get(), &srvDesc, SRVHandle.CPUHandle);
-	Device->CreateUnorderedAccessView(Output.Get(), nullptr, &uavDesc, UAVHandle.CPUHandle);
+	Device->CreateShaderResourceView(Output.Resource.Get(), &srvDesc, SRVHandle.CPUHandle);
+	Device->CreateUnorderedAccessView(Output.Resource.Get(), nullptr, &uavDesc, UAVHandle.CPUHandle);
 }
 
 void OSobelFilter::BuildResource()
@@ -47,17 +43,10 @@ void OSobelFilter::BuildResource()
 	texDesc.SampleDesc.Quality = 0;
 	texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-
-	const auto defaultHead = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-	THROW_IF_FAILED(Device->CreateCommittedResource(&defaultHead,
-	                                                D3D12_HEAP_FLAG_NONE,
-	                                                &texDesc,
-	                                                D3D12_RESOURCE_STATE_GENERIC_READ,
-	                                                nullptr,
-	                                                IID_PPV_ARGS(Output.GetAddressOf())));
+	Output = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_DEFAULT, texDesc);
 }
 
-std::pair<bool, CD3DX12_GPU_DESCRIPTOR_HANDLE> OSobelFilter::Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO, CD3DX12_GPU_DESCRIPTOR_HANDLE Input) const
+std::pair<bool, CD3DX12_GPU_DESCRIPTOR_HANDLE> OSobelFilter::Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO, CD3DX12_GPU_DESCRIPTOR_HANDLE Input)
 {
 	if (!bEnabled)
 	{
@@ -70,7 +59,7 @@ std::pair<bool, CD3DX12_GPU_DESCRIPTOR_HANDLE> OSobelFilter::Execute(ID3D12RootS
 	return Execute(Input);
 }
 
-std::pair<bool, CD3DX12_GPU_DESCRIPTOR_HANDLE> OSobelFilter::Execute(const CD3DX12_GPU_DESCRIPTOR_HANDLE Input) const
+std::pair<bool, CD3DX12_GPU_DESCRIPTOR_HANDLE> OSobelFilter::Execute(const CD3DX12_GPU_DESCRIPTOR_HANDLE Input)
 {
 	if (!bEnabled)
 	{
@@ -80,13 +69,13 @@ std::pair<bool, CD3DX12_GPU_DESCRIPTOR_HANDLE> OSobelFilter::Execute(const CD3DX
 	CMDList->SetComputeRootDescriptorTable(0, Input);
 	CMDList->SetComputeRootDescriptorTable(2, UAVHandle.GPUHandle);
 
-	Utils::ResourceBarrier(CMDList, Output.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	Utils::ResourceBarrier(CMDList, &Output, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
 	UINT numGroupsX = (UINT)ceilf(Width / 16.0f);
 	UINT numGroupsY = (UINT)ceilf(Height / 16.0f);
 	CMDList->Dispatch(numGroupsX, numGroupsY, 1);
 
-	Utils::ResourceBarrier(CMDList, Output.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
+	Utils::ResourceBarrier(CMDList, &Output, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
 	return { true, SRVHandle.GPUHandle };
 }
 

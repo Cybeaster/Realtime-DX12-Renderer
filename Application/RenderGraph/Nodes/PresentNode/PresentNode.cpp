@@ -1,9 +1,9 @@
 
 #include "PresentNode.h"
 
-#include "../../../../Utils/DirectXUtils.h"
 #include "CommandQueue/CommandQueue.h"
 #include "Engine/Engine.h"
+#include "Window/Window.h"
 
 ORenderTargetBase* OPresentNode::Execute(ORenderTargetBase* RenderTarget)
 {

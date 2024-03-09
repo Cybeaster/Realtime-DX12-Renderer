@@ -1,8 +1,6 @@
 #include "UiManager.h"
 
 #include "Engine/Engine.h"
-#include "Logger.h"
-#include "RenderConstants.h"
 #include "UI/Effects/FogWidget.h"
 #include "UI/Effects/Light/LightWidget.h"
 #include "UI/Engine/Camera.h"
@@ -10,6 +8,7 @@
 #include "UI/Geometry/GeometryManager.h"
 #include "UI/Material/MaterialManager/MaterialManager.h"
 #include "UI/Material/TextureManager/TextureManager.h"
+#include "Window/Window.h"
 #include "backends/imgui_impl_dx12.h"
 #include "backends/imgui_impl_win32.h"
 

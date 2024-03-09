@@ -10,6 +10,10 @@ public:
 
 	void InitRenderObject() override;
 	void UpdatePass(const SPassConstantsData& Data) override;
+	string GetName() override
+	{
+		return "DynamicCubeMapTarget";
+	}
 
 private:
 	DirectX::XMFLOAT3 Position;

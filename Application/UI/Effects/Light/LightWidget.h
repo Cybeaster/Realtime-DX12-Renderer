@@ -1,5 +1,5 @@
 #pragma once
-#include "Light/Light.h"
+#include "DirectX/Light/Light.h"
 #include "UI/Widget.h"
 
 #include <DirectXMath.h>

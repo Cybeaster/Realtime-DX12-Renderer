@@ -1,19 +1,15 @@
 #pragma once
 
-#include "../../../Objects/Geometry/GPUWave/GpuWave.h"
-#include "../../../Objects/Geometry/Wave/Waves.h"
-#include "../../Window/Window.h"
-#include "../Test.h"
-#include "..\..\..\Utils\DirectXUtils.h"
-#include "..\..\..\Utils\Math.h"
 #include "Engine/UploadBuffer/UploadBuffer.h"
 #include "Events.h"
+#include "Test/Test.h"
 
 #include <DirectXMath.h>
 #include <d3d12.h>
 #include <windows.h>
 #include <wrl/client.h>
 
+class OGPUWave;
 class OTextureWaves : public OTest
 {
 	using Super = OTest;

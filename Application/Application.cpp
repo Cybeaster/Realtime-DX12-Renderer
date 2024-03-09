@@ -1,6 +1,5 @@
 #include "Application.h"
 
-#include "../Config/ConfigReader.h"
 #include "Camera/Camera.h"
 #include "Engine/Engine.h"
 #include "Exception.h"

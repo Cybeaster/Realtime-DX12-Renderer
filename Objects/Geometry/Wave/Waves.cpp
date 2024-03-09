@@ -1,6 +1,3 @@
-//
-// Created by Cybea on 27/12/2023.
-//
 
 #include "Waves.h"
 

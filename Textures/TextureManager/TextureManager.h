@@ -1,7 +1,7 @@
 #pragma once
-#include "../../Config/TexturesReader/TexturesParser.h"
-#include "../Texture.h"
-#include "Types.h"
+
+#include "Texture.h"
+#include "TexturesReader/TexturesParser.h"
 
 #include <unordered_map>
 #include <unordered_set>

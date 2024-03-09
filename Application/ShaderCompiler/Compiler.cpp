@@ -1,7 +1,6 @@
 
 #include "Compiler.h"
 
-#include "../../Utils/DirectXUtils.h"
 #include "Engine/Engine.h"
 #include "Engine/Shader/Shader.h"
 #include "Logger.h"

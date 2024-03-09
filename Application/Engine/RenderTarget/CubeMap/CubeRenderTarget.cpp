@@ -1,7 +1,6 @@
 
 #include "CubeRenderTarget.h"
 
-#include "../../../../Utils/Statics.h"
 #include "Engine/Engine.h"
 
 OCubeRenderTarget::OCubeRenderTarget(ID3D12Device* Device, int Width, int Height, DXGI_FORMAT Format, const DirectX::XMUINT2 Res)
@@ -42,19 +41,11 @@ void OCubeRenderTarget::BuildDepthStencilBuffer()
 	optClear.Format = SRenderConstants::DepthBufferFormat;
 	optClear.DepthStencil.Depth = 1.0f;
 	optClear.DepthStencil.Stencil = 0;
-	auto heapProp = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-	THROW_IF_FAILED(Device->CreateCommittedResource(
-	    &heapProp,
-	    D3D12_HEAP_FLAG_NONE,
-	    &depthStencilDesc,
-	    D3D12_RESOURCE_STATE_COMMON,
-	    &optClear,
-	    IID_PPV_ARGS(CubeDepthStencilBuffer.GetAddressOf())));
+	auto cmd = OEngine::Get()->GetCommandQueue()->GetCommandList().Get();
+	CubeDepthStencilBuffer = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_DEFAULT, depthStencilDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, cmd, &optClear);
+	Device->CreateDepthStencilView(CubeDepthStencilBuffer.Resource.Get(), nullptr, DSVHandle.CPUHandle);
 
-	Device->CreateDepthStencilView(CubeDepthStencilBuffer.Get(), nullptr, DSVHandle.CPUHandle);
-	Utils::ResourceBarrier(OEngine::Get()->GetCommandQueue()->GetCommandList().Get(), CubeDepthStencilBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 	OEngine::Get()->GetCommandQueue()->ExecuteCommandListAndWait();
-
 }
 
 void OCubeRenderTarget::BuildViewport()
@@ -114,13 +105,7 @@ void OCubeRenderTarget::BuildResource()
 	texDesc.SampleDesc.Quality = 0;
 	texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-	const auto defaultHeapProp = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-	THROW_IF_FAILED(Device->CreateCommittedResource(&defaultHeapProp,
-	                                                D3D12_HEAP_FLAG_NONE,
-	                                                &texDesc,
-	                                                D3D12_RESOURCE_STATE_GENERIC_READ,
-	                                                nullptr,
-	                                                IID_PPV_ARGS(RenderTarget.GetAddressOf())));
+	RenderTarget = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_GENERIC_READ);
 }
 
 void OCubeRenderTarget::BuildDescriptors()
@@ -132,7 +117,7 @@ void OCubeRenderTarget::BuildDescriptors()
 	srvDesc.TextureCube.MostDetailedMip = 0;
 	srvDesc.TextureCube.MipLevels = 1;
 	srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
-	Device->CreateShaderResourceView(RenderTarget.Get(), &srvDesc, SRVHandle.CPUHandle);
+	Device->CreateShaderResourceView(RenderTarget.Resource.Get(), &srvDesc, SRVHandle.CPUHandle);
 
 	for (int i = 0; i < GetNumRTVRequired(); i++)
 	{
@@ -149,6 +134,6 @@ void OCubeRenderTarget::BuildDescriptors()
 		rtvDesc.Texture2DArray.ArraySize = 1;
 
 		// Create RTV to ith cubemap face.
-		Device->CreateRenderTargetView(RenderTarget.Get(), &rtvDesc, RTVHandle[i].CPUHandle);
+		Device->CreateRenderTargetView(RenderTarget.Resource.Get(), &rtvDesc, RTVHandle[i].CPUHandle);
 	}
 }

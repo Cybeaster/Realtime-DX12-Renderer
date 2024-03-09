@@ -1,7 +1,5 @@
 #include "GraphicsPipeline.h"
 
-#include "../../Utils/EngineHelper.h"
-#include "ShaderTypes.h"
 
 void SPSOGraphicsDescription::BuildPipelineState(ID3D12Device* Device)
 {

@@ -1,17 +1,8 @@
 #include "TextureWaves.h"
 
-#include "../../../Materials/Material.h"
-#include "../../../Objects/GeomertryGenerator/GeometryGenerator.h"
-#include "../../../Utils/EngineHelper.h"
-#include "../../Engine/Engine.h"
-#include "../../Window/Window.h"
-#include "Application.h"
-#include "Camera/Camera.h"
-#include "RenderConstants.h"
-#include "RenderItem/RenderItem.h"
-#include "Settings.h"
+#include "EngineHelper.h"
+#include "Geometry/GPUWave/GpuWave.h"
 
-#include <DXHelper.h>
 #include <Timer/Timer.h>
 
 #include <array>
@@ -72,7 +63,7 @@ void OTextureWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandLis
 			// Offset to the CBV in the descriptor heap for this object and
 			// for this frame resource.
 			auto instanceBuffer = Engine->CurrentFrameResources->InstanceBuffer->GetResource();
-			auto location = instanceBuffer->GetGPUVirtualAddress() + renderItem->StartInstanceLocation * sizeof(SInstanceData);
+			auto location = instanceBuffer->Resource->GetGPUVirtualAddress() + renderItem->StartInstanceLocation * sizeof(SInstanceData);
 			CommandList->SetGraphicsRootShaderResourceView(0, location);
 			CommandList->DrawIndexedInstanced(
 			    renderItem->IndexCount,

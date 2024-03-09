@@ -1,5 +1,4 @@
 #pragma once
-#include "DXHelper.h"
 #include "Engine/RenderObject/RenderObject.h"
 #include "Engine/UploadBuffer/UploadBuffer.h"
 
@@ -32,11 +31,11 @@ public:
 	virtual void BuildDescriptors() = 0;
 	virtual void BuildResource() = 0;
 
-	virtual ID3D12Resource* GetResource() const = 0;
+	virtual SResourceInfo* GetResource() = 0;
 	uint32_t GetNumSRVRequired() const override;
 	uint32_t GetNumRTVRequired() override;
 	uint32_t GetNumDSVRequired() override;
-	void CopyTo(const ORenderTargetBase* Dest, const OCommandQueue* CommandQueue);
+	void CopyTo(ORenderTargetBase* Dest, const OCommandQueue* CommandQueue);
 	virtual SDescriptorPair GetSRV() const;
 	virtual SDescriptorPair GetRTV() const;
 	virtual SDescriptorPair GetDSV() const;
@@ -77,13 +76,17 @@ public:
 	void BuildDescriptors(IDescriptor* Descriptor) override;
 	void OnResize(UINT NewWidth, UINT NewHeight);
 	void InitRenderObject() override;
+	string GetName() override
+	{
+		return "OffscreenTexture";
+	}
 
 protected:
 	void BuildDescriptors() override;
 	void BuildResource() override;
 
 public:
-	ID3D12Resource* GetResource() const override;
+	SResourceInfo* GetResource() override;
 
 private:
 	SDescriptorPair SRVHandle;
@@ -91,5 +94,5 @@ private:
 	SDescriptorPair DSVHandle;
 
 	// Two for ping-ponging the textures.
-	ComPtr<ID3D12Resource> RenderTarget = nullptr;
+	SResourceInfo RenderTarget;
 };

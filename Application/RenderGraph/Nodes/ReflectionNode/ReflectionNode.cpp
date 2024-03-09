@@ -1,11 +1,9 @@
 
 #include "ReflectionNode.h"
-
-#include "../../../../Utils/EngineHelper.h"
 #include "Engine/Engine.h"
 ORenderTargetBase* OReflectionNode::Execute(ORenderTargetBase* RenderTarget)
 {
-	auto cube = OEngine::Get()->GetCubeRenderTarget();
+	/*auto cube = OEngine::Get()->GetCubeRenderTarget();
 	auto cmdList = CommandQueue->GetCommandList();
 	cube->SetViewport(CommandQueue);
 	Utils::ResourceBarrier(cmdList.Get(), cube->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -31,6 +29,6 @@ ORenderTargetBase* OReflectionNode::Execute(ORenderTargetBase* RenderTarget)
 	Utils::ResourceBarrier(cmdList.Get(), cube->GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ);
 	PSO->RootSignature->SetDescriptorTable("gCubeMap", cube->GetSRVHandle().GPUHandle, cmdList.Get());
 	OEngine::Get()->DrawRenderItems(SPSOType::Opaque, SRenderLayer::OpaqueDynamicReflections);
-	PSO->RootSignature->SetDescriptorTable("gCubeMap", GetSkyTextureSRV(), cmdList.Get());
+	PSO->RootSignature->SetDescriptorTable("gCubeMap", GetSkyTextureSRV(), cmdList.Get());*/
 	return RenderTarget;
 }

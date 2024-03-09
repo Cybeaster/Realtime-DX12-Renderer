@@ -1,5 +1,4 @@
 #pragma once
-#include "DXHelper.h"
 #include "Filters/FilterBase.h"
 class OSobelFilter : public OFilterBase
 {
@@ -18,8 +17,8 @@ public:
 	void BuildDescriptors() const override;
 	void BuildResource() override;
 
-	std::pair<bool, CD3DX12_GPU_DESCRIPTOR_HANDLE> Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO, CD3DX12_GPU_DESCRIPTOR_HANDLE Input) const;
-	std::pair<bool, CD3DX12_GPU_DESCRIPTOR_HANDLE> Execute( CD3DX12_GPU_DESCRIPTOR_HANDLE Input) const;
+	std::pair<bool, CD3DX12_GPU_DESCRIPTOR_HANDLE> Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO, CD3DX12_GPU_DESCRIPTOR_HANDLE Input);
+	std::pair<bool, CD3DX12_GPU_DESCRIPTOR_HANDLE> Execute(CD3DX12_GPU_DESCRIPTOR_HANDLE Input);
 
 	void BuildDescriptors(IDescriptor* Descriptor) override;
 
@@ -27,11 +26,15 @@ public:
 	{
 		bEnabled = bIsEnabled;
 	}
+	string GetName() override
+	{
+		return "SobelFilter";
+	}
 
 private:
 	SDescriptorPair SRVHandle;
 	SDescriptorPair UAVHandle;
 
-	ComPtr<ID3D12Resource> Output = nullptr;
+	SResourceInfo Output;
 	bool bEnabled = true;
 };

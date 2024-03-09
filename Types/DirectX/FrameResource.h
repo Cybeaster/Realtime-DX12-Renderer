@@ -12,7 +12,7 @@
 
 struct SFrameResource
 {
-	SFrameResource(ID3D12Device* Device, UINT PassCount, UINT ObjectCount, UINT MaterialCount);
+	SFrameResource(ID3D12Device* Device, UINT PassCount, UINT ObjectCount, UINT MaterialCount, IRenderObject* Owner);
 
 	SFrameResource(const SFrameResource&) = delete;
 
@@ -34,9 +34,11 @@ struct SFrameResource
 	// Fence value to mark commands up to this fence point. This lets us
 	// check if these frame resources are still in use by the GPU.
 	UINT64 Fence = 0;
+	IRenderObject* Owner = nullptr;
 };
 
-inline SFrameResource::SFrameResource(ID3D12Device* Device, UINT PassCount, UINT MaxInstanceCount, UINT MaterialCount)
+inline SFrameResource::SFrameResource(ID3D12Device* Device, UINT PassCount, UINT MaxInstanceCount, UINT MaterialCount, IRenderObject* Owner)
+    : Owner(Owner)
 {
 	THROW_IF_FAILED(Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&CmdListAlloc)));
 
@@ -45,11 +47,11 @@ inline SFrameResource::SFrameResource(ID3D12Device* Device, UINT PassCount, UINT
 		LOG(Engine, Warning, "MaxInstanceCount is 0");
 		return;
 	}
-	PassCB = make_unique<OUploadBuffer<SPassConstants>>(Device, PassCount, true);
-	InstanceBuffer = make_unique<OUploadBuffer<SInstanceData>>(Device, MaxInstanceCount, false);
+	PassCB = make_unique<OUploadBuffer<SPassConstants>>(Device, PassCount, true, Owner);
+	InstanceBuffer = make_unique<OUploadBuffer<SInstanceData>>(Device, MaxInstanceCount, false, Owner);
 	if (MaterialCount > 0)
 	{
-		MaterialBuffer = make_unique<OUploadBuffer<SMaterialData>>(Device, MaterialCount, false);
+		MaterialBuffer = make_unique<OUploadBuffer<SMaterialData>>(Device, MaterialCount, false, Owner);
 	}
 	else
 	{

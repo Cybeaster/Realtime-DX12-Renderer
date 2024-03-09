@@ -1,9 +1,8 @@
 #include "CommandQueue.h"
 
-#include "../../Utils/DirectXUtils.h"
+#include "DirectX/ShaderTypes.h"
 #include "Engine/RenderTarget/RenderTarget.h"
 #include "Logger.h"
-#include "ShaderTypes.h"
 
 #include <Exception.h>
 
@@ -138,13 +137,14 @@ void OCommandQueue::SetPipelineState(const SPSODescriptionBase* PSOInfo) const
 	CommandList->SetGraphicsRootSignature(PSOInfo->RootSignature->RootSignatureParams.RootSignature.Get());
 }
 
-void OCommandQueue::ResourceBarrier(const ORenderTargetBase* Resource, D3D12_RESOURCE_STATES StateBefore, D3D12_RESOURCE_STATES StateAfter) const
+void OCommandQueue::ResourceBarrier(ORenderTargetBase* Resource, D3D12_RESOURCE_STATES StateBefore, D3D12_RESOURCE_STATES StateAfter) const
 {
 	Utils::ResourceBarrier(CommandList.Get(), Resource->GetResource(), StateBefore, StateAfter);
 }
 
-void OCommandQueue::CopyResourceTo(const ORenderTargetBase* Dest, ORenderTargetBase* Src) const
+void OCommandQueue::CopyResourceTo(ORenderTargetBase* Dest, ORenderTargetBase* Src) const
 {
+	CommandList->CopyResource(Dest->GetResource()->Resource.Get(), Src->GetResource()->Resource.Get());
 }
 
 Microsoft::WRL::ComPtr<ID3D12CommandQueue> OCommandQueue::GetCommandQueue()

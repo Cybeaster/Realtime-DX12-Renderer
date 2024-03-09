@@ -1,8 +1,7 @@
 
 #include "MaterialManager.h"
 
-#include "../../../../Materials/MaterialManager/MaterialManager.h"
-#include "../../../../Utils/EngineHelper.h"
+#include "MaterialManager/MaterialManager.h"
 #include "imgui_internal.h"
 
 OMaterialManagerWidget::OMaterialManagerWidget(OMaterialManager* _MaterialManager)

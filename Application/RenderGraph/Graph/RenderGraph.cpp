@@ -15,6 +15,8 @@ ORenderGraph::ORenderGraph()
 void ORenderGraph::Initialize(OGraphicsPipelineManager* PipelineManager, OCommandQueue* OtherCommandQueue)
 {
 	this->PipelineManager = PipelineManager;
+	CommandQueue = OtherCommandQueue;
+
 	auto graph = Reader->LoadRenderGraph();
 	for (auto& node : graph)
 	{
@@ -33,6 +35,7 @@ void ORenderGraph::Execute()
 {
 	auto currentNode = Head;
 	ORenderTargetBase* texture = OEngine::Get()->GetOffscreenRT();
+	texture->PrepareRenderTarget(CommandQueue);
 	while (currentNode != nullptr)
 	{
 		LOG(Render, Log, "Executing node: {}", TEXT(currentNode->GetNodeInfo().Name));

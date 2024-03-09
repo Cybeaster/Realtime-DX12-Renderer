@@ -1,12 +1,9 @@
 #pragma once
-#include "../../Utils/Math.h"
-#include "../InputHandler/InputHandler.h"
 #include "Engine/RenderTarget/RenderTarget.h"
 #include "Events.h"
-#include "RenderConstants.h"
+#include "InputHandler/InputHandler.h"
 
 #include <DirectXMath.h>
-#include <Types.h>
 #include <d3d12.h>
 #include <dxgi1_5.h>
 #include <wrl.h>
@@ -53,8 +50,8 @@ public:
 	 * Get the render target view for the current back buffer.
 	 */
 	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView() const;
-	Microsoft::WRL::ComPtr<ID3D12Resource> GetCurrentBackBuffer() const;
-	Microsoft::WRL::ComPtr<ID3D12Resource> GetCurrentDepthStencilBuffer() const;
+	SResourceInfo* GetCurrentBackBuffer();
+	SResourceInfo* GetCurrentDepthStencilBuffer();
 	D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStensilView() const;
 
 	/**
@@ -93,7 +90,7 @@ public:
 
 	uint64_t FenceValues[SRenderConstants::RenderBuffersCount];
 
-	ComPtr<ID3D12Resource> DepthBuffer;
+	SResourceInfo DepthBuffer;
 	ComPtr<ID3D12DescriptorHeap> DSVHeap;
 	ComPtr<ID3D12DescriptorHeap> RTVHeap;
 
@@ -137,7 +134,12 @@ public:
 
 	uint32_t GetNumDSVRequired() override;
 	uint32_t GetNumRTVRequired() override;
-ID3D12Resource* GetResource() const override;
+	string GetName() override
+	{
+		return "Window";
+	}
+	SResourceInfo* GetResource() override;
+
 protected:
 	void BuildResource() override;
 	void BuildDescriptors(IDescriptor* Descriptor) override;
@@ -174,7 +176,7 @@ private:
 	uint64_t FrameCounter = 0;
 
 	ComPtr<IDXGISwapChain4> SwapChain;
-	ComPtr<ID3D12Resource> BackBuffers[SRenderConstants::RenderBuffersCount];
+	SResourceInfo BackBuffers[SRenderConstants::RenderBuffersCount];
 
 	SWindowInfo WindowInfo;
 

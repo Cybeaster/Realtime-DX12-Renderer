@@ -1,7 +1,5 @@
 
 #include "RenderItem.h"
-
-#include "FrameResource.h"
 void ORenderItem::BindResources(ID3D12GraphicsCommandList* CmdList, SFrameResource* Frame) const
 {
 	auto idxBufferView = Geometry->IndexBufferView();

@@ -1,6 +1,6 @@
 #pragma once
-#include "../ConfigReader.h"
-#include "ShaderTypes.h"
+#include "ConfigReader.h"
+#include "DirectX/ShaderTypes.h"
 
 class OPSOReader : public OConfigReader
 {

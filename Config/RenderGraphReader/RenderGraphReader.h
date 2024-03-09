@@ -1,6 +1,6 @@
 
 #pragma once
-#include "../ConfigReader.h"
+#include "ConfigReader.h"
 #include "RenderNodeInfo.h"
 class ORenderGraphReader : public OConfigReader
 {

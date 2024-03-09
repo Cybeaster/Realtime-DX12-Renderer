@@ -1,5 +1,5 @@
 #pragma once
-#include "../ConfigReader.h"
+#include "ConfigReader.h"
 #include "GraphicsPipeline/GraphicsPipeline.h"
 #include "Types.h"
 class OShaderReader : public OConfigReader

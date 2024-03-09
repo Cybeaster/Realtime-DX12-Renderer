@@ -1,5 +1,6 @@
 #include "DirectXUtils.h"
 
+#include "Engine/RenderObject/RenderObject.h"
 #include "Logger.h"
 
 UINT Utils::CalcBufferByteSize(const UINT ByteSize)
@@ -154,49 +155,37 @@ vector<CD3DX12_STATIC_SAMPLER_DESC> Utils::GetStaticSamplers()
 	//clang-format on
 }
 
-static map<ID3D12Resource*, D3D12_RESOURCE_STATES> ResourceStateMap = {};
-
-D3D12_RESOURCE_STATES Utils::ResourceBarrier(ID3D12GraphicsCommandList* CMDList, ID3D12Resource* Resource, D3D12_RESOURCE_STATES After)
+void Utils::ResourceBarrier(ID3D12GraphicsCommandList* List, SResourceInfo* Resource, D3D12_RESOURCE_STATES Before, D3D12_RESOURCE_STATES After)
 {
-	D3D12_RESOURCE_STATES localBefore = {};
-	if (ResourceStateMap.contains(Resource))
-	{
-		localBefore = ResourceStateMap[Resource];
-	}
-	ResourceStateMap[Resource] = After;
-
-	const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(Resource, localBefore, After);
-	CMDList->ResourceBarrier(1, &barrier);
-	return localBefore;
-}
-
-void Utils::ResourceBarrier(ID3D12GraphicsCommandList* CMDList, ID3D12Resource* Resource, D3D12_RESOURCE_STATES Before, D3D12_RESOURCE_STATES After)
-{
-	D3D12_RESOURCE_STATES localBefore = {};
-	if (ResourceStateMap.contains(Resource))
-	{
-		localBefore = ResourceStateMap[Resource];
-	}
-	else
-	{
-		localBefore = Before;
-	}
-
-	ResourceStateMap[Resource] = After;
+	D3D12_RESOURCE_STATES localBefore = Resource->CurrentState;
 
 	if (localBefore != Before)
 	{
-		LOG(Debug, Warning, "ResourceBarrier: Resource state mismatch on resource");
+		LOG(Debug, Warning, "ResourceBarrier: Resource state mismatch on resource {}!", TEXT(Resource->Context->GetName()));
 	}
 
 	if (localBefore == After)
 	{
-		LOG(Debug, Warning, "ResourceBarrier: Resource states must be different!");
+		LOG(Debug, Warning, "ResourceBarrier: Resource states must be different {}!", TEXT(Resource->Context->GetName()));
+		return;
+	}
+	Resource->CurrentState = After;
+
+	const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(Resource->Resource.Get(), localBefore, After);
+	List->ResourceBarrier(1, &barrier);
+}
+
+void Utils::ResourceBarrier(ID3D12GraphicsCommandList* List, SResourceInfo* Resource, D3D12_RESOURCE_STATES After)
+{
+	if (Resource->CurrentState == After)
+	{
+		LOG(Debug, Warning, "ResourceBarrier: Resource states must be different {}!", TEXT(Resource->Context->GetName()));
 		return;
 	}
 
-	const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(Resource, localBefore, After);
-	CMDList->ResourceBarrier(1, &barrier);
+	const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(Resource->Resource.Get(), Resource->CurrentState, After);
+	Resource->CurrentState = After;
+	List->ResourceBarrier(1, &barrier);
 }
 
 void Utils::BuildRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>& RootSignature, const D3D12_ROOT_SIGNATURE_DESC& Desc)
@@ -267,4 +256,25 @@ DXGI_FORMAT Utils::MaskToFormat(const uint32_t Mask)
 	default:
 		return DXGI_FORMAT_UNKNOWN;
 	}
+}
+SResourceInfo Utils::CreateResource(IRenderObject* Owner, ID3D12Device* Device, const D3D12_HEAP_TYPE HeapProperties, const D3D12_RESOURCE_DESC& Desc, const D3D12_RESOURCE_STATES InitialState, const D3D12_CLEAR_VALUE* ClearValue)
+{
+	SResourceInfo info{
+		.CurrentState = InitialState,
+		.Context = Owner
+	};
+	const auto defaultHeap = CD3DX12_HEAP_PROPERTIES(HeapProperties);
+	THROW_IF_FAILED(Device->CreateCommittedResource(&defaultHeap,
+	                                                D3D12_HEAP_FLAG_NONE,
+	                                                &Desc,
+	                                                InitialState,
+	                                                ClearValue,
+	                                                IID_PPV_ARGS(&info.Resource)));
+	return info;
+}
+SResourceInfo Utils::CreateResource(IRenderObject* Owner, ID3D12Device* Device, D3D12_HEAP_TYPE HeapProperties, const D3D12_RESOURCE_DESC& Desc, D3D12_RESOURCE_STATES InitialState, ID3D12GraphicsCommandList* CMDList, const D3D12_CLEAR_VALUE* ClearValue)
+{
+	auto resource = CreateResource(Owner, Device, HeapProperties, Desc, D3D12_RESOURCE_STATE_COMMON, ClearValue);
+	ResourceBarrier(CMDList, &resource, D3D12_RESOURCE_STATE_COMMON, InitialState);
+	return resource;
 }

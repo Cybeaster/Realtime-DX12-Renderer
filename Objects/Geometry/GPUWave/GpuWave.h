@@ -1,8 +1,6 @@
 #pragma once
-#include "../../../Materials/Material.h"
-#include "../../../Utils/EngineHelper.h"
-#include "DXHelper.h"
-#include "Engine/RenderObject/RenderObject.h"
+#include "EngineHelper.h"
+#include "Material.h"
 #include "Timer/Timer.h"
 class OGPUWave : public ORenderObjectBase
 {
@@ -56,6 +54,10 @@ public:
 
 	void Disturb(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO, UINT I, UINT J, float Magnitude);
 	void Update(const UpdateEventArgs& Event) override;
+	string GetName() override
+	{
+		return "GPUWave";
+	}
 
 private:
 	void Update(const STimer& Gt, ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO);
@@ -84,10 +86,10 @@ private:
 	SDescriptorPair NextSolUAVHandle;
 
 	// Two for ping-ponging the textures.
-	ComPtr<ID3D12Resource> PrevSol = nullptr;
-	ComPtr<ID3D12Resource> CurrSol = nullptr;
-	ComPtr<ID3D12Resource> NextSol = nullptr;
+	SResourceInfo PrevSol;
+	SResourceInfo CurrSol;
+	SResourceInfo NextSol;
 
-	ComPtr<ID3D12Resource> PrevUploadBuffer = nullptr;
-	ComPtr<ID3D12Resource> CurrUploadBuffer = nullptr;
+	SResourceInfo PrevUploadBuffer;
+	SResourceInfo CurrUploadBuffer;
 };

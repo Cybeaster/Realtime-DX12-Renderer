@@ -1,6 +1,6 @@
 #pragma once
-#include "..\..\Utils\Math.h"
 #include "Light/Light.h"
+#include "MathUtils.h"
 #include "RenderConstants.h"
 
 #include <DirectXMath.h>

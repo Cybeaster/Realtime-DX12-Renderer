@@ -1,8 +1,7 @@
 #pragma once
+#include "DirectX/DXHelper.h"
 #include "Engine/RenderTarget/RenderTarget.h"
-
-#include <DirectX/DXHelper.h>
-#include <Types.h>
+#include "Types.h"
 
 struct SPSODescriptionBase;
 struct SShaderPipelineDesc;
@@ -27,8 +26,8 @@ public:
 	void TryResetCommandList();
 	ComPtr<ID3D12Fence> GetFence() const;
 	void SetPipelineState(const SPSODescriptionBase* PSOInfo) const;
-	void ResourceBarrier(const ORenderTargetBase* Resource, D3D12_RESOURCE_STATES StateBefore, D3D12_RESOURCE_STATES StateAfter) const;
-	void CopyResourceTo(const ORenderTargetBase* Dest, ORenderTargetBase* Src) const;
+	void ResourceBarrier(ORenderTargetBase* Resource, D3D12_RESOURCE_STATES StateBefore, D3D12_RESOURCE_STATES StateAfter) const;
+	void CopyResourceTo(ORenderTargetBase* Dest, ORenderTargetBase* Src)const ;
 
 protected:
 	ComPtr<ID3D12CommandAllocator> CreateCommandAllocator();

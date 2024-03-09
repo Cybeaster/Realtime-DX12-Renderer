@@ -1,5 +1,5 @@
 #pragma once
-#include "../ConfigReader.h"
+#include "ConfigReader.h"
 
 struct STexture;
 class OTexturesParser : public OConfigReader

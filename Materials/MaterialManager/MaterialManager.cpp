@@ -1,11 +1,8 @@
 #include "MaterialManager.h"
 
-#include "../../Config/ConfigReader.h"
-#include "../../Textures/Texture.h"
-#include "../../Utils/EngineHelper.h"
 #include "Application.h"
+#include "EngineHelper.h"
 #include "Logger.h"
-#include "Settings.h"
 #include "TextureConstants.h"
 
 #include <future>

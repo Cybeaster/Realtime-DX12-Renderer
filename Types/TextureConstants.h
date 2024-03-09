@@ -1,6 +1,4 @@
 #pragma once
-#include "DirectX/MaterialData.h"
-#include "Types.h"
 
 #define STATIC_NAME(name) inline static const string name = #name
 

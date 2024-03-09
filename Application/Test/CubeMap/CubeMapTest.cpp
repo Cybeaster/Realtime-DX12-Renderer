@@ -1,11 +1,10 @@
-//
-// Created by Cybea on 21/02/2024.
-//
 
 #include "CubeMapTest.h"
 
-#include "../../../Objects/Geometry/GPUWave/GpuWave.h"
-#include "../../../Utils/EngineHelper.h"
+#include "EngineHelper.h"
+#include "Geometry/GPUWave/GpuWave.h"
+#include "Window/Window.h"
+
 bool OCubeMapTest::Initialize()
 {
 	OEngine::Get()->BuildCubeRenderTarget({ 0, 2, 0 });
@@ -38,7 +37,7 @@ void OCubeMapTest::DrawSceneToCubeMap()
 	cubeMap->SetViewport(OEngine::Get()->GetCommandQueue());
 	Utils::ResourceBarrier(cmdList.Get(), cubeMap->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	UINT passCBByteSize = Utils::CalcBufferByteSize(sizeof(SPassConstants));
-	auto resource = OEngine::Get()->CurrentFrameResources->PassCB->GetResource()->GetGPUVirtualAddress();
+	auto resource = OEngine::Get()->CurrentFrameResources->PassCB->GetResource()->Resource->GetGPUVirtualAddress();
 	for (size_t i = 0; i < cubeMap->GetNumRTVRequired(); i++)
 	{
 		auto& rtv = cubeMap->GetRTVHandle()[i];
@@ -69,7 +68,7 @@ void OCubeMapTest::OnRender(const UpdateEventArgs& Event)
 	GetEngine()->PrepareRenderTarget();
 
 	auto passCB = OEngine::Get()->CurrentFrameResources->PassCB->GetResource();
-	cmdList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
+	cmdList->SetGraphicsRootConstantBufferView(2, passCB->Resource->GetGPUVirtualAddress());
 
 	auto cubeMap = OEngine::Get()->GetCubeRenderTarget();
 	cmdList->SetGraphicsRootDescriptorTable(5, cubeMap->GetSRVHandle().GPUHandle);

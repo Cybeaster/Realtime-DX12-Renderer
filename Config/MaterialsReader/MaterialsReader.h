@@ -1,6 +1,7 @@
 #pragma once
-#include "../../Materials/Material.h"
-#include "../ConfigReader.h"
+
+#include "ConfigReader.h"
+#include "Material.h"
 
 #include <ranges>
 class OMaterialsConfigParser : public OConfigReader

@@ -1,7 +1,7 @@
 #include "GeometryGenerator.h"
 
-#include "../../Utils/Path.h"
 #include "Logger.h"
+#include "PathUtils.h"
 
 #include <fstream>
 

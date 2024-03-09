@@ -1,8 +1,8 @@
 #pragma once
 
 #include "../Textures/Texture.h"
+#include "DirectX/MaterialData.h"
 #include "DirectX/RenderConstants.h"
-#include "MaterialData.h"
 
 struct STexture;
 

@@ -8,12 +8,12 @@ public:
 
 	void BuildDescriptors(IDescriptor* Descriptor) override;
 
-	void OutputTo(ID3D12Resource* Destination) const;
+	void OutputTo(SResourceInfo* Destination) const;
 	void BuildDescriptors() const override;
 	void BuildResource() override;
 	void Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO,
-	             ID3D12Resource* Input) const;
-	void Execute(ID3D12Resource* Input) const;
+	             SResourceInfo*);
+	void Execute(SResourceInfo*);
 	uint32_t GetNumSRVRequired() const override
 	{
 		return 4;
@@ -31,6 +31,10 @@ public:
 	{
 		BlurCount = Value;
 	}
+	string GetName() override
+	{
+		return "BilateralBlur";
+	}
 
 private:
 	SDescriptorPair BlurOutputSrvHandle;
@@ -38,8 +42,8 @@ private:
 	SDescriptorPair BlurInputSrvHandle;
 	SDescriptorPair BlurInputUavHandle;
 
-	ComPtr<ID3D12Resource> InputTexture;
-	ComPtr<ID3D12Resource> OutputTexture;
+	SResourceInfo InputTexture;
+	SResourceInfo OutputTexture;
 
 	float SpatialSigma;
 	float IntensitySigma;

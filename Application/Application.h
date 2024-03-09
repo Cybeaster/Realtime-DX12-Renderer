@@ -1,8 +1,8 @@
 #pragma once
-
-#include "../Types/Path.h"
 #include "Engine/Engine.h"
+#include "Path.h"
 #include "Timer/Timer.h"
+#include "Window/Window.h"
 
 #include <filesystem>
 

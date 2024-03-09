@@ -24,7 +24,11 @@ public:
 	SDescriptorPair& GetDSVHandle() { return DSVHandle; }
 	SDescriptorPair& GetSRVHandle() { return SRVHandle; }
 	uint32_t GetNumPassesRequired() override;
-	ID3D12Resource* GetResource() const override { return RenderTarget.Get(); }
+	SResourceInfo* GetResource() override { return &RenderTarget; }
+	string GetName() override
+	{
+		return "CubeRenderTarget";
+	}
 
 protected:
 	DirectX::XMUINT2 Resolution;
@@ -34,8 +38,8 @@ private:
 	void BuildViewport();
 	void BuildResource() override;
 	void BuildDescriptors() override;
-	ComPtr<ID3D12Resource> RenderTarget = nullptr;
-	ComPtr<ID3D12Resource> CubeDepthStencilBuffer;
+	SResourceInfo RenderTarget;
+	SResourceInfo CubeDepthStencilBuffer;
 
 	SDescriptorPair SRVHandle;
 	SDescriptorPair DSVHandle;

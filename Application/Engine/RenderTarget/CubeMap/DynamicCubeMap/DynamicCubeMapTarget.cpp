@@ -1,6 +1,3 @@
-//
-// Created by Cybea on 21/02/2024.
-//
 
 #include "DynamicCubeMapTarget.h"
 

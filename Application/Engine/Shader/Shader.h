@@ -1,8 +1,6 @@
 #pragma once
-#include "DXHelper.h"
+#include "DirectX/ShaderTypes.h"
 #include "Logger.h"
-#include "ShaderTypes.h"
-#include "Types.h"
 
 #include <dxcapi.h>
 

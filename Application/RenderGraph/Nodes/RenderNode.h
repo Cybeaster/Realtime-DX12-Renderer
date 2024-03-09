@@ -1,10 +1,7 @@
 #pragma once
-#include "DXHelper.h"
-#include "RenderConstants.h"
+#include "DirectX/DXHelper.h"
 #include "RenderNodeInfo.h"
-#include "ShaderTypes.h"
-#include "Types.h"
-
+struct SPSODescriptionBase;
 class ORenderGraph;
 class ORenderTargetBase;
 class OCommandQueue;

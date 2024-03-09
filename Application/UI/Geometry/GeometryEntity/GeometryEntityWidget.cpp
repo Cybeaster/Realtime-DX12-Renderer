@@ -4,9 +4,8 @@
 
 #include "GeometryEntityWidget.h"
 
-#include "../../../../Utils/EngineHelper.h"
-#include "DXHelper.h"
 #include "Engine/Engine.h"
+#include "EngineHelper.h"
 #include "UI/Geometry/GeometryManager.h"
 #include "imgui.h"
 

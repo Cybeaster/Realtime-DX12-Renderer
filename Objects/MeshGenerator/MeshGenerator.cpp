@@ -1,15 +1,9 @@
-//
-// Created by Cybea on 08/02/2024.
-//
 
 #include "MeshGenerator.h"
 
-#include "../../Utils/DirectXUtils.h"
-#include "../../Utils/Math.h"
-#include "../MeshParser.h"
 #include "CommandQueue/CommandQueue.h"
+#include "DirectX/Vertex.h"
 #include "Logger.h"
-#include "Vertex.h"
 using namespace DirectX;
 using namespace Utils::Math;
 

@@ -11,7 +11,7 @@ public:
 	OBlurFilter(const OBlurFilter& rhs) = delete;
 	OBlurFilter& operator=(const OBlurFilter& rhs) = delete;
 
-	void OutputTo(ID3D12Resource* Destination) const;
+	void OutputTo(SResourceInfo* Destination);
 
 	void BuildDescriptors(IDescriptor* Descriptor) override;
 
@@ -19,7 +19,7 @@ public:
 	    ID3D12RootSignature* RootSignature,
 	    ID3D12PipelineState* HorizontalBlurPSO,
 	    ID3D12PipelineState* VerticalBlurPSO,
-	    ID3D12Resource* Input) const;
+	    SResourceInfo* Input);
 	uint32_t GetNumSRVRequired() const override
 	{
 		return 4;
@@ -29,6 +29,10 @@ public:
 	{
 		Sigma = InSigma;
 		BlurCount = InBlurCount;
+	}
+	string GetName() override
+	{
+		return "BlurFilter";
 	}
 
 private:
@@ -46,8 +50,8 @@ private:
 	SDescriptorPair SRV1Handle;
 	SDescriptorPair UAV1Handle;
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> BlurMap0 = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12Resource> BlurMap1 = nullptr;
+	SResourceInfo BlurMap0;
+	SResourceInfo BlurMap1;
 
 	float Sigma = 2.5;
 	uint32_t BlurCount = 1;

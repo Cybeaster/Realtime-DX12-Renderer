@@ -1,11 +1,10 @@
 #pragma once
-#include "../../../Utils/Statics.h"
-#include "../Types/DirectX/DXHelper.h"
+
+#include "DirectX/ObjectConstants.h"
 #include "Engine/UploadBuffer/UploadBuffer.h"
 #include "Events.h"
 #include "Logger.h"
-#include "ObjectConstants.h"
-#include "Timer/Timer.h"
+#include "Statics.h"
 
 struct IDescriptor
 {
@@ -155,6 +154,7 @@ public:
 	virtual void Update(const UpdateEventArgs& Event) {}
 	virtual TUUID GetID() { return {}; }
 	virtual void SetID(TUUID ID) {}
+	virtual string GetName() { return { "UNIMPLEMENTED" }; }
 };
 
 class ORenderObjectBase : public IRenderObject

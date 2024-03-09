@@ -4,8 +4,8 @@
 
 #include "RenderTarget.h"
 
-#include "../../../Utils/Statics.h"
 #include "Engine/Engine.h"
+#include "Window/Window.h"
 
 ORenderTargetBase::ORenderTargetBase(UINT Width, UINT Height)
     : Width(Width), Height(Height), Format(SRenderConstants::BackBufferFormat), Device(OEngine::Get()->GetDevice().Get())
@@ -25,10 +25,12 @@ uint32_t ORenderTargetBase::GetNumDSVRequired()
 {
 	return 1;
 }
-void ORenderTargetBase::CopyTo(const ORenderTargetBase* Dest, const OCommandQueue* CommandQueue)
+
+void ORenderTargetBase::CopyTo(ORenderTargetBase* Dest, const OCommandQueue* CommandQueue)
 {
 	CommandQueue->CopyResourceTo(Dest, this);
 }
+
 SDescriptorPair ORenderTargetBase::GetSRV() const
 {
 	LOG(Render, Error, "GetSRV not implemented")
@@ -63,13 +65,12 @@ void ORenderTargetBase::PrepareRenderTarget(OCommandQueue* CommandQueue)
 	{
 		return;
 	}
-
 	auto cmdList = CommandQueue->GetCommandList();
 	auto backbufferView = GetRTV().CPUHandle;
-	auto dsv = GetDSV().CPUHandle;
+	auto depthStencilView = OEngine::Get()->GetWindow()->GetDepthStensilView();
 	cmdList->ClearRenderTargetView(backbufferView, DirectX::Colors::LightSteelBlue, 0, nullptr);
-	cmdList->ClearDepthStencilView(GetDSV().CPUHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-	cmdList->OMSetRenderTargets(1, &backbufferView, true, &dsv);
+	cmdList->ClearDepthStencilView(depthStencilView, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+	cmdList->OMSetRenderTargets(1, &backbufferView, true, &depthStencilView);
 	Utils::ResourceBarrier(cmdList.Get(), GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	HasBeedPrepared = true;
 }
@@ -130,8 +131,8 @@ void OOffscreenTexture::BuildDescriptors()
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.MipLevels = 1;
 
-	Device->CreateShaderResourceView(RenderTarget.Get(), &srvDesc, SRVHandle.CPUHandle);
-	Device->CreateRenderTargetView(RenderTarget.Get(), nullptr, RTVHandle.CPUHandle);
+	Device->CreateShaderResourceView(RenderTarget.Resource.Get(), &srvDesc, SRVHandle.CPUHandle);
+	Device->CreateRenderTargetView(RenderTarget.Resource.Get(), nullptr, RTVHandle.CPUHandle);
 }
 
 void OOffscreenTexture::BuildResource()
@@ -150,15 +151,9 @@ void OOffscreenTexture::BuildResource()
 	texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
-	const auto defaultHeap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-	THROW_IF_FAILED(Device->CreateCommittedResource(&defaultHeap,
-	                                                D3D12_HEAP_FLAG_NONE,
-	                                                &texDesc,
-	                                                D3D12_RESOURCE_STATE_GENERIC_READ,
-	                                                nullptr,
-	                                                IID_PPV_ARGS(&RenderTarget)));
+	RenderTarget = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_DEFAULT, texDesc);
 }
-ID3D12Resource* OOffscreenTexture::GetResource() const
+SResourceInfo* OOffscreenTexture::GetResource()
 {
-	return RenderTarget.Get();
+	return &RenderTarget;
 }

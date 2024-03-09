@@ -1,18 +1,11 @@
-//
-// Created by Cybea on 02/12/2023.
-//
 
 #include "Window.h"
 
-#include "..\..\Utils\Math.h"
 #include "Application.h"
 #include "Camera/Camera.h"
 #include "Exception.h"
 #include "Logger.h"
-#include "RenderConstants.h"
 
-#include <DXHelper.h>
-#include <Types.h>
 #pragma optimize("", off)
 using namespace Microsoft::WRL;
 
@@ -93,14 +86,14 @@ D3D12_CPU_DESCRIPTOR_HANDLE OWindow::CurrentBackBufferView() const
 	                                     RTVDescriptorSize);
 }
 
-ComPtr<ID3D12Resource> OWindow::GetCurrentBackBuffer() const
+SResourceInfo* OWindow::GetCurrentBackBuffer()
 {
-	return BackBuffers[CurrentBackBufferIndex];
+	return &BackBuffers[CurrentBackBufferIndex];
 }
 
-Microsoft::WRL::ComPtr<ID3D12Resource> OWindow::GetCurrentDepthStencilBuffer() const
+SResourceInfo* OWindow::GetCurrentDepthStencilBuffer()
 {
-	return DepthBuffer;
+	return &DepthBuffer;
 }
 
 bool OWindow::IsVSync() const
@@ -361,7 +354,7 @@ void OWindow::ResetBuffers()
 		for (int i = 0; i < SRenderConstants::RenderBuffersCount; ++i)
 		{
 			// Flush any GPU commands that might be referencing the back buffers
-			BackBuffers[i].Reset();
+			BackBuffers[i].Resource.Reset();
 		}
 
 		THROW_IF_FAILED(SwapChain->ResizeBuffers(SRenderConstants::RenderBuffersCount, WindowInfo.ClientWidth, WindowInfo.ClientHeight, SRenderConstants::BackBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
@@ -392,9 +385,9 @@ uint32_t OWindow::GetNumRTVRequired()
 	return 2;
 }
 
-ID3D12Resource* OWindow::GetResource() const
+SResourceInfo* OWindow::GetResource()
 {
-	return GetCurrentBackBuffer().Get();
+	return GetCurrentBackBuffer();
 }
 
 float OWindow::GetLastXMousePos() const
@@ -475,8 +468,10 @@ void OWindow::UpdateRenderTargetViews()
 
 	for (int i = 0; i < SRenderConstants::RenderBuffersCount; i++)
 	{
-		THROW_IF_FAILED(SwapChain->GetBuffer(i, IID_PPV_ARGS(&BackBuffers[i])));
-		device->CreateRenderTargetView(BackBuffers[i].Get(), nullptr, rtvHandle);
+		THROW_IF_FAILED(SwapChain->GetBuffer(i, IID_PPV_ARGS(&BackBuffers[i].Resource)));
+		device->CreateRenderTargetView(BackBuffers[i].Resource.Get(), nullptr, rtvHandle);
+		BackBuffers[i].CurrentState = D3D12_RESOURCE_STATE_PRESENT;
+		BackBuffers[i].Context = this;
 		rtvHandle.Offset(RTVDescriptorSize);
 	}
 }
@@ -489,8 +484,9 @@ void OWindow::ResizeDepthBuffer()
 	auto list = engine->GetCommandQueue()->GetCommandList();
 	UINT quality;
 	auto mxaaEnabled = engine->GetMSAAState(quality);
-	DepthBuffer.Reset();
+	DepthBuffer.Resource.Reset();
 	const auto device = engine->GetDevice();
+
 	// Create the depth/stencil buffer and view.
 	D3D12_RESOURCE_DESC depthStencilDesc;
 	depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -499,30 +495,24 @@ void OWindow::ResizeDepthBuffer()
 	depthStencilDesc.Height = GetHeight();
 	depthStencilDesc.DepthOrArraySize = 1;
 	depthStencilDesc.MipLevels = 1;
-
-	// Correction 11/12/2016: SSAO chapter requires an SRV to the depth buffer to read from
-	// the depth buffer.  Therefore, because we need to create two views to the same resource:
-	//   1. SRV format: DXGI_FORMAT_R24_UNORM_X8_TYPELESS
-	//   2. DSV Format: DXGI_FORMAT_D24_UNORM_S8_UINT
-	// we need to create the depth buffer resource with a typeless format.
 	depthStencilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
 	depthStencilDesc.SampleDesc.Count = mxaaEnabled ? 4 : 1;
 	depthStencilDesc.SampleDesc.Quality = mxaaEnabled ? (quality - 1) : 0;
 	depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
-	auto defaultHeap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 	D3D12_CLEAR_VALUE optClear;
 	optClear.Format = SRenderConstants::DepthBufferFormat;
 	optClear.DepthStencil.Depth = 1.0f;
 	optClear.DepthStencil.Stencil = 0;
-	THROW_IF_FAILED(device->CreateCommittedResource(
-	    &defaultHeap,
-	    D3D12_HEAP_FLAG_NONE,
-	    &depthStencilDesc,
-	    D3D12_RESOURCE_STATE_COMMON,
-	    &optClear,
-	    IID_PPV_ARGS(DepthBuffer.GetAddressOf())));
+
+	DepthBuffer = Utils::CreateResource(this,
+	                                    device.Get(),
+	                                    D3D12_HEAP_TYPE_DEFAULT,
+	                                    depthStencilDesc,
+	                                    D3D12_RESOURCE_STATE_DEPTH_WRITE,
+	                                    engine->GetCommandQueue()->GetCommandList().Get(),
+	                                    &optClear);
 
 	// Create descriptor to mip level 0 of entire resource using the format of the resource.
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
@@ -530,9 +520,7 @@ void OWindow::ResizeDepthBuffer()
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 	dsvDesc.Format = SRenderConstants::DepthBufferFormat;
 	dsvDesc.Texture2D.MipSlice = 0;
-	device->CreateDepthStencilView(DepthBuffer.Get(), &dsvDesc, GetDepthStensilView());
-
-	TransitionResource(engine->GetCommandQueue()->GetCommandList(), DepthBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	device->CreateDepthStencilView(DepthBuffer.Resource.Get(), &dsvDesc, GetDepthStensilView());
 	engine->GetCommandQueue()->ExecuteCommandListAndWait();
 }
 

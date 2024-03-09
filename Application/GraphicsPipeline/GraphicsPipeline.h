@@ -1,14 +1,11 @@
 #pragma once
-#include "DXHelper.h"
+#include "DirectX/ShaderTypes.h"
 #include "Engine/Shader/Shader.h"
-#include "Types.h"
-
 
 class OGraphicsPipeline
 {
-public:
 private:
 	ComPtr<ID3D12PipelineState> PipelineState;
-	SShaderPipelineDesc PipelineInfo;
+	SShaderPipelineDesc PipelineInfo = {};
 	vector<OShader*> Shaders;
 };

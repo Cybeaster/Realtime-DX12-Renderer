@@ -1,10 +1,7 @@
 #pragma once
 #include "../../Materials/Material.h"
-#include "..\..\Utils\Math.h"
-#include "DXHelper.h"
-#include "InstanceData.h"
+#include "DirectX/InstanceData.h"
 #include "Logger.h"
-#include "RenderConstants.h"
 
 struct SFrameResource;
 struct ORenderItem

@@ -1,9 +1,9 @@
 #pragma once
-#include "../../Config/MaterialsReader/MaterialsReader.h"
-#include "../Material.h"
 #include "Async.h"
 #include "DirectX/MaterialData.h"
 #include "Events.h"
+#include "Material.h"
+#include "MaterialsReader/MaterialsReader.h"
 #include "Types.h"
 
 #include <unordered_map>

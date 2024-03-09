@@ -4,7 +4,7 @@
 
 #include "TextureManager.h"
 
-#include "../../../../Textures/TextureManager/TextureManager.h"
+#include "TextureManager/TextureManager.h"
 
 #include <ranges>
 OTextureManagerWidget::OTextureManagerWidget(OTextureManager* Other)

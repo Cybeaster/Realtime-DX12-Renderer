@@ -1,10 +1,9 @@
 #pragma once
-#include "../../../Config/RenderGraphReader/RenderGraphReader.h"
-#include "DXHelper.h"
 #include "RenderGraph/Nodes/RenderNode.h"
-#include "RenderNodeInfo.h"
+#include "RenderGraphReader/RenderGraphReader.h"
 #include "Types.h"
 
+struct SPSODescriptionBase;
 class OGraphicsPipelineManager;
 class ORenderGraph
 {
@@ -21,7 +20,7 @@ private:
 	unique_ptr<ORenderGraphReader> Reader;
 	vector<unique_ptr<ORenderNode>> Nodes;
 	ODependencyInfo Graph;
-	ORenderNode* Head;
+	ORenderNode* Head = nullptr;
 	OCommandQueue* CommandQueue;
 	OGraphicsPipelineManager* PipelineManager;
 };

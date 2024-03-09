@@ -4,8 +4,7 @@
 
 #include "MaterialPicker.h"
 
-#include "../../../Materials/MaterialManager/MaterialManager.h"
-
+#include <MaterialManager/MaterialManager.h>
 void OMaterialPickerWidget::Draw()
 {
 	auto name = string("Current material");

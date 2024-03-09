@@ -1,8 +1,7 @@
 #pragma once
-#include "../../Utils/Math.h"
+#include "MathUtils.h"
 
 #include <DirectXMath.h>
-
 struct SInstanceData
 {
 	DirectX::XMFLOAT4X4 World = Utils::Math::Identity4x4();

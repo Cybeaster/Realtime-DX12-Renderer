@@ -46,7 +46,7 @@ set(SRC_FILES
         Application/Engine/UploadBuffer/UploadBuffer.cpp
         Application/Engine/UploadBuffer/UploadBuffer.h
         Utils/DirectXUtils.h
-        Utils/Math.h
+        Utils/MathUtils.h
         Types/DirectX/FrameResource.h
         Types/DirectX/ObjectConstants.h
         Types/DirectX/RenderItem/RenderItem.h
@@ -66,7 +66,7 @@ set(SRC_FILES
         Textures/Texture.h
         Application/Test/TextureTest/TextureWaves.cpp
         Application/Test/TextureTest/TextureWaves.h
-        Utils/Path.h
+        Utils/PathUtils.h
         Application/Filters/Blur/BlurFilter.cpp
         Application/Filters/Blur/BlurFilter.h
         Types/DirectX/ShaderTypes.h
@@ -178,6 +178,8 @@ set(SRC_FILES
         Application/RenderGraph/Nodes/ReflectionNode/ReflectionNode.h
         Application/RenderGraph/Nodes/PostProcessNode/PostProcessNode.cpp
         Application/RenderGraph/Nodes/PostProcessNode/PostProcessNode.h
+        Types/DirectX/Resource.h
+        Types/DirectX/Resource.cpp
 
 )
 
@@ -220,7 +222,12 @@ target_include_directories(DXRenderer PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Externals/directx
         ${CMAKE_CURRENT_SOURCE_DIR}/Types
         ${CMAKE_CURRENT_SOURCE_DIR}/Application
-        ${CMAKE_CURRENT_SOURCE_DIR}/Types/DirectX
+        ${CMAKE_CURRENT_SOURCE_DIR}/Utils
+        ${CMAKE_CURRENT_SOURCE_DIR}/Objects
+        ${CMAKE_CURRENT_SOURCE_DIR}/Materials
+        ${CMAKE_CURRENT_SOURCE_DIR}/Textures
+        ${CMAKE_CURRENT_SOURCE_DIR}/Config
+
 )
 
 # Copy dxcompiler.dll to the output directory

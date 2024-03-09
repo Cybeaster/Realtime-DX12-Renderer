@@ -1,10 +1,11 @@
 #pragma once
-#include "ObjectConstants.h"
-#include "Types.h"
 
 #include <DirectXMath.h>
 #include <directxcollision.h>
 
+#include <tuple>
+
+struct SPassConstants;
 class OWindow;
 class OCamera
 {

@@ -1,5 +1,4 @@
 #pragma once
-#include "DXHelper.h"
 #include "Engine/Shader/Shader.h"
 #include "Types.h"
 

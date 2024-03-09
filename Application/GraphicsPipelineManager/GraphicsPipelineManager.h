@@ -1,7 +1,7 @@
 #pragma once
-#include "../../Config/PSOReader/PsoReader.h"
-#include "../../Config/ShaderReader/ShaderReader.h"
 #include "GraphicsPipeline/GraphicsPipeline.h"
+#include "PSOReader/PsoReader.h"
+#include "ShaderReader/ShaderReader.h"
 #include "Types.h"
 
 struct SRootSignature

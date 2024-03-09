@@ -1,22 +1,19 @@
 
 #include "Engine.h"
 
-#include "../Application.h"
-#include "../Test/Test.h"
-#include "../Window/Window.h"
+#include "Application.h"
 #include "Camera/Camera.h"
+#include "DirectX/FrameResource.h"
+#include "EngineHelper.h"
 #include "Exception.h"
 #include "Filters/BilateralBlur/BilateralBlurFilter.h"
 #include "Logger.h"
-#include "Settings.h"
+#include "MathUtils.h"
 #include "Test/TextureTest/TextureWaves.h"
 #include "TextureConstants.h"
 #include "UI/Effects/FogWidget.h"
 #include "UI/Effects/Light/LightWidget.h"
-#include "UI/Filters/FilterManager.h"
-#include "UI/Filters/GaussianBlurWidget.h"
-#include "UI/Filters/SobelFilterWidget.h"
-#include "UI/Geometry/GeometryManager.h"
+#include "Window/Window.h"
 
 #include <DirectXMath.h>
 
@@ -220,7 +217,7 @@ void OEngine::DrawRenderItemsImpl(const ComPtr<ID3D12GraphicsCommandList>& Comma
 			// Offset to the CBV in the descriptor heap for this object and
 			// for this frame resource.
 			auto instanceBuffer = Engine->CurrentFrameResources->InstanceBuffer->GetResource();
-			auto location = instanceBuffer->GetGPUVirtualAddress() + renderItem->StartInstanceLocation * sizeof(SInstanceData);
+			auto location = instanceBuffer->Resource->GetGPUVirtualAddress() + renderItem->StartInstanceLocation * sizeof(SInstanceData);
 			CommandList->SetGraphicsRootShaderResourceView(0, location);
 			CommandList->DrawIndexedInstanced(
 			    renderItem->IndexCount,
@@ -368,7 +365,8 @@ void OEngine::BuildFrameResource(uint32_t Count)
 		    Device.Get(),
 		    PassCount,
 		    CurrentNumInstances,
-		    CurrentNumMaterials));
+		    CurrentNumMaterials,
+		    GetWindow()));
 	}
 	OnFrameResourceChanged.Broadcast();
 }
@@ -393,8 +391,8 @@ void OEngine::OnPreRender()
 		Window->SetViewport(GetCommandQueue());
 
 		commandList->SetGraphicsRootSignature(DefaultRootSignature.Get());
-		commandList->SetGraphicsRootShaderResourceView(1, CurrentFrameResources->MaterialBuffer->GetResource()->GetGPUVirtualAddress());
-		commandList->SetGraphicsRootConstantBufferView(2, CurrentFrameResources->PassCB->GetResource()->GetGPUVirtualAddress());
+		commandList->SetGraphicsRootShaderResourceView(1, CurrentFrameResources->MaterialBuffer->GetResource()->Resource->GetGPUVirtualAddress());
+		commandList->SetGraphicsRootConstantBufferView(2, CurrentFrameResources->PassCB->GetResource()->Resource->GetGPUVirtualAddress());
 		commandList->SetGraphicsRootDescriptorTable(3, GetSRVHeap()->GetGPUDescriptorHandleForHeapStart());
 
 		auto rtv = GetOffscreenRT()->GetRTV().CPUHandle;
@@ -440,7 +438,7 @@ void OEngine::PrepareRenderTarget(ORenderTargetBase* RenderTarget)
 	cmdList->ClearRenderTargetView(backbufferView, DirectX::Colors::LightSteelBlue, 0, nullptr);
 	cmdList->ClearDepthStencilView(depthStencilView, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 	cmdList->OMSetRenderTargets(1, &backbufferView, true, &depthStencilView);
-	Utils::ResourceBarrier(cmdList.Get(), RenderTarget->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	Utils::ResourceBarrier(cmdList.Get(), RenderTarget->GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 }
 
 void OEngine::PrepareRenderTarget()
@@ -515,6 +513,7 @@ void OEngine::RemoveRenderObject(TUUID UUID)
 void OEngine::UpdateObjectCB() const
 {
 	auto res = CurrentFrameResources->PassCB.get();
+
 	int32_t idx = 1; //TODO calc frame resource automatically.
 	for (auto& val : RenderObjects | std::views::values)
 	{
@@ -559,16 +558,14 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 void OEngine::PostProcess(HWND Handler)
 {
 	const auto commandList = GetCommandQueue()->GetCommandList();
-	const auto backBuffer = GetWindowByHWND(Handler)->GetCurrentBackBuffer().Get();
+	const auto backBuffer = GetWindowByHWND(Handler)->GetCurrentBackBuffer();
 
 	Utils::ResourceBarrier(commandList.Get(),
 	                       OffscreenRT->GetResource(),
-	                       D3D12_RESOURCE_STATE_RENDER_TARGET,
 	                       D3D12_RESOURCE_STATE_GENERIC_READ);
 
 	Utils::ResourceBarrier(commandList.Get(),
 	                       backBuffer,
-	                       D3D12_RESOURCE_STATE_PRESENT,
 	                       D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 	auto rtv = Window->CurrentBackBufferView();
@@ -586,12 +583,10 @@ void OEngine::PostProcess(HWND Handler)
 	{
 		Utils::ResourceBarrier(commandList.Get(),
 		                       backBuffer,
-		                       D3D12_RESOURCE_STATE_RENDER_TARGET,
 		                       D3D12_RESOURCE_STATE_COPY_DEST);
-		commandList->CopyResource(backBuffer, OffscreenRT->GetResource());
+		GetCommandQueue()->CopyResourceTo(Window, OffscreenRT);
 		Utils::ResourceBarrier(commandList.Get(),
 		                       backBuffer,
-		                       D3D12_RESOURCE_STATE_COPY_DEST,
 		                       D3D12_RESOURCE_STATE_RENDER_TARGET);
 	}
 
@@ -610,7 +605,6 @@ void OEngine::PostProcess(HWND Handler)
 
 	Utils::ResourceBarrier(commandList.Get(),
 	                       backBuffer,
-	                       D3D12_RESOURCE_STATE_COPY_DEST,
 	                       D3D12_RESOURCE_STATE_RENDER_TARGET);
 }
 
@@ -633,8 +627,7 @@ void OEngine::OnPostRender()
 	UIManager->PostRender(GetCommandQueue()->GetCommandList().Get());
 
 	Utils::ResourceBarrier(GetCommandQueue()->GetCommandList().Get(),
-	                       Window->GetCurrentBackBuffer().Get(),
-	                       D3D12_RESOURCE_STATE_RENDER_TARGET,
+	                       Window->GetCurrentBackBuffer(),
 	                       D3D12_RESOURCE_STATE_PRESENT);
 
 	GetCommandQueue()->ExecuteCommandList();
