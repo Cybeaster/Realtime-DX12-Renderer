@@ -6,9 +6,9 @@
 #include "Window/Window.h"
 ORenderTargetBase* OPostProcessNode::Execute(ORenderTargetBase* RenderTarget)
 {
-	CommandQueue->CopyResourceTo(Window, RenderTarget);
+	/*CommandQueue->CopyResourceTo(Window, RenderTarget);
 	CommandQueue->ResourceBarrier(RenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
-	RenderTarget = CommandQueue->SetRenderTarget(Window);
+	RenderTarget = CommandQueue->SetRenderTarget(Window);*/
 
 	//DrawSobel(RenderTarget);
 	//DrawBlurFilter(RenderTarget);

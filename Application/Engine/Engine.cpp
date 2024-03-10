@@ -457,14 +457,14 @@ void OEngine::Render(UpdateEventArgs& Args)
 	Args.IsUIInfocus = UIManager->IsInFocus();
 
 	TickTimer = Args.Timer;
-	RenderGraph->Execute();
-	DirectCommandQueue->ResetQueueState();
-	/*OnPreRender();
+	//RenderGraph->Execute();
+	//DirectCommandQueue->ResetQueueState();
+	OnPreRender();
 	for (const auto val : Tests | std::views::values)
 	{
 		val->OnRender(Args);
 	}
-	OnPostRender();*/
+	OnPostRender();
 }
 
 void OEngine::Update(UpdateEventArgs& Args)
