@@ -2,6 +2,7 @@
 #include "RenderGraph.h"
 
 #include "Application.h"
+#include "RenderGraph/Nodes/DefaultNode/DefaultRenderNode.h"
 #include "RenderGraph/Nodes/PostProcessNode/PostProcessNode.h"
 #include "RenderGraph/Nodes/PresentNode/PresentNode.h"
 #include "RenderGraph/Nodes/ReflectionNode/ReflectionNode.h"
@@ -25,6 +26,7 @@ void ORenderGraph::Initialize(OGraphicsPipelineManager* PipelineManager, OComman
 		{
 			Head = newNode.get();
 		}
+		auto pso = PipelineManager->FindPSO(node.PSOType);
 		newNode->Initialize(node, OtherCommandQueue, this, PipelineManager->FindPSO(node.PSOType));
 		Graph[node.Name] = newNode.get();
 		Nodes.push_back(move(newNode));
@@ -34,11 +36,12 @@ void ORenderGraph::Initialize(OGraphicsPipelineManager* PipelineManager, OComman
 void ORenderGraph::Execute()
 {
 	auto currentNode = Head;
-	ORenderTargetBase* texture = OEngine::Get()->GetOffscreenRT();
-	texture->PrepareRenderTarget(CommandQueue);
+	ORenderTargetBase* texture = OEngine::Get()->GetWindow();
+	CommandQueue->SetRenderTarget(texture);
 	while (currentNode != nullptr)
 	{
 		LOG(Render, Log, "Executing node: {}", TEXT(currentNode->GetNodeInfo().Name));
+		currentNode->SetupCommonResources();
 		texture = currentNode->Execute(texture);
 		auto nextNode = Graph[currentNode->GetNextNode()];
 		currentNode = nextNode;
@@ -63,11 +66,11 @@ unique_ptr<ORenderNode> ORenderGraph::ResolveNodeType(const string& Type)
 	}
 	if (Type == "Opaque")
 	{
-		return make_unique<ORenderNode>();
+		return make_unique<ODefaultRenderNode>();
 	}
 	else if (Type == "Transparent")
 	{
-		return make_unique<ORenderNode>();
+		return make_unique<ODefaultRenderNode>();
 	}
 	else if (Type == "PostProcess")
 	{

@@ -4,4 +4,5 @@
 class OUIRenderNode : public ORenderNode
 {
 	ORenderTargetBase* Execute(ORenderTargetBase* RenderTarget) override;
+	void SetupCommonResources() override;
 };

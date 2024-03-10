@@ -46,6 +46,7 @@ struct SPSODescriptionBase
 	ComPtr<ID3D12PipelineState> PSO;
 
 	virtual void BuildPipelineState(ID3D12Device* Device) = 0;
+
 	virtual void SetVertexByteCode(const D3D12_SHADER_BYTECODE& ByteCode) {}
 	virtual void SetPixelByteCode(const D3D12_SHADER_BYTECODE& ByteCode) {}
 	virtual void SetGeometryByteCode(const D3D12_SHADER_BYTECODE& ByteCode) {}
@@ -106,17 +107,26 @@ struct SShaderPipelineDesc
 {
 	SShaderPipelineDesc() = default;
 	SShaderPipelineDesc(const SShaderPipelineDesc&) = default;
-
+	EPSOType Type;
 	string PipelineName = "NONE";
 	SRootSignatureParams RootSignatureParams;
 	D3D12_INPUT_LAYOUT_DESC InputLayoutDesc;
 	vector<string> InputElementSemanticNames;
 	vector<D3D12_INPUT_ELEMENT_DESC> InputElementDescs;
+
 	void AddRootParameter(const D3D12_ROOT_PARAMETER1& RootParameter, const wstring& Name);
 	bool TryAddRootParameterName(const wstring& Name);
 	void SetResourceCBView(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Handle, ID3D12GraphicsCommandList* CmdList);
 	void SetDescriptorTable(const string& Name, D3D12_GPU_DESCRIPTOR_HANDLE Handle, ID3D12GraphicsCommandList* CmdList);
+	void ActivateRootSignature(ID3D12GraphicsCommandList* CmdList) const;
+	unordered_map<wstring, uint32_t>& GetRootParamIndexMap();
+	int32_t GetIndexFromName(const string& Name);
+	SRootParameter& GetRootParameterFromName(const string& Name);
 	vector<D3D12_ROOT_PARAMETER1>& BuildParameterArray();
+
+private:
+	void SetComputeResourceCBView(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Handle, ID3D12GraphicsCommandList* CmdList);
+	void SetGraphicsResourceCBView(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Handle, ID3D12GraphicsCommandList* CmdList);
 };
 
 struct SPipelineStage

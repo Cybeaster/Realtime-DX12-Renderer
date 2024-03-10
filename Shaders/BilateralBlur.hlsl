@@ -13,12 +13,12 @@ cbuffer BufferConstants : register(b1) {
 }
 
 
-Texture2D InputTexture : register(t0);
-RWTexture2D<float4> OutputTexture : register(u0);
+Texture2D Input : register(t0);
+RWTexture2D<float4> Output : register(u0);
 
 [numthreads(N, N, 1)]
 void BilateralBlur(uint3 DispatchThreadID : SV_DispatchThreadID) {
-    float4 centerPixel = InputTexture[DispatchThreadID.xy];
+    float4 centerPixel = Input[DispatchThreadID.xy];
 
     float3 colorSum = float3(0,0,0);
     float weightSum = 0;
@@ -30,7 +30,7 @@ void BilateralBlur(uint3 DispatchThreadID : SV_DispatchThreadID) {
 
             // Check if samplePos is within texture bounds
             if (samplePos.x >= 0 && samplePos.y >= 0 && samplePos.x < TextureWidth && samplePos.y < TextureHeight) {
-                float4 samplePixel = InputTexture[samplePos];
+                float4 samplePixel = Input[samplePos];
 
                 // Calculate spatial weight
                 float spatialWeight = exp(-((x*x + y*y) / (2 * SpatialSigma * SpatialSigma)));
@@ -47,8 +47,8 @@ void BilateralBlur(uint3 DispatchThreadID : SV_DispatchThreadID) {
     }
 
     if (weightSum > 0) {
-        OutputTexture[DispatchThreadID.xy] = float4(colorSum / weightSum, 1);
+        Output[DispatchThreadID.xy] = float4(colorSum / weightSum, 1);
     } else {
-        OutputTexture[DispatchThreadID.xy] = centerPixel; // Or handle as needed
+        Output[DispatchThreadID.xy] = centerPixel; // Or handle as needed
     }
 }

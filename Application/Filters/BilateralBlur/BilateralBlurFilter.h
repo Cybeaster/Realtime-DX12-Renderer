@@ -4,6 +4,19 @@
 class OBilateralBlurFilter : public OFilterBase
 {
 public:
+	struct SBilateralBlur
+	{
+		float SpatialSigma;
+		float IntensitySigma;
+		int KernelRadius;
+	};
+
+	struct SBufferConstants
+	{
+		uint32_t TextureWidth;
+		uint32_t TextureHeight;
+	};
+
 	OBilateralBlurFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format);
 
 	void BuildDescriptors(IDescriptor* Descriptor) override;
@@ -11,8 +24,9 @@ public:
 	void OutputTo(SResourceInfo* Destination) const;
 	void BuildDescriptors() const override;
 	void BuildResource() override;
-	void Execute(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO,
+	void Execute(const SPSODescriptionBase* PSO,
 	             SResourceInfo*);
+
 	void Execute(SResourceInfo*);
 	uint32_t GetNumSRVRequired() const override
 	{
@@ -42,9 +56,11 @@ private:
 	SDescriptorPair BlurInputSrvHandle;
 	SDescriptorPair BlurInputUavHandle;
 
+	TUploadBuffer<SBilateralBlur> BlurBuffer;
+	TUploadBuffer<SBufferConstants> BufferConstants;
+
 	SResourceInfo InputTexture;
 	SResourceInfo OutputTexture;
-
 	float SpatialSigma;
 	float IntensitySigma;
 	int32_t BlurCount;

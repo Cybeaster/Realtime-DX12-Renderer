@@ -6,6 +6,10 @@
 static const int MaxBlurRadius = 5;
 #define CacheSize (N + 2 * MaxBlurRadius)
 
+
+Texture2D Input : register(t0);
+RWTexture2D<float4> Output : register(u0);
+
 cbuffer cbSettings : register(b0)
 {
 	// We cannot have an array entry in a constant buffer that gets mapped onto
@@ -26,9 +30,6 @@ cbuffer cbSettings : register(b0)
 	float w9;
 	float w10;
 };
-
-Texture2D Input : register(t0);
-RWTexture2D<float4> Output : register(u0);
 
 groupshared float4 Cache[CacheSize];
 

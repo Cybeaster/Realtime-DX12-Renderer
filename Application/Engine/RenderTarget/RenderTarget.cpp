@@ -52,27 +52,31 @@ void ORenderTargetBase::InitRenderObject()
 {
 }
 
-void ORenderTargetBase::SetViewport(OCommandQueue* CommandQueue) const
+void ORenderTargetBase::SetViewport(ID3D12GraphicsCommandList* List) const
 {
-	auto list = CommandQueue->GetCommandList();
-	list->RSSetViewports(1, &Viewport);
-	list->RSSetScissorRects(1, &ScissorRect);
+	List->RSSetViewports(1, &Viewport);
+	List->RSSetScissorRects(1, &ScissorRect);
 }
 
-void ORenderTargetBase::PrepareRenderTarget(OCommandQueue* CommandQueue)
+void ORenderTargetBase::PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList)
 {
 	if (HasBeedPrepared)
 	{
 		return;
 	}
-	auto cmdList = CommandQueue->GetCommandList();
+	SetViewport(CommandList);
 	auto backbufferView = GetRTV().CPUHandle;
-	auto depthStencilView = OEngine::Get()->GetWindow()->GetDepthStensilView();
-	cmdList->ClearRenderTargetView(backbufferView, DirectX::Colors::LightSteelBlue, 0, nullptr);
-	cmdList->ClearDepthStencilView(depthStencilView, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-	cmdList->OMSetRenderTargets(1, &backbufferView, true, &depthStencilView);
-	Utils::ResourceBarrier(cmdList.Get(), GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	auto depthStencilView = OEngine::Get()->GetWindow()->GetDepthStensilView(); // TODO: Get from the render target
+	Utils::ResourceBarrier(CommandList, GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+	CommandList->ClearRenderTargetView(backbufferView, DirectX::Colors::LightSteelBlue, 0, nullptr);
+	CommandList->ClearDepthStencilView(depthStencilView, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+	CommandList->OMSetRenderTargets(1, &backbufferView, true, &depthStencilView);
 	HasBeedPrepared = true;
+}
+
+void ORenderTargetBase::UnsetRenderTarget(OCommandQueue* CommandQueue)
+{
+	HasBeedPrepared = false;
 }
 
 TUUID ORenderTargetBase::GetID()

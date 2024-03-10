@@ -33,7 +33,7 @@ struct SRenderConstants
 
 	inline static constexpr SSphere Sphere;
 	inline static constexpr SCylinder Cylinder;
-	inline static const string DefaultSkyTexture = "Textures/grasscube1024";
+	inline static const string DefaultSkyTexture = "grasscube1024";
 };
 
 struct SRenderLayer

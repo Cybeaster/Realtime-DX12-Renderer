@@ -1,17 +1,6 @@
 {
   "Shaders": [
     {
-      "Path": "Shaders/BilateralBlur.hlsl",
-      "Name": "BilateralBlur",
-      "Pipeline": [
-        {
-          "Type": "Compute",
-          "EntryPoint": "BilateralBlur",
-          "TargetProfile": "cs_6_0"
-        }
-      ]
-    },
-    {
       "Path": "Shaders/Blur.hlsl",
       "Name": "VerticalBlur",
       "Pipeline": [
@@ -29,6 +18,17 @@
         {
           "Type": "Compute",
           "EntryPoint": "HorzBlurCS",
+          "TargetProfile": "cs_6_0"
+        }
+      ]
+    },
+    {
+      "Path": "Shaders/BilateralBlur.hlsl",
+      "Name": "BilateralBlur",
+      "Pipeline": [
+        {
+          "Type": "Compute",
+          "EntryPoint": "BilateralBlur",
           "TargetProfile": "cs_6_0"
         }
       ]

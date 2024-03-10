@@ -6,14 +6,12 @@
 #include "Window/Window.h"
 ORenderTargetBase* OPostProcessNode::Execute(ORenderTargetBase* RenderTarget)
 {
-	CommandQueue->ResourceBarrier(RenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ);
-	CommandQueue->ResourceBarrier(Window, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	auto rtv = Window->CurrentBackBufferView();
-	auto dsv = Window->GetDepthStensilView();
-	CommandQueue->GetCommandList()->OMSetRenderTargets(1, &rtv, true, &dsv);
+	CommandQueue->CopyResourceTo(Window, RenderTarget);
+	CommandQueue->ResourceBarrier(RenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
+	RenderTarget = CommandQueue->SetRenderTarget(Window);
 
-	DrawSobel(RenderTarget);
-	DrawBlurFilter(RenderTarget);
+	//DrawSobel(RenderTarget);
+	//DrawBlurFilter(RenderTarget);
 	return RenderTarget;
 }
 void OPostProcessNode::SetupCommonResources()
@@ -21,7 +19,7 @@ void OPostProcessNode::SetupCommonResources()
 	Window = OEngine::Get()->GetWindow();
 }
 
-void OPostProcessNode::DrawSobel(ORenderTargetBase*& RenderTarget)
+void OPostProcessNode::DrawSobel(ORenderTargetBase* RenderTarget)
 {
 	auto engine = OEngine::Get();
 	SetPSO(SPSOType::SobelFilter);
@@ -30,27 +28,19 @@ void OPostProcessNode::DrawSobel(ORenderTargetBase*& RenderTarget)
 	{
 		engine->DrawCompositeShader(result);
 	}
-	else
-	{
-		CommandQueue->CopyResourceTo(Window, RenderTarget);
-	}
-	RenderTarget = Window;
 }
 
 void OPostProcessNode::DrawBlurFilter(ORenderTargetBase* RenderTarget)
 {
-	auto horizontal = FindPSOInfo(SPSOType::HorizontalBlur);
-	auto vertical = FindPSOInfo(SPSOType::VerticalBlur);
 	auto engine = OEngine::Get();
-	engine->GetBlurFilter()->Execute(horizontal->RootSignature->RootSignatureParams.RootSignature.Get(),
-	                                 horizontal->PSO.Get(),
-	                                 vertical->PSO.Get(),
-	                                 RenderTarget->GetResource());
+	engine->GetBlurFilter()->Execute(
+	    FindPSOInfo(SPSOType::HorizontalBlur),
+	    FindPSOInfo(SPSOType::VerticalBlur),
+	    RenderTarget->GetResource());
 	engine->GetBlurFilter()->OutputTo(RenderTarget->GetResource());
 
 	SetPSO(SPSOType::BilateralBlur);
-	engine->GetBilateralBlurFilter()->Execute(RenderTarget->GetResource());
-
+	engine->GetBilateralBlurFilter()->Execute(FindPSOInfo(SPSOType::BilateralBlur), RenderTarget->GetResource());
 	engine->GetBilateralBlurFilter()->OutputTo(RenderTarget->GetResource());
 }
 

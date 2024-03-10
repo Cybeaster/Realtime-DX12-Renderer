@@ -34,7 +34,7 @@ void OCubeMapTest::DrawSceneToCubeMap()
 	auto cubeMap = OEngine::Get()->GetCubeRenderTarget();
 
 	cmdList->SetGraphicsRootDescriptorTable(5, OEngine::Get()->GetSRVDescHandleForTexture(FindTextureByName("grasscube1024")));
-	cubeMap->SetViewport(OEngine::Get()->GetCommandQueue());
+	cubeMap->SetViewport(OEngine::Get()->GetCommandQueue()->GetCommandList().Get());
 	Utils::ResourceBarrier(cmdList.Get(), cubeMap->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	UINT passCBByteSize = Utils::CalcBufferByteSize(sizeof(SPassConstants));
 	auto resource = OEngine::Get()->CurrentFrameResources->PassCB->GetResource()->Resource->GetGPUVirtualAddress();
@@ -64,7 +64,7 @@ void OCubeMapTest::OnRender(const UpdateEventArgs& Event)
 	cmdList->SetGraphicsRootDescriptorTable(4, Waves->GetDisplacementMapHandle());
 
 	DrawSceneToCubeMap();
-	OEngine::Get()->GetWindow()->SetViewport(OEngine::Get()->GetCommandQueue());
+	OEngine::Get()->GetWindow()->SetViewport(OEngine::Get()->GetCommandQueue()->GetCommandList().Get());
 	GetEngine()->PrepareRenderTarget();
 
 	auto passCB = OEngine::Get()->CurrentFrameResources->PassCB->GetResource();

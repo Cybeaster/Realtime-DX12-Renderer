@@ -250,7 +250,7 @@ public:
 	ODynamicCubeMapRenderTarget* GetCubeRenderTarget() const;
 	ODynamicCubeMapRenderTarget* BuildCubeRenderTarget(DirectX::XMFLOAT3 Center);
 	void DrawRenderItems(string PSOType, string RenderLayer);
-	void DrawRenderItems(ID3D12PipelineState* State, string RenderLayer);
+	void DrawRenderItems(SShaderPipelineDesc* Desc, const string& RenderLayer);
 
 	void UpdateMaterialCB() const;
 	void UpdateObjectCB() const;
@@ -259,7 +259,7 @@ public:
 	OUIManager* GetUIManager() const;
 
 protected:
-	void DrawRenderItemsImpl(const ComPtr<ID3D12GraphicsCommandList>& CommandList, const vector<ORenderItem*>& RenderItems);
+	void DrawRenderItemsImpl(SShaderPipelineDesc* Desc, const vector<ORenderItem*>& RenderItems);
 	template<typename T, typename... Args>
 	TUUID BuildRenderObjectImpl(Args&&... Params);
 

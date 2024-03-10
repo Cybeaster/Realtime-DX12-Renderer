@@ -4,6 +4,23 @@
 #include <Types.h>
 #include <d3dx12.h>
 #include <wrl/client.h>
+
+struct SConstantBlurSettings
+{
+	int BlurRadius;
+	float w0;
+	float w1;
+	float w2;
+	float w3;
+	float w4;
+	float w5;
+	float w6;
+	float w7;
+	float w8;
+	float w9;
+	float w10;
+};
+
 class OBlurFilter : public OFilterBase
 {
 public:
@@ -16,9 +33,8 @@ public:
 	void BuildDescriptors(IDescriptor* Descriptor) override;
 
 	void Execute(
-	    ID3D12RootSignature* RootSignature,
-	    ID3D12PipelineState* HorizontalBlurPSO,
-	    ID3D12PipelineState* VerticalBlurPSO,
+	    const SPSODescriptionBase* HorizontalBlurPSO,
+	    const SPSODescriptionBase* VerticalBlurPSO,
 	    SResourceInfo* Input);
 	uint32_t GetNumSRVRequired() const override
 	{
@@ -52,6 +68,7 @@ private:
 
 	SResourceInfo BlurMap0;
 	SResourceInfo BlurMap1;
+	unique_ptr<OUploadBuffer<SConstantBlurSettings>> Buffer;
 
 	float Sigma = 2.5;
 	uint32_t BlurCount = 1;

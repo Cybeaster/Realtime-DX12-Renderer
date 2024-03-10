@@ -180,6 +180,8 @@ set(SRC_FILES
         Application/RenderGraph/Nodes/PostProcessNode/PostProcessNode.h
         Types/DirectX/Resource.h
         Types/DirectX/Resource.cpp
+        Application/RenderGraph/Nodes/DefaultNode/DefaultRenderNode.cpp
+        Application/RenderGraph/Nodes/DefaultNode/DefaultRenderNode.h
 
 )
 

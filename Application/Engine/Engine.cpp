@@ -148,13 +148,13 @@ void OEngine::DrawRenderItems(string PSOType, string RenderLayer)
 	const auto commandList = GetCommandQueue()->GetCommandList();
 	const auto& renderItems = GetRenderItems(RenderLayer);
 	SetPipelineState(PSOType);
-	DrawRenderItemsImpl(commandList, renderItems);
+	//
 }
 
-void OEngine::DrawRenderItems(ID3D12PipelineState* State, string RenderLayer)
+void OEngine::DrawRenderItems(SShaderPipelineDesc* Desc, const string& RenderLayer)
 {
-	auto cmd = GetCommandQueue()->GetCommandList();
 	auto renderItems = GetRenderItems(RenderLayer);
+	DrawRenderItemsImpl(Desc, renderItems);
 }
 
 void OEngine::UpdateMaterialCB() const
@@ -201,8 +201,9 @@ void OEngine::UpdateMaterialCB() const
 	}
 }
 
-void OEngine::DrawRenderItemsImpl(const ComPtr<ID3D12GraphicsCommandList>& CommandList, const vector<ORenderItem*>& RenderItems)
+void OEngine::DrawRenderItemsImpl(SShaderPipelineDesc* Description, const vector<ORenderItem*>& RenderItems)
 {
+	auto cmd = GetCommandQueue()->GetCommandList();
 	for (size_t i = 0; i < RenderItems.size(); i++)
 	{
 		const auto renderItem = RenderItems[i];
@@ -212,14 +213,11 @@ void OEngine::DrawRenderItemsImpl(const ComPtr<ID3D12GraphicsCommandList>& Comma
 		}
 		if (!renderItem->Instances.empty() && renderItem->Geometry)
 		{
-			renderItem->BindResources(CommandList.Get(), Engine->CurrentFrameResources);
-
-			// Offset to the CBV in the descriptor heap for this object and
-			// for this frame resource.
+			renderItem->BindResources(cmd.Get(), Engine->CurrentFrameResources);
 			auto instanceBuffer = Engine->CurrentFrameResources->InstanceBuffer->GetResource();
 			auto location = instanceBuffer->Resource->GetGPUVirtualAddress() + renderItem->StartInstanceLocation * sizeof(SInstanceData);
-			CommandList->SetGraphicsRootShaderResourceView(0, location);
-			CommandList->DrawIndexedInstanced(
+			Description->SetResourceCBView("gInstanceData", location, cmd.Get());
+			cmd->DrawIndexedInstanced(
 			    renderItem->IndexCount,
 			    renderItem->VisibleInstanceCount,
 			    renderItem->StartIndexLocation,
@@ -388,7 +386,7 @@ void OEngine::OnPreRender()
 	if (SRVDescriptorHeap)
 	{
 		const auto commandList = GetCommandQueue()->GetCommandList();
-		Window->SetViewport(GetCommandQueue());
+		Window->SetViewport(commandList.Get());
 
 		commandList->SetGraphicsRootSignature(DefaultRootSignature.Get());
 		commandList->SetGraphicsRootShaderResourceView(1, CurrentFrameResources->MaterialBuffer->GetResource()->Resource->GetGPUVirtualAddress());
@@ -397,7 +395,7 @@ void OEngine::OnPreRender()
 
 		auto rtv = GetOffscreenRT()->GetRTV().CPUHandle;
 		auto dsv = GetWindow()->GetDepthStensilView();
-		Utils::ResourceBarrier(commandList.Get(), GetOffscreenRT()->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		Utils::ResourceBarrier(commandList.Get(), GetOffscreenRT()->GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 		// Clear the back buffer and depth buffer.
 		commandList->ClearRenderTargetView(rtv, reinterpret_cast<float*>(&MainPassCB.FogColor), 0, nullptr);
@@ -405,8 +403,6 @@ void OEngine::OnPreRender()
 
 		// Specify the buffers we are going to render to.
 		commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
-
-		commandList->SetGraphicsRootSignature(DefaultRootSignature.Get());
 	}
 
 	/*
@@ -461,12 +457,14 @@ void OEngine::Render(UpdateEventArgs& Args)
 	Args.IsUIInfocus = UIManager->IsInFocus();
 
 	TickTimer = Args.Timer;
-	OnPreRender();
+	RenderGraph->Execute();
+	DirectCommandQueue->ResetQueueState();
+	/*OnPreRender();
 	for (const auto val : Tests | std::views::values)
 	{
 		val->OnRender(Args);
 	}
-	OnPostRender();
+	OnPostRender();*/
 }
 
 void OEngine::Update(UpdateEventArgs& Args)
@@ -590,16 +588,16 @@ void OEngine::PostProcess(HWND Handler)
 		                       D3D12_RESOURCE_STATE_RENDER_TARGET);
 	}
 
-	GetBlurFilter()->Execute(BlurRootSignature.Get(),
+	/*GetBlurFilter()->Execute(BlurRootSignature.Get(),
 	                         PSOs[SPSOType::HorizontalBlur].Get(),
 	                         PSOs[SPSOType::VerticalBlur].Get(),
-	                         backBuffer);
+	                         backBuffer);*/
 
 	GetBlurFilter()->OutputTo(backBuffer);
 
-	GetBilateralBlurFilter()->Execute(BilateralBlurRootSignature.Get(),
+	/*GetBilateralBlurFilter()->Execute(BilateralBlurRootSignature.Get(),
 	                                  PSOs[SPSOType::BilateralBlur].Get(),
-	                                  backBuffer);
+	                                  backBuffer);*/
 
 	GetBilateralBlurFilter()->OutputTo(backBuffer);
 

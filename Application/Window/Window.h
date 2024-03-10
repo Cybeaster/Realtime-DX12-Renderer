@@ -134,10 +134,8 @@ public:
 
 	uint32_t GetNumDSVRequired() override;
 	uint32_t GetNumRTVRequired() override;
-	string GetName() override
-	{
-		return "Window";
-	}
+	SDescriptorPair GetRTV() const override;
+	string GetName() override;
 	SResourceInfo* GetResource() override;
 
 protected:

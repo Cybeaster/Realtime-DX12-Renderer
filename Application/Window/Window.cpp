@@ -384,6 +384,17 @@ uint32_t OWindow::GetNumRTVRequired()
 {
 	return 2;
 }
+SDescriptorPair OWindow::GetRTV() const
+{
+	SDescriptorPair pair;
+	pair.CPUHandle = CurrentBackBufferView();
+
+	return pair; // TODO - return the correct RTV
+}
+string OWindow::GetName()
+{
+	return "Window";
+}
 
 SResourceInfo* OWindow::GetResource()
 {

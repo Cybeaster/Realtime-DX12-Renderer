@@ -1,10 +1,12 @@
 #include "BlurFilter.h"
 
+#include "DirectX/ShaderTypes.h"
 #include "Logger.h"
 
 OBlurFilter::OBlurFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format)
     : OFilterBase(Device, List, Width, Height, Format)
 {
+	Buffer = make_unique<OUploadBuffer<SConstantBlurSettings>>(Device, 1, true, this);
 }
 
 void OBlurFilter::OutputTo(SResourceInfo* Destination)
@@ -71,19 +73,30 @@ void OBlurFilter::BuildResource()
 }
 
 void OBlurFilter::Execute(
-    ID3D12RootSignature* RootSignature,
-    ID3D12PipelineState* HorizontalBlurPSO,
-    ID3D12PipelineState* VerticalBlurPSO,
+    const SPSODescriptionBase* HorizontalBlurPSO,
+    const SPSODescriptionBase* VerticalBlurPSO,
     SResourceInfo* Input)
 {
 	using namespace Utils;
 	const auto weights = CalcGaussWeights(Sigma);
 	const auto blurRadius = static_cast<int32_t>(weights.size() / 2);
+	Buffer->CopyData(0,
+	                 { blurRadius,
+	                   weights[0],
+	                   weights[1],
+	                   weights[2],
+	                   weights[3],
+	                   weights[4],
+	                   weights[5],
+	                   weights[6],
+	                   weights[7],
+	                   weights[8],
+	                   weights[9],
+	                   weights[10] });
+	auto rootSig = VerticalBlurPSO->RootSignature;
 
-	CMDList->SetComputeRootSignature(RootSignature);
-
-	CMDList->SetComputeRoot32BitConstants(0, 1, &blurRadius, 0);
-	CMDList->SetComputeRoot32BitConstants(0, static_cast<UINT>(weights.size()), weights.data(), 1);
+	rootSig->ActivateRootSignature(CMDList);
+	rootSig->SetResourceCBView("cbSettings", Buffer->GetResource()->Resource->GetGPUVirtualAddress(), CMDList);
 
 	ResourceBarrier(CMDList, Input, D3D12_RESOURCE_STATE_COPY_SOURCE);
 	ResourceBarrier(CMDList, &BlurMap0, D3D12_RESOURCE_STATE_COPY_DEST);
@@ -96,9 +109,9 @@ void OBlurFilter::Execute(
 	for (int i = 0; i < BlurCount; i++)
 	{
 		//Horizontal blur
-		CMDList->SetPipelineState(HorizontalBlurPSO);
-		CMDList->SetComputeRootDescriptorTable(1, SRV0Handle.GPUHandle);
-		CMDList->SetComputeRootDescriptorTable(2, UAV1Handle.GPUHandle);
+		CMDList->SetPipelineState(HorizontalBlurPSO->PSO.Get());
+		rootSig->SetDescriptorTable("Input", SRV0Handle.GPUHandle, CMDList);
+		rootSig->SetDescriptorTable("Output", UAV1Handle.GPUHandle, CMDList);
 
 		// How many groups do we need to dispatch to cover a row of pixels, where each
 		// group covers 256 pixels (the 256 is defined in the ComputeShader).
@@ -110,9 +123,9 @@ void OBlurFilter::Execute(
 		ResourceBarrier(CMDList, &BlurMap1, D3D12_RESOURCE_STATE_GENERIC_READ);
 
 		// vertical BLur
-		CMDList->SetPipelineState(VerticalBlurPSO);
-		CMDList->SetComputeRootDescriptorTable(1, SRV1Handle.GPUHandle);
-		CMDList->SetComputeRootDescriptorTable(2, UAV0Handle.GPUHandle);
+		CMDList->SetPipelineState(VerticalBlurPSO->PSO.Get());
+		rootSig->SetDescriptorTable("Input", SRV1Handle.GPUHandle, CMDList);
+		rootSig->SetDescriptorTable("Output", UAV0Handle.GPUHandle, CMDList);
 
 		// How many groups do we need to dispatch to cover a row of pixels, where each
 		// group covers 256 pixels (the 256 is defined in the ComputeShader).
@@ -140,7 +153,7 @@ vector<float> OBlurFilter::CalcGaussWeights(float Sigma) const
 	}
 
 	vector<float> weights;
-	weights.resize(2 * blurRadius + 1);
+	weights.resize(11);
 	float weightSum = 0.0f;
 
 	for (int i = -blurRadius; i <= blurRadius; ++i)

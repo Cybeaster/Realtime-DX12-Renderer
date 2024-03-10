@@ -130,8 +130,13 @@ Microsoft::WRL::ComPtr<ID3D12Fence> OCommandQueue::GetFence() const
 	return Fence;
 }
 
-void OCommandQueue::SetPipelineState(const SPSODescriptionBase* PSOInfo) const
+void OCommandQueue::SetPipelineState(const SPSODescriptionBase* PSOInfo)
 {
+	if (CurrentPSO == PSOInfo->Name)
+	{
+		return;
+	}
+	CurrentPSO = PSOInfo->Name;
 	LOG(Engine, Log, "Setting pipeline state for PSO: {}", TEXT(PSOInfo->Name));
 	CommandList->SetPipelineState(PSOInfo->PSO.Get());
 	CommandList->SetGraphicsRootSignature(PSOInfo->RootSignature->RootSignatureParams.RootSignature.Get());
@@ -142,9 +147,41 @@ void OCommandQueue::ResourceBarrier(ORenderTargetBase* Resource, D3D12_RESOURCE_
 	Utils::ResourceBarrier(CommandList.Get(), Resource->GetResource(), StateBefore, StateAfter);
 }
 
+void OCommandQueue::ResourceBarrier(ORenderTargetBase* Resource, D3D12_RESOURCE_STATES StateAfter) const
+{
+	Utils::ResourceBarrier(CommandList.Get(), Resource->GetResource(), StateAfter);
+}
+
 void OCommandQueue::CopyResourceTo(ORenderTargetBase* Dest, ORenderTargetBase* Src) const
 {
+	if (Dest == Src)
+	{
+		LOG(Engine, Warning, "Source and destination are the same!");
+		return;
+	}
+
+	ResourceBarrier(Dest, D3D12_RESOURCE_STATE_COPY_DEST);
+	ResourceBarrier(Src, D3D12_RESOURCE_STATE_COPY_SOURCE);
 	CommandList->CopyResource(Dest->GetResource()->Resource.Get(), Src->GetResource()->Resource.Get());
+	ResourceBarrier(Dest, D3D12_RESOURCE_STATE_RENDER_TARGET);
+}
+
+ORenderTargetBase* OCommandQueue::SetRenderTarget(ORenderTargetBase* RenderTarget)
+{
+	if (CurrentRenderTarget)
+	{
+		CurrentRenderTarget->UnsetRenderTarget(this);
+	}
+	RenderTarget->PrepareRenderTarget(CommandList.Get());
+	CurrentRenderTarget = RenderTarget;
+	return RenderTarget;
+}
+
+void OCommandQueue::ResetQueueState()
+{
+	CurrentRenderTarget->UnsetRenderTarget(this);
+	CurrentRenderTarget = nullptr;
+	CurrentPSO = "";
 }
 
 Microsoft::WRL::ComPtr<ID3D12CommandQueue> OCommandQueue::GetCommandQueue()

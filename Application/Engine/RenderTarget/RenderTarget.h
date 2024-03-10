@@ -43,8 +43,9 @@ public:
 
 	TUUID GetID() override;
 	void SetID(TUUID) override;
-	void SetViewport(OCommandQueue* CommandQueue) const;
-	void PrepareRenderTarget(OCommandQueue* CommandQueue);
+	void SetViewport(ID3D12GraphicsCommandList* List) const;
+	void PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList);
+	void UnsetRenderTarget(OCommandQueue* CommandQueue);
 
 protected:
 	D3D12_VIEWPORT Viewport;

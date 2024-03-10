@@ -182,7 +182,7 @@ void Utils::ResourceBarrier(ID3D12GraphicsCommandList* List, SResourceInfo* Reso
 		LOG(Debug, Warning, "ResourceBarrier: Resource states must be different {}!", TEXT(Resource->Context->GetName()));
 		return;
 	}
-
+	LOG(Debug, Log, "ResourceBarrier: Transitioning resource {}", TEXT(Resource->Context->GetName()));
 	const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(Resource->Resource.Get(), Resource->CurrentState, After);
 	Resource->CurrentState = After;
 	List->ResourceBarrier(1, &barrier);

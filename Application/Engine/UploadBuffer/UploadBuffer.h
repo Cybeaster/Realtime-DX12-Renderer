@@ -8,6 +8,10 @@ class OUploadBuffer
 {
 public:
 	OUploadBuffer(ID3D12Device* Device, UINT ElementCount, bool IsConstantBuffer, IRenderObject* Owner = nullptr);
+	static unique_ptr<OUploadBuffer> Create(ID3D12Device* Device, UINT ElementCount, bool IsConstantBuffer, IRenderObject* Owner)
+	{
+		return make_unique<OUploadBuffer>(Device, ElementCount, IsConstantBuffer, Owner);
+	}
 
 	OUploadBuffer(const OUploadBuffer&) = delete;
 
@@ -30,6 +34,11 @@ public:
 	void CopyData(int ElementIdx, const Type& Data)
 	{
 		memcpy(&MappedData[ElementIdx * ElementByteSize], &Data, sizeof(Type));
+	}
+
+	auto GetGPUAddress() const
+	{
+		return UploadBuffer.Resource->GetGPUVirtualAddress();
 	}
 
 public:
@@ -63,3 +72,6 @@ OUploadBuffer<Type>::OUploadBuffer(ID3D12Device* Device, UINT ElementCount, bool
 	UploadBuffer = Utils::CreateResource(Owner, Device, D3D12_HEAP_TYPE_UPLOAD, uploadBufferDesc, D3D12_RESOURCE_STATE_GENERIC_READ);
 	THROW_IF_FAILED(UploadBuffer.Resource->Map(0, nullptr, reinterpret_cast<void**>(&MappedData)));
 }
+
+template<typename Type>
+using TUploadBuffer = unique_ptr<OUploadBuffer<Type>>;

@@ -57,7 +57,8 @@ void OShaderCompiler::SetCompilationArgs(const SShaderDefinition& Definition)
 
 void OShaderCompiler::ResolveBoundResources(const ComPtr<ID3D12ShaderReflection>& Reflection, const D3D12_SHADER_DESC& ShaderDescription, SShaderPipelineDesc& OutPipelineInfo, EShaderLevel ShaderType)
 {
-	OutPipelineInfo.RootSignatureParams.DescriptorRanges.reserve(50);
+	OutPipelineInfo.RootSignatureParams.DescriptorRanges.reserve(50); //TODO infer from shader
+	uint32_t counter = OutPipelineInfo.GetRootParamIndexMap().size();
 	for (const uint32_t i : std::views::iota(0u, ShaderDescription.BoundResources))
 	{
 		D3D12_SHADER_INPUT_BIND_DESC bindDesc{};
@@ -72,7 +73,8 @@ void OShaderCompiler::ResolveBoundResources(const ComPtr<ID3D12ShaderReflection>
 		{
 			continue;
 		}
-
+		OutPipelineInfo.GetRootParamIndexMap()[UTF8ToWString(bindDesc.Name)] = counter;
+		counter += 1;
 		switch (bindDesc.Type)
 		{
 		case D3D_SIT_CBUFFER:
@@ -91,7 +93,6 @@ void OShaderCompiler::ResolveBoundResources(const ComPtr<ID3D12ShaderReflection>
 void OShaderCompiler::ResolveConstantBuffers(const int32_t ResourceIdx, const ComPtr<ID3D12ShaderReflection>& Reflection, const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SShaderPipelineDesc& OutPipelineInfo)
 {
 	auto name = UTF8ToWString(BindDesc.Name);
-	OutPipelineInfo.RootSignatureParams.RootParamIndexMap[UTF8ToWString(BindDesc.Name)] = BindDesc.BindPoint;
 	ID3D12ShaderReflectionConstantBuffer* shaderReflectionConstantBuffer = Reflection->GetConstantBufferByIndex(ResourceIdx);
 	D3D12_SHADER_BUFFER_DESC constantBufferDesc{};
 	shaderReflectionConstantBuffer->GetDesc(&constantBufferDesc);

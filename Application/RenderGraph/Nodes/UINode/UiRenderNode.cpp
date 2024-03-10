@@ -9,3 +9,7 @@ ORenderTargetBase* OUIRenderNode::Execute(ORenderTargetBase* RenderTarget)
 	manager->PostRender(CommandQueue->GetCommandList().Get());
 	return RenderTarget;
 }
+
+void OUIRenderNode::SetupCommonResources()
+{
+}

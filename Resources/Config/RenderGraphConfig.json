@@ -9,7 +9,7 @@
     {
       "Name": "Opaque",
       "PSO": "Opaque",
-      "NextNode": "Transparent",
+      "NextNode": "UI",
       "RenderLayer": "Opaque"
     },
     {
@@ -20,7 +20,7 @@
     },
     {
       "Name": "PostProcess",
-      "PSO": "PostProcess",
+      "PSO": "Opaque",
       "NextNode": "UI",
       "RenderLayer": "PostProcess"
     },
@@ -28,7 +28,7 @@
       "Name": "UI",
       "PSO": "UI",
       "RenderLayer": "UI",
-      "NextNode": "Resolve"
+      "NextNode": "Present"
     },
     {
       "Name": "Present",
