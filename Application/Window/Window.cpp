@@ -384,13 +384,20 @@ uint32_t OWindow::GetNumRTVRequired()
 {
 	return 2;
 }
-SDescriptorPair OWindow::GetRTV() const
+SDescriptorPair OWindow::GetRTV(uint32_t SubtargetIdx) const
 {
 	SDescriptorPair pair;
 	pair.CPUHandle = CurrentBackBufferView();
 
 	return pair; // TODO - return the correct RTV
 }
+SDescriptorPair OWindow::GetDSV(uint32_t SubtargetIdx) const
+{
+	SDescriptorPair pair;
+	pair.CPUHandle = DSVHeap->GetCPUDescriptorHandleForHeapStart();
+	return pair; //TODO - return the correct DSV
+}
+
 string OWindow::GetName()
 {
 	return "Window";

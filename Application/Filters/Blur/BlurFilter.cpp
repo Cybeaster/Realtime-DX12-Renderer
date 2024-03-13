@@ -3,16 +3,16 @@
 #include "DirectX/ShaderTypes.h"
 #include "Logger.h"
 
-OBlurFilter::OBlurFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format)
-    : OFilterBase(Device, List, Width, Height, Format)
+OBlurFilter::OBlurFilter(ID3D12Device* Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format)
+    : OFilterBase(Device, Other, Width, Height, Format)
 {
 	Buffer = make_unique<OUploadBuffer<SConstantBlurSettings>>(Device, 1, true, this);
 }
 
 void OBlurFilter::OutputTo(SResourceInfo* Destination)
 {
-	Utils::ResourceBarrier(CMDList, Destination, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
-	CMDList->CopyResource(Destination->Resource.Get(), BlurMap0.Resource.Get());
+	Utils::ResourceBarrier(Queue->GetCommandList().Get(), Destination, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+	Queue->GetCommandList()->CopyResource(Destination->Resource.Get(), BlurMap0.Resource.Get());
 }
 
 void OBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
@@ -94,47 +94,47 @@ void OBlurFilter::Execute(
 	                   weights[9],
 	                   weights[10] });
 	auto rootSig = VerticalBlurPSO->RootSignature;
+	auto cmdList = Queue->GetCommandList().Get();
+	rootSig->ActivateRootSignature(Queue->GetCommandList().Get());
+	rootSig->SetResource("cbSettings", Buffer->GetResource()->Resource->GetGPUVirtualAddress(), cmdList);
 
-	rootSig->ActivateRootSignature(CMDList);
-	rootSig->SetResourceCBView("cbSettings", Buffer->GetResource()->Resource->GetGPUVirtualAddress(), CMDList);
+	ResourceBarrier(cmdList, Input, D3D12_RESOURCE_STATE_COPY_SOURCE);
+	ResourceBarrier(cmdList, &BlurMap0, D3D12_RESOURCE_STATE_COPY_DEST);
 
-	ResourceBarrier(CMDList, Input, D3D12_RESOURCE_STATE_COPY_SOURCE);
-	ResourceBarrier(CMDList, &BlurMap0, D3D12_RESOURCE_STATE_COPY_DEST);
+	cmdList->CopyResource(BlurMap0.Resource.Get(), Input->Resource.Get());
 
-	CMDList->CopyResource(BlurMap0.Resource.Get(), Input->Resource.Get());
-
-	ResourceBarrier(CMDList, &BlurMap0, D3D12_RESOURCE_STATE_GENERIC_READ);
-	ResourceBarrier(CMDList, &BlurMap1, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	ResourceBarrier(cmdList, &BlurMap0, D3D12_RESOURCE_STATE_GENERIC_READ);
+	ResourceBarrier(cmdList, &BlurMap1, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
 	for (int i = 0; i < BlurCount; i++)
 	{
-		//Horizontal blur
-		CMDList->SetPipelineState(HorizontalBlurPSO->PSO.Get());
-		rootSig->SetDescriptorTable("Input", SRV0Handle.GPUHandle, CMDList);
-		rootSig->SetDescriptorTable("Output", UAV1Handle.GPUHandle, CMDList);
+		// Horizontal blur
+		cmdList->SetPipelineState(HorizontalBlurPSO->PSO.Get());
+		rootSig->SetResource("Input", SRV0Handle.GPUHandle, Queue->GetCommandList().Get());
+		rootSig->SetResource("Output", UAV1Handle.GPUHandle, Queue->GetCommandList().Get());
 
 		// How many groups do we need to dispatch to cover a row of pixels, where each
 		// group covers 256 pixels (the 256 is defined in the ComputeShader).
 
 		const UINT numGroupsX = (UINT)ceilf(Width / 256.0f);
-		CMDList->Dispatch(numGroupsX, Height, 1);
+		Queue->GetCommandList().Get()->Dispatch(numGroupsX, Height, 1);
 
-		ResourceBarrier(CMDList, &BlurMap0, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		ResourceBarrier(CMDList, &BlurMap1, D3D12_RESOURCE_STATE_GENERIC_READ);
+		ResourceBarrier(Queue->GetCommandList().Get(), &BlurMap0, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		ResourceBarrier(Queue->GetCommandList().Get(), &BlurMap1, D3D12_RESOURCE_STATE_GENERIC_READ);
 
 		// vertical BLur
-		CMDList->SetPipelineState(VerticalBlurPSO->PSO.Get());
-		rootSig->SetDescriptorTable("Input", SRV1Handle.GPUHandle, CMDList);
-		rootSig->SetDescriptorTable("Output", UAV0Handle.GPUHandle, CMDList);
+		Queue->GetCommandList().Get()->SetPipelineState(VerticalBlurPSO->PSO.Get());
+		rootSig->SetResource("Input", SRV1Handle.GPUHandle, Queue->GetCommandList().Get());
+		rootSig->SetResource("Output", UAV0Handle.GPUHandle, Queue->GetCommandList().Get());
 
 		// How many groups do we need to dispatch to cover a row of pixels, where each
 		// group covers 256 pixels (the 256 is defined in the ComputeShader).
 
 		UINT numGroupsY = (UINT)ceilf(Height / 256.0f);
-		CMDList->Dispatch(Width, numGroupsY, 1);
+		cmdList->Dispatch(Width, numGroupsY, 1);
 
-		ResourceBarrier(CMDList, &BlurMap0, D3D12_RESOURCE_STATE_GENERIC_READ);
-		ResourceBarrier(CMDList, &BlurMap1, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		ResourceBarrier(cmdList, &BlurMap0, D3D12_RESOURCE_STATE_GENERIC_READ);
+		ResourceBarrier(cmdList, &BlurMap1, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 	}
 }
 

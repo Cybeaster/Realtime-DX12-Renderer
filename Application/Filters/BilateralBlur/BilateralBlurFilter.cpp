@@ -4,8 +4,8 @@
 
 #include "DirectX/ShaderTypes.h"
 
-OBilateralBlurFilter::OBilateralBlurFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format)
-    : OFilterBase(Device, List, Width, Height, Format)
+OBilateralBlurFilter::OBilateralBlurFilter(ID3D12Device* Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format)
+    : OFilterBase(Device, Other, Width, Height, Format)
 {
 	BlurBuffer = OUploadBuffer<SBilateralBlur>::Create(Device, 1, true, this);
 	BufferConstants = OUploadBuffer<SBufferConstants>::Create(Device, 1, true, this);
@@ -29,8 +29,8 @@ void OBilateralBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
 
 void OBilateralBlurFilter::OutputTo(SResourceInfo* Destination) const
 {
-	Utils::ResourceBarrier(CMDList, Destination, D3D12_RESOURCE_STATE_COPY_DEST);
-	CMDList->CopyResource(Destination->Resource.Get(), OutputTexture.Resource.Get());
+	Utils::ResourceBarrier(Queue->GetCommandList().Get(), Destination, D3D12_RESOURCE_STATE_COPY_DEST);
+	Queue->GetCommandList()->CopyResource(Destination->Resource.Get(), OutputTexture.Resource.Get());
 }
 
 void OBilateralBlurFilter::BuildDescriptors() const
@@ -78,25 +78,25 @@ void OBilateralBlurFilter::BuildResource()
 void OBilateralBlurFilter::Execute(const SPSODescriptionBase* PSO, SResourceInfo* Input)
 {
 	using namespace Utils;
-	PSO->RootSignature->ActivateRootSignature(CMDList);
-	CMDList->SetPipelineState(PSO->PSO.Get());
+	PSO->RootSignature->ActivateRootSignature(Queue->GetCommandList().Get());
+	auto cmd = Queue->GetCommandList().Get();
 	BlurBuffer->CopyData(0, { SpatialSigma, IntensitySigma, BlurCount });
 	BufferConstants->CopyData(0, { Width, Height });
-	PSO->RootSignature->SetResourceCBView("BilateralBlur", BlurBuffer->GetGPUAddress(), CMDList);
-	PSO->RootSignature->SetResourceCBView("BufferConstants", BufferConstants->GetGPUAddress(), CMDList);
+	PSO->RootSignature->SetResource("BilateralBlur", BlurBuffer->GetGPUAddress(), cmd);
+	PSO->RootSignature->SetResource("BufferConstants", BufferConstants->GetGPUAddress(), cmd);
 
-	ResourceBarrier(CMDList, Input, D3D12_RESOURCE_STATE_COPY_SOURCE);
-	ResourceBarrier(CMDList, &InputTexture, D3D12_RESOURCE_STATE_COPY_DEST);
+	ResourceBarrier(cmd, Input, D3D12_RESOURCE_STATE_COPY_SOURCE);
+	ResourceBarrier(cmd, &InputTexture, D3D12_RESOURCE_STATE_COPY_DEST);
 
-	CMDList->CopyResource(InputTexture.Resource.Get(), Input->Resource.Get());
+	cmd->CopyResource(InputTexture.Resource.Get(), Input->Resource.Get());
 
-	ResourceBarrier(CMDList, &InputTexture, D3D12_RESOURCE_STATE_GENERIC_READ);
-	ResourceBarrier(CMDList, &OutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	PSO->RootSignature->SetDescriptorTable("Input", BlurInputSrvHandle.GPUHandle, CMDList);
-	PSO->RootSignature->SetDescriptorTable("Output", BlurOutputUavHandle.GPUHandle, CMDList);
+	ResourceBarrier(cmd, &InputTexture, D3D12_RESOURCE_STATE_GENERIC_READ);
+	ResourceBarrier(cmd, &OutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	PSO->RootSignature->SetResource("Input", BlurInputSrvHandle.GPUHandle, cmd);
+	PSO->RootSignature->SetResource("Output", BlurOutputUavHandle.GPUHandle, cmd);
 
-	CMDList->Dispatch(Width / 32 + 1, Height / 32 + 1, 1);
+	cmd->Dispatch(Width / 32 + 1, Height / 32 + 1, 1);
 
-	ResourceBarrier(CMDList, &OutputTexture, D3D12_RESOURCE_STATE_GENERIC_READ);
-	ResourceBarrier(CMDList, &InputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	ResourceBarrier(cmd, &OutputTexture, D3D12_RESOURCE_STATE_GENERIC_READ);
+	ResourceBarrier(cmd, &InputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 }

@@ -38,6 +38,12 @@ unique_ptr<SPSOGraphicsDescription> OPSOReader::LoadGraphicsPSO(const boost::pro
 	desc.BlendState = GetBlendDesc(Node);
 	desc.RasterizerState = GetRasterizerDesc(Node);
 	desc.DepthStencilState = GetDepthStencilDesc(Node);
+
+	if (desc.BlendState.RenderTarget[0].LogicOpEnable == 1 && desc.RTVFormats[0] == DXGI_FORMAT_R8G8B8A8_UNORM)
+	{
+		LOG(Config, Error, "DXGI_FORMAT_R8G8B8A8_UNORM does not support logic op!");
+	}
+
 	return PSODesc;
 }
 
@@ -70,26 +76,30 @@ CD3DX12_BLEND_DESC OPSOReader::GetBlendDesc(const boost::property_tree::ptree& N
 {
 	if (const auto optional = Node.get_child_optional("BlendState"))
 	{
-		CD3DX12_BLEND_DESC desc;
+		CD3DX12_BLEND_DESC desc = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 		desc.AlphaToCoverageEnable = GetOptionalOr(optional, "AlphaToCoverageEnable", false);
 		desc.IndependentBlendEnable = GetOptionalOr(optional, "IndependentBlendEnable", false);
-		uint32_t counter = 0;
-		if (const auto renderTargetOptional = optional->get_child_optional("RenderTarget"))
+
+		for (uint32_t counter = 0; counter < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; counter++)
 		{
-			for (const auto& val : *renderTargetOptional | std::views::values)
+			if (const auto renderTargetOptional = optional->get_child_optional("RenderTarget"))
 			{
-				auto& target = desc.RenderTarget[counter];
-				target.BlendEnable = GetOptionalOr(val, "BlendEnable", false);
-				target.LogicOpEnable = GetOptionalOr(val, "LogicOpEnable", false);
-				target.SrcBlend = GetBlend(GetOptionalOr(val, "SrcBlend", "One"));
-				target.DestBlend = GetBlend(GetOptionalOr(val, "DestBlend", "Zero"));
-				target.BlendOp = GetBlendOp(GetOptionalOr(val, "BlendOp", "Add"));
-				target.SrcBlendAlpha = GetBlend(GetOptionalOr(val, "SrcBlendAlpha", "One"));
-				target.DestBlendAlpha = GetBlend(GetOptionalOr(val, "DestBlendAlpha", "Zero"));
-				target.BlendOpAlpha = GetBlendOp(GetOptionalOr(val, "BlendOpAlpha", "Add"));
-				target.LogicOp = GetLogicOp(GetOptionalOr(val, "LogicOp", "Clear"));
-				target.RenderTargetWriteMask = GetOptionalOr(val, "RenderTargetWriteMask", 0);
-				counter++;
+				for (const auto& val : *renderTargetOptional | std::views::values)
+				{
+					auto& target = desc.RenderTarget[counter];
+					target.BlendEnable = GetOptionalOr(val, "BlendEnable", false);
+					target.LogicOpEnable = GetOptionalOr(val, "LogicOpEnable", false);
+					target.SrcBlend = GetBlend(GetOptionalOr(val, "SrcBlend", "One"));
+					target.DestBlend = GetBlend(GetOptionalOr(val, "DestBlend", "Zero"));
+					target.BlendOp = GetBlendOp(GetOptionalOr(val, "BlendOp", "Add"));
+					target.SrcBlendAlpha = GetBlend(GetOptionalOr(val, "SrcBlendAlpha", "One"));
+					target.DestBlendAlpha = GetBlend(GetOptionalOr(val, "DestBlendAlpha", "Zero"));
+					target.BlendOpAlpha = GetBlendOp(GetOptionalOr(val, "BlendOpAlpha", "Add"));
+					target.LogicOp = GetLogicOp(GetOptionalOr(val, "LogicOp", "NoOp"));
+					target.RenderTargetWriteMask = GetColorWriteEnable(GetAttribute(val, "RenderTargetWriteMask"));
+
+					counter++;
+				}
 			}
 		}
 
@@ -403,6 +413,32 @@ D3D12_STENCIL_OP OPSOReader::GetStencilOp(const string& StencilOpString)
 	}
 	WIN_LOG(Config, Error, "Unknown stencil op: {}", TEXT(StencilOpString));
 	return D3D12_STENCIL_OP_KEEP;
+}
+
+D3D12_COLOR_WRITE_ENABLE OPSOReader::GetColorWriteEnable(const string& ColorWriteEnableString)
+{
+	if (ColorWriteEnableString == "Red")
+	{
+		return D3D12_COLOR_WRITE_ENABLE_RED;
+	}
+	if (ColorWriteEnableString == "Green")
+	{
+		return D3D12_COLOR_WRITE_ENABLE_GREEN;
+	}
+	if (ColorWriteEnableString == "Blue")
+	{
+		return D3D12_COLOR_WRITE_ENABLE_BLUE;
+	}
+	if (ColorWriteEnableString == "Alpha")
+	{
+		return D3D12_COLOR_WRITE_ENABLE_ALPHA;
+	}
+	if (ColorWriteEnableString == "All")
+	{
+		return D3D12_COLOR_WRITE_ENABLE_ALL;
+	}
+	WIN_LOG(Config, Error, "Unknown color write enable: {}", TEXT(ColorWriteEnableString));
+	return D3D12_COLOR_WRITE_ENABLE_ALL;
 }
 
 SShaderArrayText OPSOReader::GetShaderArray(const boost::property_tree::ptree& Node)

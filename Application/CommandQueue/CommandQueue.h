@@ -25,13 +25,15 @@ public:
 	void Flush();
 	void TryResetCommandList();
 	ComPtr<ID3D12Fence> GetFence() const;
-	void SetPipelineState(const SPSODescriptionBase* PSOInfo);
+	void SetPipelineState(SPSODescriptionBase* PSOInfo);
 	void ResourceBarrier(ORenderTargetBase* Resource, D3D12_RESOURCE_STATES StateBefore, D3D12_RESOURCE_STATES StateAfter) const;
 	void ResourceBarrier(ORenderTargetBase* Resource, D3D12_RESOURCE_STATES StateAfter) const;
 
 	void CopyResourceTo(ORenderTargetBase* Dest, ORenderTargetBase* Src) const;
-	ORenderTargetBase* SetRenderTarget(ORenderTargetBase* RenderTarget);
+	ORenderTargetBase* SetRenderTarget(ORenderTargetBase* RenderTarget, uint32_t Subtarget = 0);
 	void ResetQueueState();
+	void SetResource(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Resource, SPSODescriptionBase* PSO);
+	void SetResource(const string& Name, D3D12_GPU_DESCRIPTOR_HANDLE Resource, SPSODescriptionBase* PSO);
 
 protected:
 	ComPtr<ID3D12CommandAllocator> CreateCommandAllocator();
@@ -53,7 +55,9 @@ private:
 	ComPtr<ID3D12Fence> Fence = nullptr;
 	ComPtr<ID3D12CommandAllocator> CommandAllocator;
 	ComPtr<ID3D12GraphicsCommandList> CommandList;
+
 	ORenderTargetBase* CurrentRenderTarget = nullptr;
+
 	HANDLE FenceEvent;
 	uint64_t FenceValue;
 
@@ -61,6 +65,6 @@ private:
 	TCommandListQueue CommandListQueue;
 
 	bool IsReset = false;
-
-	string CurrentPSO = "";
+	SPSODescriptionBase* CurrentPSO = nullptr;
+	unordered_map<string,UINT64> SetResources;
 };

@@ -101,7 +101,7 @@ public:
 	void OnMouseWheel(MouseWheelEventArgs& Args);
 	void OnResizeRequest(HWND& WindowHandle);
 	void OnUpdateWindowSize(ResizeEventArgs& Args);
-
+	void SetWindowViewport();
 	bool CheckTearingSupport();
 
 	void CreateWindow();
@@ -179,7 +179,7 @@ public:
 
 	const vector<unique_ptr<ORenderItem>>& GetAllRenderItems();
 	void SetPipelineState(string PSOName);
-	void SetPipelineState(const SPSODescriptionBase* PSOInfo);
+	void SetPipelineState(SPSODescriptionBase* PSOInfo);
 
 	void SetFog(DirectX::XMFLOAT4 Color, float Start, float Range);
 	SPassConstants& GetMainPassCB();
@@ -392,5 +392,5 @@ T* OEngine::GetObjectByUUID(TUUID UUID, bool Checked)
 template<typename T>
 TUUID OEngine::AddFilter()
 {
-	return AddRenderObject(OFilterBase::CreateFilter<T>(Device.Get(), GetCommandQueue()->GetCommandList().Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat));
+	return AddRenderObject(OFilterBase::CreateFilter<T>(Device.Get(), GetCommandQueue(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat));
 }

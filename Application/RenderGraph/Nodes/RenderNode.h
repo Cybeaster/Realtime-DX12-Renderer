@@ -1,6 +1,8 @@
 #pragma once
 #include "DirectX/DXHelper.h"
 #include "RenderNodeInfo.h"
+
+struct SFrameResource;
 struct SPSODescriptionBase;
 class ORenderGraph;
 class ORenderTargetBase;
@@ -14,7 +16,7 @@ public:
 	ORenderNode& operator=(const ORenderNode& rhs) = delete;
 	virtual ~ORenderNode() = default;
 
-	void Initialize(const SNodeInfo& OtherNodeInfo, OCommandQueue* OtherCommandQueue, ORenderGraph* OtherParentGraph, SPSODescriptionBase* OtherPSO);
+	virtual void Initialize(const SNodeInfo& OtherNodeInfo, OCommandQueue* OtherCommandQueue, ORenderGraph* OtherParentGraph, SPSODescriptionBase* OtherPSO);
 	virtual ORenderTargetBase* Execute(ORenderTargetBase* RenderTarget);
 	virtual void SetupCommonResources();
 	const SNodeInfo& GetNodeInfo() const { return NodeInfo; }
@@ -25,7 +27,6 @@ public:
 protected:
 	OCommandQueue* CommandQueue = nullptr;
 	SPSODescriptionBase* PSO = nullptr;
-
 private:
 	SNodeInfo NodeInfo;
 	ORenderGraph* ParentGraph;

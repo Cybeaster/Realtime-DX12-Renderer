@@ -7,9 +7,9 @@
 
 ORenderTargetBase* OPresentNode::Execute(ORenderTargetBase* RenderTarget)
 {
-	CommandQueue->ResourceBarrier(RenderTarget, D3D12_RESOURCE_STATE_PRESENT);
-	CommandQueue->ExecuteCommandList();
 	auto window = OEngine::Get()->GetWindow();
+	CommandQueue->ResourceBarrier(window, D3D12_RESOURCE_STATE_PRESENT);
+	CommandQueue->ExecuteCommandList();
 	THROW_IF_FAILED(window->GetSwapChain()->Present(0, 0));
 	window->MoveToNextFrame();
 	OEngine::Get()->CurrentFrameResources->Fence = CommandQueue->Signal();

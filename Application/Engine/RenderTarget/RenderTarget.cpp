@@ -21,9 +21,10 @@ uint32_t ORenderTargetBase::GetNumRTVRequired()
 {
 	return 1;
 }
+
 uint32_t ORenderTargetBase::GetNumDSVRequired()
 {
-	return 1;
+	return 0;
 }
 
 void ORenderTargetBase::CopyTo(ORenderTargetBase* Dest, const OCommandQueue* CommandQueue)
@@ -31,21 +32,22 @@ void ORenderTargetBase::CopyTo(ORenderTargetBase* Dest, const OCommandQueue* Com
 	CommandQueue->CopyResourceTo(Dest, this);
 }
 
-SDescriptorPair ORenderTargetBase::GetSRV() const
+SDescriptorPair ORenderTargetBase::GetSRV(uint32_t SubtargetIdx) const
 {
 	LOG(Render, Error, "GetSRV not implemented")
 	return {};
 }
-SDescriptorPair ORenderTargetBase::GetRTV() const
+SDescriptorPair ORenderTargetBase::GetRTV(uint32_t SubtargetIdx) const
 {
 	LOG(Render, Error, "GetRTV not implemented")
 	return {};
 }
 
-SDescriptorPair ORenderTargetBase::GetDSV() const
+SDescriptorPair ORenderTargetBase::GetDSV(uint32_t SubtargetIdx) const
 {
-	LOG(Render, Error, "GetDSV not implemented")
-	return {};
+	SDescriptorPair DSV;
+	DSV.CPUHandle=OEngine::Get()->GetWindow()->GetDepthStensilView();
+	return DSV; // TODO recursive call
 }
 
 void ORenderTargetBase::InitRenderObject()
@@ -58,25 +60,24 @@ void ORenderTargetBase::SetViewport(ID3D12GraphicsCommandList* List) const
 	List->RSSetScissorRects(1, &ScissorRect);
 }
 
-void ORenderTargetBase::PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList)
+void ORenderTargetBase::PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList, uint32_t SubtargetIdx)
 {
-	if (HasBeedPrepared)
+	if (PreparedTaregts.contains(SubtargetIdx))
 	{
 		return;
 	}
-	SetViewport(CommandList);
-	auto backbufferView = GetRTV().CPUHandle;
-	auto depthStencilView = OEngine::Get()->GetWindow()->GetDepthStensilView(); // TODO: Get from the render target
+	PreparedTaregts.insert(SubtargetIdx);
+	auto backbufferView = GetRTV(SubtargetIdx).CPUHandle;
+	auto depthStencilView = GetDSV(SubtargetIdx);
 	Utils::ResourceBarrier(CommandList, GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 	CommandList->ClearRenderTargetView(backbufferView, DirectX::Colors::LightSteelBlue, 0, nullptr);
-	CommandList->ClearDepthStencilView(depthStencilView, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-	CommandList->OMSetRenderTargets(1, &backbufferView, true, &depthStencilView);
-	HasBeedPrepared = true;
+	CommandList->ClearDepthStencilView(depthStencilView.CPUHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+	CommandList->OMSetRenderTargets(1, &backbufferView, true, &depthStencilView.CPUHandle);
 }
 
 void ORenderTargetBase::UnsetRenderTarget(OCommandQueue* CommandQueue)
 {
-	HasBeedPrepared = false;
+	PreparedTaregts.clear();
 }
 
 TUUID ORenderTargetBase::GetID()
@@ -103,7 +104,6 @@ void OOffscreenTexture::BuildDescriptors(IDescriptor* Descriptor)
 	{
 		descriptor->SRVHandle.Offset(SRVHandle);
 		descriptor->RTVHandle.Offset(RTVHandle);
-		descriptor->DSVHandle.Offset(DSVHandle);
 		BuildDescriptors();
 	}
 }

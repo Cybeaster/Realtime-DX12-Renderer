@@ -1,22 +1,26 @@
-//
-// Created by Cybea on 10/03/2024.
-//
 
 #include "DefaultRenderNode.h"
 
 #include "Engine/Engine.h"
 #include "EngineHelper.h"
+
 void ODefaultRenderNode::SetupCommonResources()
 {
-	ORenderNode::SetupCommonResources();
 	auto resource = OEngine::Get()->CurrentFrameResources;
-	auto cmdList = OEngine::Get()->GetCommandQueue()->GetCommandList().Get();
+
 	CommandQueue->SetPipelineState(PSO);
-	PSO->RootSignature->SetResourceCBView("cbPass", resource->PassCB->GetGPUAddress(), cmdList);
-	PSO->RootSignature->SetResourceCBView("gMaterialData", resource->MaterialBuffer->GetGPUAddress(), cmdList);
-	PSO->RootSignature->SetDescriptorTable("gTextureMaps", OEngine::Get()->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(), cmdList);
-	PSO->RootSignature->SetDescriptorTable("gCubeMap", GetSkyTextureSRV(), cmdList);
+	CommandQueue->SetResource("cbPass", resource->PassCB->GetGPUAddress(), PSO);
+	CommandQueue->SetResource("gMaterialData", resource->MaterialBuffer->GetGPUAddress(), PSO);
+	CommandQueue->SetResource("gTextureMaps", OEngine::Get()->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(), PSO);
+	CommandQueue->SetResource("gCubeMap", GetSkyTextureSRV(), PSO);
 }
+
+void ODefaultRenderNode::Initialize(const SNodeInfo& OtherNodeInfo, OCommandQueue* OtherCommandQueue,
+                                    ORenderGraph* OtherParentGraph, SPSODescriptionBase* OtherPSO)
+{
+	ORenderNode::Initialize(OtherNodeInfo, OtherCommandQueue, OtherParentGraph, OtherPSO);
+}
+
 ORenderTargetBase* ODefaultRenderNode::Execute(ORenderTargetBase* RenderTarget)
 {
 	OEngine::Get()->DrawRenderItems(PSO->RootSignature.get(), GetNodeInfo().RenderLayer);

@@ -1,7 +1,6 @@
 #include "CommandQueue.h"
 
 #include "DirectX/ShaderTypes.h"
-#include "Engine/RenderTarget/RenderTarget.h"
 #include "Logger.h"
 
 #include <Exception.h>
@@ -130,16 +129,62 @@ Microsoft::WRL::ComPtr<ID3D12Fence> OCommandQueue::GetFence() const
 	return Fence;
 }
 
-void OCommandQueue::SetPipelineState(const SPSODescriptionBase* PSOInfo)
+void OCommandQueue::SetPipelineState(SPSODescriptionBase* PSOInfo)
 {
-	if (CurrentPSO == PSOInfo->Name)
+	if (CurrentPSO == PSOInfo)
 	{
 		return;
 	}
-	CurrentPSO = PSOInfo->Name;
+
+	CurrentPSO = PSOInfo;
+	SetResources.clear();
 	LOG(Engine, Log, "Setting pipeline state for PSO: {}", TEXT(PSOInfo->Name));
 	CommandList->SetPipelineState(PSOInfo->PSO.Get());
-	CommandList->SetGraphicsRootSignature(PSOInfo->RootSignature->RootSignatureParams.RootSignature.Get());
+
+	if (CurrentPSO->Type == EPSOType::Graphics)
+	{
+		CommandList->SetGraphicsRootSignature(PSOInfo->RootSignature->RootSignatureParams.RootSignature.Get());
+	}
+	else
+	{
+		CommandList->SetComputeRootSignature(PSOInfo->RootSignature->RootSignatureParams.RootSignature.Get());
+	}
+}
+
+void OCommandQueue::SetResource(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Resource, SPSODescriptionBase* PSO)
+{
+	if (CurrentPSO != PSO)
+	{
+		LOG(Engine, Error, "Trying to set resource view for a different PSO!")
+		SetPipelineState(PSO);
+	}
+
+	if (SetResources.contains(Name) && SetResources[Name] == Resource)
+	{
+		LOG(Engine, Warning, "Resource {} already set!", TEXT(Name));
+		return;
+	}
+
+	PSO->RootSignature->SetResource(Name, Resource, CommandList.Get());
+	SetResources[Name]= Resource;
+}
+
+void OCommandQueue::SetResource(const string& Name, D3D12_GPU_DESCRIPTOR_HANDLE Resource, SPSODescriptionBase* PSO)
+{
+	if (CurrentPSO != PSO)
+	{
+		LOG(Engine, Error, "Trying to set resource view for a different PSO!")
+		SetPipelineState(PSO);
+	}
+
+	if (SetResources.contains(Name) && SetResources[Name] == Resource.ptr)
+	{
+		LOG(Engine, Warning, "Resource {} already set!", TEXT(Name));
+		return;
+	}
+
+	PSO->RootSignature->SetResource(Name, Resource, CommandList.Get());
+	SetResources[Name] = Resource.ptr;
 }
 
 void OCommandQueue::ResourceBarrier(ORenderTargetBase* Resource, D3D12_RESOURCE_STATES StateBefore, D3D12_RESOURCE_STATES StateAfter) const
@@ -156,7 +201,7 @@ void OCommandQueue::CopyResourceTo(ORenderTargetBase* Dest, ORenderTargetBase* S
 {
 	if (Dest == Src)
 	{
-		LOG(Engine, Warning, "Source and destination are the same!");
+		LOG(Engine, Error, "Source and destination are the same!");
 		return;
 	}
 
@@ -166,22 +211,24 @@ void OCommandQueue::CopyResourceTo(ORenderTargetBase* Dest, ORenderTargetBase* S
 	ResourceBarrier(Dest, D3D12_RESOURCE_STATE_RENDER_TARGET);
 }
 
-ORenderTargetBase* OCommandQueue::SetRenderTarget(ORenderTargetBase* RenderTarget)
+ORenderTargetBase* OCommandQueue::SetRenderTarget(ORenderTargetBase* RenderTarget, uint32_t Subtarget)
 {
-	if (CurrentRenderTarget)
+	if (CurrentRenderTarget && CurrentRenderTarget != RenderTarget)
 	{
 		CurrentRenderTarget->UnsetRenderTarget(this);
 	}
-	RenderTarget->PrepareRenderTarget(CommandList.Get());
+
+	RenderTarget->PrepareRenderTarget(CommandList.Get(),Subtarget);
 	CurrentRenderTarget = RenderTarget;
 	return RenderTarget;
 }
+
 
 void OCommandQueue::ResetQueueState()
 {
 	CurrentRenderTarget->UnsetRenderTarget(this);
 	CurrentRenderTarget = nullptr;
-	CurrentPSO = "";
+	CurrentPSO = nullptr;
 }
 
 Microsoft::WRL::ComPtr<ID3D12CommandQueue> OCommandQueue::GetCommandQueue()

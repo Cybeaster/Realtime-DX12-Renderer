@@ -8,7 +8,7 @@ set(IMGUI_BACKENDS
         Externals/imgui/backends/imgui_impl_win32.h
         Externals/imgui/backends/imgui_impl_dx12.h
         Externals/imgui/backends/imgui_impl_win32.cpp
-)
+        )
 
 # Use solution folders to organize projects
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -182,8 +182,7 @@ set(SRC_FILES
         Types/DirectX/Resource.cpp
         Application/RenderGraph/Nodes/DefaultNode/DefaultRenderNode.cpp
         Application/RenderGraph/Nodes/DefaultNode/DefaultRenderNode.h
-
-)
+        )
 
 set(DXCOMPILER_PATH_DLL ${CMAKE_SOURCE_DIR}/Externals/directx/Compiler/bin)
 set(DXCOMPILER_PATH_LIB ${CMAKE_SOURCE_DIR}/Externals/directx/Compiler/bin/dxcompiler.lib)
@@ -205,7 +204,7 @@ target_sources(imgui PRIVATE ${IMGUI_BACKENDS})
 if (MSVC)
     set_target_properties(DXRenderer PROPERTIES
             LINK_FLAGS "/SUBSYSTEM:WINDOWS"
-    )
+            )
     add_compile_options(/wd4996)
 endif ()
 
@@ -230,7 +229,7 @@ target_include_directories(DXRenderer PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Textures
         ${CMAKE_CURRENT_SOURCE_DIR}/Config
 
-)
+        )
 
 # Copy dxcompiler.dll to the output directory
 add_custom_command(TARGET DXRenderer POST_BUILD

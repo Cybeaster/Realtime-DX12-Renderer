@@ -36,15 +36,16 @@ public:
 	uint32_t GetNumRTVRequired() override;
 	uint32_t GetNumDSVRequired() override;
 	void CopyTo(ORenderTargetBase* Dest, const OCommandQueue* CommandQueue);
-	virtual SDescriptorPair GetSRV() const;
-	virtual SDescriptorPair GetRTV() const;
-	virtual SDescriptorPair GetDSV() const;
+	virtual SDescriptorPair GetSRV(uint32_t SubtargetIdx = 0) const;
+	virtual SDescriptorPair GetRTV(uint32_t SubtargetIdx = 0) const;
+	virtual SDescriptorPair GetDSV(uint32_t SubtargetIdx = 0) const;
 	virtual void InitRenderObject();
 
 	TUUID GetID() override;
 	void SetID(TUUID) override;
 	void SetViewport(ID3D12GraphicsCommandList* List) const;
-	void PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList);
+	virtual void PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList, uint32_t SubtargetIdx = 0);
+
 	void UnsetRenderTarget(OCommandQueue* CommandQueue);
 
 protected:
@@ -56,7 +57,7 @@ protected:
 	DXGI_FORMAT Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 
 	ID3D12Device* Device = nullptr;
-	bool HasBeedPrepared = false;
+	unordered_set<uint32_t> PreparedTaregts;
 };
 
 class OOffscreenTexture : public ORenderTargetBase
@@ -71,9 +72,11 @@ public:
 
 	~OOffscreenTexture() override;
 
-	SDescriptorPair GetSRV() const { return SRVHandle; }
-	SDescriptorPair GetRTV() const { return RTVHandle; }
-	SDescriptorPair GetDSV() const { return DSVHandle; }
+	SDescriptorPair GetSRV(uint32_t SubtargetIdx = 0) const override { return SRVHandle; }
+	SDescriptorPair GetRTV(uint32_t SubtargetIdx = 0) const override { return RTVHandle; }
+	uint32_t GetNumRTVRequired() override { return 1; }
+	uint32_t GetNumSRVRequired() const override { return 1; }
+
 	void BuildDescriptors(IDescriptor* Descriptor) override;
 	void OnResize(UINT NewWidth, UINT NewHeight);
 	void InitRenderObject() override;
@@ -92,7 +95,6 @@ public:
 private:
 	SDescriptorPair SRVHandle;
 	SDescriptorPair RTVHandle;
-	SDescriptorPair DSVHandle;
 
 	// Two for ping-ponging the textures.
 	SResourceInfo RenderTarget;

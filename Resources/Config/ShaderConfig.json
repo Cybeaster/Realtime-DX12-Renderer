@@ -1,6 +1,24 @@
 {
   "Shaders": [
     {
+      "Path": "Shaders/BaseShader.hlsl",
+      "Name": "BaseShader",
+      "Pipeline": [
+        {
+          "Type": "Vertex",
+          "EntryPoint": "VS",
+          "TargetProfile": "vs_6_0",
+          "Defines": []
+        },
+        {
+          "Type": "Pixel",
+          "EntryPoint": "PS",
+          "TargetProfile": "ps_6_0",
+          "Defines": []
+        }
+      ]
+    },
+    {
       "Path": "Shaders/Blur.hlsl",
       "Name": "VerticalBlur",
       "Pipeline": [
@@ -30,24 +48,6 @@
           "Type": "Compute",
           "EntryPoint": "BilateralBlur",
           "TargetProfile": "cs_6_0"
-        }
-      ]
-    },
-    {
-      "Path": "Shaders/BaseShader.hlsl",
-      "Name": "BaseShader",
-      "Pipeline": [
-        {
-          "Type": "Vertex",
-          "EntryPoint": "VS",
-          "TargetProfile": "vs_6_0",
-          "Defines": []
-        },
-        {
-          "Type": "Pixel",
-          "EntryPoint": "PS",
-          "TargetProfile": "ps_6_0",
-          "Defines": []
         }
       ]
     },

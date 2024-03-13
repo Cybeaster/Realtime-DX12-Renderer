@@ -24,7 +24,7 @@ struct SConstantBlurSettings
 class OBlurFilter : public OFilterBase
 {
 public:
-	OBlurFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format);
+	OBlurFilter(ID3D12Device* Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format);
 	OBlurFilter(const OBlurFilter& rhs) = delete;
 	OBlurFilter& operator=(const OBlurFilter& rhs) = delete;
 

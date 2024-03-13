@@ -45,7 +45,6 @@ void OShader::Init(const SShaderDefinition& Info, const ComPtr<IDxcBlob>& Blob)
 D3D12_SHADER_BYTECODE OShader::GetShaderByteCode() const
 {
 	return {
-		static_cast<BYTE*>(ShaderBlob->GetBufferPointer()),
-		ShaderBlob->GetBufferSize()
+		reinterpret_cast<BYTE*>(ShaderBlob->GetBufferPointer()), ShaderBlob->GetBufferSize()
 	};
 }

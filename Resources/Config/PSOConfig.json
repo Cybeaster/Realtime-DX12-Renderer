@@ -13,7 +13,7 @@
       "RenderTargetFormats": [
         "R8G8B8A8_UNORM"
       ],
-      "DepthStencilFormat": "R8G8B8A8_UNORM",
+      "DepthStencilFormat": "D24_UNORM_S8_UINT",
       "NumRenderTargets": 1,
       "SampleDesc": {
         "Count": 1,
@@ -33,7 +33,7 @@
             "DestBlendAlpha": "Zero",
             "BlendOpAlpha": "Add",
             "LogicOp": "NoOp",
-            "RenderTargetWriteMask": 0
+            "RenderTargetWriteMask": "All"
           }
         ]
       },
@@ -55,8 +55,8 @@
         "DepthWriteMask": "All",
         "DepthFunc": "Less",
         "StencilEnable": false,
-        "StencilReadMask": 0,
-        "StencilWriteMask": 0,
+        "StencilReadMask": 255,
+        "StencilWriteMask": 255,
         "FrontFace": {
           "StencilFailOp": "Keep",
           "StencilDepthFailOp": "Keep",
@@ -84,7 +84,7 @@
       "RenderTargetFormats": [
         "R8G8B8A8_UNORM"
       ],
-      "DepthStencilFormat": "R8G8B8A8_UNORM",
+      "DepthStencilFormat": "D24_UNORM_S8_UINT",
       "NumRenderTargets": 1,
       "SampleDesc": {
         "Count": 1,
@@ -95,8 +95,8 @@
         "IndependentBlendEnable": false,
         "RenderTarget": [
           {
-            "BlendEnable": false,
-            "LogicOpEnable": true,
+            "BlendEnable": true,
+            "LogicOpEnable": false,
             "SrcBlend": "SrcAlpha",
             "DestBlend": "InvSrcAlpha",
             "BlendOp": "Add",
@@ -104,7 +104,7 @@
             "DestBlendAlpha": "Zero",
             "BlendOpAlpha": "Add",
             "LogicOp": "NoOp",
-            "RenderTargetWriteMask": 0
+            "RenderTargetWriteMask": "All"
           }
         ]
       },
@@ -166,8 +166,8 @@
         "IndependentBlendEnable": false,
         "RenderTarget": [
           {
-            "BlendEnable": false,
-            "LogicOpEnable": true,
+            "BlendEnable": true,
+            "LogicOpEnable": false,
             "SrcBlend": "SrcAlpha",
             "DestBlend": "InvSrcAlpha",
             "BlendOp": "Add",
@@ -175,7 +175,7 @@
             "DestBlendAlpha": "Zero",
             "BlendOpAlpha": "Add",
             "LogicOp": "NoOp",
-            "RenderTargetWriteMask": 0
+            "RenderTargetWriteMask": "All"
           }
         ]
       },
@@ -246,7 +246,7 @@
             "DestBlendAlpha": "Zero",
             "BlendOpAlpha": "Add",
             "LogicOp": "NoOp",
-            "RenderTargetWriteMask": 0
+            "RenderTargetWriteMask": "All"
           }
         ]
       },
@@ -350,7 +350,7 @@
             "DestBlendAlpha": "Zero",
             "BlendOpAlpha": "Add",
             "LogicOp": "NoOp",
-            "RenderTargetWriteMask": 0
+            "RenderTargetWriteMask": "All"
           }
         ]
       },
@@ -412,7 +412,7 @@
       "RenderTargetFormats": [
         "R8G8B8A8_UNORM"
       ],
-      "DepthStencilFormat": "R8G8B8A8_UNORM",
+      "DepthStencilFormat": "D24_UNORM_S8_UINT",
       "NumRenderTargets": 1,
       "SampleDesc": {
         "Count": 1,
@@ -432,7 +432,7 @@
             "DestBlendAlpha": "Zero",
             "BlendOpAlpha": "Add",
             "LogicOp": "NoOp",
-            "RenderTargetWriteMask": 0
+            "RenderTargetWriteMask": "All"
           }
         ]
       },
@@ -475,15 +475,15 @@
       "RootSignature": "BaseShader",
       "Type": "Graphics",
       "ShaderPipeline": {
-        "VertexShader": "Composite",
-        "PixelShader": "Composite"
+        "VertexShader": "BaseShader",
+        "PixelShader": "BaseShader"
       },
       "SampleMask": "0xffffffff",
       "PrimitiveTopologyType": "Triangle",
       "RenderTargetFormats": [
         "R8G8B8A8_UNORM"
       ],
-      "DepthStencilFormat": "R8G8B8A8_UNORM",
+      "DepthStencilFormat": "D24_UNORM_S8_UINT",
       "NumRenderTargets": 1,
       "SampleDesc": {
         "Count": 1,
@@ -503,7 +503,7 @@
             "DestBlendAlpha": "Zero",
             "BlendOpAlpha": "Add",
             "LogicOp": "NoOp",
-            "RenderTargetWriteMask": 0
+            "RenderTargetWriteMask": "All"
           }
         ]
       },
@@ -554,7 +554,7 @@
       "RenderTargetFormats": [
         "R8G8B8A8_UNORM"
       ],
-      "DepthStencilFormat": "R8G8B8A8_UNORM",
+      "DepthStencilFormat": "D24_UNORM_S8_UINT",
       "NumRenderTargets": 1,
       "SampleDesc": {
         "Count": 1,
@@ -574,7 +574,7 @@
             "DestBlendAlpha": "Zero",
             "BlendOpAlpha": "Add",
             "LogicOp": "NoOp",
-            "RenderTargetWriteMask": 0
+            "RenderTargetWriteMask": "All"
           }
         ]
       },
@@ -625,7 +625,7 @@
       "RenderTargetFormats": [
         "R8G8B8A8_UNORM"
       ],
-      "DepthStencilFormat": "R8G8B8A8_UNORM",
+      "DepthStencilFormat": "D24_UNORM_S8_UINT",
       "NumRenderTargets": 1,
       "SampleDesc": {
         "Count": 1,
@@ -645,7 +645,7 @@
             "DestBlendAlpha": "Zero",
             "BlendOpAlpha": "Add",
             "LogicOp": "NoOp",
-            "RenderTargetWriteMask": 0
+            "RenderTargetWriteMask": "All"
           }
         ]
       },

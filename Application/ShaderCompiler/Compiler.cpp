@@ -37,14 +37,13 @@ void OShaderCompiler::SetCompilationArgs(const SShaderDefinition& Definition)
 		Entry.c_str(),
 		L"-T",
 		TargetProfile.c_str(),
-		DXC_ARG_PACK_MATRIX_ROW_MAJOR,
 		DXC_ARG_WARNINGS_ARE_ERRORS,
 		DXC_ARG_ALL_RESOURCES_BOUND,
 		L"-I",
 		L"Shaders/",
 	};
 
-	if constexpr (_DEBUG)
+	if constexpr (false)
 	{
 		CompilationArgs.push_back(DXC_ARG_DEBUG);
 		CompilationArgs.push_back(DXC_ARG_SKIP_OPTIMIZATIONS);
@@ -57,7 +56,7 @@ void OShaderCompiler::SetCompilationArgs(const SShaderDefinition& Definition)
 
 void OShaderCompiler::ResolveBoundResources(const ComPtr<ID3D12ShaderReflection>& Reflection, const D3D12_SHADER_DESC& ShaderDescription, SShaderPipelineDesc& OutPipelineInfo, EShaderLevel ShaderType)
 {
-	OutPipelineInfo.RootSignatureParams.DescriptorRanges.reserve(50); //TODO infer from shader
+	OutPipelineInfo.RootSignatureParams.DescriptorRanges.reserve(50); // TODO infer from shader
 	uint32_t counter = OutPipelineInfo.GetRootParamIndexMap().size();
 	for (const uint32_t i : std::views::iota(0u, ShaderDescription.BoundResources))
 	{
@@ -73,6 +72,7 @@ void OShaderCompiler::ResolveBoundResources(const ComPtr<ID3D12ShaderReflection>
 		{
 			continue;
 		}
+
 		OutPipelineInfo.GetRootParamIndexMap()[UTF8ToWString(bindDesc.Name)] = counter;
 		counter += 1;
 		switch (bindDesc.Type)
@@ -82,8 +82,10 @@ void OShaderCompiler::ResolveBoundResources(const ComPtr<ID3D12ShaderReflection>
 			break;
 		case D3D_SIT_UAV_RWTYPED:
 		case D3D_SIT_TEXTURE:
+			ResolveTextures(bindDesc, OutPipelineInfo, ShaderType);
+			break;
 		case D3D_SIT_STRUCTURED:
-			ResolveTexturesAndStructuredBuffers(bindDesc, OutPipelineInfo, ShaderType);
+			ResolveStructuredBuffer(bindDesc, OutPipelineInfo, ShaderType);
 			break;
 			// Handle other types as needed, for example, samplers
 		}
@@ -108,7 +110,25 @@ void OShaderCompiler::ResolveConstantBuffers(const int32_t ResourceIdx, const Co
 	OutPipelineInfo.AddRootParameter(rootParameter, name);
 }
 
-void OShaderCompiler::ResolveTexturesAndStructuredBuffers(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SShaderPipelineDesc& OutPipelineInfo, EShaderLevel ShaderType)
+void OShaderCompiler::ResolveStructuredBuffer(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SShaderPipelineDesc& OutPipelineInfo, EShaderLevel ShaderType)
+{
+	auto name = UTF8ToWString(BindDesc.Name);
+	CHECK(BindDesc.BindCount > 0);
+
+	D3D12_ROOT_PARAMETER1 rootParameter = {
+		.ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV,
+		.Descriptor = {
+		    .ShaderRegister = BindDesc.BindPoint,
+		    .RegisterSpace = BindDesc.Space,
+		    .Flags = D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
+		},
+		.ShaderVisibility = ShaderTypeToVisibility(ShaderType),
+	};
+
+	OutPipelineInfo.AddRootParameter(rootParameter, name);
+}
+
+void OShaderCompiler::ResolveTextures(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SShaderPipelineDesc& OutPipelineInfo, EShaderLevel ShaderType)
 {
 	auto name = UTF8ToWString(BindDesc.Name);
 	CHECK(BindDesc.BindCount > 0);
@@ -132,7 +152,6 @@ void OShaderCompiler::ResolveTexturesAndStructuredBuffers(const D3D12_SHADER_INP
 
 	OutPipelineInfo.AddRootParameter(rootParameter, name);
 }
-
 D3D12_DESCRIPTOR_RANGE_TYPE OShaderCompiler::GetRangeType(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc)
 {
 	switch (BindDesc.Type)
@@ -155,11 +174,9 @@ D3D12_DESCRIPTOR_RANGE_TYPE OShaderCompiler::GetRangeType(const D3D12_SHADER_INP
 	case D3D_SIT_UAV_FEEDBACKTEXTURE:
 		return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
 	case D3D_SIT_RTACCELERATIONSTRUCTURE:
-		// Assuming you're using this for raytracing, D3D12 doesn't directly define a descriptor range type for acceleration structures.
-		// Handling typically involves SRV for reading in shaders.
 		return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	default:
-		// Handle unexpected types, possibly logging an error or asserting.
+		LOG(Render, Error, "Unexpected shader input bind type encountered.");
 		break;
 	}
 	return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;

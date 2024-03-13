@@ -1,8 +1,9 @@
 /cmake-build-debug
 /.idea
-/cmake-build-debug.zip
 /cmake-build-release
 /cmake-build-debug-visual-studio
+/cmake-build
 /.vs
 /out
 /venv
+/vcpkg_installed

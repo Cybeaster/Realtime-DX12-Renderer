@@ -8,16 +8,16 @@ class OFilterBase : public ORenderObjectBase
 public:
 	virtual ~OFilterBase() = default;
 
-	OFilterBase(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format)
-	    : Device(Device), CMDList(List), Width(Width), Height(Height), Format(Format)
+	OFilterBase(ID3D12Device* Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format)
+	    : Device(Device), Queue(Other), Width(Width), Height(Height), Format(Format)
 	{
 	}
 	void InitRenderObject();
 
 	template<typename T>
-	static T* CreateFilter(ID3D12Device* _Device, ID3D12GraphicsCommandList* _List, UINT _Width, UINT _Height, DXGI_FORMAT _Format)
+	static T* CreateFilter(ID3D12Device* _Device, OCommandQueue* Queue, UINT _Width, UINT _Height, DXGI_FORMAT _Format)
 	{
-		auto newFilter = new T(_Device, _List, _Width, _Height, _Format);
+		auto newFilter = new T(_Device, Queue, _Width, _Height, _Format);
 		newFilter->InitRenderObject();
 		return newFilter;
 	}
@@ -28,7 +28,7 @@ protected:
 	virtual void BuildDescriptors() const = 0;
 	virtual void BuildResource() = 0;
 
-	ID3D12GraphicsCommandList* CMDList = nullptr;
+	OCommandQueue* Queue = nullptr;
 	ID3D12Device* Device = nullptr;
 	uint32_t Width = 0;
 	uint32_t Height = 0;

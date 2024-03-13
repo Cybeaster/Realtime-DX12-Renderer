@@ -1,5 +1,7 @@
 #include "GraphicsPipeline.h"
 
+#include "Engine/Engine.h"
+
 void SPSOGraphicsDescription::BuildPipelineState(ID3D12Device* Device)
 {
 	PSODesc.pRootSignature = RootSignature->RootSignatureParams.RootSignature.Get();
@@ -8,6 +10,7 @@ void SPSOGraphicsDescription::BuildPipelineState(ID3D12Device* Device)
 		.NumElements = static_cast<uint32_t>(RootSignature->InputElementDescs.size())
 	};
 	RootSignature->Type = EPSOType::Graphics;
+
 	THROW_IF_FAILED(Device->CreateGraphicsPipelineState(&PSODesc, IID_PPV_ARGS(&PSO)));
 }
 
@@ -86,17 +89,15 @@ ID3D12RootSignature* SShadersPipeline::GetRootSignature() const
 	return PipelineInfo->RootSignatureParams.RootSignature.Get();
 }
 
-void SShaderPipelineDesc::SetResourceCBView(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Handle, ID3D12GraphicsCommandList* CmdList)
+void SShaderPipelineDesc::SetResource(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Handle, ID3D12GraphicsCommandList* CmdList)
 {
-	auto idx = GetIndexFromName(Name);
-	auto& param = GetRootParameterFromName(Name);
-	switch (param.Type)
+	switch (Type)
 	{
-	case D3D12_ROOT_PARAMETER_TYPE_SRV:
-	case D3D12_ROOT_PARAMETER_TYPE_UAV:
-		CmdList->SetGraphicsRootShaderResourceView(idx, Handle);
-	case D3D12_ROOT_PARAMETER_TYPE_CBV:
-		CmdList->SetGraphicsRootConstantBufferView(idx, Handle);
+	case EPSOType::Graphics:
+		SetGraphicsResourceCBView(Name, Handle, CmdList);
+		break;
+	case EPSOType::Compute:
+		SetComputeResourceCBView(Name, Handle, CmdList);
 		break;
 	}
 }
@@ -104,11 +105,16 @@ void SShaderPipelineDesc::SetResourceCBView(const string& Name, D3D12_GPU_VIRTUA
 void SShaderPipelineDesc::SetComputeResourceCBView(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Handle, ID3D12GraphicsCommandList* CmdList)
 {
 	auto idx = GetIndexFromName(Name);
+	if (idx == -1)
+	{
+		return;
+	}
 	auto& param = GetRootParameterFromName(Name);
 	switch (param.Type)
 	{
 	case D3D12_ROOT_PARAMETER_TYPE_SRV:
 	case D3D12_ROOT_PARAMETER_TYPE_UAV:
+	case D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE:
 		CmdList->SetComputeRootShaderResourceView(idx, Handle);
 	case D3D12_ROOT_PARAMETER_TYPE_CBV:
 		CmdList->SetComputeRootConstantBufferView(idx, Handle);
@@ -118,28 +124,38 @@ void SShaderPipelineDesc::SetComputeResourceCBView(const string& Name, D3D12_GPU
 
 void SShaderPipelineDesc::SetGraphicsResourceCBView(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Handle, ID3D12GraphicsCommandList* CmdList)
 {
-	auto idx = GetIndexFromName(Name);
+	const auto idx = GetIndexFromName(Name);
+	if (idx == -1)
+	{
+		return;
+	}
 	auto& param = GetRootParameterFromName(Name);
 	switch (param.Type)
 	{
 	case D3D12_ROOT_PARAMETER_TYPE_SRV:
 	case D3D12_ROOT_PARAMETER_TYPE_UAV:
 		CmdList->SetGraphicsRootShaderResourceView(idx, Handle);
+		break;
 	case D3D12_ROOT_PARAMETER_TYPE_CBV:
 		CmdList->SetGraphicsRootConstantBufferView(idx, Handle);
 		break;
 	}
 }
 
-void SShaderPipelineDesc::SetDescriptorTable(const string& Name, D3D12_GPU_DESCRIPTOR_HANDLE Handle, ID3D12GraphicsCommandList* CmdList)
+void SShaderPipelineDesc::SetResource(const string& Name, D3D12_GPU_DESCRIPTOR_HANDLE Handle, ID3D12GraphicsCommandList* CmdList)
 {
+	const auto idx = GetIndexFromName(Name);
+	if (idx == -1)
+	{
+		return;
+	}
 	switch (Type)
 	{
 	case EPSOType::Graphics:
-		CmdList->SetGraphicsRootDescriptorTable(GetIndexFromName(Name), Handle);
+		CmdList->SetGraphicsRootDescriptorTable(idx, Handle);
 		break;
 	case EPSOType::Compute:
-		CmdList->SetComputeRootDescriptorTable(GetIndexFromName(Name), Handle);
+		CmdList->SetComputeRootDescriptorTable(idx, Handle);
 		break;
 	}
 }
@@ -150,7 +166,6 @@ void SShaderPipelineDesc::ActivateRootSignature(ID3D12GraphicsCommandList* CmdLi
 	{
 	case EPSOType::Graphics:
 		CmdList->SetGraphicsRootSignature(RootSignatureParams.RootSignature.Get());
-
 		break;
 	case EPSOType::Compute:
 		CmdList->SetComputeRootSignature(RootSignatureParams.RootSignature.Get());
@@ -167,7 +182,8 @@ int32_t SShaderPipelineDesc::GetIndexFromName(const string& Name)
 {
 	if (!RootSignatureParams.RootParamIndexMap.contains(UTF8ToWString(Name)))
 	{
-		LOG(Render, Error, "Descriptor table name not found: {}", TEXT(Name));
+		LOG(Render, Warning, "Descriptor table name not found: {}", TEXT(Name));
+		return -1;
 	}
 	return RootSignatureParams.RootParamIndexMap[UTF8ToWString(Name)];
 }
@@ -176,7 +192,7 @@ SRootParameter& SShaderPipelineDesc::GetRootParameterFromName(const string& Name
 {
 	if (!RootSignatureParams.RootParamMap.contains(UTF8ToWString(Name)))
 	{
-		LOG(Render, Error, "Descriptor table name not found: {}", TEXT(Name));
+		LOG(Render, Warning, "Descriptor table name not found: {}", TEXT(Name));
 	}
 	return RootSignatureParams.RootParamMap[UTF8ToWString(Name)];
 }

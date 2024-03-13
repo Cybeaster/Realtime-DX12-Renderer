@@ -33,4 +33,5 @@ private:
 	static D3D12_DEPTH_WRITE_MASK GetDepthWriteMask(const string& DepthWriteMaskString);
 	static D3D12_COMPARISON_FUNC GetComparisonFunc(const string& ComparisonFuncString);
 	static D3D12_STENCIL_OP GetStencilOp(const string& StencilOpString);
+	static D3D12_COLOR_WRITE_ENABLE GetColorWriteEnable(const string& ColorWriteEnableString);
 };

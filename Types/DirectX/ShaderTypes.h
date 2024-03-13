@@ -116,9 +116,12 @@ struct SShaderPipelineDesc
 
 	void AddRootParameter(const D3D12_ROOT_PARAMETER1& RootParameter, const wstring& Name);
 	bool TryAddRootParameterName(const wstring& Name);
-	void SetResourceCBView(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Handle, ID3D12GraphicsCommandList* CmdList);
-	void SetDescriptorTable(const string& Name, D3D12_GPU_DESCRIPTOR_HANDLE Handle, ID3D12GraphicsCommandList* CmdList);
+
+	void SetResource(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Handle, ID3D12GraphicsCommandList* CmdList);
+	void SetResource(const string& Name, D3D12_GPU_DESCRIPTOR_HANDLE Handle, ID3D12GraphicsCommandList* CmdList);
+
 	void ActivateRootSignature(ID3D12GraphicsCommandList* CmdList) const;
+
 	unordered_map<wstring, uint32_t>& GetRootParamIndexMap();
 	int32_t GetIndexFromName(const string& Name);
 	SRootParameter& GetRootParameterFromName(const string& Name);

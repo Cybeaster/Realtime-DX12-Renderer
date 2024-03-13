@@ -80,9 +80,10 @@ bool OEngine::Initialize()
 	bIsTearingSupported = CheckTearingSupport();
 
 	InitCompiler();
-	InitManagers();
 	CreateWindow();
 	PostInitialize();
+	InitManagers();
+
 	return true;
 }
 
@@ -148,7 +149,28 @@ void OEngine::DrawRenderItems(string PSOType, string RenderLayer)
 	const auto commandList = GetCommandQueue()->GetCommandList();
 	const auto& renderItems = GetRenderItems(RenderLayer);
 	SetPipelineState(PSOType);
-	//
+	auto cmd = GetCommandQueue()->GetCommandList();
+	for (size_t i = 0; i < renderItems.size(); i++)
+	{
+		const auto renderItem = renderItems[i];
+		if (!renderItem->IsValidChecked())
+		{
+			continue;
+		}
+		if (!renderItem->Instances.empty() && renderItem->Geometry)
+		{
+			renderItem->BindResources(cmd.Get(), Engine->CurrentFrameResources);
+			auto instanceBuffer = Engine->CurrentFrameResources->InstanceBuffer->GetResource();
+			auto location = instanceBuffer->Resource->GetGPUVirtualAddress() + renderItem->StartInstanceLocation * sizeof(SInstanceData);
+			cmd->SetGraphicsRootShaderResourceView(0, location);
+			cmd->DrawIndexedInstanced(
+			    renderItem->IndexCount,
+			    renderItem->VisibleInstanceCount,
+			    renderItem->StartIndexLocation,
+			    renderItem->BaseVertexLocation,
+			    0);
+		}
+	}
 }
 
 void OEngine::DrawRenderItems(SShaderPipelineDesc* Desc, const string& RenderLayer)
@@ -216,7 +238,8 @@ void OEngine::DrawRenderItemsImpl(SShaderPipelineDesc* Description, const vector
 			renderItem->BindResources(cmd.Get(), Engine->CurrentFrameResources);
 			auto instanceBuffer = Engine->CurrentFrameResources->InstanceBuffer->GetResource();
 			auto location = instanceBuffer->Resource->GetGPUVirtualAddress() + renderItem->StartInstanceLocation * sizeof(SInstanceData);
-			Description->SetResourceCBView("gInstanceData", location, cmd.Get());
+			// cmd->SetGraphicsRootShaderResourceView(1, location);
+			Description->SetResource("gInstanceData", location, cmd.Get());
 			cmd->DrawIndexedInstanced(
 			    renderItem->IndexCount,
 			    renderItem->VisibleInstanceCount,
@@ -235,11 +258,9 @@ OOffscreenTexture* OEngine::GetOffscreenRT() const
 void OEngine::DrawFullScreenQuad()
 {
 	const auto commandList = GetCommandQueue()->GetCommandList();
-
 	commandList->IASetVertexBuffers(0, 1, nullptr);
 	commandList->IASetIndexBuffer(nullptr);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
 	commandList->DrawInstanced(6, 1, 0, 0);
 }
 
@@ -457,14 +478,14 @@ void OEngine::Render(UpdateEventArgs& Args)
 	Args.IsUIInfocus = UIManager->IsInFocus();
 
 	TickTimer = Args.Timer;
-	//RenderGraph->Execute();
-	//DirectCommandQueue->ResetQueueState();
-	OnPreRender();
-	for (const auto val : Tests | std::views::values)
-	{
-		val->OnRender(Args);
-	}
-	OnPostRender();
+	RenderGraph->Execute();
+	DirectCommandQueue->ResetQueueState();
+	/*	OnPreRender();
+	    for (const auto val : Tests | std::views::values)
+	    {
+	        val->OnRender(Args);
+	    }
+	    OnPostRender();*/
 }
 
 void OEngine::Update(UpdateEventArgs& Args)
@@ -512,7 +533,7 @@ void OEngine::UpdateObjectCB() const
 {
 	auto res = CurrentFrameResources->PassCB.get();
 
-	int32_t idx = 1; //TODO calc frame resource automatically.
+	int32_t idx = 1; // TODO calc frame resource automatically.
 	for (auto& val : RenderObjects | std::views::values)
 	{
 		if (val->GetNumPassesRequired() == 0)
@@ -555,7 +576,7 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 
 void OEngine::PostProcess(HWND Handler)
 {
-	const auto commandList = GetCommandQueue()->GetCommandList();
+	/*const auto commandList = GetCommandQueue()->GetCommandList();
 	const auto backBuffer = GetWindowByHWND(Handler)->GetCurrentBackBuffer();
 
 	Utils::ResourceBarrier(commandList.Get(),
@@ -575,35 +596,35 @@ void OEngine::PostProcess(HWND Handler)
 	                                                     OffscreenRT->GetSRV().GPUHandle);
 	    executed)
 	{
-		DrawCompositeShader(srv);
+	    DrawCompositeShader(srv);
 	}
 	else
 	{
-		Utils::ResourceBarrier(commandList.Get(),
-		                       backBuffer,
-		                       D3D12_RESOURCE_STATE_COPY_DEST);
-		GetCommandQueue()->CopyResourceTo(Window, OffscreenRT);
-		Utils::ResourceBarrier(commandList.Get(),
-		                       backBuffer,
-		                       D3D12_RESOURCE_STATE_RENDER_TARGET);
-	}
+	    Utils::ResourceBarrier(commandList.Get(),
+	                           backBuffer,
+	                           D3D12_RESOURCE_STATE_COPY_DEST);
+	    GetCommandQueue()->CopyResourceTo(Window, OffscreenRT);
+	    Utils::ResourceBarrier(commandList.Get(),
+	                           backBuffer,
+	                           D3D12_RESOURCE_STATE_RENDER_TARGET);
+	}*/
 
 	/*GetBlurFilter()->Execute(BlurRootSignature.Get(),
 	                         PSOs[SPSOType::HorizontalBlur].Get(),
 	                         PSOs[SPSOType::VerticalBlur].Get(),
 	                         backBuffer);*/
 
-	GetBlurFilter()->OutputTo(backBuffer);
+	// GetBlurFilter()->OutputTo(backBuffer);
 
 	/*GetBilateralBlurFilter()->Execute(BilateralBlurRootSignature.Get(),
 	                                  PSOs[SPSOType::BilateralBlur].Get(),
 	                                  backBuffer);*/
 
-	GetBilateralBlurFilter()->OutputTo(backBuffer);
+	//	GetBilateralBlurFilter()->OutputTo(backBuffer);
 
-	Utils::ResourceBarrier(commandList.Get(),
+	/*Utils::ResourceBarrier(commandList.Get(),
 	                       backBuffer,
-	                       D3D12_RESOURCE_STATE_RENDER_TARGET);
+	                       D3D12_RESOURCE_STATE_RENDER_TARGET);*/
 }
 
 void OEngine::DrawCompositeShader(CD3DX12_GPU_DESCRIPTOR_HANDLE Input)
@@ -611,7 +632,6 @@ void OEngine::DrawCompositeShader(CD3DX12_GPU_DESCRIPTOR_HANDLE Input)
 {
 	const auto commandList = GetCommandQueue()->GetCommandList();
 	commandList->SetGraphicsRootSignature(PostProcessRootSignature.Get());
-	SetPipelineState(SPSOType::Composite);
 	commandList->SetGraphicsRootDescriptorTable(0, OffscreenRT->GetSRV().GPUHandle);
 	commandList->SetGraphicsRootDescriptorTable(1, Input);
 	DrawFullScreenQuad();
@@ -619,13 +639,35 @@ void OEngine::DrawCompositeShader(CD3DX12_GPU_DESCRIPTOR_HANDLE Input)
 
 void OEngine::OnPostRender()
 {
-	PostProcess(Window->GetHWND());
+	// PostProcess(Window->GetHWND());
+	const auto commandList = GetCommandQueue()->GetCommandList();
+	Window->SetViewport(commandList.Get());
+
+	commandList->SetGraphicsRootSignature(DefaultRootSignature.Get());
+	commandList->SetGraphicsRootShaderResourceView(1, CurrentFrameResources->MaterialBuffer->GetResource()->Resource->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(2, CurrentFrameResources->PassCB->GetResource()->Resource->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootDescriptorTable(3, GetSRVHeap()->GetGPUDescriptorHandleForHeapStart());
+	GetCommandQueue()->GetCommandList()->SetGraphicsRootDescriptorTable(5, OEngine::Get()->GetSRVDescHandleForTexture(FindTextureByName("grasscube1024")));
+
+	auto rtv = GetOffscreenRT()->GetRTV().CPUHandle;
+	auto dsv = GetWindow()->GetDepthStensilView();
+	Utils::ResourceBarrier(commandList.Get(), GetOffscreenRT()->GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+	// Clear the back buffer and depth buffer.
+	commandList->ClearRenderTargetView(rtv, reinterpret_cast<float*>(&MainPassCB.FogColor), 0, nullptr);
+	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+	// Specify the buffers we are going to render to.
+	commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
+
+	DrawRenderItems(SPSOType::Opaque, SRenderLayer::Opaque);
 
 	UIManager->Draw();
 	UIManager->PostRender(GetCommandQueue()->GetCommandList().Get());
+	GetCommandQueue()->CopyResourceTo(Window, OffscreenRT);
 
 	Utils::ResourceBarrier(GetCommandQueue()->GetCommandList().Get(),
-	                       Window->GetCurrentBackBuffer(),
+	                       Window->GetResource(),
 	                       D3D12_RESOURCE_STATE_PRESENT);
 
 	GetCommandQueue()->ExecuteCommandList();
@@ -782,6 +824,11 @@ void OEngine::OnUpdateWindowSize(ResizeEventArgs& Args)
 {
 	const auto window = GetWindowByHWND(Args.WindowHandle);
 	window->OnUpdateWindowSize(Args);
+}
+
+void OEngine::SetWindowViewport()
+{
+	Window->SetViewport(GetCommandQueue()->GetCommandList().Get());
 }
 
 bool OEngine::CheckTearingSupport()
@@ -1246,7 +1293,7 @@ void OEngine::SetPipelineState(string PSOName)
 	GetCommandQueue()->GetCommandList()->SetPipelineState(PSOs[PSOName].Get());
 }
 
-void OEngine::SetPipelineState(const SPSODescriptionBase* PSOInfo)
+void OEngine::SetPipelineState(SPSODescriptionBase* PSOInfo)
 {
 	GetCommandQueue()->SetPipelineState(PSOInfo);
 }

@@ -64,15 +64,11 @@ void OCubeMapTest::OnRender(const UpdateEventArgs& Event)
 	cmdList->SetGraphicsRootDescriptorTable(4, Waves->GetDisplacementMapHandle());
 
 	DrawSceneToCubeMap();
-	OEngine::Get()->GetWindow()->SetViewport(OEngine::Get()->GetCommandQueue()->GetCommandList().Get());
+
+	OEngine::Get()->SetWindowViewport();
 	GetEngine()->PrepareRenderTarget();
-
-	auto passCB = OEngine::Get()->CurrentFrameResources->PassCB->GetResource();
-	cmdList->SetGraphicsRootConstantBufferView(2, passCB->Resource->GetGPUVirtualAddress());
-
-	auto cubeMap = OEngine::Get()->GetCubeRenderTarget();
-	cmdList->SetGraphicsRootDescriptorTable(5, cubeMap->GetSRVHandle().GPUHandle);
-
+	cmdList->SetGraphicsRootConstantBufferView(2,  OEngine::Get()->CurrentFrameResources->PassCB->GetGPUAddress());
+	cmdList->SetGraphicsRootDescriptorTable(5, OEngine::Get()->GetCubeRenderTarget()->GetSRVHandle().GPUHandle);
 	OEngine::Get()->DrawRenderItems(SPSOType::Opaque, SRenderLayer::OpaqueDynamicReflections);
 
 	cmdList->SetGraphicsRootDescriptorTable(5, OEngine::Get()->GetSRVDescHandleForTexture(FindTextureByName("grasscube1024")));

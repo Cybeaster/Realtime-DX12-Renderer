@@ -20,7 +20,9 @@ private:
 	void SetCompilationArgs(const SShaderDefinition& Definition);
 	void ResolveBoundResources(const ComPtr<ID3D12ShaderReflection>& Reflection, const D3D12_SHADER_DESC& ShaderDescription, SShaderPipelineDesc& OutPipelineInfo, EShaderLevel ShaderType);
 	void ResolveConstantBuffers(int32_t ResourceIdx, const ComPtr<ID3D12ShaderReflection>& Reflection, const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SShaderPipelineDesc& OutPipelineInfo);
-	void ResolveTexturesAndStructuredBuffers(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SShaderPipelineDesc& OutPipelineInfo, EShaderLevel ShaderType);
+	void ResolveTextures(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SShaderPipelineDesc& OutPipelineInfo, EShaderLevel ShaderType);
+	void ResolveStructuredBuffer(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SShaderPipelineDesc& OutPipelineInfo, EShaderLevel ShaderType);
+
 	D3D12_DESCRIPTOR_RANGE_TYPE GetRangeType(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc);
 	std::tuple<DxcBuffer, ComPtr<IDxcResult>> CreateDxcBuffer(const wstring& ShaderPath);
 	ComPtr<IDxcCompiler3> Compiler;

@@ -104,7 +104,7 @@ float3 NormalSampleToWorldSpace(float3 NormalMapSample, float3 UnitNormalW, floa
 	float3 N = UnitNormalW;
 	/*
 	*  This code makes sure T is orthonormal to N by subtracting off any
-		component of T along the direction N
+	    component of T along the direction N
 	*/
 	float3 T = normalize(TangentW - dot(TangentW, N) * N);
 	float3 B = cross(N, T);
@@ -126,7 +126,7 @@ float3 ComputeNormalMaps(float3 NormalW, float3 TangentW, MaterialData matData, 
 	if (IsTangentValid(TangentW))
 	{
 		uint numNormalMaps = matData.NormalMapCount;
-		for (int i = 0; i < numNormalMaps; ++i)
+		for (uint i = 0; i < numNormalMaps; ++i)
 		{
 			int normalMapIndex = matData.NormalMapIndex[i];
 			normalMapSample = gTextureMaps[normalMapIndex].Sample(gsamAnisotropicWrap, TexC);
@@ -155,7 +155,7 @@ float3 ComputeNormalMap(uint Index, float3 NormalW, float3 TangentW, MaterialDat
 float3 ComputeHeightMaps(MaterialData matData, float3 NormalW, float3 TangentW, float2 TexC, inout float3 PosW)
 {
 	uint numHeightMaps = matData.HeightMapCount;
-	for (int j = 0; j < numHeightMaps; ++j)
+	for (uint j = 0; j < numHeightMaps; ++j)
 	{
 		int heightMapIndex = matData.HeightMapIndex[j];
 		float heightMapSample = gTextureMaps[heightMapIndex].Sample(gsamLinearClamp, TexC).r;
@@ -167,7 +167,7 @@ float3 ComputeHeightMaps(MaterialData matData, float3 NormalW, float3 TangentW, 
 float4 ComputeDiffuseMaps(MaterialData MatData, float4 DiffuseAlbedo, float2 TexC)
 {
 	uint numDiffuseMaps = MatData.DiffuseMapCount;
-	for (int k = 0; k < numDiffuseMaps; ++k)
+	for (uint k = 0; k < numDiffuseMaps; ++k)
 	{
 		int diffuseMapIndex = MatData.DiffuseMapIndex[k];
 		DiffuseAlbedo *= gTextureMaps[diffuseMapIndex].Sample(gsamLinearWrap, TexC);

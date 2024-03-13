@@ -80,7 +80,7 @@ HINSTANCE OApplication::GetAppInstance() const
 OApplication::OApplication()
 {
 	CurrentPath.SetPath(std::filesystem::current_path());
-	RootDirPath.SetPath(std::filesystem::current_path().parent_path().parent_path());
+	RootDirPath.SetPath(std::filesystem::current_path().parent_path());
 }
 
 void OApplication::InitWindowClass() const

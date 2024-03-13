@@ -83,6 +83,26 @@ uint32_t OCubeRenderTarget::GetNumDSVRequired()
 {
 	return 1;
 }
+uint32_t OCubeRenderTarget::GetNumSRVRequired() const
+{
+	return 1;
+}
+
+SDescriptorPair OCubeRenderTarget::GetDSV(uint32_t SubtargetIdx) const
+{
+	return DSVHandle;
+}
+
+SDescriptorPair OCubeRenderTarget::GetRTV(uint32_t SubtargetIdx) const
+{
+	if(SubtargetIdx < RTVHandle.size())
+	{
+		return RTVHandle[SubtargetIdx];
+	}
+
+		LOG(Render, Error, "SubtargetIdx is out of range")
+return {};
+}
 
 void OCubeRenderTarget::InitRenderObject()
 {

@@ -26,7 +26,6 @@ void ORenderGraph::Initialize(OGraphicsPipelineManager* PipelineManager, OComman
 		{
 			Head = newNode.get();
 		}
-		auto pso = PipelineManager->FindPSO(node.PSOType);
 		newNode->Initialize(node, OtherCommandQueue, this, PipelineManager->FindPSO(node.PSOType));
 		Graph[node.Name] = newNode.get();
 		Nodes.push_back(move(newNode));
@@ -35,16 +34,24 @@ void ORenderGraph::Initialize(OGraphicsPipelineManager* PipelineManager, OComman
 
 void ORenderGraph::Execute()
 {
-	auto currentNode = Head;
-	ORenderTargetBase* texture = OEngine::Get()->GetWindow();
-	CommandQueue->SetRenderTarget(texture);
-	while (currentNode != nullptr)
+	auto engine = OEngine::Get();
+	if (engine->GetSRVHeap())
 	{
-		LOG(Render, Log, "Executing node: {}", TEXT(currentNode->GetNodeInfo().Name));
-		currentNode->SetupCommonResources();
-		texture = currentNode->Execute(texture);
-		auto nextNode = Graph[currentNode->GetNextNode()];
-		currentNode = nextNode;
+		auto currentNode = Head;
+		engine->GetWindow()->SetViewport(CommandQueue->GetCommandList().Get());
+		ORenderTargetBase* texture = OEngine::Get()->GetOffscreenRT();
+		CommandQueue->SetRenderTarget(texture);
+		while (currentNode != nullptr)
+		{
+			LOG(Render, Log, "Executing node: {}", TEXT(currentNode->GetNodeInfo().Name));
+			currentNode->SetupCommonResources();
+			texture = currentNode->Execute(texture);
+			currentNode = Graph[currentNode->GetNextNode()];
+		}
+	}
+	else
+	{
+		LOG(Render, Error, "SRVHeap is not initialized!");
 	}
 }
 void ORenderGraph::SetPSO(const string& Type) const
@@ -57,9 +64,10 @@ SPSODescriptionBase* ORenderGraph::FindPSOInfo(const string& Name) const
 	return PipelineManager->FindPSO(Name);
 }
 
-//TODO Resolve automatically the type of the node
+// TODO Resolve automatically the type of the node
 unique_ptr<ORenderNode> ORenderGraph::ResolveNodeType(const string& Type)
 {
+
 	if (Type == "OpaqueDynamicReflections")
 	{
 		return make_unique<OReflectionNode>();
@@ -84,48 +92,6 @@ unique_ptr<ORenderNode> ORenderGraph::ResolveNodeType(const string& Type)
 	{
 		return make_unique<OPresentNode>();
 	}
-	LOG(Render, Error, "Node type not found: {}", TEXT(Type));
-	return nullptr;
+	LOG(Render, Warning, "Node type not found: {}", TEXT(Type));
+	return make_unique<ODefaultRenderNode>();
 }
-/*
-*   {
-	  "Name": "OpaqueDynamicReflections",
-	  "PSO": "Opaque",
-	  "NextNode": "Opaque",
-	  "RenderLayer": "OpaqueDynamicReflections"
-	},
-	{
-	  "Name": "Opaque",
-	  "PSO": "Opaque",
-	  "NextNode": "Transparent",
-	  "RenderLayer": "Opaque"
-	},
-	{
-	  "Name": "Transparent",
-	  "PSO": "Transparent",
-	  "NextNode": "PostProcess",
-	  "RenderLayer": "Transparent"
-	},
-	{
-	  "Name": "PostProcess",
-	  "PSO": "PostProcess",
-	  "NextNode": "UI",
-	  "RenderLayer": "PostProcess"
-	},
-	{
-	  "Name": "UI",
-	  "PSO": "UI",
-	  "RenderLayer": "UI",
-	  "NextNode": "Resolve"
-	},
-	{
-	  "Name": "Resolve",
-	  "PSO": "Resolve",
-	  "NextNode": "Present"
-	},
-	{
-	  "Name": "Present",
-	  "PSO": "Present",
-	  "NextNode": ""
-	}
- */

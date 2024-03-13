@@ -17,7 +17,7 @@ public:
 		uint32_t TextureHeight;
 	};
 
-	OBilateralBlurFilter(ID3D12Device* Device, ID3D12GraphicsCommandList* List, UINT Width, UINT Height, DXGI_FORMAT Format);
+	OBilateralBlurFilter(ID3D12Device* Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format);
 
 	void BuildDescriptors(IDescriptor* Descriptor) override;
 

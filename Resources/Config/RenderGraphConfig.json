@@ -9,8 +9,14 @@
     {
       "Name": "Opaque",
       "PSO": "Opaque",
-      "NextNode": "UI",
+      "NextNode": "Sky",
       "RenderLayer": "Opaque"
+    },
+    {
+      "Name": "Sky",
+        "PSO": "Sky",
+        "NextNode": "Transparent",
+        "RenderLayer": "Sky"
     },
     {
       "Name": "Transparent",
