@@ -52,6 +52,7 @@ struct SRenderLayer
 	RENDER_TYPE(Highlight);
 	RENDER_TYPE(Sky);
 	RENDER_TYPE(PostProcess);
+	RENDER_TYPE(Water);
 };
 
 struct SPSOType

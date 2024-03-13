@@ -21,13 +21,14 @@ void OTextureManager::LoadLocalTextures()
 {
 	CommandQueue->TryResetCommandList();
 	RemoveAllTextures();
+
 	for (const auto& texture : Parser->LoadTextures())
 	{
 		texture->HeapIdx = Textures.size();
 		TexturesHeapIndicesTable.insert(texture->HeapIdx);
 		THROW_IF_FAILED(DirectX::CreateDDSTextureFromFile12(Device,
 		                                                    CommandQueue->GetCommandList().Get(),
-		                                                    texture->FileName.c_str(),
+		                                                    OApplication::Get()->GetResourcePath(texture->FileName).c_str(),
 		                                                    texture->Resource,
 		                                                    texture->UploadHeap));
 		LOG(Engine, Log, "Texture created from config: Name : {}, Path: {}", TEXT(texture->Name), texture->FileName);

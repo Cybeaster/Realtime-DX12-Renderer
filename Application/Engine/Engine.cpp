@@ -574,59 +574,6 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 	}
 }
 
-void OEngine::PostProcess(HWND Handler)
-{
-	/*const auto commandList = GetCommandQueue()->GetCommandList();
-	const auto backBuffer = GetWindowByHWND(Handler)->GetCurrentBackBuffer();
-
-	Utils::ResourceBarrier(commandList.Get(),
-	                       OffscreenRT->GetResource(),
-	                       D3D12_RESOURCE_STATE_GENERIC_READ);
-
-	Utils::ResourceBarrier(commandList.Get(),
-	                       backBuffer,
-	                       D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-	auto rtv = Window->CurrentBackBufferView();
-	auto dsv = Window->GetDepthStensilView();
-	commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
-
-	if (auto [executed, srv] = GetSobelFilter()->Execute(PostProcessRootSignature.Get(),
-	                                                     PSOs[SPSOType::SobelFilter].Get(),
-	                                                     OffscreenRT->GetSRV().GPUHandle);
-	    executed)
-	{
-	    DrawCompositeShader(srv);
-	}
-	else
-	{
-	    Utils::ResourceBarrier(commandList.Get(),
-	                           backBuffer,
-	                           D3D12_RESOURCE_STATE_COPY_DEST);
-	    GetCommandQueue()->CopyResourceTo(Window, OffscreenRT);
-	    Utils::ResourceBarrier(commandList.Get(),
-	                           backBuffer,
-	                           D3D12_RESOURCE_STATE_RENDER_TARGET);
-	}*/
-
-	/*GetBlurFilter()->Execute(BlurRootSignature.Get(),
-	                         PSOs[SPSOType::HorizontalBlur].Get(),
-	                         PSOs[SPSOType::VerticalBlur].Get(),
-	                         backBuffer);*/
-
-	// GetBlurFilter()->OutputTo(backBuffer);
-
-	/*GetBilateralBlurFilter()->Execute(BilateralBlurRootSignature.Get(),
-	                                  PSOs[SPSOType::BilateralBlur].Get(),
-	                                  backBuffer);*/
-
-	//	GetBilateralBlurFilter()->OutputTo(backBuffer);
-
-	/*Utils::ResourceBarrier(commandList.Get(),
-	                       backBuffer,
-	                       D3D12_RESOURCE_STATE_RENDER_TARGET);*/
-}
-
 void OEngine::DrawCompositeShader(CD3DX12_GPU_DESCRIPTOR_HANDLE Input)
 
 {
@@ -635,56 +582,6 @@ void OEngine::DrawCompositeShader(CD3DX12_GPU_DESCRIPTOR_HANDLE Input)
 	commandList->SetGraphicsRootDescriptorTable(0, OffscreenRT->GetSRV().GPUHandle);
 	commandList->SetGraphicsRootDescriptorTable(1, Input);
 	DrawFullScreenQuad();
-}
-
-void OEngine::OnPostRender()
-{
-	// PostProcess(Window->GetHWND());
-	const auto commandList = GetCommandQueue()->GetCommandList();
-	Window->SetViewport(commandList.Get());
-
-	commandList->SetGraphicsRootSignature(DefaultRootSignature.Get());
-	commandList->SetGraphicsRootShaderResourceView(1, CurrentFrameResources->MaterialBuffer->GetResource()->Resource->GetGPUVirtualAddress());
-	commandList->SetGraphicsRootConstantBufferView(2, CurrentFrameResources->PassCB->GetResource()->Resource->GetGPUVirtualAddress());
-	commandList->SetGraphicsRootDescriptorTable(3, GetSRVHeap()->GetGPUDescriptorHandleForHeapStart());
-	GetCommandQueue()->GetCommandList()->SetGraphicsRootDescriptorTable(5, OEngine::Get()->GetSRVDescHandleForTexture(FindTextureByName("grasscube1024")));
-
-	auto rtv = GetOffscreenRT()->GetRTV().CPUHandle;
-	auto dsv = GetWindow()->GetDepthStensilView();
-	Utils::ResourceBarrier(commandList.Get(), GetOffscreenRT()->GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-	// Clear the back buffer and depth buffer.
-	commandList->ClearRenderTargetView(rtv, reinterpret_cast<float*>(&MainPassCB.FogColor), 0, nullptr);
-	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-
-	// Specify the buffers we are going to render to.
-	commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
-
-	DrawRenderItems(SPSOType::Opaque, SRenderLayer::Opaque);
-
-	UIManager->Draw();
-	UIManager->PostRender(GetCommandQueue()->GetCommandList().Get());
-	GetCommandQueue()->CopyResourceTo(Window, OffscreenRT);
-
-	Utils::ResourceBarrier(GetCommandQueue()->GetCommandList().Get(),
-	                       Window->GetResource(),
-	                       D3D12_RESOURCE_STATE_PRESENT);
-
-	GetCommandQueue()->ExecuteCommandList();
-
-	THROW_IF_FAILED(Window->GetSwapChain()->Present(0, 0));
-	Window->MoveToNextFrame();
-
-	// Add an instruction to the command queue to set a new fence point.
-	// Because we are on the GPU timeline, the new fence point won’t be
-	// set until the GPU finishes processing all the commands prior to
-	// this Signal().
-	CurrentFrameResources->Fence = GetCommandQueue()->Signal();
-
-	// Wait until frame commands are complete.  This waiting is inefficient and is
-	// done for simplicity.  Later we will show how to organize our rendering code
-	// so we do not have to wait per frame.
-	FlushGPU();
 }
 
 void OEngine::DestroyWindow()

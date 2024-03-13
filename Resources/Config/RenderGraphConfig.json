@@ -21,8 +21,14 @@
     {
       "Name": "Transparent",
       "PSO": "Transparent",
-      "NextNode": "PostProcess",
+      "NextNode": "Water",
       "RenderLayer": "Transparent"
+    },
+    {
+        "Name": "Water",
+        "PSO": "Water",
+        "NextNode": "PostProcess",
+        "RenderLayer": "Water"
     },
     {
       "Name": "PostProcess",

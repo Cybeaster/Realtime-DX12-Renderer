@@ -19,6 +19,7 @@ public:
 	uint32_t GetNumRTVRequired() override;
 	uint32_t GetNumDSVRequired() override;
 	uint32_t GetNumSRVRequired() const override;
+
 	SDescriptorPair GetDSV(uint32_t SubtargetIdx) const override;
 	SDescriptorPair GetRTV(uint32_t SubtargetIdx) const override;
 	void InitRenderObject() override;

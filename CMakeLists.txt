@@ -182,7 +182,9 @@ set(SRC_FILES
         Types/DirectX/Resource.cpp
         Application/RenderGraph/Nodes/DefaultNode/DefaultRenderNode.cpp
         Application/RenderGraph/Nodes/DefaultNode/DefaultRenderNode.h
-        )
+        Application/RenderGraph/Nodes/WaterNode/WaterNode.cpp
+        Application/RenderGraph/Nodes/WaterNode/WaterNode.h
+)
 
 set(DXCOMPILER_PATH_DLL ${CMAKE_SOURCE_DIR}/Externals/directx/Compiler/bin)
 set(DXCOMPILER_PATH_LIB ${CMAKE_SOURCE_DIR}/Externals/directx/Compiler/bin/dxcompiler.lib)

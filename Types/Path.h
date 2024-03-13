@@ -17,5 +17,10 @@ struct SPath
 		return Path.string() + "/";
 	}
 
+	wstring GetWPath() const
+	{
+		return Path.wstring() + L"/";
+	}
+
 	std::filesystem::path Path;
 };

@@ -14,12 +14,12 @@ ORenderTargetBase::ORenderTargetBase(UINT Width, UINT Height)
 
 uint32_t ORenderTargetBase::GetNumSRVRequired() const
 {
-	return 1;
+	return 0;
 }
 
 uint32_t ORenderTargetBase::GetNumRTVRequired()
 {
-	return 1;
+	return 0;
 }
 
 uint32_t ORenderTargetBase::GetNumDSVRequired()

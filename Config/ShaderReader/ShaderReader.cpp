@@ -1,6 +1,7 @@
 
 #include "ShaderReader.h"
 
+#include "Application.h"
 #include "GraphicsPipeline/GraphicsPipeline.h"
 
 #include <ranges>
@@ -13,7 +14,8 @@ unordered_map<string, vector<SPipelineStage>> OShaderReader::LoadShaders()
 		vector<SPipelineStage> currentPipeline;
 
 		SPipelineStage info;
-		info.ShaderPath = UTF8ToWString(shader.get<string>("Path"));
+		info.ShaderPath = OApplication::Get()->GetResourcePath(UTF8ToWString(shader.get<string>("Path")));
+
 		info.ShaderName = shader.get<string>("Name");
 		for (auto& val : shader.get_child("Pipeline") | std::views::values)
 		{

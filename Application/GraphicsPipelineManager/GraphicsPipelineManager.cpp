@@ -40,10 +40,13 @@ void OGraphicsPipelineManager::LoadPipelines()
 		{
 			pso->SetComputeByteCode(compute->GetShaderByteCode());
 		}
-
 		pso->RootSignature = FindRootSignatureForPipeline(pso->RootSignatureName);
-		pso->BuildPipelineState(OEngine::Get()->GetDevice().Get());
-		GlobalPSOMap[pso->Name] = std::move(pso);
+		if(pso->RootSignature != nullptr)
+		{
+			pso->BuildPipelineState(OEngine::Get()->GetDevice().Get());
+			GlobalPSOMap[pso->Name] = std::move(pso);
+		}
+
 	}
 }
 

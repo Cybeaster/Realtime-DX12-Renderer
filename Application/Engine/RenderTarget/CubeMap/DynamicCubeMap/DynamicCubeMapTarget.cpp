@@ -58,5 +58,11 @@ void ODynamicCubeMapRenderTarget::UpdatePass(const SPassConstantsData& Data)
 		pass.RenderTargetSize = DirectX::XMFLOAT2(Resolution.x, Resolution.y);
 		pass.InvRenderTargetSize = DirectX::XMFLOAT2(1 / SCast<float>(Resolution.x), SCast<float>(1 / Resolution.y));
 		Data.Buffer->CopyData(start, pass);
+
+		SPassConstantsData data;
+		data.StartIndex = start;
+		data.EndIndex = end;
+		data.Buffer = Data.Buffer;
+		PassConstants.push_back(data);
 	}
 }

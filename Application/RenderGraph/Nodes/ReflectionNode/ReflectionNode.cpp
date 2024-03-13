@@ -16,7 +16,8 @@ ORenderTargetBase* OReflectionNode::Execute(ORenderTargetBase* RenderTarget)
 	for (size_t i = 0; i < cube->GetNumRTVRequired(); i++)
 	{
 		CommandQueue->SetRenderTarget(cube, i);
-	  	CommandQueue->SetResource("cbPass", resource + i * passCBByteSize, PSO);
+
+	  	CommandQueue->SetResource("cbPass", cube->GetPassConstantAddresss(i), PSO);
 		OEngine::Get()->DrawRenderItems(PSO->RootSignature.get(), SRenderLayer::Opaque);
 		//OEngine::Get()->DrawRenderItems(FindPSOInfo(SPSOType::WavesRender)->RootSignature.get(), SRenderLayer::Waves);
 	    OEngine::Get()->DrawRenderItems(FindPSOInfo(SPSOType::Sky)->RootSignature.get(), SRenderLayer::Sky);

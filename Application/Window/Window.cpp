@@ -382,7 +382,7 @@ uint32_t OWindow::GetNumDSVRequired()
 
 uint32_t OWindow::GetNumRTVRequired()
 {
-	return 2;
+	return 3;
 }
 SDescriptorPair OWindow::GetRTV(uint32_t SubtargetIdx) const
 {

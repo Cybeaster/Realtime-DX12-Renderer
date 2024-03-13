@@ -35,6 +35,7 @@ void OCubeMapTest::DrawSceneToCubeMap()
 
 	cmdList->SetGraphicsRootDescriptorTable(5, OEngine::Get()->GetSRVDescHandleForTexture(FindTextureByName("grasscube1024")));
 	cubeMap->SetViewport(OEngine::Get()->GetCommandQueue()->GetCommandList().Get());
+
 	Utils::ResourceBarrier(cmdList.Get(), cubeMap->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	UINT passCBByteSize = Utils::CalcBufferByteSize(sizeof(SPassConstants));
 	auto resource = OEngine::Get()->CurrentFrameResources->PassCB->GetResource()->Resource->GetGPUVirtualAddress();
@@ -176,11 +177,17 @@ void OCubeMapTest::BuildRenderItems()
 		Put(rightCylinder.World, rightCylWorld);
 	}
 
-	CreateGridRenderItem(SRenderLayer::Waves,
+	SRenderItemParams params;
+	params.NumberOfInstances = 1;
+	params.bFrustrumCoolingEnabled = false;
+	params.Pickable = false;
+	params.MaterialParams.Material = FindMaterial("Water01");
+
+	CreateGridRenderItem(SRenderLayer::Water,
 	                     "Water",
 	                     160,
 	                     160,
-	                     Waves->GetRowCount(),
-	                     Waves->GetColumnCount(),
-	                     Waves->GetRIParams());
+	                     300,
+	                     300,
+	                     params);
 }

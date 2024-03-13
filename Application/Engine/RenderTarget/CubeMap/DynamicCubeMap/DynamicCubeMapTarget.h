@@ -14,8 +14,14 @@ public:
 	{
 		return "DynamicCubeMapTarget";
 	}
+	D3D12_GPU_VIRTUAL_ADDRESS GetPassConstantAddresss(int Index) const //TODO propagate to base class
+	{
+		auto& pass = PassConstants[Index];
+		return pass.Buffer->GetGPUAddress() + pass.StartIndex * Utils::CalcBufferByteSize(sizeof(SPassConstants));
+	}
 
 private:
 	DirectX::XMFLOAT3 Position;
 	vector<unique_ptr<OCamera>> Cameras;
+	vector<SPassConstantsData> PassConstants;
 };

@@ -429,7 +429,7 @@ void OTextureWaves::BuildRenderItems()
 
 	engine->BuildPickRenderItem();
 	CreateGridRenderItem(SRenderLayer::Waves,
-	                     "Water",
+	                     "WaterNode",
 	                     160,
 	                     160,
 	                     Waves->GetRowCount(),

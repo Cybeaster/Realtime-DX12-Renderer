@@ -400,3 +400,9 @@ string OApplication::GetConfigPath(const string& Key) const
 {
 	return RootDirPath.GetPath() + ConfigReader->GetRoot<string>(Key);
 }
+
+wstring OApplication::GetResourcePath(const wstring& Resource) const
+{
+	return RootDirPath.GetWPath() + Resource;
+
+}

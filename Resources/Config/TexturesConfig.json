@@ -162,17 +162,67 @@
     },
     {
       "Name": "white1x1",
-      "Path": "Resources\/Textures\/white1x1.dds",
+      "Path": "Resources/Textures/white1x1.dds",
       "ViewDimensions": "Texture2D"
     },
     {
       "Name": "WireFence",
-      "Path": "Resources\/Textures\/WireFence.dds",
+      "Path": "Resources/Textures/WireFence.dds",
       "ViewDimensions": "Texture2D"
     },
     {
       "Name": "WoodCrate02",
-      "Path": "Resources\/Textures\/WoodCrate02.dds",
+      "Path": "Resources/Textures/WoodCrate02.dds",
+      "ViewDimensions": "Texture2D"
+    },
+    {
+      "Name": "Water002Diff",
+      "Path": "Resources/Textures/Water/Water002Diff.dds",
+        "ViewDimensions": "Texture2D"
+    },
+    {
+      "Name": "Water002Disp",
+      "Path": "Resources/Textures/Water/Water002Disp.dds",
+      "ViewDimensions": "Texture2D"
+    },
+    {
+      "Name": "Water002Norm",
+      "Path": "Resources/Textures/Water/Water002Norm.dds",
+      "ViewDimensions": "Texture2D"
+    },
+    {
+      "Name": "Water002OCC",
+      "Path": "Resources/Textures/Water/Water002OCC.dds",
+      "ViewDimensions": "Texture2D"
+    },
+    {
+      "Name": "Water002Rough",
+      "Path": "Resources/Textures/Water/Water002Rough.dds",
+      "ViewDimensions": "Texture2D"
+    },
+    {
+      "Name": "Water001Diff",
+      "Path": "Resources/Textures/Water/Water001Diff.dds",
+      "ViewDimensions": "Texture2D"
+    },
+    {
+      "Name": "Water001Disp",
+      "Path": "Resources/Textures/Water/Water001Disp.dds",
+      "ViewDimensions": "Texture2D"
+    },
+    {
+      "Name": "Water001Norm",
+      "Path": "Resources/Textures/Water/Water001Norm.dds",
+      "ViewDimensions": "Texture2D"
+    },
+    {
+      "Name": "Water001Occ",
+      "Path": "Resources/Textures/Water/Water001Occ.dds",
+      "ViewDimensions": "Texture2D"
+    },
+    {
+      "Name": "Water001Rough",
+      "Path": "Resources/Textures/Water/Water001Rough.dds",
       "ViewDimensions": "Texture2D"
     }
   ]

@@ -75,8 +75,8 @@
       ]
     },
     {
-      "Path": "Shaders/WaveDrawSimulation.hlsl",
-      "Name": "WaveSimulation",
+      "Path": "Shaders/Water.hlsl",
+      "Name": "Water",
       "Pipeline": [
         {
           "Type": "Vertex",
