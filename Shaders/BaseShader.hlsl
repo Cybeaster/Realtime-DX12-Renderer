@@ -50,9 +50,11 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	float4 posW = mul(float4(Vin.PosL, 1.0f), world);
 	vout.PosW = posW.xyz;
 
+
 	// Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
 
 	vout.NormalW = mul(Vin.NormalL, (float3x3)world);
+
 	if (!IsTangentValid(Vin.TangentU))
 	{
 		vout.TangentW = float3(0.0f, 0.0f, 0.0f);
@@ -68,6 +70,7 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	// Output vertex attributes for interpolation across triangle.
 	float4 texC = mul(float4(Vin.TexC, 0.0f, 1.0f), texTransform);
 	vout.TexC = mul(texC, matData.MatTransform).xy;
+	vout.PosW = ComputeHeightMaps(matData, vout.NormalW, vout.TangentW, vout.TexC, vout.PosW);
 
 	return vout;
 }
@@ -92,8 +95,8 @@ float4 PS(VertexOut pin)
 	pin.NormalW = normalize(pin.NormalW);
 
 	bumpedNormalW = ComputeNormalMaps(pin.NormalW, pin.TangentW, matData, pin.TexC, normalMapSample.a);
-	pin.PosW = ComputeHeightMaps(matData, pin.NormalW, pin.TangentW, pin.TexC, pin.PosW);
 	diffuseAlbedo = ComputeDiffuseMaps(matData, diffuseAlbedo, pin.TexC);
+
 	// Vector from point being lit to eye.
 	float3 toEyeW = gEyePosW - pin.PosW;
 	float distToEye = length(toEyeW);
