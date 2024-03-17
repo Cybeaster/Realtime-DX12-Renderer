@@ -5,7 +5,8 @@ Rendering engine using DirectX 12 for backend.
 
 Currently implemented features:
 - [Post processing effects: Gaussian blur, Billateral Blur Sobel edge detection.](https://drive.google.com/file/d/1YM6GdQ5hukTIhE-3AtOEX8KABRpBkVZm/view?usp=sharing)
-- [Dynamic reflections.](https://github.com/Cybeaster/RenderEngine/blob/water_hot_fix/Examples/Reflection.png) [Video.](https://drive.google.com/file/d/1zCIDPchba3Ko1v2GmD2S5vg1SAfXeg4o/view?usp=sharing)
+- [Dynamic reflections.](https://drive.google.com/file/d/1zCIDPchba3Ko1v2GmD2S5vg1SAfXeg4o/view?usp=sharing)
+![image](https://github.com/Cybeaster/RenderEngine/assets/47248969/857d38ed-56ef-4649-98fe-ae2eaab5c273)
 - Shader reflection.
 - Render graph.
 - Automatic PSO resolve.
