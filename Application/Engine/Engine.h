@@ -148,11 +148,15 @@ public:
 	uint32_t GetDesiredCountOfSRVs() const;
 	std::unordered_map<string, unique_ptr<SMeshGeometry>>& GetSceneGeometry();
 	SMeshGeometry* SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry);
+	ORenderItem* BuildRenderItemFromMesh(const string& Name, string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params);
 
-	vector<SInstanceData>& BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params);
-	vector<SInstanceData>& BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, const SRenderItemParams& Params);
-	vector<SInstanceData>& BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, const SRenderItemParams& Params);
-	vector<SInstanceData>& BuildRenderItemFromMesh(string Category, const string& Name, const OGeometryGenerator::SMeshData& Data);
+	ORenderItem* BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params);
+	ORenderItem* BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, const SRenderItemParams& Params);
+	ORenderItem* BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, const SRenderItemParams& Params);
+	ORenderItem* BuildRenderItemFromMesh(string Category, const string& Name, const OGeometryGenerator::SMeshData& Data);
+
+	OLightComponent* AddLightingComponent(ORenderItem* Item, const ELightType& Type );
+
 	void BuildPickRenderItem();
 	SMeshGeometry* CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels);
 	unique_ptr<SMeshGeometry> CreateMesh(const string& Name, const OGeometryGenerator::SMeshData& Data) const;
@@ -253,6 +257,7 @@ public:
 	void DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer);
 
 	void UpdateMaterialCB() const;
+	void UpdateLightCB(const UpdateEventArgs& Args)const;
 	void UpdateObjectCB() const;
 	void SetDescriptorHeap();
 	OShaderCompiler* GetShaderCompiler() const;
@@ -278,7 +283,7 @@ protected:
 	void BuildBilateralBlurRootSignature();
 	void UpdateFrameResource();
 	void InitRenderGraph();
-
+	uint32_t GetLightComponentsCount() const;
 private:
 	void RemoveRenderObject(TUUID UUID);
 	void BuildFrameResource(uint32_t Count = 1);
@@ -290,6 +295,7 @@ private:
 
 	OEngine() = default;
 	void UpdateMainPass(const STimer& Timer);
+	void GetNumLights(uint32_t& OutNumPointLights, uint32_t& OutNumSpotLights, uint32_t& OutNumDirLights) const;
 	SPassConstants MainPassCB;
 
 	ComPtr<IDXGIAdapter4> Adapter;
@@ -355,6 +361,8 @@ private:
 	unique_ptr<OShaderCompiler> ShaderCompiler;
 	unique_ptr<OGraphicsPipelineManager> PipelineManager;
 	unique_ptr<ORenderGraph> RenderGraph;
+	vector<OLightComponent*> LightComponents;
+
 };
 
 template<typename T, typename... Args>

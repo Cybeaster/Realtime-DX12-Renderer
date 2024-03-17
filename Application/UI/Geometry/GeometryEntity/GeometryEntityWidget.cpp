@@ -134,7 +134,7 @@ void OGeometryEntityWidget::InitWidget()
 	using namespace DirectX;
 	// Variables to store the decomposed components
 	DirectX::XMVECTOR scale, rotation, translation;
-	if (DirectX::XMMatrixDecompose(&scale, &rotation, &translation, DirectX::XMLoadFloat4x4(&RenderItem->World)))
+	if (DirectX::XMMatrixDecompose(&scale, &rotation, &translation, DirectX::XMLoadFloat4x4(&RenderItem->Instances[0].World)))
 	{
 		// If the decompose fails, set the default values
 		Position = { 0, 0, 0 };

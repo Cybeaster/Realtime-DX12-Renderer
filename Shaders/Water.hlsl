@@ -15,6 +15,8 @@ struct VertexOut
 	float3 NormalW : NORMAL;
 	float3 TangentW : TANGENT;
 	float2 TexC : TEXCOORD;
+	float2 WaveNormalTex0 : TEXCOORDNORMAL0;
+	float2 WaveNormalTex1 : TEXCOORDNORMAL1;
 
 	nointerpolation uint MaterialIndex : MATERIALINDEX;
 };
@@ -31,12 +33,17 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	vout.MaterialIndex = matIndex;
 	MaterialData matData = gMaterialData[matIndex];
 
-	// Output vertex attributes for interpolation across triangle.
-	float4 texC = mul(float4(Vin.TexC, 0.0f, 1.0f), texTransform);
-	vout.TexC = mul(texC, matData.MatTransform).xy;
+	// Sample the displacement map using non-transformed [0,1]^2 tex-coords.
+	Vin.PosL.y =  ComputeHeightMaps(matData, Vin.NormalL, Vin.TangentU, Vin.TexC,1.0).r * cos(gTotalTime) * 5 + sin(gTotalTime);
+
+	// Transform to world space.
+
+	float4 posW = mul(float4(Vin.PosL, 1.0f), world);
+	vout.PosW = posW.xyz;
 
 
 	// Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
+
 	vout.NormalW = mul(Vin.NormalL, (float3x3)world);
 
 	if (!IsTangentValid(Vin.TangentU))
@@ -47,17 +54,17 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	{
 		vout.TangentW = mul(Vin.TangentU, (float3x3)world);
 	}
-	Vin.PosL = ComputeHeightMaps(matData, vout.NormalW, vout.TangentW, vout.TexC, Vin.PosL);
-
-	// Transform to world space.
-	float4 posW = mul(float4(Vin.PosL, 1.0f), world);
-	vout.PosW = posW.xyz;
-
 
 	// Transform to homogeneous clip space.
 	vout.PosH = mul(posW, gViewProj);
 
+	// Output vertex attributes for interpolation across triangle.
+	float4 texC = mul(float4(Vin.TexC, 0.0f, 1.0f), texTransform);
+	vout.TexC = mul(texC, matData.MatTransform).xy;
 
+	// Apply different transformations for normal and height map texture coordinates
+	vout.WaveNormalTex0 = Vin.TexC * 1.1f + float2(0.05, 0.05);
+	vout.WaveNormalTex1 = Vin.TexC * 1.2f + float2(0.1, 0.1);
 
 	return vout;
 }
@@ -81,10 +88,7 @@ float4 PS(VertexOut pin)
 	float4 normalMapSample = float4(0.f, 0.f, 1.0f, 1.0f);
 	pin.NormalW = normalize(pin.NormalW);
 
-	int normalMapIndex = matData.NormalMapIndex[0];
-	normalMapSample = gTextureMaps[normalMapIndex].Sample(gsamAnisotropicClamp, pin.TexC);
-	bumpedNormalW = NormalSampleToWorldSpace(normalMapSample.rgb, pin.NormalW, pin.TangentW);
-
+	bumpedNormalW = ComputeNormalMaps(pin.NormalW, pin.TangentW, matData, pin.TexC, normalMapSample.a);
 	diffuseAlbedo = ComputeDiffuseMaps(matData, diffuseAlbedo, pin.TexC);
 
 	// Vector from point being lit to eye.
@@ -92,15 +96,31 @@ float4 PS(VertexOut pin)
 	float distToEye = length(toEyeW);
 	toEyeW /= distToEye; // normalize
 
-	// Light terms.
+// Light terms.
 	float4 ambient = gAmbientLight * diffuseAlbedo;
 
 	const float shininess = (1.0f - roughness) * normalMapSample.a;
 	Material mat = { diffuseAlbedo, fresnelR0, shininess };
 	float3 shadowFactor = 1.0f;
-	float4 directLight = ComputeLighting(gLights, mat, pin.PosW, bumpedNormalW, toEyeW, shadowFactor);
 
-	float4 litColor = ambient + directLight;
+	float3 light = {0.0f, 0.0f, 0.0f};
+
+	for (uint i = 0; i < gNumDirLights; i++)
+	{
+        light += ComputeDirectionalLight(gDirLights[i], mat, bumpedNormalW, toEyeW);
+    }
+
+    for (uint j = 0; j < gNumPointLights; j++)
+    {
+        light += ComputePointLight(gPointLights[j], mat, pin.PosW, bumpedNormalW, toEyeW);
+    }
+
+    for (uint k = 0; k < gNumSpotLights; k++)
+    {
+        light += ComputeSpotLight(gSpotLights[k], mat, pin.PosW, bumpedNormalW, toEyeW);
+    }
+
+	float4 litColor = ambient + float4(light, 1.0f);
 
 	float3 reflection = reflect(-toEyeW, bumpedNormalW);
 	float4 reflectionColor = gCubeMap.Sample(gsamLinearWrap, reflection);

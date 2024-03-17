@@ -2,6 +2,7 @@
 #include "DirectX/InstanceData.h"
 #include "Engine/RenderObject/RenderObject.h"
 
+struct ORenderItem;
 class OWaterRenderObject : public ORenderObjectBase
 {
 public:
@@ -9,7 +10,7 @@ public:
 	void Update(const UpdateEventArgs& Event) override;
 
 private:
-	vector<SInstanceData> InstanceData;
+	ORenderItem* WaterItem;
 };
 
 

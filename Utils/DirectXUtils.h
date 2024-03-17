@@ -36,7 +36,7 @@ void BuildRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>& RootS
 
 void CreateRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>& RootSignature, const ComPtr<ID3DBlob>& SerializedRootSig, const ComPtr<ID3DBlob>& ErrorBlob);
 DXGI_FORMAT MaskToFormat(uint32_t Mask);
-
+bool MatricesEqual(const DirectX::XMFLOAT4X4& mat1, const DirectX::XMFLOAT4X4& mat2, float epsilon = 1e-6f);
 SResourceInfo CreateResource(IRenderObject* Owner, ID3D12Device* Device, D3D12_HEAP_TYPE HeapProperties, const D3D12_RESOURCE_DESC& Desc, D3D12_RESOURCE_STATES InitialState = D3D12_RESOURCE_STATE_GENERIC_READ, const D3D12_CLEAR_VALUE* ClearValue = nullptr);
 SResourceInfo CreateResource(IRenderObject* Owner,
                              ID3D12Device* Device,

@@ -18,10 +18,6 @@ public:
 	OTextureWaves(OWindow* _Window);
 	bool Initialize() override;
 	void OnUpdate(const UpdateEventArgs& Event) override;
-	void OnRender(const UpdateEventArgs& Event) override;
-
-	void DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList,
-	                     const vector<ORenderItem*>& RenderItems) const;
 
 	OGPUWave* Waves = nullptr;
 

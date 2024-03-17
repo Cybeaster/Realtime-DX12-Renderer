@@ -36,6 +36,13 @@ public:
 		memcpy(&MappedData[ElementIdx * ElementByteSize], &Data, sizeof(Type));
 	}
 
+	uint32_t SetFreeIndex()
+	{
+		auto old = CurrentOffset;
+		CurrentOffset++;
+		return old;
+	}
+
 	auto GetGPUAddress() const
 	{
 		return UploadBuffer.Resource->GetGPUVirtualAddress();
@@ -46,12 +53,14 @@ public:
 	IRenderObject* Owner = nullptr;
 	UINT ElementByteSize = 0;
 	bool bIsConstantBuffer = false;
+	uint32_t CurrentOffset = 0;
+	uint32_t MaxOffset = 0;
 	BYTE* MappedData = nullptr;
 };
 
 template<typename Type>
 OUploadBuffer<Type>::OUploadBuffer(ID3D12Device* Device, UINT ElementCount, bool IsConstantBuffer, IRenderObject* Owner)
-    : bIsConstantBuffer(IsConstantBuffer), Owner(Owner)
+    : bIsConstantBuffer(IsConstantBuffer), Owner(Owner) , MaxOffset(ElementCount)
 {
 	ElementByteSize = sizeof(Type);
 

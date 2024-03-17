@@ -9,8 +9,8 @@ void OPickedRenderItemWidget::Draw()
 	if (picked)
 	{
 		ImGui::Text("Geometry Name: %s", picked->Geometry ? picked->Geometry->Name.c_str() : "None");
-		ImGui::Text("Material: %s", picked->Material ? picked->Material->Name.c_str() : "None");
-		ImGui::Text("Picked triangle %s", std::to_string(picked->StartIndexLocation).c_str());
+		ImGui::Text("Material: %s", picked->DefaultMaterial ? picked->DefaultMaterial->Name.c_str() : "None");
+		ImGui::Text("Picked triangle %s", std::to_string(picked->ChosenSubmesh->StartIndexLocation).c_str());
 	}
 	else
 	{

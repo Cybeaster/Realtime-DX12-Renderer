@@ -157,10 +157,10 @@ void OEngine::DrawRenderItems(string PSOType, string RenderLayer)
 			auto location = instanceBuffer->Resource->GetGPUVirtualAddress() + renderItem->StartInstanceLocation * sizeof(SInstanceData);
 			cmd->SetGraphicsRootShaderResourceView(0, location);
 			cmd->DrawIndexedInstanced(
-			    renderItem->IndexCount,
+			    renderItem->ChosenSubmesh->IndexCount, //todo move to separate API
 			    renderItem->VisibleInstanceCount,
-			    renderItem->StartIndexLocation,
-			    renderItem->BaseVertexLocation,
+			    renderItem->ChosenSubmesh->StartIndexLocation,
+			    renderItem->ChosenSubmesh->BaseVertexLocation,
 			    0);
 		}
 	}
@@ -181,9 +181,10 @@ void OEngine::UpdateMaterialCB() const
 		}
 	};
 
-	const auto currentMaterialCB = CurrentFrameResources->MaterialBuffer.get();
+
 	for (auto& materials = GetMaterials(); const auto& val : materials | std::views::values)
 	{
+
 		if (const auto material = val.get())
 		{
 			if (material->NumFramesDirty > 0)
@@ -208,9 +209,25 @@ void OEngine::UpdateMaterialCB() const
 				copyIndicesTo(heightIndices, matConstants.HeightMapIndex, SRenderConstants::MaxHeightMapsPerMaterial);
 
 				Put(matConstants.MatTransform, Transpose(matTransform));
+				for(auto& cb : FrameResources)
+				{
+					cb->MaterialBuffer->CopyData(material->MaterialCBIndex, matConstants);
+					material->NumFramesDirty--;
+				}
+			}
+		}
+	}
+}
 
-				currentMaterialCB->CopyData(material->MaterialCBIndex, matConstants);
-				material->NumFramesDirty--;
+void OEngine::UpdateLightCB(const UpdateEventArgs& Args) const
+{
+	for (const auto component : LightComponents)
+	{
+		if(component->TryUpdate())
+		{
+			for (auto& cb : FrameResources)
+			{
+				component->UpdateFrameResource(cb.get());
 			}
 		}
 	}
@@ -233,10 +250,10 @@ void OEngine::DrawRenderItemsImpl(SPSODescriptionBase* Description, const vector
 			auto location = instanceBuffer->Resource->GetGPUVirtualAddress() + renderItem->StartInstanceLocation * sizeof(SInstanceData);
 			GetCommandQueue()->SetResource("gInstanceData", location,Description);
 			cmd->DrawIndexedInstanced(
-			    renderItem->IndexCount,
+			    renderItem->ChosenSubmesh->IndexCount,
 			    renderItem->VisibleInstanceCount,
-			    renderItem->StartIndexLocation,
-			    renderItem->BaseVertexLocation,
+			    renderItem->ChosenSubmesh->StartIndexLocation,
+			    renderItem->ChosenSubmesh->BaseVertexLocation,
 			    0);
 		}
 	}
@@ -372,12 +389,14 @@ void OEngine::BuildFrameResource(uint32_t Count)
 
 	for (int i = 0; i < SRenderConstants::NumFrameResources; ++i)
 	{
-		FrameResources.push_back(make_unique<SFrameResource>(
-		    Device.Get(),
-		    PassCount,
-		    CurrentNumInstances,
-		    CurrentNumMaterials,
-		    GetWindow()));
+		auto frameResource = make_unique<SFrameResource>(Device.Get(), GetWindow());
+		frameResource->SetPass(PassCount);
+		frameResource->SetInstances(CurrentNumInstances);
+		frameResource->SetMaterials(CurrentNumMaterials);
+		frameResource->SetDirectionalLight(GetLightComponentsCount());
+		frameResource->SetPointLight(GetLightComponentsCount());
+		frameResource->SetSpotLight(GetLightComponentsCount());
+		FrameResources.push_back(std::move(frameResource));
 	}
 	OnFrameResourceChanged.Broadcast();
 }
@@ -510,6 +529,11 @@ void OEngine::InitRenderGraph()
 	RenderGraph->Initialize(PipelineManager.get(), GetCommandQueue());
 }
 
+uint32_t OEngine::GetLightComponentsCount() const
+{
+	return 100; //todo fix
+}
+
 OUIManager* OEngine::GetUIManager() const
 {
 	return UIManager;
@@ -525,7 +549,7 @@ void OEngine::UpdateObjectCB() const
 {
 	auto res = CurrentFrameResources->PassCB.get();
 
-	int32_t idx = 1; // TODO calc frame resource automatically.
+	int32_t idx = 1; // TODO calc frame resource automatically and calc frame resources
 	for (auto& val : RenderObjects | std::views::values)
 	{
 		if (val->GetNumPassesRequired() == 0)
@@ -539,7 +563,7 @@ void OEngine::UpdateObjectCB() const
 			break;
 		}
 
-		SPassConstantsData data;
+		TUploadBufferData<SPassConstants> data;
 		data.StartIndex = idx;
 		data.EndIndex = idx + SCast<int32_t>(val->GetNumPassesRequired());
 		data.Buffer = res;
@@ -551,19 +575,26 @@ void OEngine::UpdateObjectCB() const
 void OEngine::OnUpdate(UpdateEventArgs& Args)
 {
 	UpdateFrameResource();
-
 	PerformFrustrumCulling();
+
+	for (auto& item : AllRenderItems)
+	{
+		item->Update(Args);
+	}
+
 	if (CurrentFrameResources)
 	{
 		UpdateMainPass(Args.Timer);
 		UpdateMaterialCB();
 		UpdateObjectCB();
+		UpdateLightCB(Args);
 	}
 
 	for (const auto& val : RenderObjects | std::views::values)
 	{
 		val->Update(Args);
 	}
+
 }
 
 void OEngine::DrawCompositeShader(CD3DX12_GPU_DESCRIPTOR_HANDLE Input)
@@ -965,6 +996,10 @@ void OEngine::BuildDescriptorHeap()
 	uint32_t texturesOffset = 0;
 	for (const auto& texture : TextureManager->GetTextures() | std::views::values)
 	{
+		if (texture->ViewType != STextureViewType::Texture2D )
+		{
+			continue;
+		}
 		auto resourceSRV = texture->GetSRVDesc();
 		auto pair = ObjectDescriptors.SRVHandle.Offset();
 		Device->CreateShaderResourceView(texture->Resource.Resource.Get(), &resourceSRV, pair.CPUHandle);
@@ -1445,7 +1480,7 @@ void OEngine::Pick(int32_t SX, int32_t SY)
 		}
 
 		auto geometry = item->Geometry;
-		auto world = XMLoadFloat4x4(&item->World);
+		auto world = XMLoadFloat4x4(&item->Instances[0].World);
 		auto worldDet = XMMatrixDeterminant(world);
 		auto Invworld = XMMatrixInverse(&worldDet, world);
 
@@ -1488,18 +1523,11 @@ void OEngine::Pick(int32_t SX, int32_t SY)
 						if (t < tmin)
 						{
 							t = tmin;
-							uint32_t pickedTriangle = i;
 
 							PickedItem->bTraceable = false;
 							PickedItem->Geometry = geometry;
-							PickedItem->IndexCount = 3;
-							PickedItem->BaseVertexLocation = 0;
-							PickedItem->World = item->World;
 							PickedItem->Bounds = item->Bounds;
-							PickedItem->TexTransform = item->TexTransform;
 
-							PickedItem->NumFramesDirty = SRenderConstants::NumFrameResources;
-							PickedItem->StartIndexLocation = 3 * pickedTriangle;
 						}
 					}
 				}
@@ -1728,9 +1756,28 @@ void OEngine::UpdateMainPass(const STimer& Timer)
 	MainPassCB.FarZ = 1000.0f;
 	MainPassCB.TotalTime = Timer.GetTime();
 	MainPassCB.DeltaTime = Timer.GetDeltaTime();
-
+	GetNumLights(MainPassCB.NumPointLights, MainPassCB.NumSpotLights, MainPassCB.NumDirLights);
 	const auto currPassCB = CurrentFrameResources->PassCB.get();
 	currPassCB->CopyData(0, MainPassCB);
+}
+
+void OEngine::GetNumLights(uint32_t& OutNumPointLights, uint32_t& OutNumSpotLights, uint32_t& OutNumDirLights) const
+{
+	for (auto component : LightComponents)
+	{
+		switch (component->GetLightType())
+		{
+		case ELightType::Directional:
+			OutNumDirLights++;
+			break;
+		case ELightType::Point:
+			OutNumPointLights++;
+			break;
+		case ELightType::Spot:
+			OutNumSpotLights++;
+			break;
+		}
+	}
 }
 
 uint32_t OEngine::GetDesiredCountOfRTVs() const
@@ -1767,12 +1814,12 @@ SMeshGeometry* OEngine::SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry)
 	return geo;
 }
 
-vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params)
+ORenderItem* OEngine::BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params)
 {
 	return BuildRenderItemFromMesh(Category, SetSceneGeometry(move(Mesh)), Params);
 }
 
-vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, const SRenderItemParams& Params)
+ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, const SRenderItemParams& Params)
 {
 	if (Params.MaterialParams.Material == nullptr || Params.MaterialParams.Material->MaterialCBIndex == -1)
 	{
@@ -1780,10 +1827,7 @@ vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, 
 	}
 
 	auto newItem = make_unique<ORenderItem>();
-	newItem->World = Utils::Math::Identity4x4();
-	newItem->TexTransform = Utils::Math::Identity4x4();
-	newItem->ObjectCBIndex = AllRenderItems.size();
-	newItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
 	newItem->bFrustrumCoolingEnabled = Params.bFrustrumCoolingEnabled;
 
 	SInstanceData defaultInstance;
@@ -1804,15 +1848,12 @@ vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, 
 		submesh = Mesh->GetDrawArgs().begin()->first;
 	}
 
-	const auto& chosenSubmesh = *Mesh->FindSubmeshGeomentry(submesh);
-	newItem->IndexCount = chosenSubmesh.IndexCount;
-	newItem->StartIndexLocation = chosenSubmesh.StartIndexLocation;
-	newItem->BaseVertexLocation = chosenSubmesh.BaseVertexLocation;
-	newItem->Bounds = chosenSubmesh.Bounds;
+	newItem->ChosenSubmesh = Mesh->FindSubmeshGeomentry(submesh);
+	newItem->Name = Mesh->Name +"_"+ std::to_string(AllRenderItems.size());
 	AddRenderItem(Category, std::move(newItem));
-	return itemptr->Instances;
+	return itemptr;
 }
-vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, const SRenderItemParams& Params)
+ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, const SRenderItemParams& Params)
 {
 	auto mesh = MeshGenerator->CreateMesh(Name, Path, Parser, GenTexels);
 	const auto meshptr = mesh.get();
@@ -1820,23 +1861,24 @@ vector<SInstanceData>& OEngine::BuildRenderItemFromMesh(const string& Category, 
 	return BuildRenderItemFromMesh(Category, meshptr, Params);
 }
 
+OLightComponent* OEngine::AddLightingComponent(ORenderItem* Item, const ELightType& Type)
+{
+	uint32_t componentNum = LightComponents.size();
+	const auto res = Item->AddComponent<OLightComponent>(componentNum,componentNum,componentNum, Type);
+	LightComponents.push_back(res);
+	return res;
+}
+
 void OEngine::BuildPickRenderItem()
 {
 	auto newItem = make_unique<ORenderItem>();
-	newItem->World = Utils::Math::Identity4x4();
-	newItem->TexTransform = Utils::Math::Identity4x4();
-	newItem->ObjectCBIndex = AllRenderItems.size();
-	newItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	newItem->bFrustrumCoolingEnabled = false;
-	newItem->StartIndexLocation = 0;
-	newItem->BaseVertexLocation = 0;
-	newItem->Material = MaterialManager->FindMaterial(SMaterialNames::Picked);
-	newItem->IndexCount = 0;
+	newItem->DefaultMaterial = MaterialManager->FindMaterial(SMaterialNames::Picked);
 	newItem->RenderLayer = SRenderLayer::Highlight;
 	newItem->bTraceable = false;
 
 	SInstanceData defaultInstance;
-	defaultInstance.MaterialIndex = newItem->Material->MaterialCBIndex;
+	defaultInstance.MaterialIndex = newItem->DefaultMaterial->MaterialCBIndex;
 
 	newItem->Instances.push_back(defaultInstance);
 	PickedItem = newItem.get();
@@ -1982,4 +2024,11 @@ void OEngine::CreatePSO(const string& PSOName, const D3D12_GRAPHICS_PIPELINE_STA
 void OEngine::CreatePSO(const string& PSOName, const D3D12_COMPUTE_PIPELINE_STATE_DESC& PSODesc)
 {
 	THROW_IF_FAILED(Device->CreateComputePipelineState(&PSODesc, IID_PPV_ARGS(&PSOs[PSOName])));
+}
+
+ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Name, string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params)
+{
+	auto ri = BuildRenderItemFromMesh(Category, std::move(Mesh), Params);
+	ri->Name = Name + std::to_string(AllRenderItems.size());
+	return ri;
 }

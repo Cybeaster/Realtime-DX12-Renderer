@@ -1,9 +1,21 @@
 #pragma once
+#include "../../../Components/RenderItemComponentBase.h"
 #include "../../Materials/Material.h"
 #include "DirectX/InstanceData.h"
+#include "LightComponent/LightComponent.h"
 #include "Logger.h"
 
 struct SFrameResource;
+
+
+struct SRenderItemGeometry
+{
+
+};
+
+/**
+ * @brief Object placeable in the world, having geomentry, material and variable number of instances
+ */
 struct ORenderItem
 {
 	ORenderItem() = default;
@@ -11,36 +23,42 @@ struct ORenderItem
 	ORenderItem(const ORenderItem&) = default;
 
 	void BindResources(ID3D12GraphicsCommandList* CmdList, SFrameResource* Frame) const;
-
-	void UpdateWorldMatrix(const DirectX::XMMATRIX& WorldMatrix);
+	void Update(const UpdateEventArgs& Arg) const;
 	bool IsValid() const;
 	bool IsValidChecked() const;
-
 	string RenderLayer = "NONE";
+	string Name;
+
 	bool bTraceable = true;
 	bool bFrustrumCoolingEnabled = true;
-
-	DirectX::XMFLOAT4X4 World = Utils::Math::Identity4x4();
-	DirectX::XMFLOAT4X4 TexTransform = Utils::Math::Identity4x4();
-
-	uint32_t NumFramesDirty = SRenderConstants::NumFrameResources;
-
-	UINT ObjectCBIndex = -1;
-
-	SMaterial* Material = nullptr;
+	template<typename T, typename... Args>
+	T* AddComponent(Args&&... Arg);
+	SMaterial* DefaultMaterial = nullptr;
 	SMeshGeometry* Geometry = nullptr;
-
-	D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	SSubmeshGeometry* ChosenSubmesh = nullptr;
 
 	DirectX::BoundingBox Bounds;
 	vector<SInstanceData> Instances;
 
-	UINT IndexCount = 0;
 	UINT VisibleInstanceCount = 0;
-	UINT StartIndexLocation = 0;
-	int BaseVertexLocation = 0;
 	int32_t StartInstanceLocation = 0;
+
+	SInstanceData* GetDefaultInstance();
+	const vector<unique_ptr<OComponentBase>>& GetComponents() const;
+
+private:
+	vector<unique_ptr<OComponentBase>> Components;
 };
+
+template<typename T, typename... Args>
+T* ORenderItem::AddComponent(Args&&... Arg)
+{
+	auto component = make_unique<T>(std::forward<Args>(Arg)...);
+	auto res = component.get();
+	Components.push_back(move(component));
+	Components.back()->Init(this);
+	return res;
+}
 
 struct SRenderItemParams
 {

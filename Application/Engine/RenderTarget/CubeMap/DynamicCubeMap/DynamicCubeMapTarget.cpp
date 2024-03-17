@@ -43,7 +43,7 @@ void ODynamicCubeMapRenderTarget::InitRenderObject()
 		Cameras[i]->UpdateViewMatrix();
 	}
 }
-void ODynamicCubeMapRenderTarget::UpdatePass(const SPassConstantsData& Data)
+void ODynamicCubeMapRenderTarget::UpdatePass(const TUploadBufferData<SPassConstants>& Data)
 {
 	OCubeRenderTarget::UpdatePass(Data);
 	auto start = Data.StartIndex;
@@ -59,7 +59,7 @@ void ODynamicCubeMapRenderTarget::UpdatePass(const SPassConstantsData& Data)
 		pass.InvRenderTargetSize = DirectX::XMFLOAT2(1 / SCast<float>(Resolution.x), SCast<float>(1 / Resolution.y));
 		Data.Buffer->CopyData(start, pass);
 
-		SPassConstantsData data;
+		TUploadBufferData<SPassConstants> data;
 		data.StartIndex = start;
 		data.EndIndex = end;
 		data.Buffer = Data.Buffer;

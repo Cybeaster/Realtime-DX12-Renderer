@@ -18,14 +18,14 @@ void OGeometryManagerWidget::Draw()
 			{
 				if (const auto widget = Cast<OGeometryEntityWidget>(entity.get()))
 				{
-					if (const auto geometry = widget->GetGeometry())
+					if (const auto ri = widget->GetRenderItem())
 					{
-						if (ImGui::Selectable(geometry->Name.c_str(), SelectedGeometry == geometry->Name))
+						if (ImGui::Selectable(ri->Name.c_str(), SelectedRenderItem == ri->Name))
 						{
-							SelectedGeometry = geometry->Name;
+							SelectedRenderItem = ri->Name;
 						}
 
-						if (SelectedGeometry == geometry->Name)
+						if (SelectedRenderItem == ri->Name)
 						{
 							selectedWidget = widget;
 						}
@@ -38,6 +38,7 @@ void OGeometryManagerWidget::Draw()
 		if (selectedWidget)
 		{
 			selectedWidget->Draw();
+			DrawComponentWidgets();
 		}
 	}
 }
@@ -55,13 +56,60 @@ void OGeometryManagerWidget::InitWidget()
 				if (item->Geometry)
 				{
 					MakeWidget<OGeometryEntityWidget>(item, Engine, this);
+					StringToGeo[item->Name] = item;
 				}
 			}
 		}
 	}
+	LightComponentWidget = MakeWidget<OLightComponentWidget>();
 }
 
 void OGeometryManagerWidget::RebuildRequest() const
 {
-	Engine->UpdateGeometryRequest(SelectedGeometry);
+	Engine->UpdateGeometryRequest(SelectedRenderItem);
+}
+
+void OGeometryManagerWidget::DrawComponentWidgets()
+{
+	ImGui::SeparatorText("Item components");
+	auto item = StringToGeo[SelectedRenderItem];
+	if(item)
+	{
+		auto compNum = item->GetComponents().size();
+		ImGui::Text("Number of components %zu", compNum);
+		if(compNum> 0)
+		{
+			if(ImGui::TreeNode("Components"))
+			{
+				uint32_t it = 0;
+				for (auto& comp : item->GetComponents())
+				{
+					auto name = comp->GetName();
+					name += "##" + std::to_string(it);
+					if(ImGui::Selectable(name.c_str()))
+					{
+						SelectedComponentName = comp->GetName();
+						SelectedComponent = comp.get();
+					}
+					it++;
+				}
+				ImGui::TreePop();
+
+			}
+			if(SelectedComponentName != "")
+			{
+				if(SelectedComponent)
+				{
+					if(auto casted = Cast<OLightComponent>(SelectedComponent))
+					{
+						LightComponentWidget->SetComponent(casted);
+						LightComponentWidget->Draw();
+					}
+
+				}
+			}
+		}
+
+
+	}
 }

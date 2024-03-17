@@ -54,12 +54,12 @@ void OLightWidget::Draw()
 		{
 			SLight& Light = Lights[SelectedLightIdx].Light;
 			ImGui::InputText("Light Name", LightBuffer, 256);
-			ImGui::SliderFloat3("Light Position", &Light.Position.x, -1000.0f, 1000.0f);
-			ImGui::SliderFloat3("Light Direction", &Light.Direction.x, -1.0f, 1.0f);
-			ImGui::SliderFloat3("Light Strength", &Light.Strength.x, 0.0f, 1.0f);
+			ImGui::InputFloat3("Light Position", &Light.Position.x);
+			ImGui::InputFloat3("Light Direction", &Light.Direction.x );
+			ImGui::InputFloat3("Light Strength", &Light.Strength.x );
 			ImGui::SliderFloat("Light Spot Power", &Light.SpotPower, 0.0f, 100.0f);
-			ImGui::SliderFloat("Light FallOff Start", &Light.FallOffStart, 0.0f, 100.0f);
-			ImGui::SliderFloat("Light FallOff End", &Light.FallOffEnd, 0.0f, 100.0f);
+			ImGui::InputFloat("Light FallOff Start", &Light.FallOffStart );
+			ImGui::InputFloat("Light FallOff End", &Light.FallOffEnd);
 		}
 	}
 }

@@ -31,19 +31,7 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	vout.MaterialIndex = matIndex;
 	MaterialData matData = gMaterialData[matIndex];
 
-#ifdef DISPLACEMENT_MAP
-	// Sample the displacement map using non-transformed [0,1]^2 tex-coords.
-	Vin.PosL.y += gDisplacementMap.SampleLevel(gsamLinearWrap, Vin.TexC, 1.0f).r;
 
-	// Estimate normal using finite difference.
-	float du = inst.DisplacementMapTexelSize.x;
-	float dv = inst.DisplacementMapTexelSize.y;
-	float l = gDisplacementMap.SampleLevel(gsamPointClamp, Vin.TexC - float2(du, 0.0f), 0.0f).r;
-	float r = gDisplacementMap.SampleLevel(gsamPointClamp, Vin.TexC + float2(du, 0.0f), 0.0f).r;
-	float t = gDisplacementMap.SampleLevel(gsamPointClamp, Vin.TexC - float2(0.0f, dv), 0.0f).r;
-	float b = gDisplacementMap.SampleLevel(gsamPointClamp, Vin.TexC + float2(0.0f, dv), 0.0f).r;
-	Vin.NormalL = normalize(float3(-r + l, 2.0f * inst.GridSpatialStep, b - t));
-#endif
 
 	// Transform to world space.
 
@@ -70,7 +58,6 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	// Output vertex attributes for interpolation across triangle.
 	float4 texC = mul(float4(Vin.TexC, 0.0f, 1.0f), texTransform);
 	vout.TexC = mul(texC, matData.MatTransform).xy;
-	vout.PosW = ComputeHeightMaps(matData, vout.NormalW, vout.TangentW, vout.TexC, vout.PosW);
 
 	return vout;
 }
@@ -95,8 +82,8 @@ float4 PS(VertexOut pin)
 	pin.NormalW = normalize(pin.NormalW);
 
 	bumpedNormalW = ComputeNormalMaps(pin.NormalW, pin.TangentW, matData, pin.TexC, normalMapSample.a);
-	diffuseAlbedo = ComputeDiffuseMaps(matData, diffuseAlbedo, pin.TexC);
 
+	diffuseAlbedo = ComputeDiffuseMaps(matData, diffuseAlbedo, pin.TexC);
 	// Vector from point being lit to eye.
 	float3 toEyeW = gEyePosW - pin.PosW;
 	float distToEye = length(toEyeW);
@@ -108,9 +95,25 @@ float4 PS(VertexOut pin)
 	const float shininess = (1.0f - roughness) * normalMapSample.a;
 	Material mat = { diffuseAlbedo, fresnelR0, shininess };
 	float3 shadowFactor = 1.0f;
-	float4 directLight = ComputeLighting(gLights, mat, pin.PosW, bumpedNormalW, toEyeW, shadowFactor);
 
-	float4 litColor = ambient + directLight;
+	float3 light = {0.0f, 0.0f, 0.0f};
+
+	for (uint i = 0; i < gNumDirLights; i++)
+	{
+        light += ComputeDirectionalLight(gDirLights[i], mat, bumpedNormalW, toEyeW);
+    }
+
+    for (uint j = 0; j < gNumPointLights; j++)
+    {
+        light += ComputePointLight(gPointLights[j], mat, pin.PosW, bumpedNormalW, toEyeW);
+    }
+
+    for (uint k = 0; k < gNumSpotLights; k++)
+    {
+        light += ComputeSpotLight(gSpotLights[k], mat, pin.PosW, bumpedNormalW, toEyeW);
+    }
+
+	float4 litColor = ambient + float4(light, 1.0f);
 
 	float3 reflection = reflect(-toEyeW, bumpedNormalW);
 	float4 reflectionColor = gCubeMap.Sample(gsamLinearWrap, reflection);

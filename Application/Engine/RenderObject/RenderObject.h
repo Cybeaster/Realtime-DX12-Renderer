@@ -133,13 +133,21 @@ struct SRenderObjectDescriptor : IDescriptor
 	TDescriptorHandle DSVHandle;
 };
 
-struct SPassConstantsData
+template <typename DataType>
+struct TUploadBufferData
 {
 	int32_t StartIndex = -1;
 	int32_t EndIndex = INT32_MAX;
-	OUploadBuffer<SPassConstants>* Buffer = nullptr;
+	OUploadBuffer<DataType>* Buffer = nullptr;
+	void PutData(const DataType& Data)
+	{
+		Buffer->CopyData(StartIndex, Data);
+	}
 };
 
+/**
+ * @brief Object being render to the screen, may demand SRV, RTV, DSV, and pass constants
+ */
 class IRenderObject
 {
 public:
@@ -150,7 +158,7 @@ public:
 	virtual uint32_t GetNumRTVRequired() const { return 0; }
 	virtual uint32_t GetNumDSVRequired() const { return 0; }
 	virtual uint32_t GetNumPassesRequired() const { return 0; }
-	virtual void UpdatePass(const SPassConstantsData& Data) {}
+	virtual void UpdatePass(const TUploadBufferData<SPassConstants>& Data) {}
 	virtual void Update(const UpdateEventArgs& Event) {}
 	virtual TUUID GetID() { return {}; }
 	virtual void SetID(TUUID ID) {}

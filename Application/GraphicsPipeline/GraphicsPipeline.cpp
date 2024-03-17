@@ -42,9 +42,12 @@ bool SShaderPipelineDesc::TryAddRootParameterName(const wstring& Name)
 vector<D3D12_ROOT_PARAMETER1>& SShaderPipelineDesc::BuildParameterArray()
 {
 	RootSignatureParams.RootParameters.clear();
+	RootSignatureParams.RootParameters.resize(RootSignatureParams.RootParamMap.size());
+
 	for (auto& param : RootSignatureParams.RootParamMap | std::views::values)
 	{
-		RootSignatureParams.RootParameters.push_back(param.RootParameter);
+		auto index = RootSignatureParams.RootParamIndexMap[param.Name];
+		RootSignatureParams.RootParameters[index] = param.RootParameter;
 	}
 	return RootSignatureParams.RootParameters;
 }

@@ -186,6 +186,19 @@ set(SRC_FILES
         Application/RenderGraph/Nodes/WaterNode/WaterNode.h
         Objects/Geometry/Water/Water.cpp
         Objects/Geometry/Water/Water.h
+        Objects/Geometry/LightEmitting/SpotLightObject/SpotLightObject.cpp
+        Objects/Geometry/LightEmitting/SpotLightObject/SpotLightObject.h
+        Objects/Geometry/LightEmitting/OLightEmittingObject.cpp
+        Objects/Geometry/LightEmitting/OLightEmittingObject.h
+        Components/LightComponent/LightComponent.cpp
+        Components/LightComponent/LightComponent.h
+        Components/RenderItemComponentBase.h
+        Components/MeshComponent/MeshComponent.cpp
+        Components/MeshComponent/MeshComponent.h
+        Types/DirectX/FrameResource.cpp
+        Components/RenderItemComponentBase.cpp
+        Application/UI/Effects/Light/LightComponent/LightComponentWidget.cpp
+        Application/UI/Effects/Light/LightComponent/LightComponentWidget.h
 )
 
 set(DXCOMPILER_PATH_DLL ${CMAKE_SOURCE_DIR}/Externals/directx/Compiler/bin)
@@ -224,6 +237,7 @@ target_include_directories(DXRenderer PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Materials
         ${CMAKE_CURRENT_SOURCE_DIR}/Textures
         ${CMAKE_CURRENT_SOURCE_DIR}/Config
+        ${CMAKE_CURRENT_SOURCE_DIR}/Components
 
         )
 

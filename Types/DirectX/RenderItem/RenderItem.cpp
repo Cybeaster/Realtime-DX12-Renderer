@@ -5,15 +5,17 @@ void ORenderItem::BindResources(ID3D12GraphicsCommandList* CmdList, SFrameResour
 	auto idxBufferView = Geometry->IndexBufferView();
 	auto vertexBufferView = Geometry->VertexBufferView();
 
-	CmdList->IASetPrimitiveTopology(PrimitiveType);
+	CmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	CmdList->IASetIndexBuffer(&idxBufferView);
 	CmdList->IASetVertexBuffers(0, 1, &vertexBufferView);
 }
 
-void ORenderItem::UpdateWorldMatrix(const DirectX::XMMATRIX& WorldMatrix)
+void ORenderItem::Update(const UpdateEventArgs& Arg) const
 {
-	XMStoreFloat4x4(&World, WorldMatrix);
-	NumFramesDirty = SRenderConstants::NumFrameResources;
+	 for (auto& Component : Components)
+	 {
+		 Component->Tick(Arg);
+	 }
 }
 
 bool ORenderItem::IsValid() const
@@ -26,4 +28,13 @@ bool ORenderItem::IsValidChecked() const
 	const bool bIsValid = IsValid();
 	CWIN_LOG(!bIsValid, Geometry, Error, "RenderLayer is NONE");
 	return bIsValid;
+}
+SInstanceData* ORenderItem::GetDefaultInstance()
+{
+	return &Instances[0];
+}
+
+const vector<unique_ptr<OComponentBase>>& ORenderItem::GetComponents() const
+{
+	return Components;
 }

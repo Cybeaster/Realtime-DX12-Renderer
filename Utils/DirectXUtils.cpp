@@ -208,19 +208,6 @@ void Utils::BuildRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>
 	ComPtr<ID3DBlob> serializedRootSig = nullptr;
 	ComPtr<ID3DBlob> errorBlob = nullptr;
 
-	/*
-#if _DEBUG
-	LOG(Debug, Log, "Building root signature");
-	LOG(Debug, Log, "Root signature version: {}", TEXT(Desc.Version));
-	LOG(Debug, Log, "Root signature flags: {}", TEXT(Desc.Desc_1_1.Flags));
-	LOG(Debug, Log, "Root signature num parameters samplers: {}", TEXT(Desc.Desc_1_1.NumParameters));
-	for (int i = 0; i < Desc.Desc_1_1.NumParameters; i++)
-	{
-		LOG(Debug, Log, "Root signature parameter {}: {}", i, TEXT(Desc.Desc_1_1.pParameters[i]));
-	}
-#endif
-*/
-
 	THROW_IF_FAILED(D3D12SerializeVersionedRootSignature(&Desc,
 	                                                     serializedRootSig.GetAddressOf(),
 	                                                     errorBlob.GetAddressOf()));
@@ -257,6 +244,19 @@ DXGI_FORMAT Utils::MaskToFormat(const uint32_t Mask)
 		return DXGI_FORMAT_UNKNOWN;
 	}
 }
+
+bool Utils::MatricesEqual(const DirectX::XMFLOAT4X4& mat1, const DirectX::XMFLOAT4X4& mat2, float epsilon)
+{
+	for (int i = 0; i < 4; ++i) {
+		for (int j = 0; j < 4; ++j) {
+			if (fabs(mat1.m[i][j] - mat2.m[i][j]) > epsilon) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
 SResourceInfo Utils::CreateResource(IRenderObject* Owner, ID3D12Device* Device, const D3D12_HEAP_TYPE HeapProperties, const D3D12_RESOURCE_DESC& Desc, const D3D12_RESOURCE_STATES InitialState, const D3D12_CLEAR_VALUE* ClearValue)
 {
 	SResourceInfo info{

@@ -1,17 +1,4 @@
-// Defaults for number of lights.
-#ifndef NUM_DIR_LIGHTS
 
-#define NUM_DIR_LIGHTS 3
-#endif
-
-#ifndef NUM_POINT_LIGHTS
-
-#define NUM_POINT_LIGHTS 0
-#endif
-
-#ifndef NUM_SPOT_LIGHTS
-#define NUM_SPOT_LIGHTS 0
-#endif
 
 #ifndef MAX_DIFFUSE_MAPS
 #define MAX_DIFFUSE_MAPS 3
@@ -50,12 +37,16 @@ struct MaterialData
 	uint HeightMapIndex[MAX_HEIGHT_MAPS];
 };
 
-Texture2D gTextureMaps[7] : register(t0);
-Texture2D gDisplacementMap : register(t7);
-TextureCube gCubeMap : register(t8);
+Texture2D gTextureMaps[100] : register(t0);
+Texture2D gDisplacementMap : register(t101);
+TextureCube gCubeMap : register(t102);
 
 StructuredBuffer<InstanceData> gInstanceData : register(t0, space1);
 StructuredBuffer<MaterialData> gMaterialData : register(t1, space1);
+
+StructuredBuffer<SpotLight> gSpotLights : register(t0, space2);
+StructuredBuffer<PointLight> gPointLights : register(t1, space2);
+StructuredBuffer<DirectionalLight> gDirLights : register(t2, space2);
 
 cbuffer cbPass : register(b0)
 {
@@ -78,17 +69,9 @@ cbuffer cbPass : register(b0)
 	float4 gFogColor;
 	float gFogStart;
 	float gFogRange;
-	float2 cbPerPassPad2;
-
-	// Indices [0, NUM_DIR_LIGHTS) are directional lights;
-
-	// indices [NUM_DIR_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHTS) are point lights;
-
-	// indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)
-
-	// are spot lights for a maximum of MaxLights per object.
-
-	Light gLights[MaxLights];
+	uint gNumDirLights = 0;
+	uint gNumPointLights = 0;
+	uint gNumSpotLights = 0;
 };
 
 SamplerState gsamPointWrap : register(s0);
@@ -112,6 +95,7 @@ float3 NormalSampleToWorldSpace(float3 NormalMapSample, float3 UnitNormalW, floa
 	float3 bumpedNormal = mul(normalT, TBN);
 	return bumpedNormal;
 }
+
 
 bool IsTangentValid(float3 TangentW)
 {
@@ -152,16 +136,17 @@ float3 ComputeNormalMap(uint Index, float3 NormalW, float3 TangentW, MaterialDat
 	return bumpedNormalW;
 }
 
-float3 ComputeHeightMaps(MaterialData matData, float3 NormalW, float3 TangentW, float2 TexC, float3 PosW)
+float3 ComputeHeightMaps(MaterialData matData, float3 NormalW, float3 TangentW, float2 TexC,float Offset )
 {
 	uint numHeightMaps = matData.HeightMapCount;
+	float3 pos = float3(0.0f, 0.0f, 0.0f);
 	for (uint j = 0; j < numHeightMaps; ++j)
 	{
 		int heightMapIndex = matData.HeightMapIndex[j];
-		float heightMapSample = gTextureMaps[heightMapIndex].SampleLevel(gsamLinearClamp, TexC,1.0).r;
-		PosW += NormalW * heightMapSample;
+		float heightMapSample = gTextureMaps[heightMapIndex].SampleLevel(gsamLinearClamp, TexC,Offset).r;
+		pos +=  heightMapSample;
 	}
-	return PosW;
+	return pos;
 }
 
 float4 ComputeDiffuseMaps(MaterialData MatData, float4 DiffuseAlbedo, float2 TexC)

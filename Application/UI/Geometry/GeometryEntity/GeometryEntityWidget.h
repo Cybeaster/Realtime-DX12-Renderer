@@ -27,12 +27,12 @@ public:
 		else
 			return nullptr;
 	}
+	ORenderItem* GetRenderItem() const { return RenderItem; }
 	void RebuildRequest() const;
 
 private:
 	void DrawSubmeshParameters();
 	void DrawInstanceParameters();
-
 	float SliderWidth = 350;
 	OGeometryManagerWidget* Manager = nullptr;
 	ORenderItem* RenderItem = nullptr;

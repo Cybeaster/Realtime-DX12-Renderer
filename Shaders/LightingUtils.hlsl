@@ -34,14 +34,28 @@ float CartoonSpecular(float Specular)
 	return Specular;
 }
 
-struct Light
+struct SpotLight
 {
+	float3 Position;
+	float3 Direction;
 	float3 Strength;
-	float FalloffStart; // point/spot light only
-	float3 Direction; // directional/spot light only
-	float FalloffEnd; // point/spot light only
-	float3 Position; // point light only
-	float SpotPower; // spot light only
+	float FalloffStart;
+	float FalloffEnd;
+	float SpotPower;
+};
+
+struct PointLight
+{
+	float3 Position;
+	float3 Strength;
+	float FalloffStart;
+	float FalloffEnd;
+};
+
+struct DirectionalLight
+{
+	float3 Direction;
+	float3 Strength;
 };
 
 struct Material
@@ -94,7 +108,7 @@ float3 BlinnPhong(float3 lightStrength, float3 lightVec, float3 normal, float3 t
 //---------------------------------------------------------------------------------------
 // Evaluates the lighting equation for directional lights.
 //---------------------------------------------------------------------------------------
-float3 ComputeDirectionalLight(Light L, Material mat, float3 normal, float3 toEye)
+float3 ComputeDirectionalLight(DirectionalLight L, Material mat, float3 normal, float3 toEye)
 {
 	// The light vector aims opposite the direction the light rays travel.
 	float3 lightVec = -L.Direction;
@@ -114,7 +128,7 @@ float3 ComputeDirectionalLight(Light L, Material mat, float3 normal, float3 toEy
 //---------------------------------------------------------------------------------------
 // Evaluates the lighting equation for point lights.
 //---------------------------------------------------------------------------------------
-float3 ComputePointLight(Light L, Material mat, float3 pos, float3 normal, float3 toEye)
+float3 ComputePointLight(PointLight L, Material mat, float3 pos, float3 normal, float3 toEye)
 {
 	// The vector from the surface to the light.
 	float3 lightVec = L.Position - pos;
@@ -143,7 +157,7 @@ float3 ComputePointLight(Light L, Material mat, float3 pos, float3 normal, float
 //---------------------------------------------------------------------------------------
 // Evaluates the lighting equation for spot lights.
 //---------------------------------------------------------------------------------------
-float3 ComputeSpotLight(Light L, Material mat, float3 pos, float3 normal, float3 toEye)
+float3 ComputeSpotLight(SpotLight L, Material mat, float3 pos, float3 normal, float3 toEye)
 {
 	// The vector from the surface to the light.
 	float3 lightVec = L.Position - pos;
@@ -171,38 +185,6 @@ float3 ComputeSpotLight(Light L, Material mat, float3 pos, float3 normal, float3
 	lightStrength *= spotFactor;
 
 	return BlinnPhong(lightStrength, lightVec, normal, toEye, mat);
-}
-
-float4 ComputeLighting(Light gLights[MaxLights], Material mat,
-                       float3 pos, float3 normal, float3 toEye,
-                       float3 shadowFactor)
-{
-	float3 result = 0.0f;
-
-	int i = 0;
-
-#if (NUM_DIR_LIGHTS > 0)
-	for (i = 0; i < NUM_DIR_LIGHTS; ++i)
-	{
-		result += shadowFactor[i] * ComputeDirectionalLight(gLights[i], mat, normal, toEye);
-	}
-#endif
-
-#if (NUM_POINT_LIGHTS > 0)
-	for (i = NUM_DIR_LIGHTS; i < NUM_DIR_LIGHTS + NUM_POINT_LIGHTS; ++i)
-	{
-		result += ComputePointLight(gLights[i], mat, pos, normal, toEye);
-	}
-#endif
-
-#if (NUM_SPOT_LIGHTS > 0)
-	for (i = NUM_DIR_LIGHTS + NUM_POINT_LIGHTS; i < NUM_DIR_LIGHTS + NUM_POINT_LIGHTS + NUM_SPOT_LIGHTS; ++i)
-	{
-		result += ComputeSpotLight(gLights[i], mat, pos, normal, toEye);
-	}
-#endif
-
-	return float4(result, 0.0f);
 }
 
 float3 BoxCubeMapLookup(float3 RayOrigin, float3 UnitRayDir, float3 BoxCenter, float3 BoxExtents)

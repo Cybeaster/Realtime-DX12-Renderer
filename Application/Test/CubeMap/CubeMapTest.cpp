@@ -32,43 +32,43 @@ void OCubeMapTest::AnimateSkull(const UpdateEventArgs& Event)
 
 void OCubeMapTest::BuildRenderItems()
 {
-	auto& sky = CreateSphereRenderItem(SRenderLayer::Sky,
+	auto sky = CreateSphereRenderItem(SRenderLayer::Sky,
 	                                   "Sky",
 	                                   0.5f,
 	                                   20,
 	                                   20,
 	                                   FindMaterial("GrassSky"));
-	Scale(sky[0].World, { 5000.0f, 5000.0f, 5000.0f });
+	Scale(sky->Instances[0].World, { 5000.0f, 5000.0f, 5000.0f });
 
-	auto& skull = CreateRenderItem(SRenderLayer::Opaque,
+	auto skull = CreateRenderItem(SRenderLayer::Opaque,
 	                               "Skull",
 	                               WStringToUTF8(OApplication::Get()->GetResourcePath(L"Resources/Models/skull.txt")),
 	                               EParserType::Custom,
 	                               ETextureMapType::Spherical,
 	                               SRenderItemParams{ FindMaterial("White") });
-	Scale(skull[0].World, { 0.5f, 0.5f, 0.5f });
-	SkullRitem = &skull[0];
+	Scale(skull->Instances[0].World, { 0.5f, 0.5f, 0.5f });
+	SkullRitem = &skull->Instances[0];
 
-	auto& box = CreateBoxRenderItem(SRenderLayer::Opaque,
+	auto box = CreateBoxRenderItem(SRenderLayer::Opaque,
 	                                "Box",
 	                                1.0f,
 	                                1.0f,
 	                                1.0f,
 	                                3,
 	                                FindMaterial("Tile"));
-	box[0].World = Scale(Translate(box[0].World, { 2.0f, 1.0f, 2.0f }), { 1.0f, 2.0f, 1.0f });
+	box->Instances[0].World = Scale(Translate(box->Instances[0].World, { 2.0f, 1.0f, 2.0f }), { 1.0f, 2.0f, 1.0f });
 
-	auto& globe = CreateSphereRenderItem(SRenderLayer::OpaqueDynamicReflections,
+	auto globe = CreateSphereRenderItem(SRenderLayer::OpaqueDynamicReflections,
 	                                     "Globe",
 	                                     0.5f,
 	                                     20,
 	                                     20,
 	                                     FindMaterial("Mirror"));
 
-	Scale(globe[0].World, { 3, 3, 3 });
-	Translate(globe[0].World, { 0, 3, 0 });
+	Scale(globe->Instances[0].World, { 3, 3, 3 });
+	Translate(globe->Instances[0].World, { 0, 3, 0 });
 
-	auto& grid
+	auto grid
 	    = CreateGridRenderItem(SRenderLayer::Opaque,
 	                           "Grid",
 	                           20.0f,
@@ -76,9 +76,9 @@ void OCubeMapTest::BuildRenderItems()
 	                           60,
 	                           40,
 	                           FindMaterial("Tile"));
-	Scale(grid[0].TexTransform, { 8, 8, 1.0f });
+	Scale(grid->Instances[0].TexTransform, { 8, 8, 1.0f });
 
-	auto& cylinder = CreateCylinderRenderItem(SRenderLayer::Opaque,
+	auto cylinder = CreateCylinderRenderItem(SRenderLayer::Opaque,
 	                                          "Cylinder",
 	                                          0.5f,
 	                                          0.5f,
@@ -87,7 +87,7 @@ void OCubeMapTest::BuildRenderItems()
 	                                          20,
 	                                          { FindMaterial("Bricks"), 10 });
 
-	auto& spheres = CreateSphereRenderItem(SRenderLayer::Opaque,
+	auto spheres = CreateSphereRenderItem(SRenderLayer::Opaque,
 	                                       "Spheres",
 	                                       0.5f,
 	                                       20,
@@ -104,11 +104,11 @@ void OCubeMapTest::BuildRenderItems()
 		XMMATRIX leftSphereWorld = XMMatrixTranslation(-5.0f, 3.5f, -10.0f + it * 5.0f);
 		XMMATRIX rightSphereWorld = XMMatrixTranslation(+5.0f, 3.5f, -10.0f + it * 5.0f);
 
-		auto& leftSphere = spheres[it];
-		auto& rightSphere = spheres[it + 1];
+		auto& leftSphere = spheres->Instances[it];
+		auto& rightSphere = spheres->Instances[it + 1];
 
-		auto& leftCylinder = cylinder[it];
-		auto& rightCylinder = cylinder[it + 1];
+		auto& leftCylinder = cylinder->Instances[it];
+		auto& rightCylinder = cylinder->Instances[it + 1];
 
 		Put(leftSphere.World, leftSphereWorld);
 		Put(rightSphere.World, rightSphereWorld);
@@ -123,6 +123,26 @@ void OCubeMapTest::BuildRenderItems()
 	params.bFrustrumCoolingEnabled = false;
 	params.Pickable = false;
 	params.MaterialParams.Material = FindMaterial("Water01");
+
+	SSpotLight light;
+	light.Strength = { 0.5f, 0.5f, 0.5f };
+
+	auto spot = CreateLightSource(SRenderLayer::Opaque,
+	                              light);
+	Translate(spot->Instances[0].World, { 0, 3, 0 });
+
+	SDirectionalLight dir=
+	    {
+		    .Direction = { 0, -1, 0 },
+		    .Strength = { 0.5f, 0.5f, 0.5f },
+	    };
+	auto dirlight = CreateLightSource(SRenderLayer::Opaque, dir);
+	Translate(dirlight->Instances[0].World, { 0, 3, 0 });
+
+	SPointLight point;
+	point.Strength = { 0.5f, 0.5f, 0.5f };
+	auto pointLight = CreateLightSource(SRenderLayer::Opaque, point);
+
 
 
 }

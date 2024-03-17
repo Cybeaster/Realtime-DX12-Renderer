@@ -40,6 +40,8 @@ struct SPassConstants
 	float FogStart;
 	float FogRange;
 
-	DirectX::XMFLOAT2 cbPerPassPad2;
+	uint32_t NumDirLights = 0;
+	uint32_t NumPointLights = 0;
+	uint32_t NumSpotLights = 0;
 	SLight Lights[SRenderConstants::MaxLights];
 };

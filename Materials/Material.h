@@ -3,6 +3,7 @@
 #include "../Textures/Texture.h"
 #include "DirectX/MaterialData.h"
 #include "DirectX/RenderConstants.h"
+#include "LightComponent/LightComponent.h"
 
 struct STexture;
 
@@ -36,7 +37,6 @@ struct SMaterial
 	SMaterialSurface MaterialSurface;
 	// Used in texture mapping.
 	DirectX::XMFLOAT4X4 MatTransform = Utils::Math::Identity4x4();
-
 	vector<uint32_t> GetDiffuseMapIndices() const;
 	vector<uint32_t> GetNormalMapIndices() const;
 	vector<uint32_t> GetHeightMapIndices() const;

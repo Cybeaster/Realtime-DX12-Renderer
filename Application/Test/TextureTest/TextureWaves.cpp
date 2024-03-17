@@ -42,38 +42,6 @@ void OTextureWaves::OnUpdate(const UpdateEventArgs& Event)
 	UpdateMaterialCB();
 }
 
-void OTextureWaves::DrawRenderItems(ComPtr<ID3D12GraphicsCommandList> CommandList, const vector<ORenderItem*>& RenderItems) const
-{
-	for (size_t i = 0; i < RenderItems.size(); i++)
-	{
-		const auto renderItem = RenderItems[i];
-		if (!renderItem->IsValidChecked())
-		{
-			continue;
-		}
-		if (!renderItem->Instances.empty() && renderItem->Geometry)
-		{
-			auto vertexView = renderItem->Geometry->VertexBufferView();
-			auto indexView = renderItem->Geometry->IndexBufferView();
-
-			CommandList->IASetVertexBuffers(0, 1, &vertexView);
-			CommandList->IASetIndexBuffer(&indexView);
-			CommandList->IASetPrimitiveTopology(renderItem->PrimitiveType);
-
-			// Offset to the CBV in the descriptor heap for this object and
-			// for this frame resource.
-			auto instanceBuffer = Engine->CurrentFrameResources->InstanceBuffer->GetResource();
-			auto location = instanceBuffer->Resource->GetGPUVirtualAddress() + renderItem->StartInstanceLocation * sizeof(SInstanceData);
-			CommandList->SetGraphicsRootShaderResourceView(0, location);
-			CommandList->DrawIndexedInstanced(
-			    renderItem->IndexCount,
-			    renderItem->VisibleInstanceCount,
-			    renderItem->StartIndexLocation,
-			    renderItem->BaseVertexLocation,
-			    0);
-		}
-	}
-}
 
 void OTextureWaves::BuildTreeSpriteGeometry()
 {
@@ -241,25 +209,6 @@ void OTextureWaves::BuildTesselationPSO()
 	engine->CreatePSO(SPSOType::Tesselation, opaquePsoDesc);
 }
 
-void OTextureWaves::OnRender(const UpdateEventArgs& Event)
-{
-	const auto engine = Engine;
-	const auto commandList = engine->GetCommandQueue()->GetCommandList();
-
-	commandList->SetGraphicsRootDescriptorTable(4, Waves->GetDisplacementMapHandle());
-
-	GetEngine()->SetPipelineState(SPSOType::Opaque);
-	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Opaque));
-
-	GetEngine()->SetPipelineState(SPSOType::Highlight);
-	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Highlight));
-
-	GetEngine()->SetPipelineState(SPSOType::WavesRender);
-	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Waves));
-
-	GetEngine()->SetPipelineState(SPSOType::Sky);
-	DrawRenderItems(commandList.Get(), engine->GetRenderItems(SRenderLayer::Sky));
-}
 
 void OTextureWaves::BuildPSOTreeSprites()
 {
@@ -420,7 +369,7 @@ void OTextureWaves::BuildRenderItems()
 	                       EParserType::Custom,
 	                       ETextureMapType::None);
 
-	auto& car = engine->BuildRenderItemFromMesh(SRenderLayer::Opaque, mesh, carParams);
+	auto car = engine->BuildRenderItemFromMesh(SRenderLayer::Opaque, mesh, carParams);
 
 	SRenderItemParams highlightedParams;
 	highlightedParams.NumberOfInstances = 1;
@@ -441,7 +390,7 @@ void OTextureWaves::BuildRenderItems()
 	params.Pickable = true;
 	params.NumberOfInstances = n * n * n;
 	params.MaterialParams = { FindMaterial(SMaterialNames::Debug) };
-	auto& instances = engine->BuildRenderItemFromMesh(SRenderLayer::Opaque,
+	auto skull = engine->BuildRenderItemFromMesh(SRenderLayer::Opaque,
 	                                                  "Skull",
 	                                                  "Resources/Models/skull.txt",
 	                                                  EParserType::Custom,
@@ -465,12 +414,12 @@ void OTextureWaves::BuildRenderItems()
 			for (int j = 0; j < n; ++j)
 			{
 				const int idx = k * n * n + i * n + j;
-				instances[idx].World = XMFLOAT4X4(
+				skull->Instances[idx].World = XMFLOAT4X4(
 				    1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, x + j * dx, y + i * dy, z + k * dz, 1.0f);
 
-				XMStoreFloat4x4(&instances[idx].TexTransform, XMMatrixScaling(2.0f, 2.0f, 1.0f));
+				XMStoreFloat4x4(&skull->Instances[idx].TexTransform, XMMatrixScaling(2.0f, 2.0f, 1.0f));
 				const auto nextMatIdx = idx % GetMaterials().size();
-				instances[idx].MaterialIndex = nextMatIdx;
+				skull->Instances[idx].MaterialIndex = nextMatIdx;
 			}
 		}
 	}

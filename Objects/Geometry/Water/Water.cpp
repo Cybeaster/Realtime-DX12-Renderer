@@ -12,7 +12,7 @@ void OWaterRenderObject::InitRenderObject()
 	params.bFrustrumCoolingEnabled = false;
 	params.Pickable = false;
 	params.MaterialParams.Material = FindMaterial("Water01");
-	InstanceData = CreateGridRenderItem(SRenderLayer::Water,
+	WaterItem = CreateGridRenderItem(SRenderLayer::Water,
 	                                    "Water",
 	                                    160,
 	                                    160,
@@ -22,7 +22,7 @@ void OWaterRenderObject::InitRenderObject()
 }
 void OWaterRenderObject::Update(const UpdateEventArgs& Event)
 {
-	for (auto& inst : InstanceData)
+	for (auto& inst : WaterItem->Instances)
 	{
 		auto timer = Event.Timer;
 		const auto mat = FindMaterial(inst.MaterialIndex);

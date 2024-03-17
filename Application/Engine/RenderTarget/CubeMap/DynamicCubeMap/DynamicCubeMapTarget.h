@@ -9,7 +9,7 @@ public:
 	    : OCubeRenderTarget(Params, Res), Position(Center) {Name = L"DynamicCubeMap";}
 
 	void InitRenderObject() override;
-	void UpdatePass(const SPassConstantsData& Data) override;
+	void UpdatePass(const TUploadBufferData<SPassConstants>& Data) override;
 
 	D3D12_GPU_VIRTUAL_ADDRESS GetPassConstantAddresss(int Index) const //TODO propagate to base class
 	{
@@ -20,5 +20,5 @@ public:
 private:
 	DirectX::XMFLOAT3 Position;
 	vector<unique_ptr<OCamera>> Cameras;
-	vector<SPassConstantsData> PassConstants;
+	vector<TUploadBufferData<SPassConstants>> PassConstants;
 };

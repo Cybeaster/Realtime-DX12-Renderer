@@ -55,35 +55,35 @@ inline auto CreateMesh(const string& Name, const string& Path, const EParserType
 	return OEngine::Get()->CreateMesh(Name, Path, Parser, GenTexels);
 }
 
-inline auto& CreateRenderItem(const string& RenderLayer, const string& MeshName, const string& Path, EParserType ParserType, ETextureMapType TexelGenerator, const SRenderItemParams& Params)
+inline auto CreateRenderItem(const string& RenderLayer, const string& MeshName, const string& Path, EParserType ParserType, ETextureMapType TexelGenerator, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
 	return engine->BuildRenderItemFromMesh(RenderLayer, generator->CreateMesh(MeshName, Path, ParserType, TexelGenerator), Params);
 }
 
-inline auto& CreateGridRenderItem(string Category, string Name, float Width, float Depth, uint32_t Row, uint32_t Column, const SRenderItemParams& Params)
+inline auto CreateGridRenderItem(string Category, string Name, float Width, float Depth, uint32_t Row, uint32_t Column, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
 	return engine->BuildRenderItemFromMesh(Category, generator->CreateGridMesh(Name, Width, Depth, Row, Column), Params);
 }
 
-inline auto& CreateBoxRenderItem(string Category, string Name, float Width, float Height, float Depth, uint32_t NumSubdivisions, const SRenderItemParams& Params)
+inline auto CreateBoxRenderItem(string Category, string Name, float Width, float Height, float Depth, uint32_t NumSubdivisions, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
 	return engine->BuildRenderItemFromMesh(Category, generator->CreateBoxMesh(Name, Width, Height, Depth, NumSubdivisions), Params);
 }
 
-inline auto& CreateSphereRenderItem(string Category, string Name, float Radius, uint32_t SliceCount, uint32_t StackCount, const SRenderItemParams& Params)
+inline auto CreateSphereRenderItem(string Category, string Name, float Radius, uint32_t SliceCount, uint32_t StackCount, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
 	return engine->BuildRenderItemFromMesh(Category, generator->CreateSphereMesh(Name, Radius, SliceCount, StackCount), Params);
 }
 
-inline auto& CreateSphereRenderItem(string Category, string Name, const SRenderItemParams& Params)
+inline auto CreateSphereRenderItem(string Category, string Name, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
@@ -91,21 +91,21 @@ inline auto& CreateSphereRenderItem(string Category, string Name, const SRenderI
 	return engine->BuildRenderItemFromMesh(Category, generator->CreateSphereMesh(Name, constants.Radius, constants.SliceCount, constants.StackCount), Params);
 }
 
-inline auto& CreateGeosphereRenderItem(string Category, string Name, float Radius, uint32_t NumSubdivisions, const SRenderItemParams& Params)
+inline auto CreateGeosphereRenderItem(string Category, string Name, float Radius, uint32_t NumSubdivisions, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
 	return engine->BuildRenderItemFromMesh(Category, generator->CreateGeosphereMesh(Name, Radius, NumSubdivisions), Params);
 }
 
-inline auto& CreateCylinderRenderItem(string Category, string Name, float BottomRadius, float TopRadius, float Height, uint32_t SliceCount, uint32_t StackCount, const SRenderItemParams& Params)
+inline auto CreateCylinderRenderItem(string Category, string Name, float BottomRadius, float TopRadius, float Height, uint32_t SliceCount, uint32_t StackCount, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
 	return engine->BuildRenderItemFromMesh(Category, generator->CreateCylinderMesh(Name, BottomRadius, TopRadius, Height, SliceCount, StackCount), Params);
 }
 
-inline auto& CreateQuadRenderItem(string Category, string Name, float X, float Y, float Width, float Height, float Depth, const SRenderItemParams& Params)
+inline auto CreateQuadRenderItem(string Category, string Name, float X, float Y, float Width, float Height, float Depth, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
@@ -120,4 +120,44 @@ inline auto CompilerShader(const SShaderDefinition& Definition, const wstring& S
 inline auto GetSkyTextureSRV()
 {
 	return OEngine::Get()->GetSRVDescHandleForTexture(FindTextureByName(SRenderConstants::DefaultSkyTexture));
+}
+
+
+inline auto CreateLightSource(const string& Category, const SSpotLight& Params)
+{
+	auto engine = OEngine::Get();
+	auto generator = engine->GetMeshGenerator();
+	auto mesh = generator->CreateSphereMesh("Spot Light Source", 0.5f, 20, 20);
+	SRenderItemParams params;
+	params.MaterialParams.Material = FindMaterial("White");
+	auto ri = engine->BuildRenderItemFromMesh(Category, std::move(mesh), params);
+	auto component =  engine->AddLightingComponent(ri,ELightType::Spot);
+	component->SetSpotLight(Params);
+	return ri;
+}
+
+inline auto CreateLightSource(const string& Category, const SDirectionalLight& Params)
+{
+	auto engine = OEngine::Get();
+	auto generator = engine->GetMeshGenerator();
+	auto mesh = generator->CreateSphereMesh("Directional Light Source", 0.5f, 20, 20);
+	SRenderItemParams params;
+	params.MaterialParams.Material = FindMaterial("White");
+	auto ri = engine->BuildRenderItemFromMesh(Category, std::move(mesh), params);
+	auto component =  engine->AddLightingComponent(ri,ELightType::Directional);
+	component->SetDirectionalLight(Params);
+	return ri;
+}
+
+inline auto CreateLightSource(const string& Category, const SPointLight& Params)
+{
+	auto engine = OEngine::Get();
+	auto generator = engine->GetMeshGenerator();
+	auto mesh = generator->CreateSphereMesh("Point Light Source", 0.5f, 20, 20);
+	SRenderItemParams params;
+	params.MaterialParams.Material = FindMaterial("White");
+	auto ri = engine->BuildRenderItemFromMesh(Category, std::move(mesh), params);
+	auto component =  engine->AddLightingComponent(ri,ELightType::Point);
+	component->SetPointLight(Params);
+	return ri;
 }
