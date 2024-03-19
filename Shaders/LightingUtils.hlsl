@@ -1,6 +1,4 @@
 
-#define MaxLights 16
-
 float CartoonDiffuse(float Diffuse)
 {
 	float specularResult = 0.0f;
@@ -37,16 +35,20 @@ float CartoonSpecular(float Specular)
 struct SpotLight
 {
 	float3 Position;
+	float pad1;
 	float3 Direction;
+	float pad2;
 	float3 Strength;
 	float FalloffStart;
 	float FalloffEnd;
 	float SpotPower;
+	float pad3; // Padding to make the structure size a multiple of 16 bytes
 };
 
 struct PointLight
 {
 	float3 Position;
+	float pad1; // Padding to align with HLSL's float4
 	float3 Strength;
 	float FalloffStart;
 	float FalloffEnd;
@@ -55,7 +57,9 @@ struct PointLight
 struct DirectionalLight
 {
 	float3 Direction;
+	float pad1; // Padding to align with HLSL's float4
 	float3 Strength;
+	float pad2; // Padding to make the structure size a multiple of 16 bytes
 };
 
 struct Material

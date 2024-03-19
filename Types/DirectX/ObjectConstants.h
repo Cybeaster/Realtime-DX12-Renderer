@@ -25,7 +25,8 @@ struct SPassConstants
 	DirectX::XMFLOAT4X4 InvViewProj = Utils::Math::Identity4x4();
 
 	DirectX::XMFLOAT3 EyePosW = { 0.0f, 0.0f, 0.0f };
-	float CBPerObjectPad1 = 0.0f;
+	float cbPerPassPad1; // Use this to pad gEyePosW to 16 bytes
+
 	DirectX::XMFLOAT2 RenderTargetSize = { 0.0f, 0.0f };
 	DirectX::XMFLOAT2 InvRenderTargetSize = { 0.0f, 0.0f };
 	float NearZ = 0.0f;
@@ -40,8 +41,10 @@ struct SPassConstants
 	float FogStart;
 	float FogRange;
 
-	uint32_t NumDirLights = 0;
-	uint32_t NumPointLights = 0;
-	uint32_t NumSpotLights = 0;
-	SLight Lights[SRenderConstants::MaxLights];
+	UINT NumDirLights = 0;
+	float cbPerPassPad2; // Padding to align following uints
+	UINT NumPointLights = 0;
+	UINT NumSpotLights = 0;
+	float cbPerPassPad3; // Padding to ensure the cbuffer ends on a 16-byte boundary
+	float cbPerPassPad4; // Padding to ensure the cbuffer ends on a 16-byte boundary
 };

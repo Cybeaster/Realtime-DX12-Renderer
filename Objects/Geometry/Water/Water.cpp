@@ -1,6 +1,4 @@
-//
-// Created by Cybea on 14/03/2024.
-//
+
 
 #include "Water.h"
 
@@ -14,15 +12,15 @@ void OWaterRenderObject::InitRenderObject()
 	params.MaterialParams.Material = FindMaterial("Water01");
 	WaterItem = CreateGridRenderItem(SRenderLayer::Water,
 	                                    "Water",
-	                                    160,
-	                                    160,
-	                                    300,
-	                                    300,
+	                                    1024,
+	                                 1024,
+	                                    2048,
+	                                 2048,
 	                                    params);
 }
 void OWaterRenderObject::Update(const UpdateEventArgs& Event)
 {
-	for (auto& inst : WaterItem->Instances)
+/*	for (auto& inst : WaterItem->Instances)
 	{
 		auto timer = Event.Timer;
 		const auto mat = FindMaterial(inst.MaterialIndex);
@@ -44,5 +42,5 @@ void OWaterRenderObject::Update(const UpdateEventArgs& Event)
 		mat->MatTransform(3, 0) = tu;
 		mat->MatTransform(3, 1) = tv;
 		mat->NumFramesDirty = SRenderConstants::NumFrameResources;
-	}
+	}*/
 }

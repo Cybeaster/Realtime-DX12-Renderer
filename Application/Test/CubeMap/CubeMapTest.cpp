@@ -9,7 +9,6 @@
 bool OCubeMapTest::Initialize()
 {
 	OEngine::Get()->BuildCubeRenderTarget({ 0, 2, 0 });
-	Water = OEngine::Get()->BuildRenderObject<OWaterRenderObject>();
 	BuildRenderItems();
 	return true;
 }
@@ -118,31 +117,26 @@ void OCubeMapTest::BuildRenderItems()
 		Put(rightCylinder.World, rightCylWorld);
 	}
 
-	SRenderItemParams params;
-	params.NumberOfInstances = 1;
-	params.bFrustrumCoolingEnabled = false;
-	params.Pickable = false;
-	params.MaterialParams.Material = FindMaterial("Water01");
-
 	SSpotLight light;
 	light.Strength = { 0.5f, 0.5f, 0.5f };
 
-	auto spot = CreateLightSource(SRenderLayer::Opaque,
+	auto spot = CreateLightSource(SRenderLayer::LightObjects,
 	                              light);
-	Translate(spot->Instances[0].World, { 0, 3, 0 });
+	Translate(spot->Instances[0].World, { -3, 3, 0 });
 
-	SDirectionalLight dir=
-	    {
-		    .Direction = { 0, -1, 0 },
-		    .Strength = { 0.5f, 0.5f, 0.5f },
-	    };
-	auto dirlight = CreateLightSource(SRenderLayer::Opaque, dir);
-	Translate(dirlight->Instances[0].World, { 0, 3, 0 });
 
 	SPointLight point;
 	point.Strength = { 0.5f, 0.5f, 0.5f };
-	auto pointLight = CreateLightSource(SRenderLayer::Opaque, point);
+	auto pointLight = CreateLightSource(SRenderLayer::LightObjects, point);
+	Translate(pointLight->Instances[0].World, { 3, 3, 0 });
 
 
+	SDirectionalLight dir;
+	dir.Strength = { 0.5f, 0.5f, 0.5f };
+	dir.Direction = {0,-1,0};
+
+	auto dirlight = CreateLightSource(SRenderLayer::LightObjects, dir);
+
+	Water = OEngine::Get()->BuildRenderObject<OWaterRenderObject>();
 
 }

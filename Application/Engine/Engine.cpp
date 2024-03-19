@@ -137,35 +137,6 @@ ODynamicCubeMapRenderTarget* OEngine::BuildCubeRenderTarget(XMFLOAT3 Center)
 	return CubeRenderTarget;
 }
 
-void OEngine::DrawRenderItems(string PSOType, string RenderLayer)
-{
-	const auto commandList = GetCommandQueue()->GetCommandList();
-	const auto& renderItems = GetRenderItems(RenderLayer);
-	SetPipelineState(PSOType);
-	auto cmd = GetCommandQueue()->GetCommandList();
-	for (size_t i = 0; i < renderItems.size(); i++)
-	{
-		const auto renderItem = renderItems[i];
-		if (!renderItem->IsValidChecked())
-		{
-			continue;
-		}
-		if (!renderItem->Instances.empty() && renderItem->Geometry)
-		{
-			renderItem->BindResources(cmd.Get(), Engine->CurrentFrameResources);
-			auto instanceBuffer = Engine->CurrentFrameResources->InstanceBuffer->GetResource();
-			auto location = instanceBuffer->Resource->GetGPUVirtualAddress() + renderItem->StartInstanceLocation * sizeof(SInstanceData);
-			cmd->SetGraphicsRootShaderResourceView(0, location);
-			cmd->DrawIndexedInstanced(
-			    renderItem->ChosenSubmesh->IndexCount, //todo move to separate API
-			    renderItem->VisibleInstanceCount,
-			    renderItem->ChosenSubmesh->StartIndexLocation,
-			    renderItem->ChosenSubmesh->BaseVertexLocation,
-			    0);
-		}
-	}
-}
-
 void OEngine::DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer)
 {
 	auto renderItems = GetRenderItems(RenderLayer);
@@ -221,13 +192,39 @@ void OEngine::UpdateMaterialCB() const
 
 void OEngine::UpdateLightCB(const UpdateEventArgs& Args) const
 {
+	uint32_t dirIndex = 0;
+	uint32_t pointIndex =0;
+	uint32_t spotIndex = 0;
 	for (const auto component : LightComponents)
 	{
 		if(component->TryUpdate())
 		{
 			for (auto& cb : FrameResources)
 			{
-				component->UpdateFrameResource(cb.get());
+				switch (component->GetLightType())
+				{
+				case ELightType::Directional:
+					cb->DirectionalLightBuffer->CopyData(dirIndex, component->GetDirectionalLight());
+					break;
+				case ELightType::Point:
+					cb->PointLightBuffer->CopyData(pointIndex, component->GetPointLight());
+					break;
+				case ELightType::Spot:
+					cb->SpotLightBuffer->CopyData(spotIndex, component->GetSpotLight());
+					break;
+				}
+			}
+			switch (component->GetLightType()) // todo make it more generic
+			{
+			case ELightType::Directional:
+				dirIndex++;
+				break;
+			case ELightType::Point:
+				pointIndex++;
+				break;
+			case ELightType::Spot:
+				spotIndex++;
+				break;
 			}
 		}
 	}
@@ -413,51 +410,6 @@ OShaderCompiler* OEngine::GetShaderCompiler() const
 	return ShaderCompiler.get();
 }
 
-void OEngine::OnPreRender()
-{
-	if (SRVDescriptorHeap)
-	{
-		const auto commandList = GetCommandQueue()->GetCommandList();
-		Window->SetViewport(commandList.Get());
-
-		commandList->SetGraphicsRootSignature(DefaultRootSignature.Get());
-		commandList->SetGraphicsRootShaderResourceView(1, CurrentFrameResources->MaterialBuffer->GetResource()->Resource->GetGPUVirtualAddress());
-		commandList->SetGraphicsRootConstantBufferView(2, CurrentFrameResources->PassCB->GetResource()->Resource->GetGPUVirtualAddress());
-		commandList->SetGraphicsRootDescriptorTable(3, GetSRVHeap()->GetGPUDescriptorHandleForHeapStart());
-
-		auto rtv = GetOffscreenRT()->GetRTV().CPUHandle;
-		auto dsv = GetWindow()->GetDepthStensilView();
-		Utils::ResourceBarrier(commandList.Get(), GetOffscreenRT()->GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-		// Clear the back buffer and depth buffer.
-		commandList->ClearRenderTargetView(rtv, reinterpret_cast<float*>(&MainPassCB.FogColor), 0, nullptr);
-		commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-
-		// Specify the buffers we are going to render to.
-		commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
-	}
-
-	/*
-	* 	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 7, 0, 0);
-
-	CD3DX12_DESCRIPTOR_RANGE displacementTable;
-	displacementTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 7, 0);
-
-	CD3DX12_DESCRIPTOR_RANGE cubeMapTable;
-	cubeMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 8, 0);
-
-	constexpr auto size = 6;
-	CD3DX12_ROOT_PARAMETER slotRootParameter[size];
-
-	slotRootParameter[0].InitAsShaderResourceView(0, 1);
-	slotRootParameter[1].InitAsShaderResourceView(1, 1);
-	slotRootParameter[2].InitAsConstantBufferView(0);
-	slotRootParameter[3].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[4].InitAsDescriptorTable(1, &displacementTable, D3D12_SHADER_VISIBILITY_VERTEX);
-	slotRootParameter[5].InitAsDescriptorTable(1, &cubeMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	 */
-}
 void OEngine::PrepareRenderTarget(ORenderTargetBase* RenderTarget)
 {
 	auto cmdList = GetCommandQueue()->GetCommandList();
@@ -491,12 +443,6 @@ void OEngine::Render(UpdateEventArgs& Args)
 	TickTimer = Args.Timer;
 	RenderGraph->Execute();
 	DirectCommandQueue->ResetQueueState();
-	/*	OnPreRender();
-	    for (const auto val : Tests | std::views::values)
-	    {
-	        val->OnRender(Args);
-	    }
-	    OnPostRender();*/
 }
 
 void OEngine::Update(UpdateEventArgs& Args)
@@ -531,7 +477,7 @@ void OEngine::InitRenderGraph()
 
 uint32_t OEngine::GetLightComponentsCount() const
 {
-	return 100; //todo fix
+	return 10; //todo fix
 }
 
 OUIManager* OEngine::GetUIManager() const
@@ -651,6 +597,7 @@ void OEngine::OnKeyReleased(KeyEventArgs& Args)
 
 void OEngine::OnMouseMoved(MouseMotionEventArgs& Args)
 {
+	Args.IsUIInfocus = UIManager->IsInFocus();
 	if (const auto window = GetWindowByHWND(Args.WindowHandle))
 	{
 		if (const auto test = GetTestByHWND(Args.WindowHandle))
@@ -663,6 +610,7 @@ void OEngine::OnMouseMoved(MouseMotionEventArgs& Args)
 
 void OEngine::OnMouseButtonPressed(MouseButtonEventArgs& Args)
 {
+	Args.IsUIInfocus = UIManager->IsInFocus();
 	UIManager->OnMouseButtonPressed(Args);
 	if (const auto window = GetWindowByHWND(Args.WindowHandle))
 	{
@@ -676,6 +624,7 @@ void OEngine::OnMouseButtonPressed(MouseButtonEventArgs& Args)
 
 void OEngine::OnMouseButtonReleased(MouseButtonEventArgs& Args)
 {
+	Args.IsUIInfocus = UIManager->IsInFocus();
 	UIManager->OnMouseButtonReleased(Args);
 	if (const auto window = GetWindowByHWND(Args.WindowHandle))
 	{
@@ -994,17 +943,32 @@ void OEngine::BuildDescriptorHeap()
 	SetObjectDescriptor();
 	// Textures, SRV offset only
 	uint32_t texturesOffset = 0;
-	for (const auto& texture : TextureManager->GetTextures() | std::views::values)
+	auto buildSRV = [&](STexture* Texture){
+		auto resourceSRV = Texture->GetSRVDesc();
+		auto pair = ObjectDescriptors.SRVHandle.Offset();
+
+		Device->CreateShaderResourceView(Texture->Resource.Resource.Get(), &resourceSRV, pair.CPUHandle);
+		Texture->HeapIdx = texturesOffset;
+		texturesOffset++;
+	};
+
+	for (auto& texture : TextureManager->GetTextures() | std::views::values)
 	{
-		if (texture->ViewType != STextureViewType::Texture2D )
+		if (texture->ViewType != STextureViewType::Texture2D)
 		{
 			continue;
 		}
-		auto resourceSRV = texture->GetSRVDesc();
-		auto pair = ObjectDescriptors.SRVHandle.Offset();
-		Device->CreateShaderResourceView(texture->Resource.Resource.Get(), &resourceSRV, pair.CPUHandle);
-		texture->HeapIdx = texturesOffset;
-		texturesOffset++;
+		buildSRV(texture.get());
+	}
+
+	// Only 3D textures
+	for (const auto& texture : TextureManager->GetTextures() | std::views::values) // make a separate srv heap for 3d textures
+	{
+		if (texture->ViewType == STextureViewType::Texture2D)
+		{
+			continue;
+		}
+		buildSRV(texture.get());
 	}
 
 	for (const auto& rObject : RenderObjects | std::views::values)
@@ -1339,134 +1303,6 @@ ComPtr<ID3D12Device2> OEngine::CreateDevice(Microsoft::WRL::ComPtr<IDXGIAdapter4
 	return d3d12Device2;
 }
 
-void OEngine::BuildPostProcessRootSignature()
-{
-	CD3DX12_DESCRIPTOR_RANGE srvTable0;
-	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-
-	CD3DX12_DESCRIPTOR_RANGE srvTable1;
-	srvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
-
-	CD3DX12_DESCRIPTOR_RANGE uavTable0;
-	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
-
-	// Order from most frequent to least frequent.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
-	slotRootParameter[0].InitAsDescriptorTable(1, &srvTable0);
-	slotRootParameter[1].InitAsDescriptorTable(1, &srvTable1);
-	slotRootParameter[2].InitAsDescriptorTable(1, &uavTable0);
-
-	auto staticSamplers = Utils::GetStaticSamplers();
-
-	const CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3,
-	                                              slotRootParameter,
-	                                              staticSamplers.size(),
-	                                              staticSamplers.data(),
-	                                              D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-	Utils::BuildRootSignature(Device.Get(), PostProcessRootSignature, rootSigDesc);
-}
-
-void OEngine::BuildDefaultRootSignature()
-{
-	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 7, 0, 0);
-
-	CD3DX12_DESCRIPTOR_RANGE displacementTable;
-	displacementTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 7, 0);
-
-	CD3DX12_DESCRIPTOR_RANGE cubeMapTable;
-	cubeMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 8, 0);
-
-	constexpr auto size = 6;
-	CD3DX12_ROOT_PARAMETER slotRootParameter[size];
-
-	slotRootParameter[0].InitAsShaderResourceView(0, 1);
-	slotRootParameter[1].InitAsShaderResourceView(1, 1);
-	slotRootParameter[2].InitAsConstantBufferView(0);
-	slotRootParameter[3].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[4].InitAsDescriptorTable(1, &displacementTable, D3D12_SHADER_VISIBILITY_VERTEX);
-	slotRootParameter[5].InitAsDescriptorTable(1, &cubeMapTable, D3D12_SHADER_VISIBILITY_PIXEL);
-
-	const auto staticSamples
-	    = Utils::GetStaticSamplers();
-	const CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(size, slotRootParameter, staticSamples.size(), staticSamples.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-	Utils::BuildRootSignature(Device.Get(), DefaultRootSignature, rootSigDesc);
-}
-
-void OEngine::BuildBilateralBlurRootSignature()
-{
-	CD3DX12_DESCRIPTOR_RANGE srvTable0;
-	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-
-	CD3DX12_DESCRIPTOR_RANGE uavTable1;
-	uavTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
-
-	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
-	slotRootParameter[0].InitAsConstants(3, 0);
-	slotRootParameter[1].InitAsConstants(2, 1);
-	slotRootParameter[2].InitAsDescriptorTable(1, &srvTable0);
-	slotRootParameter[3].InitAsDescriptorTable(1, &uavTable1);
-
-	const CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4,
-	                                              slotRootParameter,
-	                                              0,
-	                                              nullptr,
-	                                              D3D12_ROOT_SIGNATURE_FLAG_NONE);
-
-	Utils::BuildRootSignature(Device.Get(), BilateralBlurRootSignature, rootSigDesc);
-}
-
-void OEngine::BuildBlurRootSignature()
-{
-	CD3DX12_DESCRIPTOR_RANGE srvTable0;
-	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-
-	CD3DX12_DESCRIPTOR_RANGE uavTable1;
-	uavTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
-
-	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
-	slotRootParameter[0].InitAsConstants(12, 0);
-	slotRootParameter[1].InitAsDescriptorTable(1, &srvTable0);
-	slotRootParameter[2].InitAsDescriptorTable(1, &uavTable1);
-
-	const CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3,
-	                                              slotRootParameter,
-	                                              0,
-	                                              nullptr,
-	                                              D3D12_ROOT_SIGNATURE_FLAG_NONE);
-
-	Utils::BuildRootSignature(Device.Get(), BlurRootSignature, rootSigDesc);
-}
-
-void OEngine::BuildWavesRootSignature()
-{
-	CD3DX12_DESCRIPTOR_RANGE uavTable0;
-	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
-
-	CD3DX12_DESCRIPTOR_RANGE uavTable1;
-	uavTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1);
-
-	CD3DX12_DESCRIPTOR_RANGE uavTable2;
-	uavTable2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 2);
-
-	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
-
-	slotRootParameter[0].InitAsConstants(6, 0);
-	slotRootParameter[1].InitAsDescriptorTable(1, &uavTable0);
-	slotRootParameter[2].InitAsDescriptorTable(1, &uavTable1);
-	slotRootParameter[3].InitAsDescriptorTable(1, &uavTable2);
-
-	const CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4,
-	                                              slotRootParameter,
-	                                              0,
-	                                              nullptr,
-	                                              D3D12_ROOT_SIGNATURE_FLAG_NONE);
-
-	Utils::BuildRootSignature(Device.Get(), WavesRootSignature, rootSigDesc);
-}
-
 void OEngine::Pick(int32_t SX, int32_t SY)
 {
 	auto camera = Window->GetCamera();
@@ -1691,19 +1527,9 @@ void OEngine::RebuildGeometry(string Name)
 	GetCommandQueue()->WaitForFenceValue(GetCommandQueue()->ExecuteCommandList());
 }
 
-void OEngine::SetLightSources(const vector<SLight>& Lights)
+void OEngine::SetAmbientLight(const DirectX::XMFLOAT4& Color)
 {
-	for (int32_t i = 0; i < Lights.size(); i++)
-	{
-		if (SRenderConstants::MaxLights > i)
-		{
-			MainPassCB.Lights[i] = Lights[i];
-		}
-	}
-}
-void OEngine::SetAmbientLight(const DirectX::XMFLOAT3& Color)
-{
-	MainPassCB.AmbientLight = XMFLOAT4(Color.x, Color.y, Color.z, 1);
+	MainPassCB.AmbientLight = XMFLOAT4(Color.x, Color.y, Color.z, Color.w);
 }
 
 SDescriptorResourceData OEngine::GetRTVDescriptorData() const
@@ -1763,6 +1589,9 @@ void OEngine::UpdateMainPass(const STimer& Timer)
 
 void OEngine::GetNumLights(uint32_t& OutNumPointLights, uint32_t& OutNumSpotLights, uint32_t& OutNumDirLights) const
 {
+	OutNumPointLights= 0;
+	OutNumSpotLights = 0;
+	OutNumDirLights = 0;
 	for (auto component : LightComponents)
 	{
 		switch (component->GetLightType())
@@ -1799,7 +1628,7 @@ uint32_t OEngine::GetDesiredCountOfSRVs() const
 	const auto roNum = std::accumulate(RenderObjects.begin(), RenderObjects.end(), 1, [](int acc, const auto& renderObject) {
 		return acc + renderObject.second->GetNumSRVRequired();
 	});
-	return roNum + UIManager->GetNumSRVRequired() + GetTextureManager()->GetNumTextures();
+	return roNum + UIManager->GetNumSRVRequired() + GetTextureManager()->GetNumTotalTextures();
 }
 
 std::unordered_map<string, unique_ptr<SMeshGeometry>>& OEngine::GetSceneGeometry()

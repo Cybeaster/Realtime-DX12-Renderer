@@ -11,15 +11,15 @@ OLightComponent::OLightComponent(uint32_t DirLightIdx, uint32_t PointLightIdx, u
 
 void OLightComponent::Tick(UpdateEventArgs Arg)
 {
-
 	if(!Utils::MatricesEqual(Owner->GetDefaultInstance()->World , Position))
 	{
 		Position = Owner->GetDefaultInstance()->World;
-		NumFramesDirty = SRenderConstants::NumFrameResources;
-	}
-	else
-	{
-		NumFramesDirty = 0;
+		auto matrix = DirectX::XMLoadFloat4x4(&Position);
+		DirectX::XMFLOAT3 pos = {matrix.r[3].m128_f32[0], matrix.r[3].m128_f32[1], matrix.r[3].m128_f32[2]};
+		SpotLight.Position = pos;
+		PointLight.Position = pos;
+
+		MarkDirty();
 	}
 }
 
@@ -116,5 +116,6 @@ SSpotLight& OLightComponent::GetSpotLight()
 
 void OLightComponent::MarkDirty()
 {
+	LOG(Render, Log, "Marking light as dirty");
 	NumFramesDirty = SRenderConstants::NumFrameResources;
 }

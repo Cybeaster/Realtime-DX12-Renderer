@@ -251,6 +251,8 @@ void OWindow::OnMouseMoved(MouseMotionEventArgs& Event)
 {
 	if (Event.IsUIInfocus)
 	{
+		LastMouseXPos = Event.X;
+		LastMouseYPos = Event.Y;
 		return;
 	}
 

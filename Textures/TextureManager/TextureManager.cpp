@@ -7,6 +7,7 @@
 #include "Logger.h"
 
 #include <filesystem>
+#include <numeric>
 #include <ranges>
 #include <unordered_set>
 
@@ -16,6 +17,38 @@ OTextureManager::OTextureManager(ID3D12Device* Device, OCommandQueue* Queue)
 	Parser = make_unique<OTexturesParser>(OApplication::Get()->GetConfigPath("TexturesConfigPath"));
 	LoadLocalTextures();
 }
+
+uint32_t OTextureManager::GetNum2DTextures() const
+{
+	uint32_t acc = 0;
+	for (const auto& texture : Textures | std::views::values)
+	{
+		if (texture->ViewType == STextureViewType::Texture2D)
+		{
+			acc++;
+		}
+	}
+	return acc;
+}
+
+uint32_t OTextureManager::GetNum3DTextures() const
+{
+	uint32_t acc = 0;
+	for (const auto& texture : Textures | std::views::values)
+	{
+		if (texture->ViewType == STextureViewType::TextureCube)
+		{
+			acc++;
+		}
+	}
+	return acc;
+}
+
+uint32_t OTextureManager::GetNumTotalTextures() const
+{
+	return Textures.size();
+}
+
 
 void OTextureManager::LoadLocalTextures()
 {

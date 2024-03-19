@@ -24,10 +24,14 @@ public:
 	STexture* FindOrCreateTexture(string Name, wstring FileName);
 
 	TTexturesMap& GetTextures() { return Textures; }
-	uint32_t GetNumTextures() const { return Textures.size(); }
+	uint32_t GetNum2DTextures() const;
+	uint32_t GetNum3DTextures() const;
+	uint32_t GetNumTotalTextures() const;
 	void LoadLocalTextures();
 	void SaveLocalTextures();
 	wstring GetName() override;
+	const uint32_t MaxNumberOf2DTextures = 50;
+
 private:
 	void AddTexture(unique_ptr<STexture> Texture);
 	void RemoveAllTextures();

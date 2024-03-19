@@ -27,8 +27,14 @@
     {
         "Name": "Water",
         "PSO": "Water",
-        "NextNode": "PostProcess",
+        "NextNode": "LightObjects",
         "RenderLayer": "Water"
+    },
+    {
+      "Name": "LightObjects",
+      "PSO": "Opaque",
+      "NextNode": "PostProcess",
+      "RenderLayer": "LightObjects"
     },
     {
       "Name": "PostProcess",

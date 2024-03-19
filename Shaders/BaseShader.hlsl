@@ -31,16 +31,11 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	vout.MaterialIndex = matIndex;
 	MaterialData matData = gMaterialData[matIndex];
 
-
-
 	// Transform to world space.
-
 	float4 posW = mul(float4(Vin.PosL, 1.0f), world);
 	vout.PosW = posW.xyz;
 
-
 	// Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
-
 	vout.NormalW = mul(Vin.NormalL, (float3x3)world);
 
 	if (!IsTangentValid(Vin.TangentU))
@@ -80,9 +75,7 @@ float4 PS(VertexOut pin)
 	float3 bumpedNormalW = pin.NormalW;
 	float4 normalMapSample = float4(0.f, 0.f, 1.0f, 1.0f);
 	pin.NormalW = normalize(pin.NormalW);
-
 	bumpedNormalW = ComputeNormalMaps(pin.NormalW, pin.TangentW, matData, pin.TexC, normalMapSample.a);
-
 	diffuseAlbedo = ComputeDiffuseMaps(matData, diffuseAlbedo, pin.TexC);
 	// Vector from point being lit to eye.
 	float3 toEyeW = gEyePosW - pin.PosW;
@@ -98,12 +91,12 @@ float4 PS(VertexOut pin)
 
 	float3 light = {0.0f, 0.0f, 0.0f};
 
-	for (uint i = 0; i < gNumDirLights; i++)
+	 for (uint i = 0; i < gNumDirLights; i++)
 	{
-        light += ComputeDirectionalLight(gDirLights[i], mat, bumpedNormalW, toEyeW);
+        light += shadowFactor* ComputeDirectionalLight(gDirectionalLights[i], mat, bumpedNormalW, toEyeW);
     }
 
-    for (uint j = 0; j < gNumPointLights; j++)
+     for (uint j = 0; j < gNumPointLights; j++)
     {
         light += ComputePointLight(gPointLights[j], mat, pin.PosW, bumpedNormalW, toEyeW);
     }
