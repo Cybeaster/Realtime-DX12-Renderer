@@ -23,6 +23,8 @@ void OGeometryManagerWidget::Draw()
 						if (ImGui::Selectable(ri->Name.c_str(), SelectedRenderItem == ri->Name))
 						{
 							SelectedRenderItem = ri->Name;
+							SelectedComponentName = "";
+							SelectedComponent = nullptr;
 						}
 
 						if (SelectedRenderItem == ri->Name)
@@ -49,8 +51,7 @@ void OGeometryManagerWidget::InitWidget()
 	PickedRenderItemWidget = MakeWidget<OPickedRenderItemWidget>();
 	for (auto& layer : *RenderLayers)
 	{
-		if (layer.first == "Opaque" || layer.first == "Transparent" || layer.first == "Sky" || layer.first == "Water")
-		{
+
 			for (auto item : layer.second)
 			{
 				if (item->Geometry)
@@ -59,9 +60,9 @@ void OGeometryManagerWidget::InitWidget()
 					StringToGeo[item->Name] = item;
 				}
 			}
-		}
+
 	}
-	LightComponentWidget = MakeWidget<OLightComponentWidget>();
+	LightComponentWidget = MakeWidget<OLightComponentWidget>();//TODO: move to its own widget
 }
 
 void OGeometryManagerWidget::RebuildRequest() const

@@ -33,8 +33,55 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	vout.MaterialIndex = matIndex;
 	MaterialData matData = gMaterialData[matIndex];
 
-	// Sample the displacement map using non-transformed [0,1]^2 tex-coords.
-	Vin.PosL.y =  ComputeHeightMaps(matData, Vin.NormalL, Vin.TangentU, Vin.TexC,1.0).r * cos(gTotalTime) * 5 + sin(gTotalTime);
+	// Output vertex attributes for interpolation across triangle.
+	float4 texC = mul(float4(Vin.TexC, 0.0f, 1.0f), texTransform);
+	vout.TexC = mul(texC, matData.MatTransform).xy;
+
+    float2 tiledTexC = Vin.TexC * 64;
+    float dampingStrength = 1.f;
+    // Wave parameters for more complex and realistic waves
+    float amplitude1 = 0.5f;
+    float frequency1 = 4.0f;
+    float speed1 = 0.3f;
+
+    float amplitude2 = 0.3f;
+    float frequency2 = 6.0f;
+    float speed2 = 0.3f;
+
+    float amplitude3 = 0.1f;
+    float frequency3 = 8.0f;
+    float speed3 = 0.4f;
+
+    // Compute local wave coordinates for multiple wave patterns
+    float2 coord1 = Vin.TexC * frequency1 + float2(gTotalTime * speed1, 0.0f);
+    float2 coord2 = Vin.TexC * frequency2 + float2(gTotalTime * speed2, 0.0f);
+    float2 coord3 = Vin.TexC * frequency3 + float2(gTotalTime * speed3, 0.0f);
+
+    // Apply wave function for each wave pattern
+    float wave1 = amplitude1 * sin(coord1.x);
+    float wave2 = amplitude2 * sin(coord2.x);
+    float wave3 = amplitude3 * sin(coord3.x);
+
+    // Combine wave patterns for a more complex wave effect
+    float combinedWave = wave1 + wave2 + wave3;
+    // Adjust tiled texture coordinates for wave effect
+    vout.WaveNormalTex0 = tiledTexC + float2(0, combinedWave);
+    vout.WaveNormalTex1 = tiledTexC - float2(0, combinedWave);
+
+    // Base wave calculations as before
+    float wave = amplitude1 * sin(coord1.x) + amplitude2 * sin(coord2.x) + amplitude3 * sin(coord3.x);
+
+    // Sample the height map
+    float baseHeight = ComputeHeightMaps(matData, Vin.NormalL, Vin.TangentU, Vin.TexC, 1.0).r;
+
+    // Calculate damping factor based on wave height
+    float dampingFactor = 1.0 / (1.0 + abs(wave) * dampingStrength);
+
+    // Apply damping to the wave height
+    wave *= dampingFactor;
+
+    // Combine the base height with the damped wave for the final vertex height
+    Vin.PosL.y = (baseHeight * 5) + wave;
 
 	// Transform to world space.
 
@@ -58,13 +105,8 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	// Transform to homogeneous clip space.
 	vout.PosH = mul(posW, gViewProj);
 
-	// Output vertex attributes for interpolation across triangle.
-	float4 texC = mul(float4(Vin.TexC, 0.0f, 1.0f), texTransform);
-	vout.TexC = mul(texC, matData.MatTransform).xy;
 
-	// Apply different transformations for normal and height map texture coordinates
-	vout.WaveNormalTex0 = Vin.TexC * 1.1f + float2(0.05, 0.05);
-	vout.WaveNormalTex1 = Vin.TexC * 1.2f + float2(0.1, 0.1);
+
 
 	return vout;
 }
@@ -87,16 +129,15 @@ float4 PS(VertexOut pin)
 	float3 bumpedNormalW = pin.NormalW;
 	float4 normalMapSample = float4(0.f, 0.f, 1.0f, 1.0f);
 	pin.NormalW = normalize(pin.NormalW);
-
-	bumpedNormalW = ComputeNormalMaps(pin.NormalW, pin.TangentW, matData, pin.TexC, normalMapSample.a);
-	diffuseAlbedo = ComputeDiffuseMaps(matData, diffuseAlbedo, pin.TexC);
+	bumpedNormalW = ComputeNormalMaps(pin.NormalW, pin.TangentW, matData, pin.WaveNormalTex0, normalMapSample.a);
+	diffuseAlbedo = ComputeDiffuseMaps(matData, diffuseAlbedo, pin.WaveNormalTex0);
 
 	// Vector from point being lit to eye.
 	float3 toEyeW = gEyePosW - pin.PosW;
 	float distToEye = length(toEyeW);
 	toEyeW /= distToEye; // normalize
 
-// Light terms.
+	// Light terms.
 	float4 ambient = gAmbientLight * diffuseAlbedo;
 
 	const float shininess = (1.0f - roughness) * normalMapSample.a;
@@ -105,12 +146,12 @@ float4 PS(VertexOut pin)
 
 	float3 light = {0.0f, 0.0f, 0.0f};
 
-	for (uint i = 0; i < gNumDirLights; i++)
+	 for (uint i = 0; i < gNumDirLights; i++)
 	{
-        light += ComputeDirectionalLight(gDirLights[i], mat, bumpedNormalW, toEyeW);
+        light += shadowFactor* ComputeDirectionalLight(gDirectionalLights[i], mat, bumpedNormalW, toEyeW);
     }
 
-    for (uint j = 0; j < gNumPointLights; j++)
+     for (uint j = 0; j < gNumPointLights; j++)
     {
         light += ComputePointLight(gPointLights[j], mat, pin.PosW, bumpedNormalW, toEyeW);
     }

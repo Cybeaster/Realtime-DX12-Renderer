@@ -14,30 +14,28 @@ void OLightComponentWidget::Draw()
 		{
 			case ELightType::Directional:
 			{
-				auto& [Direction, Strength] = LightComponent->GetDirectionalLight();
-				dirty |= ImGui::DragFloat3("Direction", &Direction.x, 0.1f);
-				dirty |=ImGui::ColorEdit3("Color", &Strength.x);
+				auto& dirLight = LightComponent->GetDirectionalLight();
+				dirty |= ImGui::InputFloat3("Direction", &dirLight.Direction.x);
+				dirty |=ImGui::ColorEdit3("Color", &dirLight.Strength.x);
 				break;
 			}
 			case ELightType::Point:
 			{
-				auto& [Position, Strength, FallOffStart, FallOffEnd] = LightComponent->GetPointLight();
-				dirty |=ImGui::DragFloat3("Position", &Position.x, 0.1f);
-				dirty |=ImGui::ColorEdit3("Color", &Strength.x);
-				dirty |=ImGui::DragFloat("Falloff Start", &FallOffStart, 0.1f);
-				dirty |=ImGui::DragFloat("Falloff End", &FallOffEnd, 0.1f);
+				auto& pointLight= LightComponent->GetPointLight();
+				dirty |=ImGui::ColorEdit3("Color", &pointLight.Strength.x);
+				dirty |=ImGui::InputFloat("Falloff Start", &pointLight.FallOffStart, 0.1f);
+				dirty |=ImGui::InputFloat("Falloff End", &pointLight.FallOffEnd, 0.1f);
 				break;
 
 			}
 			case ELightType::Spot:
 			{
-				auto& [Position, Direction, Strength, FallOffStart, FallOffEnd, SpotPower] = LightComponent->GetSpotLight();
-				dirty |=ImGui::DragFloat3("Position", &Position.x, 0.1f);
-				dirty |=ImGui::DragFloat3("Direction", &Direction.x, 0.1f);
-				dirty |=ImGui::ColorEdit3("Color", &Strength.x);
-				dirty |=ImGui::DragFloat("Falloff Start", &FallOffStart, 0.1f);
-				dirty |=ImGui::DragFloat("Falloff End", &FallOffEnd, 0.1f);
-				dirty |=ImGui::DragFloat("Spot Power", &SpotPower, 0.1f);
+				auto& spotLight = LightComponent->GetSpotLight();
+				dirty |=ImGui::InputFloat3("Direction", &spotLight.Direction.x);
+				dirty |=ImGui::ColorEdit3("Color", &spotLight.Strength.x);
+				dirty |=ImGui::InputFloat("Falloff Start", &spotLight.FallOffStart, 0.1f);
+				dirty |=ImGui::InputFloat("Falloff End", &spotLight.FallOffEnd, 0.1f);
+				dirty |=ImGui::InputFloat("Spot Power", &spotLight.SpotPower, 0.1f);
 				break;
 			}
 		}

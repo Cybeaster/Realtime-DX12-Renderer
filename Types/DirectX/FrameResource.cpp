@@ -13,7 +13,8 @@
 {
 	PassCB = make_unique<OUploadBuffer<SPassConstants>>(Device, PassCount, true, Owner);
 }
- void SFrameResource::SetInstances(UINT InstanceCount)
+
+void SFrameResource::SetInstances(UINT InstanceCount)
 {
 	if (InstanceCount == 0)
 	{
@@ -36,7 +37,7 @@
 }
 void SFrameResource::SetDirectionalLight(UINT LightCount)
 {
- 		if (LightCount > 0)
+	if (LightCount > 0)
 	{
 		DirectionalLightBuffer = make_unique<OUploadBuffer<SDirectionalLight>>(Device, LightCount, false, Owner);
 	}

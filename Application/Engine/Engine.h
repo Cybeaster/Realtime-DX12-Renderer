@@ -216,8 +216,7 @@ public:
 
 	void SetObjectDescriptor();
 	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVDescHandleForTexture(STexture* Texture) const;
-	void SetLightSources(const vector<SLight>& Lights);
-	void SetAmbientLight(const DirectX::XMFLOAT3& Color);
+	void SetAmbientLight(const DirectX::XMFLOAT4& Color);
 
 	SDescriptorResourceData GetRTVDescriptorData() const;
 	SDescriptorResourceData GetDSVDescriptorData() const;
@@ -253,7 +252,6 @@ public:
 	SOnFrameResourceChanged OnFrameResourceChanged;
 	ODynamicCubeMapRenderTarget* GetCubeRenderTarget() const;
 	ODynamicCubeMapRenderTarget* BuildCubeRenderTarget(DirectX::XMFLOAT3 Center);
-	void DrawRenderItems(string PSOType, string RenderLayer);
 	void DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer);
 
 	void UpdateMaterialCB() const;
@@ -276,11 +274,6 @@ protected:
 	ComPtr<IDXGIAdapter4> GetAdapter(bool UseWarp);
 	ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> Adapter);
 
-	void BuildPostProcessRootSignature();
-	void BuildDefaultRootSignature();
-	void BuildBlurRootSignature();
-	void BuildWavesRootSignature();
-	void BuildBilateralBlurRootSignature();
 	void UpdateFrameResource();
 	void InitRenderGraph();
 	uint32_t GetLightComponentsCount() const;
