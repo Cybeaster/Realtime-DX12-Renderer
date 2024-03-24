@@ -2,6 +2,7 @@
 #include "DirectX/FrameResource.h"
 #include "DirectX/RenderItem/RenderItem.h"
 #include "DirectX/ShaderTypes.h"
+#include "Engine/RenderTarget/ShadowMap/ShadowMap.h"
 #include "ExitHelper.h"
 #include "Filters/BilateralBlur/BilateralBlurFilter.h"
 #include "Filters/Blur/BlurFilter.h"
@@ -83,9 +84,7 @@ public:
 
 	void TryRebuildFrameResource();
 	void OnPreRender();
-	void PrepareRenderTarget(ORenderTargetBase* RenderTarget);
 
-	void PrepareRenderTarget();
 	void Draw(UpdateEventArgs& Args);
 	void Render(UpdateEventArgs& Args);
 	void Update(UpdateEventArgs& Args);
@@ -132,8 +131,7 @@ public:
 
 	D3D12_RENDER_TARGET_BLEND_DESC GetTransparentBlendState();
 	D3D12_SHADER_BYTECODE GetShaderByteCode(const string& ShaderName);
-	void BuildDescriptorHeap();
-	void BuildPSOs();
+	void FillDescriptorHeaps();
 	void BuildBlurPSO();
 	void BuildShadersAndInputLayouts();
 
@@ -143,9 +141,10 @@ public:
 	UINT DSVDescriptorSize = 0;
 	UINT CBVSRVUAVDescriptorSize = 0;
 
-	uint32_t GetDesiredCountOfRTVs() const;
-	uint32_t GetDesiredCountOfDSVs() const;
-	uint32_t GetDesiredCountOfSRVs() const;
+	uint32_t GetDesiredCountOfRTVs(SResourceHeapBitFlag Flag) const;
+	uint32_t GetDesiredCountOfDSVs(SResourceHeapBitFlag Flag) const;
+	uint32_t GetDesiredCountOfSRVs(SResourceHeapBitFlag Flag) const;
+
 	std::unordered_map<string, unique_ptr<SMeshGeometry>>& GetSceneGeometry();
 	SMeshGeometry* SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry);
 	ORenderItem* BuildRenderItemFromMesh(const string& Name, string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params);
@@ -155,22 +154,12 @@ public:
 	ORenderItem* BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, const SRenderItemParams& Params);
 	ORenderItem* BuildRenderItemFromMesh(string Category, const string& Name, const OGeometryGenerator::SMeshData& Data);
 
-	OLightComponent* AddLightingComponent(ORenderItem* Item, const ELightType& Type );
-
+	OLightComponent* AddLightingComponent(ORenderItem* Item, const ELightType& Type);
 	void BuildPickRenderItem();
 	SMeshGeometry* CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels);
 	unique_ptr<SMeshGeometry> CreateMesh(const string& Name, const OGeometryGenerator::SMeshData& Data) const;
 
 	SMeshGeometry* FindSceneGeometry(const string& Name) const;
-
-	void BuildShaders(const wstring& ShaderPath, const string& VSShaderName, const string& PSShaderName,
-	                  const D3D_SHADER_MACRO* Defines = nullptr);
-	void BuildShader(const wstring& ShaderPath, const string& ShaderName, const string& ShaderQualifier, const string& ShaderTarget, const D3D_SHADER_MACRO* Defines = nullptr);
-	void BuildVSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines = nullptr);
-	void BuildPSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines = nullptr);
-	void BuildGSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines = nullptr);
-	void BuildCSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines = nullptr);
-	void BuildShader(const wstring& ShaderPath, const string& ShaderName, EShaderLevel ShaderType, std::optional<string> ShaderEntry = {}, const D3D_SHADER_MACRO* Defines = nullptr);
 
 	ComPtr<ID3DBlob> GetShader(const string& ShaderName);
 
@@ -187,7 +176,7 @@ public:
 
 	void SetFog(DirectX::XMFLOAT4 Color, float Start, float Range);
 	SPassConstants& GetMainPassCB();
-	ComPtr<ID3D12DescriptorHeap>& GetSRVHeap();
+	ComPtr<ID3D12DescriptorHeap>& GetDescriptorHeap();
 
 	ID3D12RootSignature* GetDefaultRootSignature() const;
 	ID3D12RootSignature* GetWavesRootSignature() const;
@@ -198,6 +187,9 @@ public:
 	OBilateralBlurFilter* GetBilateralBlurFilter();
 	OSobelFilter* GetSobelFilter();
 	void BuildFilters();
+
+	template<typename T, typename... Args>
+	T* BuildRenderObject(vector<IRenderObject*>& TargetArray, Args&&... Params);
 
 	template<typename T, typename... Args>
 	T* BuildRenderObject(Args&&... Params);
@@ -214,13 +206,11 @@ public:
 	template<typename T>
 	T* GetObjectByUUID(TUUID UUID, bool Checked = false);
 
-	void SetObjectDescriptor();
+	void SetObjectDescriptor(SRenderObjectHeap& Heap);
+	void BuildDescriptorHeaps();
 	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVDescHandleForTexture(STexture* Texture) const;
 	void SetAmbientLight(const DirectX::XMFLOAT4& Color);
 
-	SDescriptorResourceData GetRTVDescriptorData() const;
-	SDescriptorResourceData GetDSVDescriptorData() const;
-	SDescriptorResourceData GetSRVDescriptorData() const;
 	uint32_t GetPassCountRequired() const;
 
 	void RebuildGeometry(string Name);
@@ -255,16 +245,21 @@ public:
 	void DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer);
 
 	void UpdateMaterialCB() const;
-	void UpdateLightCB(const UpdateEventArgs& Args)const;
+	void UpdateLightCB(const UpdateEventArgs& Args) const;
 	void UpdateObjectCB() const;
-	void SetDescriptorHeap();
+	void SetDescriptorHeap(EResourceHeapType Type);
 	OShaderCompiler* GetShaderCompiler() const;
 	OUIManager* GetUIManager() const;
+	vector<OShadowMap*>& GetShadowMaps();
+	const DirectX::BoundingSphere& GetSceneBounds() const;
+
+	SRenderObjectHeap DefaultGlobalHeap;
+	SRenderObjectHeap ShadowHeap;
 
 protected:
 	void DrawRenderItemsImpl(SPSODescriptionBase* Desc, const vector<ORenderItem*>& RenderItems);
 	template<typename T, typename... Args>
-	TUUID BuildRenderObjectImpl(Args&&... Params);
+	T* BuildRenderObjectImpl(Args&&... Params);
 
 	shared_ptr<OTest> GetTestByHWND(HWND Handler);
 	OWindow* GetWindowByHWND(HWND Handler);
@@ -277,6 +272,7 @@ protected:
 	void UpdateFrameResource();
 	void InitRenderGraph();
 	uint32_t GetLightComponentsCount() const;
+
 private:
 	void RemoveRenderObject(TUUID UUID);
 	void BuildFrameResource(uint32_t Count = 1);
@@ -327,10 +323,6 @@ private:
 	TUUID SobelFilterUUID;
 	TUUID BilateralFilterUUID;
 
-	ComPtr<ID3D12DescriptorHeap> SRVDescriptorHeap;
-	SRenderObjectDescriptor ObjectDescriptors;
-	uint32_t SRVDescNum = 0;
-
 	bool HasInitializedTests = false;
 	STimer TickTimer;
 	OOffscreenTexture* OffscreenRT = nullptr;
@@ -338,6 +330,7 @@ private:
 
 	OUIManager* UIManager;
 	map<TUUID, unique_ptr<IRenderObject>> RenderObjects;
+
 	int32_t LightCount = 0;
 	bool FrustrumCullingEnabled = false;
 
@@ -355,24 +348,29 @@ private:
 	unique_ptr<OGraphicsPipelineManager> PipelineManager;
 	unique_ptr<ORenderGraph> RenderGraph;
 	vector<OLightComponent*> LightComponents;
+	vector<OShadowMap*> ShadowMaps;
+	DirectX::BoundingSphere SceneBounds;
 
+public:
+	SDescriptorPair NullCubeSRV;
+	SDescriptorPair NullTexSRV;
 };
 
 template<typename T, typename... Args>
-TUUID OEngine::BuildRenderObjectImpl(Args&&... Params)
+T* OEngine::BuildRenderObjectImpl(Args&&... Params)
 {
 	auto uuid = GenerateUUID();
 	auto object = new T(std::forward<Args>(Params)...);
 	object->SetID(uuid);
 	object->InitRenderObject();
 	RenderObjects[uuid] = unique_ptr<IRenderObject>(object);
-	return uuid;
+	return object;
 }
 
 template<typename T, typename... Args>
 T* OEngine::BuildRenderObject(Args&&... Params)
 {
-	return GetObjectByUUID<T>(BuildRenderObjectImpl<T>(std::forward<Args>(Params)...));
+	return BuildRenderObjectImpl<T, Args...>(std::forward<Args>(Params)...);
 }
 
 template<typename T>

@@ -6,11 +6,10 @@
 #include "Exception.h"
 #include "Logger.h"
 
-#pragma optimize("", off)
 using namespace Microsoft::WRL;
 
 OWindow::OWindow(HWND hWnd, const SWindowInfo& _WindowInfo)
-    : ORenderTargetBase(WindowInfo.ClientWidth, WindowInfo.ClientHeight), Hwnd(hWnd), WindowInfo{ _WindowInfo }
+    : ORenderTargetBase(WindowInfo.ClientWidth, WindowInfo.ClientHeight, EResourceHeapType::Default), Hwnd(hWnd), WindowInfo{ _WindowInfo }
 {
 	Name = WindowInfo.Name;
 }
@@ -27,24 +26,16 @@ void OWindow::BuildResource()
 	const auto engine = OEngine::Get();
 	auto device = engine->GetDevice();
 	SwapChain = CreateSwapChain();
-	TotalRTVDescNum = OEngine::Get()->GetDesiredCountOfRTVs();
-	TotalDSVDescNum = OEngine::Get()->GetDesiredCountOfDSVs();
-
-	RTVDescriptorSize = engine->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-
-	RTVHeap = engine->CreateDescriptorHeap(TotalRTVDescNum, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	DSVHeap = engine->CreateDescriptorHeap(TotalDSVDescNum, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-	LOG(Render, Log, "RTV and DSV heaps created. {} RTVs and {} DSVs", TotalRTVDescNum, TotalDSVDescNum);
 	UpdateRenderTargetViews();
 	ResizeDepthBuffer();
 }
 
 void OWindow::BuildDescriptors(IDescriptor* Descriptor)
 {
-	/*auto descriptor = Cast<SRenderObjectDescriptor>(Descriptor);
+	/*auto descriptor = Cast<SRenderObjectHeap>(Descriptor);
 	if (!descriptor)
 	{
-		return;
+	    return;
 	}
 	RTVHandle = descriptor->RTVHandle.Offset(2);
 	DSVHandle = descriptor->DSVHandle.Offset(1);
@@ -82,9 +73,9 @@ UINT OWindow::Present()
 
 D3D12_CPU_DESCRIPTOR_HANDLE OWindow::CurrentBackBufferView() const
 {
-	return CD3DX12_CPU_DESCRIPTOR_HANDLE(RTVHeap->GetCPUDescriptorHandleForHeapStart(),
+	return CD3DX12_CPU_DESCRIPTOR_HANDLE(OEngine::Get()->DefaultGlobalHeap.RTVHeap->GetCPUDescriptorHandleForHeapStart(),
 	                                     CurrentBackBufferIndex,
-	                                     RTVDescriptorSize);
+	                                     OEngine::Get()->RTVDescriptorSize);
 }
 
 SResourceInfo* OWindow::GetCurrentBackBuffer()
@@ -397,10 +388,9 @@ SDescriptorPair OWindow::GetRTV(uint32_t SubtargetIdx) const
 SDescriptorPair OWindow::GetDSV(uint32_t SubtargetIdx) const
 {
 	SDescriptorPair pair;
-	pair.CPUHandle = DSVHeap->GetCPUDescriptorHandleForHeapStart();
-	return pair; //TODO - return the correct DSV
+	pair.CPUHandle = OEngine::Get()->DefaultGlobalHeap.DSVHeap->GetCPUDescriptorHandleForHeapStart();
+	return pair; // TODO - return the correct DSV
 }
-
 
 SResourceInfo* OWindow::GetResource()
 {
@@ -420,16 +410,6 @@ float OWindow::GetLastYMousePos() const
 shared_ptr<OCamera> OWindow::GetCamera()
 {
 	return Camera;
-}
-
-uint32_t OWindow::GetDSVDescNum() const
-{
-	return TotalDSVDescNum;
-}
-
-uint32_t OWindow::GetRTVDescNum() const
-{
-	return TotalRTVDescNum;
 }
 
 bool OWindow::HasCapturedLeftMouseButton() const
@@ -481,7 +461,7 @@ ComPtr<IDXGISwapChain4> OWindow::CreateSwapChain()
 void OWindow::UpdateRenderTargetViews()
 {
 	const auto device = OEngine::Get()->GetDevice();
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(RTVHeap->GetCPUDescriptorHandleForHeapStart());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(OEngine::Get()->DefaultGlobalHeap.RTVHeap->GetCPUDescriptorHandleForHeapStart());
 
 	for (int i = 0; i < SRenderConstants::RenderBuffersCount; i++)
 	{
@@ -490,7 +470,7 @@ void OWindow::UpdateRenderTargetViews()
 		BackBuffers[i].CurrentState = D3D12_RESOURCE_STATE_PRESENT;
 		BackBuffers[i].Context = this;
 		BackBuffers[i].Resource->SetName(Name.c_str());
-		rtvHandle.Offset(RTVDescriptorSize);
+		rtvHandle.Offset(OEngine::Get()->RTVDescriptorSize);
 	}
 }
 
@@ -538,7 +518,7 @@ void OWindow::ResizeDepthBuffer()
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 	dsvDesc.Format = SRenderConstants::DepthBufferFormat;
 	dsvDesc.Texture2D.MipSlice = 0;
-	device->CreateDepthStencilView(DepthBuffer.Resource.Get(), &dsvDesc, GetDepthStensilView());
+	device->CreateDepthStencilView(DepthBuffer.Resource.Get(), &dsvDesc, OEngine::Get()->DefaultGlobalHeap.DSVHandle.CPUHandle);
 	engine->GetCommandQueue()->ExecuteCommandListAndWait();
 }
 
@@ -551,15 +531,3 @@ HWND OWindow::GetHWND() const
 {
 	return Hwnd;
 }
-
-ComPtr<ID3D12DescriptorHeap> OWindow::GetDSVDescriptorHeap() const
-{
-	return DSVHeap;
-}
-
-D3D12_CPU_DESCRIPTOR_HANDLE OWindow::GetDepthStensilView() const
-{
-	return DSVHeap->GetCPUDescriptorHandleForHeapStart();
-}
-
-#pragma optimize("", on)

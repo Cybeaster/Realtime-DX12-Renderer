@@ -35,14 +35,16 @@ float CartoonSpecular(float Specular)
 struct SpotLight
 {
 	float3 Position;
-	float pad1;
+	float pad1; // Padding to align with HLSL's float4
 	float3 Direction;
-	float pad2;
+	float pad2; // Additional padding if necessary
 	float3 Strength;
 	float FalloffStart;
 	float FalloffEnd;
 	float SpotPower;
+	uint ShadowMapIndex; // Index to the shadow map texture array
 	float pad3; // Padding to make the structure size a multiple of 16 bytes
+	float4x4 Transform;
 };
 
 struct PointLight
@@ -52,6 +54,9 @@ struct PointLight
 	float3 Strength;
 	float FalloffStart;
 	float FalloffEnd;
+	uint ShadowMapIndex; // Index to the shadow map texture array
+	float pad2; // Padding to align with HLSL's float4
+	float4x4 Transform;
 };
 
 struct DirectionalLight
@@ -59,7 +64,10 @@ struct DirectionalLight
 	float3 Direction;
 	float pad1; // Padding to align with HLSL's float4
 	float3 Strength;
-	float pad2; // Padding to make the structure size a multiple of 16 bytes
+	float pad2; // Additional padding if necessary
+	uint ShadowMapIndex; // Index to the shadow map texture array
+	float pad3; // Padding to make the structure size a multiple of 16 bytes
+	float4x4 Transform;
 };
 
 struct Material
@@ -200,3 +208,5 @@ float3 BoxCubeMapLookup(float3 RayOrigin, float3 UnitRayDir, float3 BoxCenter, f
 	float3 t = min(min(tmax.x, tmax.y), tmax.z);
 	return p + t * UnitRayDir;
 }
+
+

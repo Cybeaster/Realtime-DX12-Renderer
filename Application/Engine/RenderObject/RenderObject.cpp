@@ -1,8 +1,17 @@
 #include "RenderObject.h"
 
-void SRenderObjectDescriptor::Init(SDescriptorResourceData SRV, SDescriptorResourceData RTV, SDescriptorResourceData DSV)
+void SRenderObjectHeap::Init(UINT SRVCBVUAVDescSize, UINT RTVDescSize, UINT DSVDescSize)
 {
-	SRVHandle.Init(SRV);
-	RTVHandle.Init(RTV);
-	DSVHandle.Init(DSV);
+	if (SRVHeap)
+	{
+		SRVHandle.Init({ SRVHeap.Get(), SRVCBVUAVDescSize, SRVHeap->GetDesc().NumDescriptors });
+	}
+	if (RTVHeap)
+	{
+		RTVHandle.Init({ RTVHeap.Get(), RTVDescSize, RTVHeap->GetDesc().NumDescriptors });
+	}
+	if (DSVHeap)
+	{
+		DSVHandle.Init({ DSVHeap.Get(), DSVDescSize, DSVHeap->GetDesc().NumDescriptors });
+	}
 }

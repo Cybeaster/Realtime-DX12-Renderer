@@ -79,7 +79,7 @@ std::pair<bool, CD3DX12_GPU_DESCRIPTOR_HANDLE> OSobelFilter::Execute(SPSODescrip
 
 void OSobelFilter::BuildDescriptors(IDescriptor* Descriptor)
 {
-	auto descriptor = Cast<SRenderObjectDescriptor>(Descriptor);
+	auto descriptor = Cast<SRenderObjectHeap>(Descriptor);
 	if (!descriptor)
 	{
 		return;

@@ -1,14 +1,11 @@
-//
-// Created by Cybea on 24/01/2024.
-//
 
 #include "RenderTarget.h"
 
 #include "Engine/Engine.h"
 #include "Window/Window.h"
 
-ORenderTargetBase::ORenderTargetBase(UINT Width, UINT Height)
-    : Width(Width), Height(Height), Format(SRenderConstants::BackBufferFormat), Device(OEngine::Get()->GetDevice().Get())
+ORenderTargetBase::ORenderTargetBase(UINT Width, UINT Height, EResourceHeapType HeapType)
+    : Width(Width), Height(Height), Format(SRenderConstants::BackBufferFormat), Device(OEngine::Get()->GetDevice().Get()), ORenderObjectBase(HeapType)
 {
 }
 
@@ -46,7 +43,7 @@ SDescriptorPair ORenderTargetBase::GetRTV(uint32_t SubtargetIdx) const
 SDescriptorPair ORenderTargetBase::GetDSV(uint32_t SubtargetIdx) const
 {
 	SDescriptorPair DSV;
-	DSV.CPUHandle=OEngine::Get()->GetWindow()->GetDepthStensilView();
+	DSV.CPUHandle = OEngine::Get()->DefaultGlobalHeap.DSVHandle.CPUHandle;
 	return DSV; // TODO recursive call
 }
 
@@ -90,8 +87,20 @@ void ORenderTargetBase::SetID(TUUID Other)
 	ID = Other;
 }
 
+void ORenderTargetBase::BuildViewport()
+{
+	Viewport.TopLeftX = 0.0f;
+	Viewport.TopLeftY = 0.0f;
+	Viewport.Width = static_cast<float>(Width);
+	Viewport.Height = static_cast<float>(Height);
+	Viewport.MinDepth = 0.0f;
+	Viewport.MaxDepth = 1.0f;
+
+	ScissorRect = { 0, 0, Width, Height };
+}
+
 OOffscreenTexture::OOffscreenTexture(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format)
-    : ORenderTargetBase(Device, Width, Height, Format)
+    : ORenderTargetBase(Device, Width, Height, Format, EResourceHeapType::Default)
 {
 	Name = L"OffscreenTexture";
 }
@@ -101,7 +110,7 @@ OOffscreenTexture::~OOffscreenTexture()
 
 void OOffscreenTexture::BuildDescriptors(IDescriptor* Descriptor)
 {
-	if (const auto descriptor = Cast<SRenderObjectDescriptor>(Descriptor))
+	if (const auto descriptor = Cast<SRenderObjectHeap>(Descriptor))
 	{
 		descriptor->SRVHandle.Offset(SRVHandle);
 		descriptor->RTVHandle.Offset(RTVHandle);

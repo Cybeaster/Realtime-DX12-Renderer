@@ -4,16 +4,14 @@
 #include "Engine/Engine.h"
 
 OCubeRenderTarget::OCubeRenderTarget(ID3D12Device* Device, int Width, int Height, DXGI_FORMAT Format, const DirectX::XMUINT2 Res)
-    : ORenderTargetBase(Device, Width, Height, Format), Resolution(Res)
+    : ORenderTargetBase(Device, Width, Height, Format, EResourceHeapType::Default), Resolution(Res)
 {
 	Name = L"CubeRenderTarget";
-	BuildViewport();
 }
 
 OCubeRenderTarget::OCubeRenderTarget(const SRenderTargetParams& Params, const DirectX::XMUINT2 Res)
     : ORenderTargetBase(Params), Resolution(Res)
 {
-	BuildViewport();
 }
 
 uint32_t OCubeRenderTarget::GetNumPassesRequired() const
@@ -49,21 +47,9 @@ void OCubeRenderTarget::BuildDepthStencilBuffer()
 	OEngine::Get()->GetCommandQueue()->ExecuteCommandListAndWait();
 }
 
-void OCubeRenderTarget::BuildViewport()
-{
-	Viewport.TopLeftX = 0.0f;
-	Viewport.TopLeftY = 0.0f;
-	Viewport.Width = static_cast<float>(Width);
-	Viewport.Height = static_cast<float>(Height);
-	Viewport.MinDepth = 0.0f;
-	Viewport.MaxDepth = 1.0f;
-
-	ScissorRect = { 0, 0, Width, Height };
-}
-
 void OCubeRenderTarget::BuildDescriptors(IDescriptor* Descriptor)
 {
-	const auto descriptor = Cast<SRenderObjectDescriptor>(Descriptor);
+	const auto descriptor = Cast<SRenderObjectHeap>(Descriptor);
 	if (!descriptor)
 	{
 		return;
@@ -96,13 +82,13 @@ SDescriptorPair OCubeRenderTarget::GetDSV(uint32_t SubtargetIdx) const
 
 SDescriptorPair OCubeRenderTarget::GetRTV(uint32_t SubtargetIdx) const
 {
-	if(SubtargetIdx < RTVHandle.size())
+	if (SubtargetIdx < RTVHandle.size())
 	{
 		return RTVHandle[SubtargetIdx];
 	}
 
-		LOG(Render, Error, "SubtargetIdx is out of range")
-return {};
+	LOG(Render, Error, "SubtargetIdx is out of range")
+	return {};
 }
 
 void OCubeRenderTarget::InitRenderObject()

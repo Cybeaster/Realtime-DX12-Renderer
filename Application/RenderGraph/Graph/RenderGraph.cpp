@@ -35,7 +35,7 @@ void ORenderGraph::Initialize(OGraphicsPipelineManager* PipelineManager, OComman
 void ORenderGraph::Execute()
 {
 	auto engine = OEngine::Get();
-	if (engine->GetSRVHeap())
+	if (engine->GetDescriptorHeap())
 	{
 		auto currentNode = Head;
 		engine->GetWindow()->SetViewport(CommandQueue->GetCommandList().Get());
@@ -67,7 +67,6 @@ SPSODescriptionBase* ORenderGraph::FindPSOInfo(const string& Name) const
 // TODO Resolve automatically the type of the node
 unique_ptr<ORenderNode> ORenderGraph::ResolveNodeType(const string& Type)
 {
-
 	if (Type == "OpaqueDynamicReflections")
 	{
 		return make_unique<OReflectionNode>();

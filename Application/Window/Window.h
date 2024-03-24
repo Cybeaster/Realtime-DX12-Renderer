@@ -52,7 +52,6 @@ public:
 	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView() const;
 	SResourceInfo* GetCurrentBackBuffer();
 	SResourceInfo* GetCurrentDepthStencilBuffer();
-	D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStensilView() const;
 
 	/**
 	 * Should this window be rendered with vertical refresh synchronization.
@@ -86,13 +85,9 @@ public:
 	void Destroy();
 
 	HWND GetHWND() const;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> GetDSVDescriptorHeap() const;
-
 	uint64_t FenceValues[SRenderConstants::RenderBuffersCount];
 
 	SResourceInfo DepthBuffer;
-	ComPtr<ID3D12DescriptorHeap> DSVHeap;
-	ComPtr<ID3D12DescriptorHeap> RTVHeap;
 
 	void MoveToNextFrame();
 	const ComPtr<IDXGISwapChain4>& GetSwapChain();
@@ -126,9 +121,6 @@ public:
 	float GetLastYMousePos() const;
 	shared_ptr<OCamera> GetCamera();
 
-	uint32_t GetDSVDescNum() const;
-	uint32_t GetRTVDescNum() const;
-
 	void ResetBuffers();
 	void SetCameraLens();
 
@@ -156,10 +148,7 @@ public:
 	void BuildDescriptors() override;
 
 private:
-	uint32_t TotalRTVDescNum;
-	uint32_t TotalDSVDescNum;
-
-	SDescriptorPair RTVHandle;
+	SDescriptorPair RTVHandle; // TODO use instead
 	SDescriptorPair DSVHandle;
 
 	shared_ptr<OInputHandler> InputHandler;
@@ -168,7 +157,6 @@ private:
 	HWND Hwnd = nullptr;
 
 	UINT CurrentBackBufferIndex;
-	UINT RTVDescriptorSize;
 	RECT WindowRect;
 
 	uint64_t FrameCounter = 0;

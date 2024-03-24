@@ -9,7 +9,7 @@ class OUIManager : public OHierarchicalWidgetBase
     , public IRenderObject
 {
 public:
-	void InitContext(ID3D12Device2* Device, HWND Hwnd, UINT NumFramesInLight, ID3D12DescriptorHeap* SRVDescriptorHeap, SRenderObjectDescriptor& OutDescriptor, OEngine* Engine);
+	void InitContext(ID3D12Device2* Device, HWND Hwnd, UINT NumFramesInLight, ID3D12DescriptorHeap* SRVDescriptorHeap, SRenderObjectHeap& OutDescriptor, OEngine* Engine);
 	void Draw() override;
 	void PostRender(ID3D12GraphicsCommandList* List);
 	void Destroy();
@@ -35,6 +35,7 @@ public:
 	{
 		return Name;
 	}
+
 private:
 	bool bIsInFocus = false;
 	ImGuiIO* IO = nullptr;

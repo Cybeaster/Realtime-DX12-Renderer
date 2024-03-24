@@ -37,7 +37,8 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	float4 texC = mul(float4(Vin.TexC, 0.0f, 1.0f), texTransform);
 	vout.TexC = mul(texC, matData.MatTransform).xy;
 
-    float2 tiledTexC = Vin.TexC * 64;
+    Vin.TexC = Vin.TexC * 8;
+
     float dampingStrength = 1.f;
     // Wave parameters for more complex and realistic waves
     float amplitude1 = 0.5f;
@@ -65,11 +66,11 @@ VertexOut VS(VertexIn Vin, uint InstanceID
     // Combine wave patterns for a more complex wave effect
     float combinedWave = wave1 + wave2 + wave3;
     // Adjust tiled texture coordinates for wave effect
-    vout.WaveNormalTex0 = tiledTexC + float2(0, combinedWave);
-    vout.WaveNormalTex1 = tiledTexC - float2(0, combinedWave);
+    vout.WaveNormalTex0 = Vin.TexC + float2(0, combinedWave);
+    vout.WaveNormalTex1 = Vin.TexC - float2(0, combinedWave);
 
     // Base wave calculations as before
-    float wave = amplitude1 * sin(coord1.x) + amplitude2 * sin(coord2.x) + amplitude3 * sin(coord3.x);
+    float wave = amplitude1 * cos(coord1.x) + amplitude2 * cos(coord2.x) + amplitude3 * cos(coord3.x);
 
     // Sample the height map
     float baseHeight = ComputeHeightMaps(matData, Vin.NormalL, Vin.TangentU, Vin.TexC, 1.0).r;
@@ -81,7 +82,7 @@ VertexOut VS(VertexIn Vin, uint InstanceID
     wave *= dampingFactor;
 
     // Combine the base height with the damped wave for the final vertex height
-    Vin.PosL.y = (baseHeight * 5) + wave;
+    Vin.PosL.y = (baseHeight * 3) + wave;
 
 	// Transform to world space.
 

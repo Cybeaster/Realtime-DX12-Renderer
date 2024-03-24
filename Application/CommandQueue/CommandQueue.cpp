@@ -166,7 +166,7 @@ void OCommandQueue::SetResource(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Re
 	}
 
 	PSO->RootSignature->SetResource(Name, Resource, CommandList.Get());
-	SetResources[Name]= Resource;
+	SetResources[Name] = Resource;
 }
 
 void OCommandQueue::SetResource(const string& Name, D3D12_GPU_DESCRIPTOR_HANDLE Resource, SPSODescriptionBase* PSO)
@@ -223,11 +223,10 @@ ORenderTargetBase* OCommandQueue::SetRenderTarget(ORenderTargetBase* RenderTarge
 		CurrentRenderTarget->UnsetRenderTarget(this);
 	}
 
-	RenderTarget->PrepareRenderTarget(CommandList.Get(),Subtarget);
+	RenderTarget->PrepareRenderTarget(CommandList.Get(), Subtarget);
 	CurrentRenderTarget = RenderTarget;
 	return RenderTarget;
 }
-
 
 void OCommandQueue::ResetQueueState()
 {
@@ -253,4 +252,17 @@ Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> OCommandQueue::CreateCommandLi
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList2> list;
 	THROW_IF_FAILED(Device->CreateCommandList(0, CommandListType, Allocator.Get(), nullptr, IID_PPV_ARGS(&list)));
 	return list;
+}
+
+void OCommandQueue::SetHeap(SRenderObjectHeap* Heap)
+{
+	if (Heap == CurrentObjectHeap)
+	{
+		LOG(Engine, Warning, "Heap is already set!")
+		return;
+	}
+	LOG(Engine, Warning, "Setting heap: {}", TEXT(Heap->SRVHeap.Get()));
+
+	ID3D12DescriptorHeap* heaps[] = { Heap->SRVHeap.Get() };
+	GetCommandList()->SetDescriptorHeaps(_countof(heaps), heaps);
 }

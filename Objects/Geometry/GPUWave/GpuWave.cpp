@@ -47,7 +47,7 @@ void OGPUWave::BuildResources()
 	PrevUploadBuffer = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_UPLOAD, resourceDesc);
 	CurrUploadBuffer = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_UPLOAD, resourceDesc);
 
-	//describe the data, we're going to copy into the default buffer
+	// describe the data, we're going to copy into the default buffer
 	vector<float> initData(NumRows * NumCols, 0.0f);
 
 	D3D12_SUBRESOURCE_DATA subResourceData = {};
@@ -76,7 +76,7 @@ void OGPUWave::BuildResources()
 
 void OGPUWave::BuildDescriptors(IDescriptor* Descriptor)
 {
-	auto descriptor = Cast<SRenderObjectDescriptor>(Descriptor);
+	auto descriptor = Cast<SRenderObjectHeap>(Descriptor);
 	if (!descriptor)
 	{
 		return;
@@ -196,7 +196,7 @@ void OGPUWave::Update(const UpdateEventArgs& Event)
 		int j = Utils::Math::Random(4, GetColumnCount() - 5);
 		float r = Utils::Math::Random(1.f, 2.f);
 
-		//Disturb(wavesRootSignature, engine->GetPSO(SPSOType::WavesDisturb).Get(), i, j, r);
+		// Disturb(wavesRootSignature, engine->GetPSO(SPSOType::WavesDisturb).Get(), i, j, r);
 	}
-	//Update(Event.Timer, wavesRootSignature, engine->GetPSO(SPSOType::WavesUpdate).Get());
+	// Update(Event.Timer, wavesRootSignature, engine->GetPSO(SPSOType::WavesUpdate).Get());
 }

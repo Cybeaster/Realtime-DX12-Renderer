@@ -63,7 +63,7 @@ struct SLogCategories
 	SLogUtils::Log(SLogUtils::Format(String, ##__VA_ARGS__), ELogType::LogType, true);
 
 #define TEXT(Argument) \
-	SLogUtils::ToString(Argument)
+	ToString(Argument)
 
 struct SLogUtils
 {
@@ -143,287 +143,287 @@ struct SLogUtils
 	{
 		std::printf(Str.c_str(), ToCString(Args)...);
 	}
-
-	static std::wstring ToString(int Argument) noexcept
-	{
-		return std::to_wstring(Argument);
-	}
-
-	static std::wstring ToString(float Argument) noexcept
-	{
-		return std::to_wstring(Argument);
-	}
-
-	static std::wstring ToString(const char* Argument) noexcept
-	{
-		return std::wstring(Argument, Argument + strlen(Argument));
-	}
-
-	static std::wstring ToString(double Argument) noexcept
-	{
-		return std::to_wstring(Argument);
-	}
-
-	static std::wstring ToString(DirectX::XMFLOAT3 Argument) noexcept
-	{
-		return L"[ X: " + std::to_wstring(Argument.x) + L" Y: " + std::to_wstring(Argument.y) + L" Z: " + std::to_wstring(Argument.z) + L" ]";
-	}
-
-	static std::wstring ToString(string Argument) noexcept
-	{
-		return std::wstring(Argument.begin(), Argument.end());
-	}
-
-	static std::wstring ToString(boost::uuids::uuid ID) noexcept
-	{
-		return wstring(ID.begin(), ID.end());
-	}
-
-	static std::wstring ToString(UINT Value)
-	{
-		return std::to_wstring(Value);
-	}
-
-	static wstring ToString(D3D12_ROOT_DESCRIPTOR_TABLE1 Id)
-	{
-		wstring result;
-		result += L"NumDescriptorRanges: " + ToString(Id.NumDescriptorRanges) + L"\n";
-		result += L"pDescriptorRanges: " + ToString(Id.NumDescriptorRanges, Id.pDescriptorRanges) + L"\n";
-
-		return result;
-	}
-
-	static wstring ToString(const D3D12_DESCRIPTOR_RANGE1& Id)
-	{
-		wstring result;
-		result += L"RangeType: " + ToString(Id.RangeType) + L"\n";
-		result += L"NumDescriptors: " + ToString(Id.NumDescriptors) + L"\n";
-		result += L"BaseShaderRegister: " + ToString(Id.BaseShaderRegister) + L"\n";
-		result += L"RegisterSpace: " + ToString(Id.RegisterSpace) + L"\n";
-		result += L"OffsetInDescriptorsFromTableStart: " + ToString(Id.OffsetInDescriptorsFromTableStart) + L"\n";
-		return result;
-	}
-
-	static wstring ToString(UINT NumDescriptorRanges, const D3D12_DESCRIPTOR_RANGE1* pDescriptorRanges)
-	{
-		wstring result;
-		for (UINT i = 0; i < NumDescriptorRanges; i++)
-		{
-			result += L"\t";
-			result += ToString(pDescriptorRanges[i]);
-		}
-		return result;
-	}
-
-	static wstring ToString(const D3D12_ROOT_PARAMETER1& Id)
-	{
-		wstring result;
-		result += L"ParameterType: " + ToString(Id.ParameterType) + L"\n";
-		result += L"ShaderVisibility: " + ToString(Id.ShaderVisibility) + L"\n";
-		result += L"DescriptorTable: " + ToString(Id.DescriptorTable) + L"\n";
-		return result;
-	}
-
-	static wstring ToString(const D3D12_ROOT_PARAMETER_TYPE& Id)
-	{
-		switch (Id)
-		{
-		case D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE:
-			return L"Descriptor Table";
-			break;
-		case D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS:
-			return L"32 Bit Constants";
-			break;
-		case D3D12_ROOT_PARAMETER_TYPE_CBV:
-			return L"Constant Buffer View";
-			break;
-		case D3D12_ROOT_PARAMETER_TYPE_SRV:
-			return L"Shader Resource View";
-			break;
-		case D3D12_ROOT_PARAMETER_TYPE_UAV:
-			return L"Unordered Access View";
-			break;
-		}
-		return L"Unknown";
-	}
-
-	static wstring ToString(const D3D12_SHADER_VISIBILITY& Id)
-	{
-		switch (Id)
-		{
-		case D3D12_SHADER_VISIBILITY_ALL:
-			return L"All";
-			break;
-		case D3D12_SHADER_VISIBILITY_VERTEX:
-			return L"Vertex";
-			break;
-		case D3D12_SHADER_VISIBILITY_HULL:
-			return L"Hull";
-			break;
-		case D3D12_SHADER_VISIBILITY_DOMAIN:
-			return L"Domain";
-			break;
-		case D3D12_SHADER_VISIBILITY_GEOMETRY:
-			return L"Geometry";
-			break;
-		case D3D12_SHADER_VISIBILITY_PIXEL:
-			return L"Pixel";
-			break;
-		case D3D12_SHADER_VISIBILITY_AMPLIFICATION:
-			return L"Amplification";
-			break;
-		case D3D12_SHADER_VISIBILITY_MESH:
-			return L"Mesh";
-			break;
-		}
-		return L"Unknown";
-	}
-
-	static wstring ToString(D3D12_TEXTURE_ADDRESS_MODE Mode)
-	{
-		switch (Mode)
-		{
-		case D3D12_TEXTURE_ADDRESS_MODE_WRAP:
-			return L"Wrap";
-			break;
-		case D3D12_TEXTURE_ADDRESS_MODE_MIRROR:
-			return L"Mirror";
-			break;
-		case D3D12_TEXTURE_ADDRESS_MODE_CLAMP:
-			return L"Clamp";
-			break;
-		case D3D12_TEXTURE_ADDRESS_MODE_BORDER:
-			return L"Border";
-			break;
-		case D3D12_TEXTURE_ADDRESS_MODE_MIRROR_ONCE:
-			return L"Mirror Once";
-			break;
-		}
-		return L"Unknown";
-	}
-
-	static wstring ToString(D3D12_FILTER Other)
-	{
-		switch (Other)
-		{
-		case D3D12_FILTER_MIN_MAG_MIP_POINT:
-			return L"Min Mag Mip Point";
-			break;
-		case D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR:
-			return L"Min Mag Point Mip Linear";
-			break;
-		case D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT:
-			return L"Min Point Mag Linear Mip Point";
-			break;
-		case D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR:
-			return L"Min Point Mag Mip Linear";
-			break;
-		case D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT:
-			return L"Min Linear Mag Mip Point";
-			break;
-		case D3D12_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR:
-			return L"Min Linear Mag Point Mip Linear";
-			break;
-		case D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT:
-			return L"Min Mag Linear Mip Point";
-			break;
-		case D3D12_FILTER_MIN_MAG_MIP_LINEAR:
-			return L"Min Mag Mip Linear";
-			break;
-		case D3D12_FILTER_ANISOTROPIC:
-			return L"Anisotropic";
-			break;
-		case D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT:
-			return L"Comparison Min Mag Mip Point";
-			break;
-		case D3D12_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR:
-			return L"Comparison Min Mag Point Mip Linear";
-			break;
-		case D3D12_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT:
-			return L"Comparison Min Point Mag Linear Mip Point";
-			break;
-		case D3D12_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR:
-			return L"Comparison Min Point Mag Mip Linear";
-			break;
-		case D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT:
-			return L"Comparison Min Linear Mag Mip Point";
-			break;
-		case D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR:
-			return L"Comparison Min Linear Mag Point Mip Linear";
-			break;
-		case D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT:
-			return L"Comparison Min Mag Linear Mip Point";
-			break;
-		case D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR:
-			return L"Comparison Min Mag Mip Linear";
-			break;
-		case D3D12_FILTER_COMPARISON_ANISOTROPIC:
-			return L"Comparison Anisotropic";
-			break;
-		case D3D12_FILTER_MINIMUM_MIN_MAG_MIP_POINT:
-			return L"Minimum Min Mag Mip Point";
-			break;
-		case D3D12_FILTER_MINIMUM_MIN_MAG_POINT_MIP_LINEAR:
-			return L"Minimum Min Mag Point Mip Linear";
-			break;
-		case D3D12_FILTER_MINIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT:
-			return L"Minimum Min Point Mag Linear Mip Point";
-			break;
-		case D3D12_FILTER_MINIMUM_MIN_POINT_MAG_MIP_LINEAR:
-			return L"Minimum Min Point Mag Mip Linear";
-			break;
-		case D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_MIP_POINT:
-			return L"Minimum Min Linear Mag Mip Point";
-			break;
-		case D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR:
-			return L"Minimum Min Linear Mag Point Mip Linear";
-			break;
-		case D3D12_FILTER_MINIMUM_MIN_MAG_LINEAR_MIP_POINT:
-			return L"Minimum Min Mag Linear Mip Point";
-			break;
-		case D3D12_FILTER_MINIMUM_MIN_MAG_MIP_LINEAR:
-			return L"Minimum Min Mag Mip Linear";
-			break;
-		case D3D12_FILTER_MINIMUM_ANISOTROPIC:
-			return L"Minimum Anisotropic";
-			break;
-		case D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_POINT:
-			return L"Maximum Min Mag Mip Point";
-			break;
-		case D3D12_FILTER_MAXIMUM_MIN_MAG_POINT_MIP_LINEAR:
-			return L"Maximum Min Mag Point Mip Linear";
-			break;
-		case D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT:
-			return L"Maximum Min Point Mag Linear Mip Point";
-			break;
-		case D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_MIP_LINEAR:
-			return L"Maximum Min Point Mag Mip Linear";
-			break;
-		case D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_MIP_POINT:
-			return L"Maximum Min Linear Mag Mip Point";
-			break;
-		}
-	}
-
-	static wstring ToString(const D3D12_STATIC_SAMPLER_DESC& Id)
-	{
-		wstring result;
-		result += L"Filter: " + ToString(Id.Filter) + L"\n";
-		result += L"AddressU: " + ToString(Id.AddressU) + L"\n";
-		result += L"AddressV: " + ToString(Id.AddressV) + L"\n";
-		result += L"AddressW: " + ToString(Id.AddressW) + L"\n";
-		result += L"MipLODBias: " + ToString(Id.MipLODBias) + L"\n";
-		result += L"MaxAnisotropy: " + ToString(Id.MaxAnisotropy) + L"\n";
-		result += L"ComparisonFunc: " + ToString(Id.ComparisonFunc) + L"\n";
-		result += L"BorderColor: " + ToString(Id.BorderColor) + L"\n";
-		result += L"MinLOD: " + ToString(Id.MinLOD) + L"\n";
-		result += L"MaxLOD: " + ToString(Id.MaxLOD) + L"\n";
-		result += L"ShaderRegister: " + ToString(Id.ShaderRegister) + L"\n";
-		result += L"RegisterSpace: " + ToString(Id.RegisterSpace) + L"\n";
-		result += L"ShaderVisibility: " + ToString(Id.ShaderVisibility) + L"\n";
-		return result;
-	}
 };
+
+inline std::wstring ToString(int Argument) noexcept
+{
+	return std::to_wstring(Argument);
+}
+
+inline std::wstring ToString(float Argument) noexcept
+{
+	return std::to_wstring(Argument);
+}
+
+inline std::wstring ToString(const char* Argument) noexcept
+{
+	return std::wstring(Argument, Argument + strlen(Argument));
+}
+
+inline std::wstring ToString(double Argument) noexcept
+{
+	return std::to_wstring(Argument);
+}
+
+inline std::wstring ToString(DirectX::XMFLOAT3 Argument) noexcept
+{
+	return L"[ X: " + std::to_wstring(Argument.x) + L" Y: " + std::to_wstring(Argument.y) + L" Z: " + std::to_wstring(Argument.z) + L" ]";
+}
+
+inline std::wstring ToString(string Argument) noexcept
+{
+	return std::wstring(Argument.begin(), Argument.end());
+}
+
+inline std::wstring ToString(boost::uuids::uuid ID) noexcept
+{
+	return wstring(ID.begin(), ID.end());
+}
+
+inline std::wstring ToString(UINT Value)
+{
+	return std::to_wstring(Value);
+}
+
+inline wstring ToString(const D3D12_DESCRIPTOR_RANGE1& Id)
+{
+	wstring result;
+	result += L"RangeType: " + ToString(Id.RangeType) + L"\n";
+	result += L"NumDescriptors: " + ToString(Id.NumDescriptors) + L"\n";
+	result += L"BaseShaderRegister: " + ToString(Id.BaseShaderRegister) + L"\n";
+	result += L"RegisterSpace: " + ToString(Id.RegisterSpace) + L"\n";
+	result += L"OffsetInDescriptorsFromTableStart: " + ToString(Id.OffsetInDescriptorsFromTableStart) + L"\n";
+	return result;
+}
+
+inline wstring ToString(UINT NumDescriptorRanges, const D3D12_DESCRIPTOR_RANGE1* pDescriptorRanges)
+{
+	wstring result;
+	for (UINT i = 0; i < NumDescriptorRanges; i++)
+	{
+		result += L"\t";
+		result += ToString(pDescriptorRanges[i]);
+	}
+	return result;
+}
+
+inline wstring ToString(D3D12_ROOT_DESCRIPTOR_TABLE1 Id)
+{
+	wstring result;
+	result += L"NumDescriptorRanges: " + ToString(Id.NumDescriptorRanges) + L"\n";
+	result += L"pDescriptorRanges: " + ToString(Id.NumDescriptorRanges, Id.pDescriptorRanges) + L"\n";
+
+	return result;
+}
+
+inline wstring ToString(const D3D12_ROOT_PARAMETER1& Id)
+{
+	wstring result;
+	result += L"ParameterType: " + ToString(Id.ParameterType) + L"\n";
+	result += L"ShaderVisibility: " + ToString(Id.ShaderVisibility) + L"\n";
+	result += L"DescriptorTable: " + ToString(Id.DescriptorTable) + L"\n";
+	return result;
+}
+
+inline wstring ToString(const D3D12_ROOT_PARAMETER_TYPE& Id)
+{
+	switch (Id)
+	{
+	case D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE:
+		return L"Descriptor Table";
+		break;
+	case D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS:
+		return L"32 Bit Constants";
+		break;
+	case D3D12_ROOT_PARAMETER_TYPE_CBV:
+		return L"Constant Buffer View";
+		break;
+	case D3D12_ROOT_PARAMETER_TYPE_SRV:
+		return L"Shader Resource View";
+		break;
+	case D3D12_ROOT_PARAMETER_TYPE_UAV:
+		return L"Unordered Access View";
+		break;
+	}
+	return L"Unknown";
+}
+
+inline wstring ToString(const D3D12_SHADER_VISIBILITY& Id)
+{
+	switch (Id)
+	{
+	case D3D12_SHADER_VISIBILITY_ALL:
+		return L"All";
+		break;
+	case D3D12_SHADER_VISIBILITY_VERTEX:
+		return L"Vertex";
+		break;
+	case D3D12_SHADER_VISIBILITY_HULL:
+		return L"Hull";
+		break;
+	case D3D12_SHADER_VISIBILITY_DOMAIN:
+		return L"Domain";
+		break;
+	case D3D12_SHADER_VISIBILITY_GEOMETRY:
+		return L"Geometry";
+		break;
+	case D3D12_SHADER_VISIBILITY_PIXEL:
+		return L"Pixel";
+		break;
+	case D3D12_SHADER_VISIBILITY_AMPLIFICATION:
+		return L"Amplification";
+		break;
+	case D3D12_SHADER_VISIBILITY_MESH:
+		return L"Mesh";
+		break;
+	}
+	return L"Unknown";
+}
+
+inline wstring ToString(D3D12_TEXTURE_ADDRESS_MODE Mode)
+{
+	switch (Mode)
+	{
+	case D3D12_TEXTURE_ADDRESS_MODE_WRAP:
+		return L"Wrap";
+		break;
+	case D3D12_TEXTURE_ADDRESS_MODE_MIRROR:
+		return L"Mirror";
+		break;
+	case D3D12_TEXTURE_ADDRESS_MODE_CLAMP:
+		return L"Clamp";
+		break;
+	case D3D12_TEXTURE_ADDRESS_MODE_BORDER:
+		return L"Border";
+		break;
+	case D3D12_TEXTURE_ADDRESS_MODE_MIRROR_ONCE:
+		return L"Mirror Once";
+		break;
+	}
+	return L"Unknown";
+}
+
+inline wstring ToString(D3D12_FILTER Other)
+{
+	switch (Other)
+	{
+	case D3D12_FILTER_MIN_MAG_MIP_POINT:
+		return L"Min Mag Mip Point";
+		break;
+	case D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR:
+		return L"Min Mag Point Mip Linear";
+		break;
+	case D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT:
+		return L"Min Point Mag Linear Mip Point";
+		break;
+	case D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR:
+		return L"Min Point Mag Mip Linear";
+		break;
+	case D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT:
+		return L"Min Linear Mag Mip Point";
+		break;
+	case D3D12_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR:
+		return L"Min Linear Mag Point Mip Linear";
+		break;
+	case D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT:
+		return L"Min Mag Linear Mip Point";
+		break;
+	case D3D12_FILTER_MIN_MAG_MIP_LINEAR:
+		return L"Min Mag Mip Linear";
+		break;
+	case D3D12_FILTER_ANISOTROPIC:
+		return L"Anisotropic";
+		break;
+	case D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT:
+		return L"Comparison Min Mag Mip Point";
+		break;
+	case D3D12_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR:
+		return L"Comparison Min Mag Point Mip Linear";
+		break;
+	case D3D12_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT:
+		return L"Comparison Min Point Mag Linear Mip Point";
+		break;
+	case D3D12_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR:
+		return L"Comparison Min Point Mag Mip Linear";
+		break;
+	case D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT:
+		return L"Comparison Min Linear Mag Mip Point";
+		break;
+	case D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR:
+		return L"Comparison Min Linear Mag Point Mip Linear";
+		break;
+	case D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT:
+		return L"Comparison Min Mag Linear Mip Point";
+		break;
+	case D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR:
+		return L"Comparison Min Mag Mip Linear";
+		break;
+	case D3D12_FILTER_COMPARISON_ANISOTROPIC:
+		return L"Comparison Anisotropic";
+		break;
+	case D3D12_FILTER_MINIMUM_MIN_MAG_MIP_POINT:
+		return L"Minimum Min Mag Mip Point";
+		break;
+	case D3D12_FILTER_MINIMUM_MIN_MAG_POINT_MIP_LINEAR:
+		return L"Minimum Min Mag Point Mip Linear";
+		break;
+	case D3D12_FILTER_MINIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT:
+		return L"Minimum Min Point Mag Linear Mip Point";
+		break;
+	case D3D12_FILTER_MINIMUM_MIN_POINT_MAG_MIP_LINEAR:
+		return L"Minimum Min Point Mag Mip Linear";
+		break;
+	case D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_MIP_POINT:
+		return L"Minimum Min Linear Mag Mip Point";
+		break;
+	case D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR:
+		return L"Minimum Min Linear Mag Point Mip Linear";
+		break;
+	case D3D12_FILTER_MINIMUM_MIN_MAG_LINEAR_MIP_POINT:
+		return L"Minimum Min Mag Linear Mip Point";
+		break;
+	case D3D12_FILTER_MINIMUM_MIN_MAG_MIP_LINEAR:
+		return L"Minimum Min Mag Mip Linear";
+		break;
+	case D3D12_FILTER_MINIMUM_ANISOTROPIC:
+		return L"Minimum Anisotropic";
+		break;
+	case D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_POINT:
+		return L"Maximum Min Mag Mip Point";
+		break;
+	case D3D12_FILTER_MAXIMUM_MIN_MAG_POINT_MIP_LINEAR:
+		return L"Maximum Min Mag Point Mip Linear";
+		break;
+	case D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT:
+		return L"Maximum Min Point Mag Linear Mip Point";
+		break;
+	case D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_MIP_LINEAR:
+		return L"Maximum Min Point Mag Mip Linear";
+		break;
+	case D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_MIP_POINT:
+		return L"Maximum Min Linear Mag Mip Point";
+		break;
+	}
+}
+
+inline wstring ToString(const D3D12_STATIC_SAMPLER_DESC& Id)
+{
+	wstring result;
+	result += L"Filter: " + ToString(Id.Filter) + L"\n";
+	result += L"AddressU: " + ToString(Id.AddressU) + L"\n";
+	result += L"AddressV: " + ToString(Id.AddressV) + L"\n";
+	result += L"AddressW: " + ToString(Id.AddressW) + L"\n";
+	result += L"MipLODBias: " + ToString(Id.MipLODBias) + L"\n";
+	result += L"MaxAnisotropy: " + ToString(Id.MaxAnisotropy) + L"\n";
+	result += L"ComparisonFunc: " + ToString(Id.ComparisonFunc) + L"\n";
+	result += L"BorderColor: " + ToString(Id.BorderColor) + L"\n";
+	result += L"MinLOD: " + ToString(Id.MinLOD) + L"\n";
+	result += L"MaxLOD: " + ToString(Id.MaxLOD) + L"\n";
+	result += L"ShaderRegister: " + ToString(Id.ShaderRegister) + L"\n";
+	result += L"RegisterSpace: " + ToString(Id.RegisterSpace) + L"\n";
+	result += L"ShaderVisibility: " + ToString(Id.ShaderVisibility) + L"\n";
+	return result;
+}
 
 template<typename T>
 struct SLogger

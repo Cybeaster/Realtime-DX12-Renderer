@@ -4,6 +4,7 @@
 #include "Application.h"
 #include "Camera/Camera.h"
 #include "DirectX/FrameResource.h"
+#include "Engine/RenderTarget/ShadowMap/ShadowMap.h"
 #include "EngineHelper.h"
 #include "Exception.h"
 #include "Filters/BilateralBlur/BilateralBlurFilter.h"
@@ -23,11 +24,11 @@
 using namespace Microsoft::WRL;
 using namespace DirectX;
 
-#define CMD_LIST_EXEC_SCOPE()                             \
-	auto __cmd_queue = OEngine::Get()->GetCommandQueue(); \
-	__cmd_queue->TryResetCommandList();                   \
-	SExitHelper __cmd_exit_helper([__cmd_queue]() {       \
-		__cmd_queue->ExecuteCommandListAndWait();         \
+#define CMD_LIST_EXEC_SCOPE()                               \
+	auto __cmd_queue = OEngine::Get() -> GetCommandQueue(); \
+	__cmd_queue->TryResetCommandList();                     \
+	SExitHelper __cmd_exit_helper([__cmd_queue]() {         \
+		__cmd_queue->ExecuteCommandListAndWait();           \
 	});
 
 void OEngine::RemoveWindow(HWND Hwnd)
@@ -152,10 +153,8 @@ void OEngine::UpdateMaterialCB() const
 		}
 	};
 
-
 	for (auto& materials = GetMaterials(); const auto& val : materials | std::views::values)
 	{
-
 		if (const auto material = val.get())
 		{
 			if (material->NumFramesDirty > 0)
@@ -180,7 +179,7 @@ void OEngine::UpdateMaterialCB() const
 				copyIndicesTo(heightIndices, matConstants.HeightMapIndex, SRenderConstants::MaxHeightMapsPerMaterial);
 
 				Put(matConstants.MatTransform, Transpose(matTransform));
-				for(auto& cb : FrameResources)
+				for (auto& cb : FrameResources)
 				{
 					cb->MaterialBuffer->CopyData(material->MaterialCBIndex, matConstants);
 					material->NumFramesDirty--;
@@ -193,11 +192,11 @@ void OEngine::UpdateMaterialCB() const
 void OEngine::UpdateLightCB(const UpdateEventArgs& Args) const
 {
 	uint32_t dirIndex = 0;
-	uint32_t pointIndex =0;
+	uint32_t pointIndex = 0;
 	uint32_t spotIndex = 0;
 	for (const auto component : LightComponents)
 	{
-		if(component->TryUpdate())
+		if (component->TryUpdate())
 		{
 			for (auto& cb : FrameResources)
 			{
@@ -245,7 +244,7 @@ void OEngine::DrawRenderItemsImpl(SPSODescriptionBase* Description, const vector
 			renderItem->BindResources(cmd.Get(), Engine->CurrentFrameResources);
 			auto instanceBuffer = Engine->CurrentFrameResources->InstanceBuffer->GetResource();
 			auto location = instanceBuffer->Resource->GetGPUVirtualAddress() + renderItem->StartInstanceLocation * sizeof(SInstanceData);
-			GetCommandQueue()->SetResource("gInstanceData", location,Description);
+			GetCommandQueue()->SetResource("gInstanceData", location, Description);
 			cmd->DrawIndexedInstanced(
 			    renderItem->ChosenSubmesh->IndexCount,
 			    renderItem->VisibleInstanceCount,
@@ -272,7 +271,7 @@ void OEngine::DrawFullScreenQuad()
 
 void OEngine::InitUIManager()
 {
-	UIManager->InitContext(Device.Get(), Window->GetHWND(), SRenderConstants::NumFrameResources, GetSRVHeap().Get(), ObjectDescriptors, this);
+	UIManager->InitContext(Device.Get(), Window->GetHWND(), SRenderConstants::NumFrameResources, GetDescriptorHeap().Get(), DefaultGlobalHeap, this);
 }
 
 void OEngine::InitCompiler()
@@ -332,15 +331,33 @@ int OEngine::InitTests(shared_ptr<OTest> Test)
 	return 0;
 }
 
+void OEngine::BuildDescriptorHeaps()
+{
+	auto build = [&](auto& heap, EResourceHeapType Flag, uint32_t AddSRV = 0, uint32_t AddRTV = 0, uint32_t AddDSV = 0) {
+		heap.RTVHeap = CreateDescriptorHeap(GetDesiredCountOfRTVs(Flag) + AddRTV, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		heap.DSVHeap = CreateDescriptorHeap(GetDesiredCountOfDSVs(Flag) + AddDSV, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+		heap.SRVHeap = CreateDescriptorHeap(GetDesiredCountOfSRVs(Flag) + AddSRV,
+		                                    D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+		                                    D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+		SetObjectDescriptor(heap);
+	};
+
+	build(DefaultGlobalHeap, EResourceHeapType::Default, UIManager->GetNumSRVRequired() + GetTextureManager()->GetNumTotalTextures() + 2);
+	build(ShadowHeap, EResourceHeapType::Shadow);
+}
+
 void OEngine::PostTestInit()
 {
+	BuildDescriptorHeaps();
 	Window->InitRenderObject();
 	BuildFrameResource(GetPassCountRequired());
 	GetCommandQueue()->TryResetCommandList();
-	BuildDescriptorHeap();
+	FillDescriptorHeaps();
 	InitUIManager();
 	GetCommandQueue()->ExecuteCommandListAndWait();
 	HasInitializedTests = true;
+	SceneBounds.Center = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	SceneBounds.Radius = sqrtf(10.0f * 10.0f + 15.0f * 15.0f); // todo estimate manually
 }
 
 OCommandQueue* OEngine::GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type)
@@ -398,11 +415,17 @@ void OEngine::BuildFrameResource(uint32_t Count)
 	OnFrameResourceChanged.Broadcast();
 }
 
-void OEngine::SetDescriptorHeap()
+void OEngine::SetDescriptorHeap(EResourceHeapType Type)
 {
-	GetCommandQueue()->TryResetCommandList();
-	ID3D12DescriptorHeap* heaps[] = { SRVDescriptorHeap.Get() };
-	GetCommandQueue()->GetCommandList()->SetDescriptorHeaps(_countof(heaps), heaps);
+	switch (Type)
+	{
+	case EResourceHeapType::Default:
+		GetCommandQueue()->SetHeap(&DefaultGlobalHeap);
+		break;
+	case EResourceHeapType::Shadow:
+		GetCommandQueue()->SetHeap(&ShadowHeap);
+		break;
+	}
 }
 
 OShaderCompiler* OEngine::GetShaderCompiler() const
@@ -410,27 +433,12 @@ OShaderCompiler* OEngine::GetShaderCompiler() const
 	return ShaderCompiler.get();
 }
 
-void OEngine::PrepareRenderTarget(ORenderTargetBase* RenderTarget)
-{
-	auto cmdList = GetCommandQueue()->GetCommandList();
-	auto backbufferView = RenderTarget->GetRTV().CPUHandle;
-	auto depthStencilView = GetWindow()->GetDepthStensilView();
-	cmdList->ClearRenderTargetView(backbufferView, DirectX::Colors::LightSteelBlue, 0, nullptr);
-	cmdList->ClearDepthStencilView(depthStencilView, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-	cmdList->OMSetRenderTargets(1, &backbufferView, true, &depthStencilView);
-	Utils::ResourceBarrier(cmdList.Get(), RenderTarget->GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
-}
-
-void OEngine::PrepareRenderTarget()
-{
-	PrepareRenderTarget(GetOffscreenRT());
-}
-
 void OEngine::Draw(UpdateEventArgs& Args)
 {
 	if (HasInitializedTests)
 	{
-		SetDescriptorHeap();
+		DirectCommandQueue->TryResetCommandList();
+		SetDescriptorHeap(EResourceHeapType::Default);
 		Update(Args);
 		Render(Args);
 	}
@@ -477,7 +485,7 @@ void OEngine::InitRenderGraph()
 
 uint32_t OEngine::GetLightComponentsCount() const
 {
-	return 10; //todo fix
+	return 10; // todo fix
 }
 
 OUIManager* OEngine::GetUIManager() const
@@ -514,7 +522,7 @@ void OEngine::UpdateObjectCB() const
 		data.EndIndex = idx + SCast<int32_t>(val->GetNumPassesRequired());
 		data.Buffer = res;
 		val->UpdatePass(data);
-		idx += data.EndIndex;
+		idx = data.EndIndex;
 	}
 }
 
@@ -540,7 +548,6 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 	{
 		val->Update(Args);
 	}
-
 }
 
 void OEngine::DrawCompositeShader(CD3DX12_GPU_DESCRIPTOR_HANDLE Input)
@@ -934,18 +941,13 @@ D3D12_COMPUTE_PIPELINE_STATE_DESC OEngine::GetSobelPSODesc()
 	return sobelPSO;
 }
 
-void OEngine::BuildDescriptorHeap()
+void OEngine::FillDescriptorHeaps()
 {
-	SRVDescNum = GetDesiredCountOfSRVs();
-	SRVDescriptorHeap = CreateDescriptorHeap(SRVDescNum,
-	                                         D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-	                                         D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-	SetObjectDescriptor();
 	// Textures, SRV offset only
 	uint32_t texturesOffset = 0;
-	auto buildSRV = [&](STexture* Texture){
+	auto buildSRV = [&](STexture* Texture) {
 		auto resourceSRV = Texture->GetSRVDesc();
-		auto pair = ObjectDescriptors.SRVHandle.Offset();
+		auto pair = DefaultGlobalHeap.SRVHandle.Offset();
 
 		Device->CreateShaderResourceView(Texture->Resource.Resource.Get(), &resourceSRV, pair.CPUHandle);
 		Texture->HeapIdx = texturesOffset;
@@ -973,8 +975,30 @@ void OEngine::BuildDescriptorHeap()
 
 	for (const auto& rObject : RenderObjects | std::views::values)
 	{
-		rObject->BuildDescriptors(&ObjectDescriptors);
+		switch (rObject->GetHeapType())
+		{
+		case EResourceHeapType::Default:
+			rObject->BuildDescriptors(&DefaultGlobalHeap);
+			break;
+		case EResourceHeapType::Shadow:
+			rObject->BuildDescriptors(&ShadowHeap);
+			break;
+		}
 	}
+
+	NullCubeSRV = DefaultGlobalHeap.SRVHandle.Offset();
+	NullTexSRV = DefaultGlobalHeap.SRVHandle.Offset();
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels = 1;
+	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+	Device->CreateShaderResourceView(nullptr, &srvDesc, NullTexSRV.CPUHandle);
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+	Device->CreateShaderResourceView(nullptr, &srvDesc, NullCubeSRV.CPUHandle);
 }
 
 D3D12_GRAPHICS_PIPELINE_STATE_DESC OEngine::GetWavesRenderPSODesc()
@@ -1047,26 +1071,6 @@ void OEngine::BuildBlurPSO()
 	};
 	verticalBlurPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 	CreatePSO(SPSOType::VerticalBlur, verticalBlurPSO);
-}
-void OEngine::BuildPSOs()
-{
-	CreatePSO(SPSOType::Opaque, GetOpaquePSODesc());
-	CreatePSO(SPSOType::Debug, GetDebugPSODesc());
-	CreatePSO(SPSOType::Transparent, GetTransparentPSODesc());
-	CreatePSO(SPSOType::AlphaTested, GetAlphaTestedPSODesc());
-	CreatePSO(SPSOType::StencilMirrors, GetMirrorPSODesc());
-	CreatePSO(SPSOType::StencilReflection, GetReflectedPSODesc());
-	CreatePSO(SPSOType::Shadow, GetShadowPSODesc());
-	CreatePSO(SPSOType::Composite, GetCompositePSODesc());
-	CreatePSO(SPSOType::SobelFilter, GetSobelPSODesc());
-
-	CreatePSO(SPSOType::WavesDisturb, GetWavesDisturbPSODesc());
-	CreatePSO(SPSOType::WavesUpdate, GetWavesUpdatePSODesc());
-	CreatePSO(SPSOType::WavesRender, GetWavesRenderPSODesc());
-	CreatePSO(SPSOType::Highlight, GetHighlightPSODesc());
-	CreatePSO(SPSOType::Sky, GetSkyPSODesc());
-	BuildBlurPSO();
-	CreatePSO(SPSOType::BilateralBlur, GetBilateralBlurPSODesc());
 }
 
 void OEngine::BuildShadersAndInputLayouts()
@@ -1167,11 +1171,16 @@ OSobelFilter* OEngine::GetSobelFilter()
 	return GetObjectByUUID<OSobelFilter>(SobelFilterUUID);
 }
 
-void OEngine::SetObjectDescriptor()
+/*void OEngine::SetDefaultObjectDescriptor()
 {
-	ObjectDescriptors.Init(GetSRVDescriptorData(), GetRTVDescriptorData(), GetDSVDescriptorData());
-	ObjectDescriptors.RTVHandle.Offset(SRenderConstants::RenderBuffersCount);
-	ObjectDescriptors.DSVHandle.Offset(1); // TODO calc number of dsv automatically. 1 is for depth buffer
+    DefaultGlobalHeap.Init(GetDefaultSRVDescriptorData(), GetDefaultRTVDescriptorData(), GetDefaultDSVDescriptorData());
+    DefaultGlobalHeap.RTVHandle.Offset(SRenderConstants::RenderBuffersCount);
+    DefaultGlobalHeap.DSVHandle.Offset(1); // TODO calc number of dsv automatically. 1 is for depth buffer
+}*/
+
+void OEngine::SetObjectDescriptor(SRenderObjectHeap& Heap)
+{
+	Heap.Init(CBVSRVUAVDescriptorSize, RTVDescriptorSize, DSVDescriptorSize);
 }
 
 shared_ptr<OTest> OEngine::GetTestByHWND(HWND Handler)
@@ -1208,6 +1217,11 @@ void OEngine::Destroy()
 
 ComPtr<ID3D12DescriptorHeap> OEngine::CreateDescriptorHeap(UINT NumDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE Type, D3D12_DESCRIPTOR_HEAP_FLAGS Flags) const
 {
+	if (NumDescriptors == 0)
+	{
+		return nullptr;
+	}
+
 	D3D12_DESCRIPTOR_HEAP_DESC desc = {};
 	desc.Type = Type;
 	desc.NumDescriptors = NumDescriptors;
@@ -1363,7 +1377,6 @@ void OEngine::Pick(int32_t SX, int32_t SY)
 							PickedItem->bTraceable = false;
 							PickedItem->Geometry = geometry;
 							PickedItem->Bounds = item->Bounds;
-
 						}
 					}
 				}
@@ -1384,7 +1397,7 @@ ODynamicCubeMapRenderTarget* OEngine::GetCubeRenderTarget() const
 
 D3D12_GPU_DESCRIPTOR_HANDLE OEngine::GetSRVDescHandleForTexture(STexture* Texture) const
 {
-	auto desc = SRVDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+	auto desc = DefaultGlobalHeap.SRVHeap->GetGPUDescriptorHandleForHeapStart();
 	desc.ptr += Texture->HeapIdx * CBVSRVUAVDescriptorSize;
 	return desc;
 }
@@ -1532,21 +1545,6 @@ void OEngine::SetAmbientLight(const DirectX::XMFLOAT4& Color)
 	MainPassCB.AmbientLight = XMFLOAT4(Color.x, Color.y, Color.z, Color.w);
 }
 
-SDescriptorResourceData OEngine::GetRTVDescriptorData() const
-{
-	return { Window->RTVHeap.Get(), RTVDescriptorSize, Window->GetRTVDescNum() };
-}
-
-SDescriptorResourceData OEngine::GetDSVDescriptorData() const
-{
-	return { Window->DSVHeap.Get(), DSVDescriptorSize, Window->GetDSVDescNum() };
-}
-
-SDescriptorResourceData OEngine::GetSRVDescriptorData() const
-{
-	return { SRVDescriptorHeap.Get(), CBVSRVUAVDescriptorSize, SRVDescNum };
-}
-
 uint32_t OEngine::GetPassCountRequired() const
 {
 	return std::accumulate(RenderObjects.begin(), RenderObjects.end(), 1, [](int acc, const auto& renderObject) {
@@ -1589,7 +1587,7 @@ void OEngine::UpdateMainPass(const STimer& Timer)
 
 void OEngine::GetNumLights(uint32_t& OutNumPointLights, uint32_t& OutNumSpotLights, uint32_t& OutNumDirLights) const
 {
-	OutNumPointLights= 0;
+	OutNumPointLights = 0;
 	OutNumSpotLights = 0;
 	OutNumDirLights = 0;
 	for (auto component : LightComponents)
@@ -1609,26 +1607,37 @@ void OEngine::GetNumLights(uint32_t& OutNumPointLights, uint32_t& OutNumSpotLigh
 	}
 }
 
-uint32_t OEngine::GetDesiredCountOfRTVs() const
+uint32_t OEngine::GetDesiredCountOfSRVs(SResourceHeapBitFlag Flag) const
 {
-	return std::accumulate(RenderObjects.begin(), RenderObjects.end(), SRenderConstants::RenderBuffersCount, [](int acc, const auto& renderObject) {
-		return acc + renderObject.second->GetNumRTVRequired();
+	return std::accumulate(RenderObjects.begin(), RenderObjects.end(), 0, [Flag](int32_t acc, const auto& renderObject) {
+		if (renderObject.second->GetHeapType() & Flag)
+		{
+			return int32_t(acc + renderObject.second->GetNumSRVRequired());
+		}
+		return acc;
 	});
 }
 
-uint32_t OEngine::GetDesiredCountOfDSVs() const
+uint32_t OEngine::GetDesiredCountOfDSVs(SResourceHeapBitFlag Flag) const
 {
-	return std::accumulate(RenderObjects.begin(), RenderObjects.end(), 1, [](int acc, const auto& renderObject) {
-		return acc + renderObject.second->GetNumDSVRequired();
+	return std::accumulate(RenderObjects.begin(), RenderObjects.end(), 0, [Flag](int32_t acc, const auto& renderObject) {
+		if (renderObject.second->GetHeapType() & Flag)
+		{
+			return int32_t(acc + renderObject.second->GetNumDSVRequired());
+		}
+		return acc;
 	});
 }
 
-uint32_t OEngine::GetDesiredCountOfSRVs() const
+uint32_t OEngine::GetDesiredCountOfRTVs(SResourceHeapBitFlag Flag) const
 {
-	const auto roNum = std::accumulate(RenderObjects.begin(), RenderObjects.end(), 1, [](int acc, const auto& renderObject) {
-		return acc + renderObject.second->GetNumSRVRequired();
+	return std::accumulate(RenderObjects.begin(), RenderObjects.end(), 0, [Flag](int32_t acc, const auto& renderObject) {
+		if (renderObject.second->GetHeapType() & Flag)
+		{
+			return int32_t(acc + renderObject.second->GetNumRTVRequired());
+		}
+		return acc;
 	});
-	return roNum + UIManager->GetNumSRVRequired() + GetTextureManager()->GetNumTotalTextures();
 }
 
 std::unordered_map<string, unique_ptr<SMeshGeometry>>& OEngine::GetSceneGeometry()
@@ -1678,7 +1687,7 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeome
 	}
 
 	newItem->ChosenSubmesh = Mesh->FindSubmeshGeomentry(submesh);
-	newItem->Name = Mesh->Name +"_"+ std::to_string(AllRenderItems.size());
+	newItem->Name = Mesh->Name + "_" + std::to_string(AllRenderItems.size());
 	AddRenderItem(Category, std::move(newItem));
 	return itemptr;
 }
@@ -1693,8 +1702,10 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Category, const stri
 OLightComponent* OEngine::AddLightingComponent(ORenderItem* Item, const ELightType& Type)
 {
 	uint32_t componentNum = LightComponents.size();
-	const auto res = Item->AddComponent<OLightComponent>(componentNum,componentNum,componentNum, Type);
+	const auto res = Item->AddComponent<OLightComponent>(componentNum, componentNum, componentNum, Type);
 	LightComponents.push_back(res);
+	auto newShadow = BuildRenderObject<OShadowMap>(Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat, res);
+	ShadowMaps.push_back(newShadow);
 	return res;
 }
 
@@ -1734,67 +1745,6 @@ SMeshGeometry* OEngine::FindSceneGeometry(const string& Name) const
 	return SceneGeometry.at(Name).get();
 }
 
-void OEngine::BuildShaders(const wstring& ShaderPath, const string& VSShaderName, const string& PSShaderName, const D3D_SHADER_MACRO* Defines)
-{
-	Shaders[VSShaderName] = Utils::CompileShader(ShaderPath, Defines, "VS", "vs_5_1");
-	Shaders[PSShaderName] = Utils::CompileShader(ShaderPath, Defines, "PS", "ps_5_1");
-}
-
-void OEngine::BuildShader(const wstring& ShaderPath, const string& ShaderName, const string& ShaderQualifier, const string& ShaderTarget, const D3D_SHADER_MACRO* Defines)
-{
-	Shaders[ShaderName] = Utils::CompileShader(ShaderPath, Defines, ShaderQualifier, ShaderTarget);
-}
-
-void OEngine::BuildVSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines)
-{
-	Shaders[ShaderName] = Utils::CompileShader(ShaderPath, Defines, "VS", "vs_5_1");
-}
-
-void OEngine::BuildPSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines)
-{
-	Shaders[ShaderName] = Utils::CompileShader(ShaderPath, Defines, "PS", "ps_5_1");
-}
-
-void OEngine::BuildGSShader(const wstring& ShaderPath, const string& ShaderName, const D3D_SHADER_MACRO* Defines)
-{
-	Shaders[ShaderName] = Utils::CompileShader(ShaderPath, Defines, "GS", "gs_5_1");
-}
-
-void OEngine::BuildShader(const wstring& ShaderPath, const string& ShaderName, EShaderLevel ShaderType, std::optional<string> ShaderEntry, const D3D_SHADER_MACRO* Defines)
-{
-	string entry = "";
-	string target = "";
-	switch (ShaderType)
-	{
-	case EShaderLevel::VertexShader:
-		entry = "VS";
-		target = "vs_5_1";
-		break;
-	case EShaderLevel::PixelShader:
-		entry = "PS";
-		target = "ps_5_1";
-		break;
-	case EShaderLevel::GeometryShader:
-		entry = "GS";
-		target = "gs_5_1";
-		break;
-	case EShaderLevel::HullShader:
-		entry = "HS";
-		target = "hs_5_1";
-		break;
-	case EShaderLevel::DomainShader:
-		entry = "DS";
-		target = "ds_5_1";
-		break;
-	case EShaderLevel::ComputeShader:
-		entry = "CS";
-		target = "cs_5_1";
-		break;
-	}
-	entry = ShaderEntry.value_or(entry);
-	Shaders[ShaderName] = Utils::CompileShader(ShaderPath, Defines, entry, target);
-}
-
 ComPtr<ID3DBlob> OEngine::GetShader(const string& ShaderName)
 {
 	if (!Shaders.contains(ShaderName))
@@ -1825,9 +1775,9 @@ SPassConstants& OEngine::GetMainPassCB()
 	return MainPassCB;
 }
 
-ComPtr<ID3D12DescriptorHeap>& OEngine::GetSRVHeap()
+ComPtr<ID3D12DescriptorHeap>& OEngine::GetDescriptorHeap()
 {
-	return SRVDescriptorHeap;
+	return DefaultGlobalHeap.SRVHeap;
 }
 
 ID3D12RootSignature* OEngine::GetDefaultRootSignature() const
@@ -1860,4 +1810,14 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Name, string Categor
 	auto ri = BuildRenderItemFromMesh(Category, std::move(Mesh), Params);
 	ri->Name = Name + std::to_string(AllRenderItems.size());
 	return ri;
+}
+
+vector<OShadowMap*>& OEngine::GetShadowMaps()
+{
+	return ShadowMaps;
+}
+
+const DirectX::BoundingSphere& OEngine::GetSceneBounds() const
+{
+	return SceneBounds;
 }

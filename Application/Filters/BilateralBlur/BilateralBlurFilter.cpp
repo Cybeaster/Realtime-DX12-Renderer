@@ -14,7 +14,7 @@ OBilateralBlurFilter::OBilateralBlurFilter(ID3D12Device* Device, OCommandQueue* 
 
 void OBilateralBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
 {
-	const auto descriptor = Cast<SRenderObjectDescriptor>(Descriptor);
+	const auto descriptor = Cast<SRenderObjectHeap>(Descriptor);
 	if (!descriptor)
 	{
 		return;

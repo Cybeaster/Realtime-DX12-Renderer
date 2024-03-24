@@ -48,7 +48,7 @@ void ODynamicCubeMapRenderTarget::UpdatePass(const TUploadBufferData<SPassConsta
 	OCubeRenderTarget::UpdatePass(Data);
 	auto start = Data.StartIndex;
 	auto end = Data.EndIndex;
-
+	PassConstants.clear();
 	for (; start < end; start++)
 	{
 		auto norm = start - Data.StartIndex;

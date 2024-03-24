@@ -1,4 +1,3 @@
-
 #pragma once
 #include "RenderGraph/Nodes/RenderNode.h"
 

@@ -18,6 +18,8 @@ struct SRenderItemGeometry
  */
 struct ORenderItem
 {
+	DECLARE_DELEGATE(SPositionChanged, void);
+
 	ORenderItem() = default;
 	ORenderItem(ORenderItem&&) = default;
 	ORenderItem(const ORenderItem&) = default;
