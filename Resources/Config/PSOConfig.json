@@ -753,6 +753,77 @@
           "StencilFunc": "Always"
         }
       }
+    },
+    {
+      "Name": "ShadowMap",
+      "Type": "Graphics",
+      "RootSignature": "BaseShader",
+      "ShaderPipeline": {
+        "VertexShader": "ShadowMap",
+        "PixelShader": "ShadowMap"
+      },
+      "SampleMask": "0xffffffff",
+      "PrimitiveTopologyType": "Triangle",
+      "RenderTargetFormats": [
+        "UNKNOWN"
+      ],
+      "DepthStencilFormat": "D24_UNORM_S8_UINT",
+      "NumRenderTargets": 0,
+      "SampleDesc": {
+        "Count": 1,
+        "Quality": 0
+      },
+      "BlendState": {
+        "AlphaToCoverageEnable": false,
+        "IndependentBlendEnable": false,
+        "RenderTarget": [
+          {
+            "BlendEnable": false,
+            "LogicOpEnable": false,
+            "SrcBlend": "One",
+            "DestBlend": "Zero",
+            "BlendOp": "Add",
+            "SrcBlendAlpha": "One",
+            "DestBlendAlpha": "Zero",
+            "BlendOpAlpha": "Add",
+            "LogicOp": "NoOp",
+            "RenderTargetWriteMask": "All"
+          }
+        ]
+      },
+      "RasterizerState": {
+        "FrontCounterClockwise": false,
+        "FillMode": "Solid",
+        "CullMode": "Back",
+        "DepthBias": 100000,
+        "DepthBiasClamp": 0,
+        "SlopeScaledDepthBias": 1.0,
+        "DepthClipEnable": true,
+        "MultisampleEnable": false,
+        "AntialiasedLineEnable": false,
+        "ForcedSampleCount": 0,
+        "ConservativeRaster": "Off"
+      },
+      "DepthStencilState": {
+        "DepthEnable": true,
+        "DepthWriteMask": "All",
+        "DepthFunc": "Less",
+        "StencilEnable": false,
+        "StencilReadMask": 255,
+        "StencilWriteMask": 255,
+        "FrontFace": {
+          "StencilFailOp": "Keep",
+          "StencilDepthFailOp": "Keep",
+          "StencilPassOp": "Keep",
+          "StencilFunc": "Always"
+        },
+        "BackFace": {
+          "StencilFailOp": "Keep",
+          "StencilDepthFailOp": "Keep",
+          "StencilPassOp": "Keep",
+          "StencilFunc": "Always"
+        }
+      }
     }
   ]
 }

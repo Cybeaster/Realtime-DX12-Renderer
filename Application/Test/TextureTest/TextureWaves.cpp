@@ -42,7 +42,6 @@ void OTextureWaves::OnUpdate(const UpdateEventArgs& Event)
 	UpdateMaterialCB();
 }
 
-
 void OTextureWaves::BuildTreeSpriteGeometry()
 {
 	struct STreeSpriteVertex
@@ -208,7 +207,6 @@ void OTextureWaves::BuildTesselationPSO()
 	opaquePsoDesc.NumRenderTargets = 1;
 	engine->CreatePSO(SPSOType::Tesselation, opaquePsoDesc);
 }
-
 
 void OTextureWaves::BuildPSOTreeSprites()
 {
@@ -391,11 +389,11 @@ void OTextureWaves::BuildRenderItems()
 	params.NumberOfInstances = n * n * n;
 	params.MaterialParams = { FindMaterial(SMaterialNames::Debug) };
 	auto skull = engine->BuildRenderItemFromMesh(SRenderLayer::Opaque,
-	                                                  "Skull",
-	                                                  "Resources/Models/skull.txt",
-	                                                  EParserType::Custom,
-	                                                  ETextureMapType::Spherical,
-	                                                  params);
+	                                             "Skull",
+	                                             "Resources/Models/skull.txt",
+	                                             EParserType::Custom,
+	                                             ETextureMapType::Spherical,
+	                                             params);
 
 	float width = 200.0f;
 	float height = 200.0f;

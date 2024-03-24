@@ -9,6 +9,7 @@ struct SRenderTargetParams
 	UINT Width;
 	UINT Height;
 	DXGI_FORMAT Format;
+	EResourceHeapType HeapType;
 };
 
 class ORenderTargetBase : public ORenderObjectBase
@@ -16,17 +17,19 @@ class ORenderTargetBase : public ORenderObjectBase
 public:
 	ORenderTargetBase(ID3D12Device* Device,
 	                  UINT Width, UINT Height,
-	                  DXGI_FORMAT Format)
-	    : Width(Width), Height(Height), Format(Format), Device(Device)
+	                  DXGI_FORMAT Format, EResourceHeapType HeapType)
+	    : Width(Width), Height(Height), Format(Format), Device(Device), ORenderObjectBase(HeapType)
 	{
+		BuildViewport();
 	}
 
 	ORenderTargetBase(const SRenderTargetParams& Params)
-	    : Width(Params.Width), Height(Params.Height), Format(Params.Format), Device(Params.Device)
+	    : Width(Params.Width), Height(Params.Height), Format(Params.Format), Device(Params.Device), ORenderObjectBase(Params.HeapType)
 	{
+		BuildViewport();
 	}
 
-	ORenderTargetBase(UINT Width, UINT Height);
+	ORenderTargetBase(UINT Width, UINT Height, EResourceHeapType HeapType);
 
 	virtual void BuildDescriptors() = 0;
 	virtual void BuildResource() = 0;
@@ -51,10 +54,12 @@ public:
 	{
 		return Name;
 	}
+
 protected:
+	void BuildViewport();
+
 	D3D12_VIEWPORT Viewport;
 	D3D12_RECT ScissorRect;
-
 	LONG Width = 0;
 	LONG Height = 0;
 	DXGI_FORMAT Format = DXGI_FORMAT_R8G8B8A8_UNORM;

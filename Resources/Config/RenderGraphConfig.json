@@ -1,6 +1,12 @@
 {
   "RenderGraph": [
     {
+      "Name": "Shadow",
+      "PSO": "ShadowMap",
+      "NextNode": "OpaqueDynamicReflections",
+      "RenderLayer": "Shadow"
+    },
+    {
       "Name": "OpaqueDynamicReflections",
       "PSO": "Opaque",
       "NextNode": "Opaque",

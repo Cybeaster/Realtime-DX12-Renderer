@@ -44,7 +44,7 @@ void OShaderCompiler::SetCompilationArgs(const SShaderDefinition& Definition)
 		OApplication::Get()->GetShadersFolder().c_str(),
 	};
 
-	if constexpr (false)
+	if constexpr (_DEBUG)
 	{
 		CompilationArgs.push_back(DXC_ARG_DEBUG);
 		CompilationArgs.push_back(DXC_ARG_SKIP_OPTIMIZATIONS);

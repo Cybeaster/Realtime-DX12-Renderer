@@ -36,6 +36,7 @@ public:
 	void ResetQueueState();
 	void SetResource(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Resource, SPSODescriptionBase* PSO);
 	void SetResource(const string& Name, D3D12_GPU_DESCRIPTOR_HANDLE Resource, SPSODescriptionBase* PSO);
+	void SetHeap(SRenderObjectHeap* Heap);
 
 protected:
 	ComPtr<ID3D12CommandAllocator> CreateCommandAllocator();
@@ -65,8 +66,8 @@ private:
 
 	TCommandAllocatorQueue CommandAllocatorQueue;
 	TCommandListQueue CommandListQueue;
-
+	SRenderObjectHeap* CurrentObjectHeap = nullptr;
 	bool IsReset = false;
 	SPSODescriptionBase* CurrentPSO = nullptr;
-	unordered_map<string,UINT64> SetResources;
+	unordered_map<string, UINT64> SetResources;
 };

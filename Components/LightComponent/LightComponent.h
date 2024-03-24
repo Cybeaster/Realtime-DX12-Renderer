@@ -51,17 +51,26 @@ public:
 	SPointLight& GetPointLight() ;
 	SSpotLight& GetSpotLight() ;
 	void MarkDirty();
+	void SetPassConstant(SPassConstants& OutConstant);
+	void UpdateLightData();
+	void SetShadowMapIndex(UINT Index);
 private:
 	ELightType LightType= ELightType::Spot;
 
 	TUploadBufferData<SDirectionalLight> DirLightBufferInfo;
 	TUploadBufferData<SPointLight> PointLightBufferInfo;
 	TUploadBufferData<SSpotLight> SpotLightBufferInfo;
+	DirectX::XMVECTOR GlobalPosition;
 
 	SDirectionalLight DirectionalLight;
 	SPointLight PointLight;
 	SSpotLight SpotLight;
 
+	DirectX::XMFLOAT4X4 View;
+	DirectX::XMFLOAT4X4 Proj;
+	DirectX::XMFLOAT4X4 ShadowTransform;
+	float NearZ;
+	float FarZ;
 };
 
 

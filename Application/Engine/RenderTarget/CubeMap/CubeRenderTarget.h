@@ -34,7 +34,6 @@ protected:
 	void BuildDepthStencilBuffer();
 
 private:
-	void BuildViewport();
 	void BuildResource() override;
 	void BuildDescriptors() override;
 	SResourceInfo RenderTarget;

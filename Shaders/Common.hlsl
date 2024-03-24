@@ -11,6 +11,10 @@
 #ifndef MAX_HEIGHT_MAPS
 #define MAX_HEIGHT_MAPS 3
 #endif
+
+#ifndef MAX_SHADOW_MAPS
+#define MAX_SHADOW_MAPS 3
+#endif
 // Include structures and functions for lighting.
 #include "LightingUtils.hlsl"
 
@@ -38,17 +42,19 @@ struct MaterialData
 	float pad1;
 	float pad2;
 };
+#define TEXTURE_MAPS_NUM 41
+#define SHADOW_MAPS_NUM 4
 
-Texture2D gTextureMaps[41] : register(t0);
-Texture2D gDisplacementMap : register(t0,space3);
+Texture2D gTextureMaps[TEXTURE_MAPS_NUM] : register(t0);
+Texture2D gShadowMaps[SHADOW_MAPS_NUM] : register(t1,space2);
 TextureCube gCubeMap : register(t1,space3);
 
-StructuredBuffer<InstanceData> gInstanceData : register(t0, space1);
-StructuredBuffer<MaterialData> gMaterialData : register(t1, space1);
+StructuredBuffer<InstanceData> gInstanceData : register(t0, space4);
+StructuredBuffer<MaterialData> gMaterialData : register(t1, space4);
 
-StructuredBuffer<SpotLight> gSpotLights : register(t0, space2);
-StructuredBuffer<PointLight> gPointLights : register(t1, space2);
-StructuredBuffer<DirectionalLight> gDirectionalLights : register(t2, space2);
+StructuredBuffer<SpotLight> gSpotLights : register(t2, space4);
+StructuredBuffer<PointLight> gPointLights : register(t3, space4);
+StructuredBuffer<DirectionalLight> gDirectionalLights : register(t4, space4);
 
 cbuffer cbPass : register(b0)
 {
@@ -90,7 +96,7 @@ SamplerState gsamLinearWrap : register(s2);
 SamplerState gsamLinearClamp : register(s3);
 SamplerState gsamAnisotropicWrap : register(s4);
 SamplerState gsamAnisotropicClamp : register(s5);
-
+SamplerComparisonState gsamShadow : register(s6);
 
 
 
@@ -176,3 +182,76 @@ float4 ComputeDiffuseMaps(MaterialData MatData, float4 DiffuseAlbedo, float2 Tex
 	}
 	return DiffuseAlbedo;
 }
+
+void FindShadowPosition(out float4 ShadowPositions[MAX_SHADOW_MAPS], float4 PosW, uint LightIndices[MAX_SHADOW_MAPS])
+{
+    if(gNumDirLights > 0)
+    {
+        LightIndices[0] = gDirectionalLights[0].ShadowMapIndex;
+        ShadowPositions[0] = mul(PosW,  gDirectionalLights[0].Transform);
+    }
+
+    if(gNumPointLights > 0)
+    {
+         LightIndices[1] = gPointLights[0].ShadowMapIndex;
+        ShadowPositions[1] = mul(PosW,  gPointLights[0].Transform);
+    }
+
+    if(gNumSpotLights > 0)
+    {
+        LightIndices[2] = gSpotLights[0].ShadowMapIndex;
+        ShadowPositions[2] = mul(PosW,  gSpotLights[0].Transform);
+    }
+}
+
+float CalcShadowFactor(float4 ShadowPosH,uint ShadowMapIndex)
+{
+    //Perform projection
+    ShadowPosH.xyz /= ShadowPosH.w;
+
+    //depth in NDC space
+    float depth = ShadowPosH.z;
+
+    Texture2D shadowMap = gShadowMaps[ShadowMapIndex];
+    //Get shadow map dimensions
+    uint width, height, numMips;
+    shadowMap.GetDimensions(0, width, height, numMips);
+
+    //texel size
+    float dx = 1.0f / width;
+    float percentLit = 0.0f;
+    const float2 offsets[9]=
+    {
+            float2(-dx,  -dx), float2(0.0f,  -dx), float2(dx,  -dx),
+            float2(-dx, 0.0f), float2(0.0f, 0.0f), float2(dx, 0.0f),
+            float2(-dx,  +dx), float2(0.0f,  +dx), float2(dx,  +dx)
+    };
+
+    [unroll]
+    for(int i = 0; i < 9; ++i)
+    {
+      percentLit += shadowMap.SampleCmpLevelZero(gsamShadow, ShadowPosH.xy + offsets[i], depth).r;
+    }
+    return percentLit / 9.0f;
+}
+
+
+
+void GetShadowFactor(out float ShadowFactors[MAX_SHADOW_MAPS],uint ShadowMapIndices[MAX_SHADOW_MAPS] ,float4 ShadowPositions[MAX_SHADOW_MAPS])
+{
+    if(gNumDirLights > 0)
+    {
+        ShadowFactors[0] = CalcShadowFactor(ShadowPositions[0],ShadowMapIndices[0]);
+    }
+
+    if(gNumPointLights > 0)
+    {
+        ShadowFactors[1] = CalcShadowFactor(ShadowPositions[1],ShadowMapIndices[1]);
+    }
+
+    if(gNumSpotLights > 0)
+    {
+        ShadowFactors[2] = CalcShadowFactor(ShadowPositions[2],ShadowMapIndices[2]);
+    }
+}
+

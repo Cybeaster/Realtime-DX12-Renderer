@@ -27,6 +27,12 @@ struct SDescriptorResourceData
 
 struct TDescriptorHandle
 {
+	TDescriptorHandle()
+	{
+		CPUHandle.ptr = 0;
+		GPUHandle.ptr = 0;
+	}
+
 	void Offset(CD3DX12_CPU_DESCRIPTOR_HANDLE& OutCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& OutGPUHandle, uint32_t& OutIndex)
 	{
 		OutCPUHandle = CPUHandle;
@@ -124,16 +130,33 @@ struct TDescriptorHandle
 	uint32_t MaxOffset = 0;
 };
 
-struct SRenderObjectDescriptor : IDescriptor
+struct SRenderObjectHeap : IDescriptor
 {
-	void Init(SDescriptorResourceData SRV, SDescriptorResourceData RTV, SDescriptorResourceData DSV);
+	void Init(UINT SRVCBVUAVDescSize, UINT RTVDescSize, UINT DSVDescSize);
 
 	TDescriptorHandle SRVHandle;
+	ComPtr<ID3D12DescriptorHeap> SRVHeap = nullptr;
+
 	TDescriptorHandle RTVHandle;
+	ComPtr<ID3D12DescriptorHeap> RTVHeap = nullptr;
+
 	TDescriptorHandle DSVHandle;
+	ComPtr<ID3D12DescriptorHeap> DSVHeap = nullptr;
 };
 
-template <typename DataType>
+inline wstring ToString(const ComPtr<ID3D12DescriptorHeap>& Heap)
+{
+	if (Heap)
+	{
+		wstring text = TEXT(Heap->GetDesc().Type);
+		text += L" ";
+		text += to_wstring(Heap->GetDesc().NumDescriptors);
+		return text;
+	}
+	return L"nullptr";
+}
+
+template<typename DataType>
 struct TUploadBufferData
 {
 	int32_t StartIndex = -1;
@@ -145,6 +168,27 @@ struct TUploadBufferData
 	}
 };
 
+enum EResourceHeapType : uint32_t
+{
+	Default = 1 << 0,
+	Shadow = 1 << 1
+};
+
+inline wstring ToString(EResourceHeapType Type)
+{
+	switch (Type)
+	{
+	case EResourceHeapType::Default:
+		return L"Default";
+	case EResourceHeapType::Shadow:
+		return L"Shadow";
+	default:
+		return L"Unknown";
+	}
+}
+
+using SResourceHeapBitFlag = uint32_t;
+
 /**
  * @brief Object being render to the screen, may demand SRV, RTV, DSV, and pass constants
  */
@@ -154,7 +198,7 @@ public:
 	virtual ~IRenderObject() = default;
 	virtual void BuildDescriptors(IDescriptor* Descriptor){};
 	virtual void InitRenderObject(){};
-	virtual uint32_t GetNumSRVRequired() const {return 0;}
+	virtual uint32_t GetNumSRVRequired() const { return 0; }
 	virtual uint32_t GetNumRTVRequired() const { return 0; }
 	virtual uint32_t GetNumDSVRequired() const { return 0; }
 	virtual uint32_t GetNumPassesRequired() const { return 0; }
@@ -163,11 +207,16 @@ public:
 	virtual TUUID GetID() { return {}; }
 	virtual void SetID(TUUID ID) {}
 	virtual wstring GetName() { return { L"UNIMPLEMENTED" }; }
+	virtual EResourceHeapType GetHeapType() { return EResourceHeapType::Default; }
 };
 
 class ORenderObjectBase : public IRenderObject
 {
 public:
+	ORenderObjectBase() = default;
+	explicit ORenderObjectBase(EResourceHeapType InHeapType)
+	    : HeapType(InHeapType) {}
+
 	void SetID(TUUID ID) override
 	{
 		this->ID = ID;
@@ -176,7 +225,9 @@ public:
 	{
 		return ID;
 	}
+	EResourceHeapType GetHeapType() override { return HeapType; }
 
 protected:
 	TUUID ID = {};
+	EResourceHeapType HeapType = EResourceHeapType::Default;
 };

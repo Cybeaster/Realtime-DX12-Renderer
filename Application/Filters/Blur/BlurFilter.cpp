@@ -18,7 +18,7 @@ void OBlurFilter::OutputTo(SResourceInfo* Destination)
 
 void OBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
 {
-	const auto descriptor = Cast<SRenderObjectDescriptor>(Descriptor);
+	const auto descriptor = Cast<SRenderObjectHeap>(Descriptor);
 	if (!descriptor)
 	{
 		return;

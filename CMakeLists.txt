@@ -199,6 +199,10 @@ set(SRC_FILES
         Components/RenderItemComponentBase.cpp
         Application/UI/Effects/Light/LightComponent/LightComponentWidget.cpp
         Application/UI/Effects/Light/LightComponent/LightComponentWidget.h
+        Application/Engine/RenderTarget/ShadowMap/ShadowMap.cpp
+        Application/Engine/RenderTarget/ShadowMap/ShadowMap.h
+        Application/RenderGraph/Nodes/ShadowNode/ShadowMapNode.cpp
+        Application/RenderGraph/Nodes/ShadowNode/ShadowMapNode.h
 )
 
 set(DXCOMPILER_PATH_DLL ${CMAKE_SOURCE_DIR}/Externals/directx/Compiler/bin)
