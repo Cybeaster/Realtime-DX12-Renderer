@@ -39,9 +39,8 @@ public:
 	uint32_t GetNumSRVRequired() const override;
 	uint32_t GetNumRTVRequired() const override;
 	uint32_t GetNumDSVRequired() const override;
-
 	void CopyTo(ORenderTargetBase* Dest, const OCommandQueue* CommandQueue);
-
+	void OnResize(const ResizeEventArgs& Args) override;
 	virtual SDescriptorPair GetDSV(uint32_t SubtargetIdx = 0) const;
 
 	virtual void InitRenderObject();
@@ -89,7 +88,6 @@ public:
 	uint32_t GetNumSRVRequired() const override { return 1; }
 
 	void BuildDescriptors(IDescriptor* Descriptor) override;
-	void OnResize(UINT NewWidth, UINT NewHeight);
 	void InitRenderObject() override;
 
 protected:

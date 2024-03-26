@@ -6,6 +6,7 @@
 #include "RenderGraph/Nodes/PostProcessNode/PostProcessNode.h"
 #include "RenderGraph/Nodes/PresentNode/PresentNode.h"
 #include "RenderGraph/Nodes/ReflectionNode/ReflectionNode.h"
+#include "RenderGraph/Nodes/ShadowDebugNode/ShadowDebugNode.h"
 #include "RenderGraph/Nodes/ShadowNode/ShadowMapNode.h"
 #include "RenderGraph/Nodes/UINode/UiRenderNode.h"
 
@@ -101,6 +102,10 @@ unique_ptr<ORenderNode> ORenderGraph::ResolveNodeType(const string& Type)
 	else if (Type == "Shadow")
 	{
 		return make_unique<OShadowMapNode>();
+	}
+	else if (Type == "ShadowDebug")
+	{
+		return make_unique<OShadowDebugNode>();
 	}
 	LOG(Render, Warning, "Node type not found: {}", TEXT(Type));
 	return make_unique<ODefaultRenderNode>();

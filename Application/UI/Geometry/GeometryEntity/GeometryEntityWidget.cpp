@@ -114,18 +114,27 @@ void OGeometryEntityWidget::DrawInstanceParameters()
 
 void OGeometryEntityWidget::Draw()
 {
-	auto setNextWindowPos = []() {
-		ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y));
-	};
-	setNextWindowPos();
-	ImGui::SetNextWindowSize(ImVec2(SliderWidth, 500));
-
-	if (ImGui::Begin("Submesh parameters")) // Begin new window for Submesh parameters
+	if (RenderItem->Instances.size() > 1)
 	{
-		DrawSubmeshParameters();
-		DrawInstanceParameters();
+		auto setNextWindowPos = []() {
+			ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y));
+		};
+		setNextWindowPos();
+		ImGui::SetNextWindowSize(ImVec2(SliderWidth, 500));
+
+		if (ImGui::Begin("Submesh parameters")) // Begin new window for Submesh parameters
+		{
+			DrawSubmeshParameters();
+			DrawInstanceParameters();
+		}
+		ImGui::End();
 	}
-	ImGui::End();
+	else
+	{
+		SelectedInstanceData = RenderItem->GetDefaultInstance();
+		MaterialPickerWidget->SetCurrentMaterial(FindMaterial(SelectedInstanceData->MaterialIndex));
+		OHierarchicalWidgetBase::Draw();
+	}
 }
 
 void OGeometryEntityWidget::InitWidget()
@@ -134,7 +143,7 @@ void OGeometryEntityWidget::InitWidget()
 	using namespace DirectX;
 	// Variables to store the decomposed components
 	DirectX::XMVECTOR scale, rotation, translation;
-	if (DirectX::XMMatrixDecompose(&scale, &rotation, &translation, DirectX::XMLoadFloat4x4(&RenderItem->Instances[0].World)))
+	if (DirectX::XMMatrixDecompose(&scale, &rotation, &translation, DirectX::XMLoadFloat4x4(&RenderItem->GetDefaultInstance()->World)))
 	{
 		// If the decompose fails, set the default values
 		Position = { 0, 0, 0 };

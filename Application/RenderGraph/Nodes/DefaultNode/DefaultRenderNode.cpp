@@ -29,6 +29,5 @@ void ODefaultRenderNode::Initialize(const SNodeInfo& OtherNodeInfo, OCommandQueu
 ORenderTargetBase* ODefaultRenderNode::Execute(ORenderTargetBase* RenderTarget)
 {
 	OEngine::Get()->DrawRenderItems(PSO, GetNodeInfo().RenderLayer);
-	OEngine::Get()->DrawRenderItems(FindPSOInfo(SPSOType::ShadowDebug), SRenderLayer::ShadowDebug);
 	return RenderTarget;
 }

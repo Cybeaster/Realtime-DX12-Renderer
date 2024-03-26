@@ -19,8 +19,15 @@
       {
         "Name": "Opaque",
         "PSO": "Opaque",
-        "NextNode": "Sky",
+        "NextNode": "ShadowDebug",
         "RenderLayer": "Opaque",
+        "Enabled": true
+      },
+      {
+        "Name": "ShadowDebug",
+        "PSO": "ShadowDebug",
+        "NextNode": "Sky",
+        "RenderLayer": "ShadowDebug",
         "Enabled": true
       },
       {

@@ -75,7 +75,7 @@ public:
 	void Hide();
 	void RegsterWindow();
 	void Destroy();
-
+	void BuildResource() override {} // for now do nothing
 	HWND GetHWND() const;
 	uint64_t FenceValues[SRenderConstants::RenderBuffersCount];
 
@@ -123,7 +123,7 @@ public:
 	SResourceInfo* GetResource() override;
 
 protected:
-	void BuildResource() override;
+	void BuildEssentials();
 	void BuildDescriptors(IDescriptor* Descriptor) override;
 	bool HasCapturedLeftMouseButton() const;
 	// The Window procedure needs to call protected methods of this class.

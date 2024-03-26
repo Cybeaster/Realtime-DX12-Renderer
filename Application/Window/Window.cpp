@@ -18,10 +18,10 @@ void OWindow::InitRenderObject()
 {
 	Camera = make_shared<OCamera>(this);
 	SetCameraLens();
-	BuildResource();
+	BuildEssentials();
 }
 
-void OWindow::BuildResource()
+void OWindow::BuildEssentials()
 {
 	const auto engine = OEngine::Get();
 	auto device = engine->GetDevice();

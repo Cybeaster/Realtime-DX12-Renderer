@@ -12,7 +12,7 @@ ORenderTargetBase* OShadowMapNode::Execute(ORenderTargetBase* RenderTarget)
 		OEngine::Get()->DrawRenderItems(FindPSOInfo(SPSOType::Opaque), SRenderLayer::Opaque);
 		CommandQueue->ResourceBarrier(map, D3D12_RESOURCE_STATE_GENERIC_READ);
 	}
-
+	CommandQueue->SetRenderTarget(RenderTarget);
 	return RenderTarget;
 }
 
