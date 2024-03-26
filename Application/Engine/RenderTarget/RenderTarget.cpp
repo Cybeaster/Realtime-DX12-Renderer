@@ -87,6 +87,17 @@ void ORenderTargetBase::BuildViewport()
 
 	ScissorRect = { 0, 0, Width, Height };
 }
+void ORenderTargetBase::OnResize(const ResizeEventArgs& Args)
+{
+	if (Width != Args.Width || Height != Args.Height)
+	{
+		Width = Args.Width;
+		Height = Args.Height;
+
+		BuildResource();
+		BuildDescriptors();
+	}
+}
 
 OOffscreenTexture::OOffscreenTexture(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format)
     : ORenderTargetBase(Device, Width, Height, Format, EResourceHeapType::Default)
@@ -103,18 +114,6 @@ void OOffscreenTexture::BuildDescriptors(IDescriptor* Descriptor)
 	{
 		descriptor->SRVHandle.Offset(SRVHandle);
 		descriptor->RTVHandle.Offset(RTVHandle);
-		BuildDescriptors();
-	}
-}
-
-void OOffscreenTexture::OnResize(UINT NewWidth, UINT NewHeight)
-{
-	if (Width != NewWidth || Height != NewHeight)
-	{
-		Width = NewWidth;
-		Height = NewHeight;
-
-		BuildResource();
 		BuildDescriptors();
 	}
 }

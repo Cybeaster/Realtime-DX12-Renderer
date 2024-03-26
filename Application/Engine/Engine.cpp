@@ -678,7 +678,7 @@ void OEngine::OnResizeRequest(HWND& WindowHandle)
 
 	if (OffscreenRT)
 	{
-		OffscreenRT->OnResize(args.Width, args.Height);
+		OffscreenRT->OnResize(args);
 	}
 
 	if (const auto bilateralFilter = GetBilateralBlurFilter())

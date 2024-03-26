@@ -131,7 +131,7 @@ void OLightComponent::SetPassConstant(SPassConstants& OutConstant)
 	const auto proj = XMLoadFloat4x4(&Proj);
 	const auto shadowTransform = XMLoadFloat4x4(&ShadowTransform);
 
-	XMFLOAT4X4 transposed;
+	XMFLOAT4X4 transposed{};
 	Put(transposed, Transpose(shadowTransform));
 	DirectionalLight.Transform = transposed;
 	PointLight.Transform = transposed;
@@ -160,22 +160,21 @@ void OLightComponent::UpdateLightData()
 
 	auto lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	const auto& bounds = OEngine::Get()->GetSceneBounds();
-	XMFLOAT3 dir = { 0.57735f, -0.57735f, 0.57735f };
-	XMVECTOR lightDir = XMLoadFloat3(&dir);
+	XMVECTOR lightDir;
 	XMVECTOR lightPos = GlobalPosition;
 	XMVECTOR lightTarget; // Calculate target point using direction
 	switch (LightType)
 	{
 	case ELightType::Directional:
-		lightDir = XMLoadFloat3(&DirectionalLight.Direction);
+		lightDir = XMVector3Normalize(XMLoadFloat3(&DirectionalLight.Direction));
 		lightTarget = XMVectorAdd(lightPos, lightDir); // Calculate target point using direction
 		break;
 	case ELightType::Point:
-		lightDir = XMLoadFloat3(&bounds.Center);
+		lightDir = XMVector3Normalize(XMLoadFloat3(&bounds.Center));
 		lightTarget = lightDir; // Calculate target point using direction
 		break;
 	case ELightType::Spot:
-		lightDir = XMLoadFloat3(&SpotLight.Direction);
+		lightDir = XMVector3Normalize(XMLoadFloat3(&SpotLight.Direction));
 		lightTarget = XMVectorAdd(lightPos, lightDir); // Calculate target point using direction
 
 		break;

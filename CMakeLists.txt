@@ -203,6 +203,8 @@ set(SRC_FILES
         Application/Engine/RenderTarget/ShadowMap/ShadowMap.h
         Application/RenderGraph/Nodes/ShadowNode/ShadowMapNode.cpp
         Application/RenderGraph/Nodes/ShadowNode/ShadowMapNode.h
+        Application/RenderGraph/Nodes/ShadowDebugNode/ShadowDebugNode.cpp
+        Application/RenderGraph/Nodes/ShadowDebugNode/ShadowDebugNode.h
 )
 
 set(DXCOMPILER_PATH_DLL ${CMAKE_SOURCE_DIR}/Externals/directx/Compiler/bin)

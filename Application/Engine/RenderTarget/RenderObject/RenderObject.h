@@ -203,6 +203,7 @@ public:
 	virtual SDescriptorPair GetRTV(uint32_t SubtargetIdx = 0) const { return {}; }
 	virtual SDescriptorPair GetDSV(uint32_t SubtargetIdx = 0) const { return {}; }
 
+	virtual void OnResize(const ResizeEventArgs& Args){};
 	virtual uint32_t GetNumPassesRequired() const { return 0; }
 	virtual void UpdatePass(const TUploadBufferData<SPassConstants>& Data) {}
 	virtual void Update(const UpdateEventArgs& Event) {}
