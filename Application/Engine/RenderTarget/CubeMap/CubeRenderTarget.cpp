@@ -91,6 +91,11 @@ SDescriptorPair OCubeRenderTarget::GetRTV(uint32_t SubtargetIdx) const
 	return {};
 }
 
+SDescriptorPair OCubeRenderTarget::GetSRV(uint32_t SubtargetIdx) const
+{
+	return SRVHandle;
+}
+
 void OCubeRenderTarget::InitRenderObject()
 {
 	ORenderTargetBase::InitRenderObject();

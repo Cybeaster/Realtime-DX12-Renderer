@@ -100,7 +100,7 @@ float4 PS(VertexOut pin)
 	{
         light += shadowFactor[0] * ComputeDirectionalLight(gDirectionalLights[i], mat, bumpedNormalW, toEyeW);
     }
-
+/*
      for (uint j = 0; j < gNumPointLights; j++)
     {
         light += shadowFactor[1] * ComputePointLight(gPointLights[j], mat, pin.PosW, bumpedNormalW, toEyeW);
@@ -109,7 +109,7 @@ float4 PS(VertexOut pin)
     for (uint k = 0; k < gNumSpotLights; k++)
     {
         light += shadowFactor[0] * ComputeSpotLight(gSpotLights[k], mat, pin.PosW, bumpedNormalW, toEyeW);
-    }
+    } */
 
 	float4 litColor = ambient + float4(light, 1.0f);
 

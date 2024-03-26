@@ -29,21 +29,10 @@ void ORenderTargetBase::CopyTo(ORenderTargetBase* Dest, const OCommandQueue* Com
 	CommandQueue->CopyResourceTo(Dest, this);
 }
 
-SDescriptorPair ORenderTargetBase::GetSRV(uint32_t SubtargetIdx) const
-{
-	LOG(Render, Error, "GetSRV not implemented")
-	return {};
-}
-SDescriptorPair ORenderTargetBase::GetRTV(uint32_t SubtargetIdx) const
-{
-	LOG(Render, Error, "GetRTV not implemented")
-	return {};
-}
-
 SDescriptorPair ORenderTargetBase::GetDSV(uint32_t SubtargetIdx) const
 {
 	SDescriptorPair DSV;
-	DSV.CPUHandle = OEngine::Get()->DefaultGlobalHeap.DSVHandle.CPUHandle;
+	DSV.CPUHandle = OEngine::Get()->DefaultGlobalHeap.DSVHeap->GetCPUDescriptorHandleForHeapStart();
 	return DSV; // TODO recursive call
 }
 
@@ -64,12 +53,12 @@ void ORenderTargetBase::PrepareRenderTarget(ID3D12GraphicsCommandList* CommandLi
 		return;
 	}
 	PreparedTaregts.insert(SubtargetIdx);
-	auto backbufferView = GetRTV(SubtargetIdx).CPUHandle;
+	auto backbufferView = GetRTV(SubtargetIdx);
 	auto depthStencilView = GetDSV(SubtargetIdx);
 	Utils::ResourceBarrier(CommandList, GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
-	CommandList->ClearRenderTargetView(backbufferView, DirectX::Colors::LightSteelBlue, 0, nullptr);
+	CommandList->ClearRenderTargetView(backbufferView.CPUHandle, DirectX::Colors::LightSteelBlue, 0, nullptr);
 	CommandList->ClearDepthStencilView(depthStencilView.CPUHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-	CommandList->OMSetRenderTargets(1, &backbufferView, true, &depthStencilView.CPUHandle);
+	CommandList->OMSetRenderTargets(1, &backbufferView.CPUHandle, true, &depthStencilView.CPUHandle);
 }
 
 void ORenderTargetBase::UnsetRenderTarget(OCommandQueue* CommandQueue)

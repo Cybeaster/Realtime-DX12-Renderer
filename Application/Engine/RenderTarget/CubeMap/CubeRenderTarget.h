@@ -20,12 +20,11 @@ public:
 	uint32_t GetNumDSVRequired() const override;
 	uint32_t GetNumSRVRequired() const override;
 
-	SDescriptorPair GetDSV(uint32_t SubtargetIdx) const override;
-	SDescriptorPair GetRTV(uint32_t SubtargetIdx) const override;
+	SDescriptorPair GetDSV(uint32_t SubtargetIdx = 0) const override;
+	SDescriptorPair GetRTV(uint32_t SubtargetIdx = 0) const override;
+	SDescriptorPair GetSRV(uint32_t SubtargetIdx = 0) const override;
+
 	void InitRenderObject() override;
-	vector<SDescriptorPair>& GetRTVHandle() { return RTVHandle; }
-	SDescriptorPair& GetDSVHandle() { return DSVHandle; }
-	SDescriptorPair& GetSRVHandle() { return SRVHandle; }
 	uint32_t GetNumPassesRequired() const override;
 	SResourceInfo* GetResource() override { return &RenderTarget; }
 

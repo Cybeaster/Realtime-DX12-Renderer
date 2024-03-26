@@ -233,6 +233,8 @@ void OCommandQueue::ResetQueueState()
 	CurrentRenderTarget->UnsetRenderTarget(this);
 	CurrentRenderTarget = nullptr;
 	CurrentPSO = nullptr;
+	SetResources.clear();
+	CurrentObjectHeap = nullptr;
 }
 
 Microsoft::WRL::ComPtr<ID3D12CommandQueue> OCommandQueue::GetCommandQueue()
@@ -262,7 +264,7 @@ void OCommandQueue::SetHeap(SRenderObjectHeap* Heap)
 		return;
 	}
 	LOG(Engine, Warning, "Setting heap: {}", TEXT(Heap->SRVHeap.Get()));
-
+	CurrentObjectHeap = Heap;
 	ID3D12DescriptorHeap* heaps[] = { Heap->SRVHeap.Get() };
 	GetCommandList()->SetDescriptorHeaps(_countof(heaps), heaps);
 }

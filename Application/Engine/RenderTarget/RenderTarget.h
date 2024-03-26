@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/RenderObject/RenderObject.h"
+#include "Engine/RenderTarget/RenderObject/RenderObject.h"
 #include "Engine/UploadBuffer/UploadBuffer.h"
 
 class OCommandQueue;
@@ -35,13 +35,15 @@ public:
 	virtual void BuildResource() = 0;
 
 	virtual SResourceInfo* GetResource() = 0;
+
 	uint32_t GetNumSRVRequired() const override;
 	uint32_t GetNumRTVRequired() const override;
 	uint32_t GetNumDSVRequired() const override;
+
 	void CopyTo(ORenderTargetBase* Dest, const OCommandQueue* CommandQueue);
-	virtual SDescriptorPair GetSRV(uint32_t SubtargetIdx = 0) const;
-	virtual SDescriptorPair GetRTV(uint32_t SubtargetIdx = 0) const;
+
 	virtual SDescriptorPair GetDSV(uint32_t SubtargetIdx = 0) const;
+
 	virtual void InitRenderObject();
 
 	TUUID GetID() override;

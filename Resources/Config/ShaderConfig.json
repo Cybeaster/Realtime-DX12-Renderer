@@ -164,6 +164,22 @@
           "TargetProfile": "ps_6_0"
         }
       ]
+    },
+    {
+      "Path": "Shaders/ShadowDebug.hlsl",
+      "Name": "ShadowDebug",
+      "Pipeline": [
+        {
+          "Type": "Vertex",
+          "EntryPoint": "VS",
+          "TargetProfile": "vs_6_0"
+        },
+        {
+          "Type": "Pixel",
+          "EntryPoint": "PS",
+          "TargetProfile": "ps_6_0"
+        }
+      ]
     }
   ]
 }

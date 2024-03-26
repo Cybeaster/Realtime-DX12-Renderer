@@ -17,9 +17,7 @@ void ODefaultRenderNode::SetupCommonResources()
 	CommandQueue->SetResource("gDirectionalLights", resource->DirectionalLightBuffer->GetGPUAddress(), PSO);
 	CommandQueue->SetResource("gPointLights", resource->PointLightBuffer->GetGPUAddress(), PSO);
 	CommandQueue->SetResource("gSpotLights", resource->SpotLightBuffer->GetGPUAddress(), PSO);
-
-	OEngine::Get()->SetDescriptorHeap(EResourceHeapType::Shadow);
-	CommandQueue->SetResource("gShadowMaps", OEngine::Get()->ShadowHeap.SRVHeap->GetGPUDescriptorHandleForHeapStart(), PSO);
+	CommandQueue->SetResource("gShadowMaps", OEngine::Get()->GetRenderGroupStartAddress(ERenderGroup::ShadowTextures), PSO);
 }
 
 void ODefaultRenderNode::Initialize(const SNodeInfo& OtherNodeInfo, OCommandQueue* OtherCommandQueue,
@@ -31,5 +29,6 @@ void ODefaultRenderNode::Initialize(const SNodeInfo& OtherNodeInfo, OCommandQueu
 ORenderTargetBase* ODefaultRenderNode::Execute(ORenderTargetBase* RenderTarget)
 {
 	OEngine::Get()->DrawRenderItems(PSO, GetNodeInfo().RenderLayer);
+	OEngine::Get()->DrawRenderItems(FindPSOInfo(SPSOType::ShadowDebug), SRenderLayer::ShadowDebug);
 	return RenderTarget;
 }

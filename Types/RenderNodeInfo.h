@@ -7,4 +7,5 @@ struct SNodeInfo
 	string PSOType;
 	string NextNode;
 	string RenderLayer;
+	bool bEnable;
 };

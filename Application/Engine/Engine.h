@@ -21,6 +21,15 @@
 
 #include <map>
 
+enum ERenderGroup
+{
+	Textures2D,
+	Textures3D,
+	RenderTargets,
+	ShadowTextures,
+	UI
+};
+
 class OEngine : public std::enable_shared_from_this<OEngine>
 {
 public:
@@ -72,26 +81,19 @@ public:
 	void PostTestInit();
 	void DestroyWindow();
 	void OnWindowDestroyed();
-	bool IsTearingSupported() const;
 
-	ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(UINT NumDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE Type, D3D12_DESCRIPTOR_HEAP_FLAGS Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE) const;
-
+	ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(UINT NumDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE Type, const wstring& Name, D3D12_DESCRIPTOR_HEAP_FLAGS Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE) const;
 	OCommandQueue* GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type = D3D12_COMMAND_LIST_TYPE_DIRECT);
-
-	UINT GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE Type) const;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GetRenderGroupStartAddress(ERenderGroup Group);
 
 	void OnEnd(shared_ptr<OTest> Test) const;
 
 	void TryRebuildFrameResource();
-	void OnPreRender();
 
 	void Draw(UpdateEventArgs& Args);
 	void Render(UpdateEventArgs& Args);
 	void Update(UpdateEventArgs& Args);
 	void OnUpdate(UpdateEventArgs& Args);
-	void OnPostRender();
-	void PostProcess(HWND Handler);
-	void DrawCompositeShader(CD3DX12_GPU_DESCRIPTOR_HANDLE Input);
 	void OnKeyPressed(KeyEventArgs& Args);
 	void OnKeyReleased(KeyEventArgs& Args);
 	void OnMouseMoved(class MouseMotionEventArgs& Args);
@@ -104,36 +106,13 @@ public:
 	bool CheckTearingSupport();
 
 	void CreateWindow();
-
-	void CheckMSAAQualitySupport();
-
 	bool GetMSAAState(UINT& Quality) const;
 
 	vector<ORenderItem*>& GetRenderItems(const string& Type);
 
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetOpaquePSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetAlphaTestedPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetTransparentPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetShadowPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetReflectedPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetMirrorPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetDebugPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetCompositePSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetSkyPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetTreeSpritePSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetIcosahedronPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetWavesRenderPSODesc();
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC GetHighlightPSODesc();
-	D3D12_COMPUTE_PIPELINE_STATE_DESC GetBilateralBlurPSODesc();
-	D3D12_COMPUTE_PIPELINE_STATE_DESC GetWavesDisturbPSODesc();
-	D3D12_COMPUTE_PIPELINE_STATE_DESC GetWavesUpdatePSODesc();
-	D3D12_COMPUTE_PIPELINE_STATE_DESC GetSobelPSODesc();
-
 	D3D12_RENDER_TARGET_BLEND_DESC GetTransparentBlendState();
 	D3D12_SHADER_BYTECODE GetShaderByteCode(const string& ShaderName);
 	void FillDescriptorHeaps();
-	void BuildBlurPSO();
-	void BuildShadersAndInputLayouts();
 
 	ComPtr<IDXGIFactory2> GetFactory() const;
 
@@ -189,12 +168,9 @@ public:
 	void BuildFilters();
 
 	template<typename T, typename... Args>
-	T* BuildRenderObject(vector<IRenderObject*>& TargetArray, Args&&... Params);
+	T* BuildRenderObject(ERenderGroup Group, Args&&... Params);
 
-	template<typename T, typename... Args>
-	T* BuildRenderObject(Args&&... Params);
-
-	TUUID AddRenderObject(IRenderObject* RenderObject);
+	TUUID AddRenderObject(ERenderGroup Group, IRenderObject* RenderObject);
 
 	void BuildOffscreenRT();
 	OOffscreenTexture* GetOffscreenRT() const;
@@ -259,7 +235,7 @@ public:
 protected:
 	void DrawRenderItemsImpl(SPSODescriptionBase* Desc, const vector<ORenderItem*>& RenderItems);
 	template<typename T, typename... Args>
-	T* BuildRenderObjectImpl(Args&&... Params);
+	T* BuildRenderObjectImpl(ERenderGroup Group, Args&&... Params);
 
 	shared_ptr<OTest> GetTestByHWND(HWND Handler);
 	OWindow* GetWindowByHWND(HWND Handler);
@@ -329,6 +305,8 @@ private:
 	ODynamicCubeMapRenderTarget* CubeRenderTarget = nullptr;
 
 	OUIManager* UIManager;
+
+	map<ERenderGroup, vector<TUUID>> RenderGroups;
 	map<TUUID, unique_ptr<IRenderObject>> RenderObjects;
 
 	int32_t LightCount = 0;
@@ -357,20 +335,29 @@ public:
 };
 
 template<typename T, typename... Args>
-T* OEngine::BuildRenderObjectImpl(Args&&... Params)
+T* OEngine::BuildRenderObjectImpl(ERenderGroup Group, Args&&... Params)
 {
 	auto uuid = GenerateUUID();
 	auto object = new T(std::forward<Args>(Params)...);
 	object->SetID(uuid);
 	object->InitRenderObject();
 	RenderObjects[uuid] = unique_ptr<IRenderObject>(object);
+	if (RenderGroups.contains(Group))
+	{
+		RenderGroups[Group].push_back(uuid);
+	}
+	else
+	{
+		RenderGroups[Group] = { uuid };
+	}
+
 	return object;
 }
 
 template<typename T, typename... Args>
-T* OEngine::BuildRenderObject(Args&&... Params)
+T* OEngine::BuildRenderObject(ERenderGroup Group, Args&&... Params)
 {
-	return BuildRenderObjectImpl<T, Args...>(std::forward<Args>(Params)...);
+	return BuildRenderObjectImpl<T, Args...>(Group, std::forward<Args>(Params)...);
 }
 
 template<typename T>
@@ -391,5 +378,15 @@ T* OEngine::GetObjectByUUID(TUUID UUID, bool Checked)
 template<typename T>
 TUUID OEngine::AddFilter()
 {
-	return AddRenderObject(OFilterBase::CreateFilter<T>(Device.Get(), GetCommandQueue(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat));
+	return AddRenderObject(ERenderGroup::RenderTargets, OFilterBase::CreateFilter<T>(Device.Get(), GetCommandQueue(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat));
+}
+
+inline CD3DX12_GPU_DESCRIPTOR_HANDLE OEngine::GetRenderGroupStartAddress(ERenderGroup Group)
+{
+	if (!RenderGroups.contains(Group))
+	{
+		LOG(Engine, Error, "Render group not found!");
+		return {};
+	}
+	return GetObjectByUUID<IRenderObject>(RenderGroups[Group].front())->GetSRV().GPUHandle;
 }

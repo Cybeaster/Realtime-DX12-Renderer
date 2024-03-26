@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/RenderObject/RenderObject.h"
+#include "Engine/RenderTarget/RenderObject/RenderObject.h"
 #include "Geometry/LightEmitting/OLightEmittingObject.h"
 
 struct SMaterial;
@@ -10,8 +10,5 @@ public:
 
 public:
 private:
-SSpotLight LightData;
+	SSpotLight LightData;
 };
-
-
-

@@ -11,21 +11,18 @@ OLightComponent::OLightComponent(uint32_t DirLightIdx, uint32_t PointLightIdx, u
 
 void OLightComponent::Tick(UpdateEventArgs Arg)
 {
-	if(!Utils::MatricesEqual(Owner->GetDefaultInstance()->World , Position)) // make delegate based
+	if (!Utils::MatricesEqual(Owner->GetDefaultInstance()->World, Position)) // make delegate based
 	{
 		Position = Owner->GetDefaultInstance()->World;
 		auto matrix = DirectX::XMLoadFloat4x4(&Position);
-		DirectX::XMFLOAT4 pos = {matrix.r[3].m128_f32[0], matrix.r[3].m128_f32[1], matrix.r[3].m128_f32[2],matrix.r[3].m128_f32[3]};
+		DirectX::XMFLOAT4 pos = { matrix.r[3].m128_f32[0], matrix.r[3].m128_f32[1], matrix.r[3].m128_f32[2], matrix.r[3].m128_f32[3] };
 		GlobalPosition = DirectX::XMLoadFloat4(&pos);
-		SpotLight.Position = {pos.x, pos.y, pos.z};
-		PointLight.Position = {pos.x, pos.y, pos.z};
+		SpotLight.Position = { pos.x, pos.y, pos.z };
+		PointLight.Position = { pos.x, pos.y, pos.z };
 
 		MarkDirty();
 	}
 
-	DirectionalLight.Transform = ShadowTransform;
-	PointLight.Transform = ShadowTransform;
-	SpotLight.Transform = ShadowTransform;
 	UpdateLightData();
 }
 
@@ -78,7 +75,7 @@ void OLightComponent::InitFrameResource(const TUploadBufferData<SDirectionalLigh
 bool OLightComponent::TryUpdate()
 {
 	bool res = NumFramesDirty > 0;
-	NumFramesDirty=0;
+	NumFramesDirty = 0;
 	return res;
 }
 
@@ -134,12 +131,16 @@ void OLightComponent::SetPassConstant(SPassConstants& OutConstant)
 	const auto proj = XMLoadFloat4x4(&Proj);
 	const auto shadowTransform = XMLoadFloat4x4(&ShadowTransform);
 
+	XMFLOAT4X4 transposed;
+	Put(transposed, Transpose(shadowTransform));
+	DirectionalLight.Transform = transposed;
+	PointLight.Transform = transposed;
+	SpotLight.Transform = transposed;
 
 	const XMMATRIX viewProj = XMMatrixMultiply(view, proj);
 	const XMMATRIX invView = Inverse(view);
 	const XMMATRIX invProj = Inverse(proj);
 	const XMMATRIX invViewProj = Inverse(viewProj);
-
 
 	XMStoreFloat4x4(&OutConstant.View, XMMatrixTranspose(view));
 	XMStoreFloat4x4(&OutConstant.InvView, XMMatrixTranspose(invView));
@@ -147,13 +148,10 @@ void OLightComponent::SetPassConstant(SPassConstants& OutConstant)
 	XMStoreFloat4x4(&OutConstant.InvProj, XMMatrixTranspose(invProj));
 	XMStoreFloat4x4(&OutConstant.ViewProj, XMMatrixTranspose(viewProj));
 	XMStoreFloat4x4(&OutConstant.InvViewProj, XMMatrixTranspose(invViewProj));
-	XMFLOAT3 pos ;
-	XMStoreFloat3(&pos,GlobalPosition);
 
-	OutConstant.EyePosW = pos;
+	OutConstant.EyePosW = LightPos;
 	OutConstant.NearZ = NearZ;
 	OutConstant.FarZ = FarZ;
-
 }
 
 void OLightComponent::UpdateLightData()
@@ -162,22 +160,23 @@ void OLightComponent::UpdateLightData()
 
 	auto lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	const auto& bounds = OEngine::Get()->GetSceneBounds();
-	XMVECTOR lightDir;
+	XMFLOAT3 dir = { 0.57735f, -0.57735f, 0.57735f };
+	XMVECTOR lightDir = XMLoadFloat3(&dir);
 	XMVECTOR lightPos = GlobalPosition;
-	XMVECTOR lightTarget ;  // Calculate target point using direction
+	XMVECTOR lightTarget; // Calculate target point using direction
 	switch (LightType)
 	{
 	case ELightType::Directional:
 		lightDir = XMLoadFloat3(&DirectionalLight.Direction);
-		lightTarget = XMVectorAdd(lightPos, lightDir);  // Calculate target point using direction
+		lightTarget = XMVectorAdd(lightPos, lightDir); // Calculate target point using direction
 		break;
-		case ELightType::Point:
+	case ELightType::Point:
 		lightDir = XMLoadFloat3(&bounds.Center);
-		lightTarget = lightDir;  // Calculate target point using direction
+		lightTarget = lightDir; // Calculate target point using direction
 		break;
 	case ELightType::Spot:
 		lightDir = XMLoadFloat3(&SpotLight.Direction);
-		lightTarget = XMVectorAdd(lightPos, lightDir);  // Calculate target point using direction
+		lightTarget = XMVectorAdd(lightPos, lightDir); // Calculate target point using direction
 
 		break;
 	}
@@ -187,7 +186,7 @@ void OLightComponent::UpdateLightData()
 	// Transform bounding sphere to light space.
 	XMFLOAT3 sphereCenterLS;
 	XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(lightTarget, view));
-
+	XMStoreFloat3(&LightPos, lightPos);
 	// Ortho frustum in light space encloses scene.
 	float l = sphereCenterLS.x - bounds.Radius;
 	float b = sphereCenterLS.y - bounds.Radius;
@@ -202,16 +201,12 @@ void OLightComponent::UpdateLightData()
 
 	// Transform NDC space [-1,+1]^2 to texture space [0,1]^2
 	XMMATRIX T(
-	    0.5f, 0.0f, 0.0f, 0.0f,
-	    0.0f, -0.5f, 0.0f, 0.0f,
-	    0.0f, 0.0f, 1.0f, 0.0f,
-	    0.5f, 0.5f, 0.0f, 1.0f);
+	    0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f);
 
-	XMMATRIX S = view*lightProj*T;
+	XMMATRIX S = view * lightProj * T;
 	XMStoreFloat4x4(&View, view);
 	XMStoreFloat4x4(&Proj, lightProj);
 	XMStoreFloat4x4(&ShadowTransform, S);
-
 }
 
 void OLightComponent::SetShadowMapIndex(UINT Index)
@@ -222,7 +217,7 @@ void OLightComponent::SetShadowMapIndex(UINT Index)
 		DirectionalLight.ShadowMapIndex = Index;
 		break;
 	case ELightType::Point:
-		PointLight.ShadowMapIndex = Index; //doesn't make sense for now
+		PointLight.ShadowMapIndex = Index; // doesn't make sense for now
 		break;
 	case ELightType::Spot:
 		SpotLight.ShadowMapIndex = Index;

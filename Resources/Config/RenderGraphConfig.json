@@ -1,64 +1,77 @@
 {
-  "RenderGraph": [
-    {
-      "Name": "Shadow",
-      "PSO": "ShadowMap",
-      "NextNode": "OpaqueDynamicReflections",
-      "RenderLayer": "Shadow"
-    },
-    {
-      "Name": "OpaqueDynamicReflections",
-      "PSO": "Opaque",
-      "NextNode": "Opaque",
-      "RenderLayer": "OpaqueDynamicReflections"
-    },
-    {
-      "Name": "Opaque",
-      "PSO": "Opaque",
-      "NextNode": "Sky",
-      "RenderLayer": "Opaque"
-    },
-    {
-      "Name": "Sky",
+  "RenderGraph": {
+    "Head": "Shadow",
+    "Nodes": [
+      {
+        "Name": "Shadow",
+        "PSO": "ShadowMap",
+        "NextNode": "OpaqueDynamicReflections",
+        "RenderLayer": "Shadow",
+        "Enabled": true
+      },
+      {
+        "Name": "OpaqueDynamicReflections",
+        "PSO": "Opaque",
+        "NextNode": "Opaque",
+        "RenderLayer": "OpaqueDynamicReflections",
+        "Enabled": true
+      },
+      {
+        "Name": "Opaque",
+        "PSO": "Opaque",
+        "NextNode": "Sky",
+        "RenderLayer": "Opaque",
+        "Enabled": true
+      },
+      {
+        "Name": "Sky",
         "PSO": "Sky",
         "NextNode": "Transparent",
-        "RenderLayer": "Sky"
-    },
-    {
-      "Name": "Transparent",
-      "PSO": "Transparent",
-      "NextNode": "Water",
-      "RenderLayer": "Transparent"
-    },
-    {
+        "RenderLayer": "Sky",
+        "Enabled": true
+      },
+      {
+        "Name": "Transparent",
+        "PSO": "Transparent",
+        "NextNode": "Water",
+        "RenderLayer": "Transparent",
+        "Enabled": true
+      },
+      {
         "Name": "Water",
         "PSO": "Water",
         "NextNode": "LightObjects",
-        "RenderLayer": "Water"
-    },
-    {
-      "Name": "LightObjects",
-      "PSO": "Opaque",
-      "NextNode": "PostProcess",
-      "RenderLayer": "LightObjects"
-    },
-    {
-      "Name": "PostProcess",
-      "PSO": "Opaque",
-      "NextNode": "UI",
-      "RenderLayer": "PostProcess"
-    },
-    {
-      "Name": "UI",
-      "PSO": "UI",
-      "RenderLayer": "UI",
-      "NextNode": "Present"
-    },
-    {
-      "Name": "Present",
-      "PSO": "Present",
-      "NextNode": "",
-      "RenderLayer": ""
-    }
-  ]
+        "RenderLayer": "Water",
+        "Enabled": false
+      },
+      {
+        "Name": "LightObjects",
+        "PSO": "Opaque",
+        "NextNode": "PostProcess",
+        "RenderLayer": "LightObjects",
+        "Enabled": true
+      },
+      {
+        "Name": "PostProcess",
+        "PSO": "Opaque",
+        "NextNode": "UI",
+        "RenderLayer": "PostProcess",
+        "Enabled": true
+      },
+      {
+        "Name": "UI",
+        "PSO": "UI",
+        "RenderLayer": "UI",
+        "NextNode": "Present",
+        "Enabled": true
+      },
+      {
+        "Name": "Present",
+        "PSO": "Present",
+        "NextNode": "",
+        "RenderLayer": "",
+        "Enabled": true
+      }
+    ]
+  }
 }

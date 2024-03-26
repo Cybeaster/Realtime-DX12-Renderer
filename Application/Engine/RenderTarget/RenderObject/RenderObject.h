@@ -171,7 +171,6 @@ struct TUploadBufferData
 enum EResourceHeapType : uint32_t
 {
 	Default = 1 << 0,
-	Shadow = 1 << 1
 };
 
 inline wstring ToString(EResourceHeapType Type)
@@ -180,8 +179,6 @@ inline wstring ToString(EResourceHeapType Type)
 	{
 	case EResourceHeapType::Default:
 		return L"Default";
-	case EResourceHeapType::Shadow:
-		return L"Shadow";
 	default:
 		return L"Unknown";
 	}
@@ -201,6 +198,11 @@ public:
 	virtual uint32_t GetNumSRVRequired() const { return 0; }
 	virtual uint32_t GetNumRTVRequired() const { return 0; }
 	virtual uint32_t GetNumDSVRequired() const { return 0; }
+
+	virtual SDescriptorPair GetSRV(uint32_t SubtargetIdx = 0) const { return {}; }
+	virtual SDescriptorPair GetRTV(uint32_t SubtargetIdx = 0) const { return {}; }
+	virtual SDescriptorPair GetDSV(uint32_t SubtargetIdx = 0) const { return {}; }
+
 	virtual uint32_t GetNumPassesRequired() const { return 0; }
 	virtual void UpdatePass(const TUploadBufferData<SPassConstants>& Data) {}
 	virtual void Update(const UpdateEventArgs& Event) {}

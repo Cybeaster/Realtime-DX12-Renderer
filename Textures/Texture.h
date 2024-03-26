@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/RenderObject/RenderObject.h"
+#include "Engine/RenderTarget/RenderObject/RenderObject.h"
 #include "Windows.h"
 
 #include <Types.h>
@@ -17,7 +17,7 @@ struct STextureViewType
 	RENDER_TYPE(TextureCube);
 };
 
-ENUM(ETextureType, Diffuse, Normal,Height, Occlusion, Roughness)
+ENUM(ETextureType, Diffuse, Normal, Height, Occlusion, Roughness)
 
 struct STexture
 {
@@ -25,7 +25,7 @@ struct STexture
 	string Name;
 	wstring FileName;
 
-	SResourceInfo Resource ;
+	SResourceInfo Resource;
 	SResourceInfo UploadHeap;
 	string ViewType = STextureViewType::Texture2D;
 	int64_t HeapIdx = -1;
