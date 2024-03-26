@@ -22,14 +22,7 @@ bool OTextureWaves::Initialize()
 {
 	const auto engine = Engine;
 	const auto queue = engine->GetCommandQueue();
-	Waves = engine->BuildRenderObject<OGPUWave>(engine->GetDevice().Get(),
-	                                            queue->GetCommandList().Get(),
-	                                            256,
-	                                            256,
-	                                            0.25f,
-	                                            0.03f,
-	                                            2.0f,
-	                                            0.2f);
+	Waves = engine->BuildRenderObject<OGPUWave>(ERenderGroup::RenderTargets, engine->GetDevice().Get(), queue->GetCommandList().Get(), 256, 256, 0.25f, 0.03f, 2.0f, 0.2f);
 	BuildRenderItems();
 	return true;
 }
@@ -183,29 +176,6 @@ void OTextureWaves::BuildQuadPatchGeometry()
 	geo->SetGeometry("QuadPatch", quadSubmesh);
 
 	GetEngine()->SetSceneGeometry(std::move(geo));
-}
-
-void OTextureWaves::BuildTesselationPSO()
-{
-	auto engine = Engine;
-
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc = engine->GetOpaquePSODesc();
-	opaquePsoDesc.VS = { reinterpret_cast<BYTE*>(engine->GetShader(SShaderTypes::VSTesselation)->GetBufferPointer()),
-		                 engine->GetShader(SShaderTypes::VSTesselation)->GetBufferSize() };
-	opaquePsoDesc.HS = { reinterpret_cast<BYTE*>(engine->GetShader(SShaderTypes::HSTesselation)->GetBufferPointer()),
-		                 engine->GetShader(SShaderTypes::HSTesselation)->GetBufferSize() };
-	opaquePsoDesc.DS = { reinterpret_cast<BYTE*>(engine->GetShader(SShaderTypes::DSTesselation)->GetBufferPointer()),
-		                 engine->GetShader(SShaderTypes::DSTesselation)->GetBufferSize() };
-	opaquePsoDesc.PS = { reinterpret_cast<BYTE*>(engine->GetShader(SShaderTypes::PSTesselation)->GetBufferPointer()),
-		                 engine->GetShader(SShaderTypes::PSTesselation)->GetBufferSize() };
-
-	opaquePsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	opaquePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	opaquePsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	opaquePsoDesc.SampleMask = UINT_MAX;
-	opaquePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
-	opaquePsoDesc.NumRenderTargets = 1;
-	engine->CreatePSO(SPSOType::Tesselation, opaquePsoDesc);
 }
 
 void OTextureWaves::BuildPSOTreeSprites()

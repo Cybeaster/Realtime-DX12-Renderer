@@ -1,7 +1,7 @@
 #pragma once
 #include "CommandQueue/CommandQueue.h"
 #include "DirectX/DXHelper.h"
-#include "Engine/RenderObject/RenderObject.h"
+#include "Engine/RenderTarget/RenderObject/RenderObject.h"
 
 class OFilterBase : public ORenderObjectBase
 {
@@ -27,6 +27,7 @@ public:
 	{
 		return FilterName;
 	}
+
 protected:
 	virtual void BuildDescriptors() const = 0;
 	virtual void BuildResource() = 0;

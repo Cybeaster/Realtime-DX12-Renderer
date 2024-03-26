@@ -1,6 +1,6 @@
 #pragma once
 #include "DirectX/InstanceData.h"
-#include "Engine/RenderObject/RenderObject.h"
+#include "Engine/RenderTarget/RenderObject/RenderObject.h"
 
 struct ORenderItem;
 class OWaterRenderObject : public ORenderObjectBase
@@ -12,6 +12,3 @@ public:
 private:
 	ORenderItem* WaterItem;
 };
-
-
-

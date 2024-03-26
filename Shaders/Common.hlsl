@@ -13,7 +13,7 @@
 #endif
 
 #ifndef MAX_SHADOW_MAPS
-#define MAX_SHADOW_MAPS 3
+#define MAX_SHADOW_MAPS 1
 #endif
 // Include structures and functions for lighting.
 #include "LightingUtils.hlsl"
@@ -43,7 +43,7 @@ struct MaterialData
 	float pad2;
 };
 #define TEXTURE_MAPS_NUM 41
-#define SHADOW_MAPS_NUM 4
+#define SHADOW_MAPS_NUM 1
 
 Texture2D gTextureMaps[TEXTURE_MAPS_NUM] : register(t0);
 Texture2D gShadowMaps[SHADOW_MAPS_NUM] : register(t1,space2);
@@ -191,7 +191,7 @@ void FindShadowPosition(out float4 ShadowPositions[MAX_SHADOW_MAPS], float4 PosW
         ShadowPositions[0] = mul(PosW,  gDirectionalLights[0].Transform);
     }
 
-    if(gNumPointLights > 0)
+/*     if(gNumPointLights > 0)
     {
          LightIndices[1] = gPointLights[0].ShadowMapIndex;
         ShadowPositions[1] = mul(PosW,  gPointLights[0].Transform);
@@ -201,7 +201,7 @@ void FindShadowPosition(out float4 ShadowPositions[MAX_SHADOW_MAPS], float4 PosW
     {
         LightIndices[2] = gSpotLights[0].ShadowMapIndex;
         ShadowPositions[2] = mul(PosW,  gSpotLights[0].Transform);
-    }
+    } */
 }
 
 float CalcShadowFactor(float4 ShadowPosH,uint ShadowMapIndex)
@@ -243,7 +243,7 @@ void GetShadowFactor(out float ShadowFactors[MAX_SHADOW_MAPS],uint ShadowMapIndi
     {
         ShadowFactors[0] = CalcShadowFactor(ShadowPositions[0],ShadowMapIndices[0]);
     }
-
+/*
     if(gNumPointLights > 0)
     {
         ShadowFactors[1] = CalcShadowFactor(ShadowPositions[1],ShadowMapIndices[1]);
@@ -252,6 +252,6 @@ void GetShadowFactor(out float ShadowFactors[MAX_SHADOW_MAPS],uint ShadowMapIndi
     if(gNumSpotLights > 0)
     {
         ShadowFactors[2] = CalcShadowFactor(ShadowPositions[2],ShadowMapIndices[2]);
-    }
+    } */
 }
 

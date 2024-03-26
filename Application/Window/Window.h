@@ -53,15 +53,7 @@ public:
 	SResourceInfo* GetCurrentBackBuffer();
 	SResourceInfo* GetCurrentDepthStencilBuffer();
 
-	/**
-	 * Should this window be rendered with vertical refresh synchronization.
-	 */
-	bool IsVSync() const;
 	void SetVSync(bool vSync);
-	void ToggleVSync();
-	float GetFoV();
-	void SetFoV(float _FoV);
-
 	float GetAspectRatio() const;
 	/**
 	 * Is this a windowed window or full-screen?

@@ -1,7 +1,7 @@
 
 #pragma once
 #include "DirectX/Light/Light.h"
-#include "Engine/RenderObject/RenderObject.h"
+#include "Engine/RenderTarget/RenderObject/RenderObject.h"
 #include "RenderItemComponentBase.h"
 
 struct SFrameResource;
@@ -44,18 +44,19 @@ public:
 	                       const TUploadBufferData<SSpotLight>& Spot);
 
 	int NumFramesDirty = SRenderConstants::NumFrameResources;
-	bool TryUpdate() ;
+	bool TryUpdate();
 	ELightType GetLightType() const;
 	int32_t GetLightIndex() const;
-	SDirectionalLight& GetDirectionalLight() ;
-	SPointLight& GetPointLight() ;
-	SSpotLight& GetSpotLight() ;
+	SDirectionalLight& GetDirectionalLight();
+	SPointLight& GetPointLight();
+	SSpotLight& GetSpotLight();
 	void MarkDirty();
 	void SetPassConstant(SPassConstants& OutConstant);
 	void UpdateLightData();
 	void SetShadowMapIndex(UINT Index);
+
 private:
-	ELightType LightType= ELightType::Spot;
+	ELightType LightType = ELightType::Spot;
 
 	TUploadBufferData<SDirectionalLight> DirLightBufferInfo;
 	TUploadBufferData<SPointLight> PointLightBufferInfo;
@@ -66,12 +67,10 @@ private:
 	SPointLight PointLight;
 	SSpotLight SpotLight;
 
+	DirectX::XMFLOAT3 LightPos;
 	DirectX::XMFLOAT4X4 View;
 	DirectX::XMFLOAT4X4 Proj;
 	DirectX::XMFLOAT4X4 ShadowTransform;
 	float NearZ;
 	float FarZ;
 };
-
-
-

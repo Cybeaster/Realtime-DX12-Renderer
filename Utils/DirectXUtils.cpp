@@ -1,6 +1,6 @@
 #include "DirectXUtils.h"
 
-#include "Engine/RenderObject/RenderObject.h"
+#include "Engine/RenderTarget/RenderObject/RenderObject.h"
 #include "Logger.h"
 
 UINT Utils::CalcBufferByteSize(const UINT ByteSize)

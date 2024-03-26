@@ -8,7 +8,7 @@ set(IMGUI_BACKENDS
         Externals/imgui/backends/imgui_impl_win32.h
         Externals/imgui/backends/imgui_impl_dx12.h
         Externals/imgui/backends/imgui_impl_win32.cpp
-        )
+)
 
 # Use solution folders to organize projects
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -85,7 +85,7 @@ set(SRC_FILES
         Application/Engine/RenderTarget/RenderTarget.h
         Application/Filters/BilateralBlur/BilateralBlurFilter.cpp
         Application/Filters/BilateralBlur/BilateralBlurFilter.h
-        Application/Engine/RenderObject/RenderObject.h
+        Application/Engine/RenderTarget/RenderObject/RenderObject.h
         Utils/Statics.h
         Application/UI/Filters/BilateralFilterWidget.cpp
         Application/UI/Filters/BilateralFilterWidget.h
@@ -133,8 +133,8 @@ set(SRC_FILES
         Application/UI/Geometry/GeometryEntity/PickedRenderItem.h
         Application/Engine/RenderTarget/CubeMap/CubeRenderTarget.cpp
         Application/Engine/RenderTarget/CubeMap/CubeRenderTarget.h
-        Application/Engine/RenderObject/RenderObject.cpp
-        Application/Engine/RenderObject/RenderObject.cpp
+        Application/Engine/RenderTarget/RenderObject/RenderObject.cpp
+        Application/Engine/RenderTarget/RenderObject/RenderObject.cpp
         Application/Engine/RenderTarget/CubeMap/DynamicCubeMap/DynamicCubeMapTarget.cpp
         Application/Engine/RenderTarget/CubeMap/DynamicCubeMap/DynamicCubeMapTarget.h
         Application/Test/CubeMap/CubeMapTest.cpp
@@ -225,7 +225,7 @@ target_sources(imgui PRIVATE ${IMGUI_BACKENDS})
 if (MSVC)
     set_target_properties(DXRenderer PROPERTIES
             LINK_FLAGS "/SUBSYSTEM:WINDOWS"
-            )
+    )
     add_compile_options(/wd4996)
 endif ()
 
@@ -243,7 +243,7 @@ target_include_directories(DXRenderer PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Config
         ${CMAKE_CURRENT_SOURCE_DIR}/Components
 
-        )
+)
 
 # Copy dxcompiler.dll to the output directory
 add_custom_command(TARGET DXRenderer POST_BUILD

@@ -26,6 +26,8 @@ void OWindow::BuildResource()
 	const auto engine = OEngine::Get();
 	auto device = engine->GetDevice();
 	SwapChain = CreateSwapChain();
+	engine->DefaultGlobalHeap.DSVHandle.Offset();
+	engine->DefaultGlobalHeap.RTVHandle.Offset(SRenderConstants::RenderBuffersCount);
 	UpdateRenderTargetViews();
 	ResizeDepthBuffer();
 }
@@ -88,29 +90,9 @@ SResourceInfo* OWindow::GetCurrentDepthStencilBuffer()
 	return &DepthBuffer;
 }
 
-bool OWindow::IsVSync() const
-{
-	return WindowInfo.VSync;
-}
-
 void OWindow::SetVSync(bool vSync)
 {
 	WindowInfo.VSync = vSync;
-}
-
-void OWindow::ToggleVSync()
-{
-	SetVSync(!WindowInfo.VSync);
-}
-
-float OWindow::GetFoV()
-{
-	return WindowInfo.FoV;
-}
-
-void OWindow::SetFoV(float _FoV)
-{
-	WindowInfo.FoV = _FoV;
 }
 
 float OWindow::GetAspectRatio() const
@@ -378,6 +360,7 @@ uint32_t OWindow::GetNumRTVRequired() const
 {
 	return 3;
 }
+
 SDescriptorPair OWindow::GetRTV(uint32_t SubtargetIdx) const
 {
 	SDescriptorPair pair;
@@ -518,7 +501,7 @@ void OWindow::ResizeDepthBuffer()
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 	dsvDesc.Format = SRenderConstants::DepthBufferFormat;
 	dsvDesc.Texture2D.MipSlice = 0;
-	device->CreateDepthStencilView(DepthBuffer.Resource.Get(), &dsvDesc, OEngine::Get()->DefaultGlobalHeap.DSVHandle.CPUHandle);
+	device->CreateDepthStencilView(DepthBuffer.Resource.Get(), &dsvDesc, OEngine::Get()->DefaultGlobalHeap.DSVHeap->GetCPUDescriptorHandleForHeapStart());
 	engine->GetCommandQueue()->ExecuteCommandListAndWait();
 }
 

@@ -7,5 +7,5 @@ class ORenderGraphReader : public OConfigReader
 public:
 	ORenderGraphReader(const string& FileName)
 	    : OConfigReader(FileName) {}
-	vector<SNodeInfo> LoadRenderGraph();
+	vector<SNodeInfo> LoadRenderGraph(string& OutHead);
 };

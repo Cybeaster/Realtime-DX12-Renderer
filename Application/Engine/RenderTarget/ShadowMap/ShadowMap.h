@@ -5,7 +5,7 @@ class OShadowMap : public ORenderTargetBase
 {
 public:
 	OShadowMap(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format, OLightComponent* InLightComponent)
-	    : ORenderTargetBase(Device, Width, Height, Format, EResourceHeapType::Shadow), LightComponent(InLightComponent)
+	    : ORenderTargetBase(Device, Width, Height, Format, EResourceHeapType::Default), LightComponent(InLightComponent)
 
 	{
 		Name = L"ShadowMap";

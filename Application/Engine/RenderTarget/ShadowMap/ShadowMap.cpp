@@ -56,7 +56,7 @@ void OShadowMap::BuildDescriptors(IDescriptor* Descriptor)
 		SRV = desc->SRVHandle.Offset();
 		DSV = desc->DSVHandle.Offset();
 		LightComponent->SetShadowMapIndex(SRV.Index);
-
+		BuildResource();
 		BuildDescriptors();
 	}
 }
@@ -84,18 +84,16 @@ void OShadowMap::PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList, uin
 	}
 	PreparedTaregts.insert(SubtargetIdx);
 	auto depthStencilView = GetDSV(SubtargetIdx);
-	Utils::ResourceBarrier(CommandList, GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+	Utils::ResourceBarrier(CommandList, GetResource(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
 	CommandList->ClearDepthStencilView(depthStencilView.CPUHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 	CommandList->OMSetRenderTargets(0, nullptr, true, &depthStencilView.CPUHandle);
 }
 
 void OShadowMap::UpdatePass(const TUploadBufferData<SPassConstants>& Data)
 {
-	if (PassConstantBuffer.StartIndex != Data.StartIndex)
-	{
-		SetPassConstant();
-		Data.Buffer->CopyData(Data.StartIndex, PassConstant);
-	}
+	SetPassConstant();
+	Data.Buffer->CopyData(Data.StartIndex, PassConstant);
+
 	PassConstantBuffer = Data;
 }
 

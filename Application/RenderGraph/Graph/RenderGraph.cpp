@@ -6,6 +6,7 @@
 #include "RenderGraph/Nodes/PostProcessNode/PostProcessNode.h"
 #include "RenderGraph/Nodes/PresentNode/PresentNode.h"
 #include "RenderGraph/Nodes/ReflectionNode/ReflectionNode.h"
+#include "RenderGraph/Nodes/ShadowNode/ShadowMapNode.h"
 #include "RenderGraph/Nodes/UINode/UiRenderNode.h"
 
 ORenderGraph::ORenderGraph()
@@ -17,12 +18,12 @@ void ORenderGraph::Initialize(OGraphicsPipelineManager* PipelineManager, OComman
 {
 	this->PipelineManager = PipelineManager;
 	CommandQueue = OtherCommandQueue;
-
-	auto graph = Reader->LoadRenderGraph();
+	string head;
+	auto graph = Reader->LoadRenderGraph(head);
 	for (auto& node : graph)
 	{
 		auto newNode = ResolveNodeType(node.Name);
-		if (Head == nullptr)
+		if (head == node.Name)
 		{
 			Head = newNode.get();
 		}
@@ -40,9 +41,15 @@ void ORenderGraph::Execute()
 		auto currentNode = Head;
 		engine->GetWindow()->SetViewport(CommandQueue->GetCommandList().Get());
 		ORenderTargetBase* texture = OEngine::Get()->GetOffscreenRT();
+		engine->SetDescriptorHeap(EResourceHeapType::Default);
 		CommandQueue->SetRenderTarget(texture);
 		while (currentNode != nullptr)
 		{
+			if (!currentNode->GetNodeInfo().bEnable)
+			{
+				currentNode = Graph[currentNode->GetNextNode()];
+				continue;
+			}
 			LOG(Render, Log, "Executing node: {}", TEXT(currentNode->GetNodeInfo().Name));
 			currentNode->SetupCommonResources();
 			texture = currentNode->Execute(texture);
@@ -90,6 +97,10 @@ unique_ptr<ORenderNode> ORenderGraph::ResolveNodeType(const string& Type)
 	else if (Type == "Present")
 	{
 		return make_unique<OPresentNode>();
+	}
+	else if (Type == "Shadow")
+	{
+		return make_unique<OShadowMapNode>();
 	}
 	LOG(Render, Warning, "Node type not found: {}", TEXT(Type));
 	return make_unique<ODefaultRenderNode>();

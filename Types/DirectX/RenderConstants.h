@@ -54,6 +54,8 @@ struct SRenderLayer
 	RENDER_TYPE(PostProcess);
 	RENDER_TYPE(Water);
 	RENDER_TYPE(LightObjects);
+	RENDER_TYPE(Debug);
+	RENDER_TYPE(ShadowDebug);
 };
 
 struct SPSOType
@@ -80,6 +82,7 @@ struct SPSOType
 	RENDER_TYPE(Tesselation);
 	RENDER_TYPE(Highlight);
 	RENDER_TYPE(Sky);
+	RENDER_TYPE(ShadowDebug);
 };
 struct SShaderTypes
 {
