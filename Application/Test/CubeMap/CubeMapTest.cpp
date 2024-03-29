@@ -129,24 +129,24 @@ void OCubeMapTest::BuildRenderItems()
 		Put(leftCylinder.World, leftCylWorld);
 		Put(rightCylinder.World, rightCylWorld);
 	}
+	SSpotLightPayload light;
+	light.Strength = { 0.5f, 0.5f, 0.5f };
+	light.Direction = { 0.55, -1, 0.055 };
+	auto spot = CreateLightSource(SRenderLayer::LightObjects,
+	                              light);
+	Translate(spot->Instances[0].World, { -3, 3, 0 });
 
-	/*	SSpotLight light;
-	    light.Strength = { 0.5f, 0.5f, 0.5f };
-
-	    auto spot = CreateLightSource(SRenderLayer::LightObjects,
-	                                  light);
-	    Translate(spot->Instances[0].World, { -3, 3, 0 });*/
-
-	/*SPointLight point;
-	point.Strength = { 0.5f, 0.5f, 0.5f };
-	auto pointLight = CreateLightSource(SRenderLayer::LightObjects, point);
-	Translate(pointLight->Instances[0].World, { 3, 3, 0 });
-*/
-	SDirectionalLight dir;
+	SDirectionalLightPayload dir;
 	dir.Strength = { 0.5f, 0.5f, 0.5f };
-	dir.Direction = { 0, -1, 0 };
+	dir.Direction = { 0.01, -1, 0.01 };
 
 	auto dirlight = CreateLightSource(SRenderLayer::LightObjects, dir);
+
+	/*PointLight point;
+point.Strength = { 0.5f, 0.5f, 0.5f };
+auto pointLight = CreateLightSource(SRenderLayer::LightObjects, point);
+Translate(pointLight->Instances[0].World, { 3, 3, 0 });
+*/
 
 	Water = OEngine::Get()->BuildRenderObject<OWaterRenderObject>(ERenderGroup::RenderTargets);
 }

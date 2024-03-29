@@ -43,7 +43,7 @@ struct SpotLight
 	float FalloffEnd;
 	float SpotPower;
 	uint ShadowMapIndex; // Index to the shadow map texture array
-	float pad3; // Padding to make the structure size a multiple of 16 bytes
+	float ConeAngle;
 	float4x4 Transform;
 };
 

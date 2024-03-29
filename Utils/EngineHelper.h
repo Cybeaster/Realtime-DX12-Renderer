@@ -122,8 +122,7 @@ inline auto GetSkyTextureSRV()
 	return OEngine::Get()->GetSRVDescHandleForTexture(FindTextureByName(SRenderConstants::DefaultSkyTexture));
 }
 
-
-inline auto CreateLightSource(const string& Category, const SSpotLight& Params)
+inline auto CreateLightSource(const string& Category, const SSpotLightPayload& Params)
 {
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
@@ -131,12 +130,12 @@ inline auto CreateLightSource(const string& Category, const SSpotLight& Params)
 	SRenderItemParams params;
 	params.MaterialParams.Material = FindMaterial("White");
 	auto ri = engine->BuildRenderItemFromMesh(Category, std::move(mesh), params);
-	auto component =  engine->AddLightingComponent(ri,ELightType::Spot);
+	auto component = engine->AddLightingComponent(ri, ELightType::Spot);
 	component->SetSpotLight(Params);
 	return ri;
 }
 
-inline auto CreateLightSource(const string& Category, const SDirectionalLight& Params)
+inline auto CreateLightSource(const string& Category, const SDirectionalLightPayload& Params)
 {
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
@@ -144,12 +143,12 @@ inline auto CreateLightSource(const string& Category, const SDirectionalLight& P
 	SRenderItemParams params;
 	params.MaterialParams.Material = FindMaterial("White");
 	auto ri = engine->BuildRenderItemFromMesh(Category, std::move(mesh), params);
-	auto component =  engine->AddLightingComponent(ri,ELightType::Directional);
+	auto component = engine->AddLightingComponent(ri, ELightType::Directional);
 	component->SetDirectionalLight(Params);
 	return ri;
 }
 
-inline auto CreateLightSource(const string& Category, const SPointLight& Params)
+inline auto CreateLightSource(const string& Category, const SPointLightPayload& Params)
 {
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
@@ -157,7 +156,7 @@ inline auto CreateLightSource(const string& Category, const SPointLight& Params)
 	SRenderItemParams params;
 	params.MaterialParams.Material = FindMaterial("White");
 	auto ri = engine->BuildRenderItemFromMesh(Category, std::move(mesh), params);
-	auto component =  engine->AddLightingComponent(ri,ELightType::Point);
+	auto component = engine->AddLightingComponent(ri, ELightType::Point);
 	component->SetPointLight(Params);
 	return ri;
 }

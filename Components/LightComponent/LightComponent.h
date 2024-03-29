@@ -34,9 +34,11 @@ public:
 	OLightComponent(uint32_t DirLightIdx, uint32_t PointLightIdx, uint32_t SpotLightIdx, ELightType Type);
 
 	void Tick(UpdateEventArgs Arg) override;
-	void SetDirectionalLight(const SDirectionalLight& Light);
-	void SetPointLight(const SPointLight& Light);
-	void SetSpotLight(const SSpotLight& Light);
+
+	void SetDirectionalLight(const SDirectionalLightPayload& Light);
+	void SetPointLight(const SPointLightPayload& Light);
+	void SetSpotLight(const SSpotLightPayload& Light);
+
 	void Init(ORenderItem* Other) override;
 	void UpdateFrameResource(const SFrameResource* FrameResource);
 	void InitFrameResource(const TUploadBufferData<SDirectionalLight>& Dir,

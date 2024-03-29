@@ -32,9 +32,10 @@ void OLightComponentWidget::Draw()
 			auto& spotLight = LightComponent->GetSpotLight();
 			dirty |= ImGui::DragFloat3("Direction", &spotLight.Direction.x, 0.01, -1.0, 1.0);
 			dirty |= ImGui::ColorEdit3("Color", &spotLight.Strength.x);
-			dirty |= ImGui::InputFloat("Falloff Start", &spotLight.FallOffStart, 0.1f);
-			dirty |= ImGui::InputFloat("Falloff End", &spotLight.FallOffEnd, 0.1f);
-			dirty |= ImGui::InputFloat("Spot Power", &spotLight.SpotPower, 0.1f);
+			dirty |= ImGui::DragFloat("Falloff Start", &spotLight.FallOffStart, 0.1f, 0.1f, spotLight.FallOffEnd - 0.1f);
+			dirty |= ImGui::DragFloat("Falloff End", &spotLight.FallOffEnd, 0.1f, spotLight.FallOffStart + 0.1f, 100.0f);
+			dirty |= ImGui::DragFloat("Spot Power", &spotLight.SpotPower, 0.1f, 0.1f, 100.0f);
+			dirty |= ImGui::DragFloat("Cone Angle", &spotLight.ConeAngle, 0.1f, 1.0f, 90.0f);
 			break;
 		}
 		}

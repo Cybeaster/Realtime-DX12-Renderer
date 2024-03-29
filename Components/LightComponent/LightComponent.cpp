@@ -13,35 +13,45 @@ void OLightComponent::Tick(UpdateEventArgs Arg)
 {
 	if (!Utils::MatricesEqual(Owner->GetDefaultInstance()->World, Position)) // make delegate based
 	{
+		DirectX::XMVECTOR scale, rotation, translation;
+		DirectX::XMMatrixDecompose(&scale, &rotation, &translation, DirectX::XMLoadFloat4x4(&Owner->GetDefaultInstance()->World));
 		Position = Owner->GetDefaultInstance()->World;
-		auto matrix = DirectX::XMLoadFloat4x4(&Position);
-		DirectX::XMFLOAT4 pos = { matrix.r[3].m128_f32[0], matrix.r[3].m128_f32[1], matrix.r[3].m128_f32[2], matrix.r[3].m128_f32[3] };
-		GlobalPosition = DirectX::XMLoadFloat4(&pos);
+		DirectX::XMFLOAT4 pos{};
+		DirectX::XMStoreFloat4(&pos, translation);
+		GlobalPosition = translation;
 		SpotLight.Position = { pos.x, pos.y, pos.z };
 		PointLight.Position = { pos.x, pos.y, pos.z };
 
 		MarkDirty();
 	}
-
 	UpdateLightData();
 }
 
-void OLightComponent::SetDirectionalLight(const SDirectionalLight& Light)
+void OLightComponent::SetDirectionalLight(const SDirectionalLightPayload& Light)
 {
 	LightType = ELightType::Directional;
-	DirectionalLight = Light;
+	DirectionalLight.Direction = Light.Direction;
+	DirectionalLight.Strength = Light.Strength;
 }
 
-void OLightComponent::SetPointLight(const SPointLight& Light)
+void OLightComponent::SetPointLight(const SPointLightPayload& Light)
 {
 	LightType = ELightType::Point;
-	PointLight = Light;
+	PointLight.FallOffStart = Light.FallOffStart;
+	PointLight.FallOffEnd = Light.FallOffEnd;
+	PointLight.Position = Light.Position;
+	PointLight.Strength = Light.Strength;
 }
 
-void OLightComponent::SetSpotLight(const SSpotLight& Light)
+void OLightComponent::SetSpotLight(const SSpotLightPayload& Light)
 {
 	LightType = ELightType::Spot;
-	SpotLight = Light;
+	SpotLight.ConeAngle = Light.ConeAngle;
+	SpotLight.Direction = Light.Direction;
+	SpotLight.FallOffEnd = Light.FallOffEnd;
+	SpotLight.FallOffStart = Light.FallOffStart;
+	SpotLight.SpotPower = Light.SpotPower;
+	SpotLight.Strength = Light.Strength;
 }
 
 void OLightComponent::Init(ORenderItem* Other)
@@ -161,65 +171,61 @@ void OLightComponent::UpdateLightData()
 	auto lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	const auto& bounds = OEngine::Get()->GetSceneBounds();
 	XMVECTOR lightDir;
-	XMVECTOR lightPos = GlobalPosition;
 	XMVECTOR lightTarget; // Calculate target point using direction
-	switch (LightType)
-	{
-	case ELightType::Directional:
-		lightDir = XMVector3Normalize(XMLoadFloat3(&DirectionalLight.Direction));
-		lightTarget = XMVectorAdd(lightPos, lightDir); // Calculate target point using direction
-		break;
-	case ELightType::Point:
-		lightDir = XMVector3Normalize(XMLoadFloat3(&bounds.Center));
-		lightTarget = lightDir; // Calculate target point using direction
-		break;
-	case ELightType::Spot:
-		lightDir = XMVector3Normalize(XMLoadFloat3(&SpotLight.Direction));
-		lightTarget = XMVectorAdd(lightPos, lightDir); // Calculate target point using direction
-
-		break;
-	}
-	// Assuming lightDir is already normalized
-	auto view = XMMatrixLookAtLH(lightPos, lightTarget, lightUp);
-
-	// Transform bounding sphere to light space.
-	XMFLOAT3 sphereCenterLS;
-	XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(lightTarget, view));
-	XMStoreFloat3(&LightPos, lightPos);
-	// Ortho frustum in light space encloses scene.
-	float l = sphereCenterLS.x - bounds.Radius;
-	float b = sphereCenterLS.y - bounds.Radius;
-	float n = sphereCenterLS.z - bounds.Radius;
-	float r = sphereCenterLS.x + bounds.Radius;
-	float t = sphereCenterLS.y + bounds.Radius;
-	float f = sphereCenterLS.z + bounds.Radius;
-
-	NearZ = n;
-	FarZ = f;
-	XMMATRIX lightProj = XMMatrixOrthographicOffCenterLH(l, r, b, t, n, f);
-
-	// Transform NDC space [-1,+1]^2 to texture space [0,1]^2
+	XMVECTOR lightPos = GlobalPosition;
 	XMMATRIX T(
 	    0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f);
 
-	XMMATRIX S = view * lightProj * T;
-	XMStoreFloat4x4(&View, view);
-	XMStoreFloat4x4(&Proj, lightProj);
-	XMStoreFloat4x4(&ShadowTransform, S);
+	if (LightType == ELightType::Directional)
+	{
+		lightDir = XMVector3Normalize(XMLoadFloat3(&DirectionalLight.Direction));
+		lightTarget = XMVectorAdd(lightPos, lightDir); // Calculate target point using direction
+
+		// Assuming lightDir is already normalized
+		auto view = XMMatrixLookAtLH(lightPos, lightTarget, lightUp);
+
+		// Transform bounding sphere to light space.
+		XMFLOAT3 sphereCenterLS;
+		XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(lightTarget, view));
+		// Ortho frustum in light space encloses scene.
+		float l = sphereCenterLS.x - bounds.Radius;
+		float b = sphereCenterLS.y - bounds.Radius;
+		float n = sphereCenterLS.z - bounds.Radius;
+		float r = sphereCenterLS.x + bounds.Radius;
+		float t = sphereCenterLS.y + bounds.Radius;
+		float f = sphereCenterLS.z + bounds.Radius;
+
+		NearZ = n;
+		FarZ = f;
+		XMMATRIX lightProj = XMMatrixOrthographicOffCenterLH(l, r, b, t, n, f);
+		// Transform NDC space [-1,+1]^2 to texture space [0,1]^2
+
+		XMMATRIX S = view * lightProj * T;
+		XMStoreFloat4x4(&View, view);
+		XMStoreFloat4x4(&Proj, lightProj);
+		XMStoreFloat4x4(&ShadowTransform, S);
+	}
+	else if (LightType == ELightType::Spot)
+	{
+		lightDir = XMVector3Normalize(XMLoadFloat3(&SpotLight.Direction));
+		lightTarget = XMVectorAdd(lightPos, lightDir); // Calculate target point using direction
+		NearZ = SpotLight.FallOffStart;
+		FarZ = SpotLight.FallOffEnd;
+
+		// Create the view matrix for the spotlight
+		auto view = XMMatrixLookAtLH(lightPos, lightTarget, lightUp);
+		auto projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(SpotLight.ConeAngle * 2), 1.0f, NearZ, FarZ);
+		XMMATRIX S = view * projection * T;
+		XMStoreFloat4x4(&View, view);
+		XMStoreFloat4x4(&Proj, projection);
+		XMStoreFloat4x4(&ShadowTransform, S);
+	}
+	XMStoreFloat3(&LightPos, lightPos);
 }
 
 void OLightComponent::SetShadowMapIndex(UINT Index)
 {
-	switch (LightType)
-	{
-	case ELightType::Directional:
-		DirectionalLight.ShadowMapIndex = Index;
-		break;
-	case ELightType::Point:
-		PointLight.ShadowMapIndex = Index; // doesn't make sense for now
-		break;
-	case ELightType::Spot:
-		SpotLight.ShadowMapIndex = Index;
-		break;
-	}
+	DirectionalLight.ShadowMapIndex = Index;
+	PointLight.ShadowMapIndex = Index;
+	SpotLight.ShadowMapIndex = Index;
 }

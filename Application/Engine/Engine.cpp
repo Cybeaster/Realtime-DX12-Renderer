@@ -685,6 +685,11 @@ void OEngine::OnResizeRequest(HWND& WindowHandle)
 	{
 		bilateralFilter->OnResize(args.Width, args.Height);
 	}
+
+	for (auto shadowMaps : ShadowMaps)
+	{
+		shadowMaps->OnResize(args);
+	}
 }
 
 void OEngine::OnUpdateWindowSize(ResizeEventArgs& Args)
@@ -1378,6 +1383,7 @@ OLightComponent* OEngine::AddLightingComponent(ORenderItem* Item, const ELightTy
 	LightComponents.push_back(res);
 	auto newShadow = BuildRenderObject<OShadowMap>(ERenderGroup::ShadowTextures, Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), DXGI_FORMAT_R24G8_TYPELESS, res);
 	ShadowMaps.push_back(newShadow);
+	newShadow->SetLightIndex(componentNum);
 	return res;
 }
 

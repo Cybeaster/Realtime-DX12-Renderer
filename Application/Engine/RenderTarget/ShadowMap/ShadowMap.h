@@ -23,7 +23,7 @@ public:
 	uint32_t GetNumPassesRequired() const override;
 	void PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList, uint32_t SubtargetIdx = 0) override;
 	void UpdatePass(const TUploadBufferData<SPassConstants>& Data) override;
-
+	void SetLightIndex(uint32_t Idx);
 	D3D12_GPU_VIRTUAL_ADDRESS GetPassConstantAddresss() const // TODO propagate to base class
 	{
 		return PassConstantBuffer.Buffer->GetGPUAddress() + PassConstantBuffer.StartIndex * Utils::CalcBufferByteSize(sizeof(SPassConstants));
