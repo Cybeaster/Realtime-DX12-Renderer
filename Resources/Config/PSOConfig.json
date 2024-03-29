@@ -757,7 +757,7 @@
     {
       "Name": "ShadowMap",
       "Type": "Graphics",
-      "RootSignature": "BaseShader",
+      "RootSignature": "ShadowMap",
       "ShaderPipeline": {
         "VertexShader": "ShadowMap",
         "PixelShader": "ShadowMap"

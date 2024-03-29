@@ -13,8 +13,12 @@
 #endif
 
 #ifndef MAX_SHADOW_MAPS
-#define MAX_SHADOW_MAPS 1
+#define MAX_SHADOW_MAPS 2
 #endif
+
+#define TEXTURE_MAPS_NUM 41
+#define SHADOW_MAPS_NUM 2
+
 // Include structures and functions for lighting.
 #include "LightingUtils.hlsl"
 
@@ -42,8 +46,7 @@ struct MaterialData
 	float pad1;
 	float pad2;
 };
-#define TEXTURE_MAPS_NUM 41
-#define SHADOW_MAPS_NUM 1
+
 
 Texture2D gTextureMaps[TEXTURE_MAPS_NUM] : register(t0);
 Texture2D gShadowMaps[SHADOW_MAPS_NUM] : register(t1,space2);
@@ -183,25 +186,22 @@ float4 ComputeDiffuseMaps(MaterialData MatData, float4 DiffuseAlbedo, float2 Tex
 	return DiffuseAlbedo;
 }
 
-void FindShadowPosition(out float4 ShadowPositions[MAX_SHADOW_MAPS], float4 PosW, uint LightIndices[MAX_SHADOW_MAPS])
+void FindShadowPosition(out float4 ShadowPositions[MAX_SHADOW_MAPS], float4 PosW, out uint LightIndices[MAX_SHADOW_MAPS])
 {
+    uint indx = 0;
     if(gNumDirLights > 0)
     {
-        LightIndices[0] = gDirectionalLights[0].ShadowMapIndex;
-        ShadowPositions[0] = mul(PosW,  gDirectionalLights[0].Transform);
-    }
-
-/*     if(gNumPointLights > 0)
-    {
-         LightIndices[1] = gPointLights[0].ShadowMapIndex;
-        ShadowPositions[1] = mul(PosW,  gPointLights[0].Transform);
+        LightIndices[indx] = gDirectionalLights[0].ShadowMapIndex;
+        ShadowPositions[indx] = mul(PosW,  gDirectionalLights[0].Transform);
+        indx++;
     }
 
     if(gNumSpotLights > 0)
     {
-        LightIndices[2] = gSpotLights[0].ShadowMapIndex;
-        ShadowPositions[2] = mul(PosW,  gSpotLights[0].Transform);
-    } */
+        LightIndices[indx] = gSpotLights[0].ShadowMapIndex;
+        ShadowPositions[indx] = mul(PosW,  gSpotLights[0].Transform);
+        indx++;
+    }
 }
 
 float CalcShadowFactor(float4 ShadowPosH,uint ShadowMapIndex)
@@ -218,40 +218,30 @@ float CalcShadowFactor(float4 ShadowPosH,uint ShadowMapIndex)
     shadowMap.GetDimensions(0, width, height, numMips);
 
     //texel size
-    float dx = 1.0f / width;
+    float dx = 1.0f / (float)width;
     float percentLit = 0.0f;
-    const float2 offsets[9]=
+    const float2 offsets[9] =
     {
-            float2(-dx,  -dx), float2(0.0f,  -dx), float2(dx,  -dx),
-            float2(-dx, 0.0f), float2(0.0f, 0.0f), float2(dx, 0.0f),
-            float2(-dx,  +dx), float2(0.0f,  +dx), float2(dx,  +dx)
+        float2(-dx,  -dx), float2(0.0f,  -dx), float2(dx,  -dx),
+        float2(-dx, 0.0f), float2(0.0f, 0.0f), float2(dx, 0.0f),
+        float2(-dx,  +dx), float2(0.0f,  +dx), float2(dx,  +dx)
     };
 
     [unroll]
     for(int i = 0; i < 9; ++i)
     {
-      percentLit += shadowMap.SampleCmpLevelZero(gsamShadow, ShadowPosH.xy + offsets[i], depth).r;
+       percentLit += shadowMap.SampleCmpLevelZero(gsamShadow,
+                  ShadowPosH.xy + offsets[i], depth).r;
     }
     return percentLit / 9.0f;
 }
 
-
-
 void GetShadowFactor(out float ShadowFactors[MAX_SHADOW_MAPS],uint ShadowMapIndices[MAX_SHADOW_MAPS] ,float4 ShadowPositions[MAX_SHADOW_MAPS])
 {
-    if(gNumDirLights > 0)
-    {
-        ShadowFactors[0] = CalcShadowFactor(ShadowPositions[0],ShadowMapIndices[0]);
-    }
-/*
-    if(gNumPointLights > 0)
-    {
-        ShadowFactors[1] = CalcShadowFactor(ShadowPositions[1],ShadowMapIndices[1]);
-    }
+        for (uint i = 0; i < MAX_SHADOW_MAPS; ++i)
+        {
+            ShadowFactors[i] = CalcShadowFactor(ShadowPositions[i],ShadowMapIndices[i]);;
+        }
 
-    if(gNumSpotLights > 0)
-    {
-        ShadowFactors[2] = CalcShadowFactor(ShadowPositions[2],ShadowMapIndices[2]);
-    } */
 }
 

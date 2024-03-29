@@ -15,8 +15,8 @@ struct VertexOut
 	float3 NormalW : NORMAL;
 	float3 TangentW : TANGENT;
 	float2 TexC : TEXCOORD;
-	float4 ShadowPositionsH[MAX_SHADOW_MAPS] : TEXCOORD1;
-	nointerpolation uint LightIndices[MAX_SHADOW_MAPS] : TEXCOORD4;
+	float4 ShadowPositionsH[MAX_SHADOW_MAPS] : TEXCOORD3;
+	nointerpolation uint LightIndices[MAX_SHADOW_MAPS] : TEXCOORD1;
 	nointerpolation uint MaterialIndex : MATERIALINDEX;
 };
 
@@ -54,10 +54,7 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	// Output vertex attributes for interpolation across triangle.
 	float4 texC = mul(float4(Vin.TexC, 0.0f, 1.0f), texTransform);
 	vout.TexC = mul(texC, matData.MatTransform).xy;
-
-
     FindShadowPosition(vout.ShadowPositionsH, posW, vout.LightIndices);
-
 	return vout;
 }
 
@@ -96,23 +93,20 @@ float4 PS(VertexOut pin)
     float shadowFactor[MAX_SHADOW_MAPS];
     GetShadowFactor(shadowFactor,  pin.LightIndices,pin.ShadowPositionsH);
 
-	 for (uint i = 0; i < gNumDirLights; i++)
+    uint idx = 0;
+	for (uint i = 0; i < gNumDirLights; i++)
 	{
-        light += shadowFactor[0] * ComputeDirectionalLight(gDirectionalLights[i], mat, bumpedNormalW, toEyeW);
-    }
-/*
-     for (uint j = 0; j < gNumPointLights; j++)
-    {
-        light += shadowFactor[1] * ComputePointLight(gPointLights[j], mat, pin.PosW, bumpedNormalW, toEyeW);
+        light += shadowFactor[idx] * ComputeDirectionalLight(gDirectionalLights[i], mat, bumpedNormalW, toEyeW);
+        idx++;
     }
 
     for (uint k = 0; k < gNumSpotLights; k++)
     {
-        light += shadowFactor[0] * ComputeSpotLight(gSpotLights[k], mat, pin.PosW, bumpedNormalW, toEyeW);
-    } */
+       light += shadowFactor[idx] * ComputeSpotLight(gSpotLights[k], mat, pin.PosW, bumpedNormalW, toEyeW);
+       idx++;
+    }
 
 	float4 litColor = ambient + float4(light, 1.0f);
-
 	float3 reflection = reflect(-toEyeW, bumpedNormalW);
 	float4 reflectionColor = gCubeMap.Sample(gsamLinearWrap, reflection);
 	float3 fresnelFactor = SchlickFresnel(fresnelR0, bumpedNormalW, toEyeW);

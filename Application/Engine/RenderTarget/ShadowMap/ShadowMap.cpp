@@ -55,7 +55,6 @@ void OShadowMap::BuildDescriptors(IDescriptor* Descriptor)
 	{
 		SRV = desc->SRVHandle.Offset();
 		DSV = desc->DSVHandle.Offset();
-		LightComponent->SetShadowMapIndex(SRV.Index);
 		BuildResource();
 		BuildDescriptors();
 	}
@@ -93,7 +92,6 @@ void OShadowMap::UpdatePass(const TUploadBufferData<SPassConstants>& Data)
 {
 	SetPassConstant();
 	Data.Buffer->CopyData(Data.StartIndex, PassConstant);
-
 	PassConstantBuffer = Data;
 }
 
@@ -118,4 +116,9 @@ uint32_t OShadowMap::GetNumSRVRequired() const
 uint32_t OShadowMap::GetNumPassesRequired() const
 {
 	return 1;
+}
+
+void OShadowMap::SetLightIndex(uint32_t Idx)
+{
+	LightComponent->SetShadowMapIndex(Idx);
 }
