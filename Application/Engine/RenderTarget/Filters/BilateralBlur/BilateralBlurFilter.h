@@ -1,5 +1,5 @@
 #pragma once
-#include "Filters/FilterBase.h"
+#include "Engine/RenderTarget/Filters/FilterBase.h"
 
 class OBilateralBlurFilter : public OFilterBase
 {
@@ -45,7 +45,6 @@ public:
 	{
 		BlurCount = Value;
 	}
-
 
 private:
 	SDescriptorPair BlurOutputSrvHandle;

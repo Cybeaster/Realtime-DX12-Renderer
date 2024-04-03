@@ -1,15 +1,15 @@
 #include "FrameResource.h"
 
- SFrameResource::SFrameResource(ID3D12Device* Device, IRenderObject* Owner)
-	: Owner(Owner), Device(Device)
+SFrameResource::SFrameResource(ID3D12Device* Device, IRenderObject* Owner)
+    : Owner(Owner), Device(Device)
 {
 }
 
- SFrameResource::~SFrameResource()
+SFrameResource::~SFrameResource()
 {
 }
 
- void SFrameResource::SetPass(UINT PassCount)
+void SFrameResource::SetPass(UINT PassCount)
 {
 	PassCB = make_unique<OUploadBuffer<SPassConstants>>(Device, PassCount, true, Owner);
 }
@@ -24,7 +24,7 @@ void SFrameResource::SetInstances(UINT InstanceCount)
 	InstanceBuffer = make_unique<OUploadBuffer<SInstanceData>>(Device, InstanceCount, false, Owner);
 }
 
- void SFrameResource::SetMaterials(UINT MaterialCount)
+void SFrameResource::SetMaterials(UINT MaterialCount)
 {
 	if (MaterialCount > 0)
 	{
@@ -49,24 +49,28 @@ void SFrameResource::SetDirectionalLight(UINT LightCount)
 
 void SFrameResource::SetPointLight(UINT LightCount)
 {
- 	if (LightCount > 0)
- 	{
- 		PointLightBuffer = make_unique<OUploadBuffer<SPointLight>>(Device, LightCount, false, Owner);
- 	}
- 	else
- 	{
- 		LOG(Engine, Warning, "Point light count is 0");
- 	}
+	if (LightCount > 0)
+	{
+		PointLightBuffer = make_unique<OUploadBuffer<SPointLight>>(Device, LightCount, false, Owner);
+	}
+	else
+	{
+		LOG(Engine, Warning, "Point light count is 0");
+	}
 }
 
 void SFrameResource::SetSpotLight(UINT LightCount)
 {
- 	if (LightCount > 0)
- 	{
- 		SpotLightBuffer = make_unique<OUploadBuffer<SSpotLight>>(Device, LightCount, false, Owner);
- 	}
- 	else
- 	{
- 		LOG(Engine, Warning, "Point light count is 0");
- 	}
+	if (LightCount > 0)
+	{
+		SpotLightBuffer = make_unique<OUploadBuffer<SSpotLight>>(Device, LightCount, false, Owner);
+	}
+	else
+	{
+		LOG(Engine, Warning, "Point light count is 0");
+	}
+}
+void SFrameResource::SetSSAO()
+{
+	SsaoCB = make_unique<OUploadBuffer<SSsaoConstants>>(Device, 1, true, Owner);
 }

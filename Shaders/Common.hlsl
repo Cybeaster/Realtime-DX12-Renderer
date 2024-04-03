@@ -50,7 +50,9 @@ struct MaterialData
 
 Texture2D gTextureMaps[TEXTURE_MAPS_NUM] : register(t0);
 Texture2D gShadowMaps[SHADOW_MAPS_NUM] : register(t1,space2);
+
 TextureCube gCubeMap : register(t1,space3);
+Texture2D gSsaoMap   : register(t2,space3);
 
 StructuredBuffer<InstanceData> gInstanceData : register(t0, space4);
 StructuredBuffer<MaterialData> gMaterialData : register(t1, space4);

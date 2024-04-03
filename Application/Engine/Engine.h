@@ -2,11 +2,11 @@
 #include "DirectX/FrameResource.h"
 #include "DirectX/RenderItem/RenderItem.h"
 #include "DirectX/ShaderTypes.h"
+#include "Engine/RenderTarget/Filters/BilateralBlur/BilateralBlurFilter.h"
+#include "Engine/RenderTarget/Filters/Blur/BlurFilter.h"
+#include "Engine/RenderTarget/Filters/SobelFilter/SobelFilter.h"
 #include "Engine/RenderTarget/ShadowMap/ShadowMap.h"
 #include "ExitHelper.h"
-#include "Filters/BilateralBlur/BilateralBlurFilter.h"
-#include "Filters/Blur/BlurFilter.h"
-#include "Filters/SobelFilter/SobelFilter.h"
 #include "GraphicsPipelineManager/GraphicsPipelineManager.h"
 #include "MaterialManager/MaterialManager.h"
 #include "MeshGenerator/MeshGenerator.h"
@@ -21,6 +21,7 @@
 
 #include <map>
 
+class OSSAORenderTarget;
 enum ERenderGroup
 {
 	Textures2D,
@@ -41,7 +42,7 @@ public:
 	using TSceneGeometryMap = std::unordered_map<string, unique_ptr<SMeshGeometry>>;
 	using TRenderLayer = map<string, vector<ORenderItem*>>;
 	vector<unique_ptr<SFrameResource>> FrameResources;
-	SFrameResource* CurrentFrameResources = nullptr;
+	SFrameResource* CurrentFrameResource = nullptr;
 	UINT CurrentFrameResourceIndex = 0;
 
 	inline static std::map<HWND, TWindowPtr> WindowsMap = {};
@@ -104,7 +105,7 @@ public:
 	void OnUpdateWindowSize(ResizeEventArgs& Args);
 	void SetWindowViewport();
 	bool CheckTearingSupport();
-
+	OSSAORenderTarget* GetSSAORT() const;
 	void CreateWindow();
 	bool GetMSAAState(UINT& Quality) const;
 
@@ -250,6 +251,7 @@ protected:
 	uint32_t GetLightComponentsCount() const;
 
 private:
+	void BuildSSAO();
 	void RemoveRenderObject(TUUID UUID);
 	void BuildFrameResource(uint32_t Count = 1);
 
@@ -328,6 +330,7 @@ private:
 	vector<OLightComponent*> LightComponents;
 	vector<OShadowMap*> ShadowMaps;
 	DirectX::BoundingSphere SceneBounds;
+	OSSAORenderTarget* SSAORT = nullptr;
 
 public:
 	SDescriptorPair NullCubeSRV;

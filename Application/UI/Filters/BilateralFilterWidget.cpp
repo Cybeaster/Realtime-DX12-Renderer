@@ -1,7 +1,7 @@
 
 #include "BilateralFilterWidget.h"
 
-#include "Filters/BilateralBlur/BilateralBlurFilter.h"
+#include "Engine/RenderTarget/Filters/BilateralBlur/BilateralBlurFilter.h"
 #include "Logger.h"
 #include "imgui.h"
 void OBilateralBlurFilterWidget::Draw()

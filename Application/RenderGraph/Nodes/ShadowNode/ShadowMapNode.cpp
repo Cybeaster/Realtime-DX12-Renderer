@@ -20,7 +20,7 @@ ORenderTargetBase* OShadowMapNode::Execute(ORenderTargetBase* RenderTarget)
 
 void OShadowMapNode::SetupCommonResources()
 {
-	auto resource = OEngine::Get()->CurrentFrameResources;
+	auto resource = OEngine::Get()->CurrentFrameResource;
 	CommandQueue->SetPipelineState(PSO);
 	CommandQueue->SetResource("cbPass", resource->PassCB->GetGPUAddress(), PSO);
 	CommandQueue->SetResource("gMaterialData", resource->MaterialBuffer->GetGPUAddress(), PSO);

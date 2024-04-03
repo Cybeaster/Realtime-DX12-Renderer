@@ -4,10 +4,11 @@
 #include "Application.h"
 #include "Camera/Camera.h"
 #include "DirectX/FrameResource.h"
+#include "Engine/RenderTarget/Filters/BilateralBlur/BilateralBlurFilter.h"
+#include "Engine/RenderTarget/SSAORenderTarget/Ssao.h"
 #include "Engine/RenderTarget/ShadowMap/ShadowMap.h"
 #include "EngineHelper.h"
 #include "Exception.h"
-#include "Filters/BilateralBlur/BilateralBlurFilter.h"
 #include "Logger.h"
 #include "MathUtils.h"
 #include "Test/TextureTest/TextureWaves.h"
@@ -24,11 +25,11 @@
 using namespace Microsoft::WRL;
 using namespace DirectX;
 
-#define CMD_LIST_EXEC_SCOPE()                               \
-	auto __cmd_queue = OEngine::Get() -> GetCommandQueue(); \
-	__cmd_queue->TryResetCommandList();                     \
-	SExitHelper __cmd_exit_helper([__cmd_queue]() {         \
-		__cmd_queue->ExecuteCommandListAndWait();           \
+#define CMD_LIST_EXEC_SCOPE()                             \
+	auto __cmd_queue = OEngine::Get()->GetCommandQueue(); \
+	__cmd_queue->TryResetCommandList();                   \
+	SExitHelper __cmd_exit_helper([__cmd_queue]() {       \
+		__cmd_queue->ExecuteCommandListAndWait();         \
 	});
 
 void OEngine::RemoveWindow(HWND Hwnd)
@@ -101,9 +102,15 @@ void OEngine::InitManagers()
 
 void OEngine::PostInitialize()
 {
-	UIManager = BuildRenderObject<OUIManager>(ERenderGroup::UI);
+	UIManager = BuildRenderObject<OUIManager>(UI);
 	BuildFilters();
 	BuildOffscreenRT();
+	BuildSSAO();
+}
+
+void OEngine::BuildSSAO()
+{
+	SSAORT = BuildRenderObject<OSSAORenderTarget>(ERenderGroup::RenderTargets, Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::NormalMapFormat);
 }
 
 void OEngine::BuildFilters()
@@ -250,8 +257,8 @@ void OEngine::DrawRenderItemsImpl(SPSODescriptionBase* Description, const vector
 		}
 		if (!renderItem->Instances.empty() && renderItem->Geometry)
 		{
-			renderItem->BindResources(cmd.Get(), Engine->CurrentFrameResources);
-			auto instanceBuffer = Engine->CurrentFrameResources->InstanceBuffer->GetResource();
+			renderItem->BindResources(cmd.Get(), Engine->CurrentFrameResource);
+			auto instanceBuffer = Engine->CurrentFrameResource->InstanceBuffer->GetResource();
 			auto location = instanceBuffer->Resource->GetGPUVirtualAddress() + renderItem->StartInstanceLocation * sizeof(SInstanceData);
 			GetCommandQueue()->SetResource("gInstanceData", location, Description);
 			cmd->DrawIndexedInstanced(
@@ -419,6 +426,7 @@ void OEngine::BuildFrameResource(uint32_t Count)
 		frameResource->SetDirectionalLight(GetLightComponentsCount());
 		frameResource->SetPointLight(GetLightComponentsCount());
 		frameResource->SetSpotLight(GetLightComponentsCount());
+		frameResource->SetSSAO();
 		FrameResources.push_back(std::move(frameResource));
 	}
 	OnFrameResourceChanged.Broadcast();
@@ -472,14 +480,14 @@ void OEngine::Update(UpdateEventArgs& Args)
 void OEngine::UpdateFrameResource()
 {
 	CurrentFrameResourceIndex = (CurrentFrameResourceIndex + 1) % SRenderConstants::NumFrameResources;
-	CurrentFrameResources = FrameResources[CurrentFrameResourceIndex].get();
+	CurrentFrameResource = FrameResources[CurrentFrameResourceIndex].get();
 
 	// Has the GPU finished processing the commands of the current frame
 	// resource. If not, wait until the GPU has completed commands up to
 	// this fence point.
-	if (CurrentFrameResources->Fence != 0 && GetCommandQueue()->GetFence()->GetCompletedValue() < CurrentFrameResources->Fence)
+	if (CurrentFrameResource->Fence != 0 && GetCommandQueue()->GetFence()->GetCompletedValue() < CurrentFrameResource->Fence)
 	{
-		GetCommandQueue()->WaitForFenceValue(CurrentFrameResources->Fence);
+		GetCommandQueue()->WaitForFenceValue(CurrentFrameResource->Fence);
 	}
 }
 
@@ -507,7 +515,7 @@ void OEngine::RemoveRenderObject(TUUID UUID)
 
 void OEngine::UpdateObjectCB() const
 {
-	auto res = CurrentFrameResources->PassCB.get();
+	auto res = CurrentFrameResource->PassCB.get();
 
 	int32_t idx = 1; // TODO calc frame resource automatically and calc frame resources
 	for (auto& val : RenderObjects | std::views::values)
@@ -542,7 +550,7 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 		item->Update(Args);
 	}
 
-	if (CurrentFrameResources)
+	if (CurrentFrameResource)
 	{
 		UpdateMainPass(Args.Timer);
 		UpdateMaterialCB();
@@ -715,6 +723,11 @@ bool OEngine::CheckTearingSupport()
 	}
 
 	return allowTearing == TRUE;
+}
+
+OSSAORenderTarget* OEngine::GetSSAORT() const
+{
+	return SSAORT;
 }
 
 void OEngine::CreateWindow()
@@ -1115,7 +1128,7 @@ OEngine::TRenderLayer& OEngine::GetRenderLayers()
 
 void OEngine::PerformFrustrumCulling()
 {
-	if (CurrentFrameResources == nullptr)
+	if (CurrentFrameResource == nullptr)
 	{
 		return;
 	}
@@ -1124,7 +1137,7 @@ void OEngine::PerformFrustrumCulling()
 	auto det = XMMatrixDeterminant(view);
 	const auto invView = XMMatrixInverse(&det, view);
 	const auto camera = Window->GetCamera();
-	auto currentInstanceBuffer = CurrentFrameResources->InstanceBuffer.get();
+	auto currentInstanceBuffer = CurrentFrameResource->InstanceBuffer.get();
 	int32_t counter = 0;
 	for (auto& e : AllRenderItems)
 	{
@@ -1258,7 +1271,7 @@ void OEngine::UpdateMainPass(const STimer& Timer)
 	MainPassCB.TotalTime = Timer.GetTime();
 	MainPassCB.DeltaTime = Timer.GetDeltaTime();
 	GetNumLights(MainPassCB.NumPointLights, MainPassCB.NumSpotLights, MainPassCB.NumDirLights);
-	const auto currPassCB = CurrentFrameResources->PassCB.get();
+	const auto currPassCB = CurrentFrameResource->PassCB.get();
 	currPassCB->CopyData(0, MainPassCB);
 }
 
