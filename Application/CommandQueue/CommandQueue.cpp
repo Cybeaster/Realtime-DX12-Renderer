@@ -84,11 +84,6 @@ uint64_t OCommandQueue::Signal()
 	return fenceValueForSignal;
 }
 
-bool OCommandQueue::IsFenceComplete(uint64_t FenceValue) const
-{
-	return Fence->GetCompletedValue() >= FenceValue;
-}
-
 /*
  *     Purpose: Ensures that the CPU waits for the GPU to reach a certain point in execution.
  */

@@ -33,9 +33,9 @@ public:
 
 	virtual void BuildDescriptors() = 0;
 	virtual void BuildResource() = 0;
-
+	virtual SResourceInfo* GetSubresource(uint32_t Idx = 0);
 	virtual SResourceInfo* GetResource() = 0;
-
+	D3D12_RESOURCE_DESC GetResourceDesc() const;
 	uint32_t GetNumSRVRequired() const override;
 	uint32_t GetNumRTVRequired() const override;
 	uint32_t GetNumDSVRequired() const override;

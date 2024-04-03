@@ -98,6 +98,28 @@ void ORenderTargetBase::OnResize(const ResizeEventArgs& Args)
 		BuildDescriptors();
 	}
 }
+SResourceInfo* ORenderTargetBase::GetSubresource(uint32_t Idx)
+{
+	return nullptr;
+}
+
+D3D12_RESOURCE_DESC ORenderTargetBase::GetResourceDesc() const
+{
+	D3D12_RESOURCE_DESC texDesc;
+	ZeroMemory(&texDesc, sizeof(D3D12_RESOURCE_DESC));
+	texDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	texDesc.Alignment = 0;
+	texDesc.Width = Width;
+	texDesc.Height = Height;
+	texDesc.DepthOrArraySize = 1;
+	texDesc.MipLevels = 1;
+	texDesc.Format = Format;
+	texDesc.SampleDesc.Count = 1;
+	texDesc.SampleDesc.Quality = 0;
+	texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+	return texDesc;
+}
 
 OOffscreenTexture::OOffscreenTexture(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format)
     : ORenderTargetBase(Device, Width, Height, Format, EResourceHeapType::Default)

@@ -180,6 +180,54 @@
           "TargetProfile": "ps_6_0"
         }
       ]
+    },
+    {
+      "Path": "Shaders/DrawNormals.hlsl",
+      "Name": "DrawNormals",
+      "Pipeline": [
+        {
+          "Type": "Vertex",
+          "EntryPoint": "VS",
+          "TargetProfile": "vs_6_0"
+        },
+        {
+          "Type": "Pixel",
+          "EntryPoint": "PS",
+          "TargetProfile": "ps_6_0"
+        }
+      ]
+    },
+    {
+      "Path": "Shaders/SSAO.hlsl",
+      "Name": "SSAO",
+      "Pipeline": [
+        {
+          "Type": "Vertex",
+          "EntryPoint": "VS",
+          "TargetProfile": "vs_6_0"
+        },
+        {
+          "Type": "Pixel",
+          "EntryPoint": "PS",
+          "TargetProfile": "ps_6_0"
+        }
+      ]
+    },
+    {
+      "Path": "Shaders/SSAOBlur.hlsl",
+      "Name": "SSAOBlur",
+      "Pipeline": [
+        {
+          "Type": "Vertex",
+          "EntryPoint": "VS",
+          "TargetProfile": "vs_6_0"
+        },
+        {
+          "Type": "Pixel",
+          "EntryPoint": "PS",
+          "TargetProfile": "ps_6_0"
+        }
+      ]
     }
   ]
 }

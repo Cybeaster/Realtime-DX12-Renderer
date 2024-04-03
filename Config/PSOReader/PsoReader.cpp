@@ -548,6 +548,68 @@ DXGI_FORMAT OPSOReader::GetFormat(const string& FormatString)
 	{
 		return DXGI_FORMAT_D24_UNORM_S8_UINT;
 	}
+	if (FormatString == "R32_FLOAT")
+	{
+		return DXGI_FORMAT_R32_FLOAT;
+	}
+	if (FormatString == "R32_UINT")
+	{
+		return DXGI_FORMAT_R32_UINT;
+	}
+	if (FormatString == "R32G32_FLOAT")
+	{
+		return DXGI_FORMAT_R32G32_FLOAT;
+	}
+	if (FormatString == "R32G32_UINT")
+	{
+		return DXGI_FORMAT_R32G32_UINT;
+	}
+	if (FormatString == "R32G32B32_FLOAT")
+	{
+		return DXGI_FORMAT_R32G32B32_FLOAT;
+	}
+	if (FormatString == "R32G32B32_UINT")
+	{
+		return DXGI_FORMAT_R32G32B32_UINT;
+	}
+	if (FormatString == "R32G32B32A32_UINT")
+	{
+		return DXGI_FORMAT_R32G32B32A32_UINT;
+	}
+	if (FormatString == "R32G32B32A32_FLOAT")
+	{
+		return DXGI_FORMAT_R32G32B32A32_FLOAT;
+	}
+	if (FormatString == "R8_UNORM")
+	{
+		return DXGI_FORMAT_R8_UNORM;
+	}
+	if (FormatString == "R8_UINT")
+	{
+		return DXGI_FORMAT_R8_UINT;
+	}
+	if (FormatString == "R8G8_UNORM")
+	{
+		return DXGI_FORMAT_R8G8_UNORM;
+	}
+	if (FormatString == "R8G8_UINT")
+	{
+		return DXGI_FORMAT_R8G8_UINT;
+	}
+	if (FormatString == "R8G8B8A8_UINT")
+	{
+		return DXGI_FORMAT_R8G8B8A8_UINT;
+	}
+	if (FormatString == "R16_UNORM")
+	{
+		return DXGI_FORMAT_R16_UNORM;
+	}
+	if (FormatString == "UNKNOWN")
+	{
+		return DXGI_FORMAT_UNKNOWN;
+	}
+
+	LOG(Config, Error, "Unknown format: {}", TEXT(FormatString));
 	return DXGI_FORMAT_UNKNOWN;
 }
 

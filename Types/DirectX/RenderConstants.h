@@ -19,6 +19,9 @@ struct SRenderConstants
 		const uint32_t StackCount = 20;
 	};
 
+	static const DXGI_FORMAT AmbientMapFormat = DXGI_FORMAT_R16_UNORM;
+	static const DXGI_FORMAT NormalMapFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+
 	inline static constexpr D3D_DRIVER_TYPE DriverType = D3D_DRIVER_TYPE_HARDWARE;
 	inline static constexpr DXGI_FORMAT BackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	inline static constexpr DXGI_FORMAT DepthBufferFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -83,6 +86,9 @@ struct SPSOType
 	RENDER_TYPE(Highlight);
 	RENDER_TYPE(Sky);
 	RENDER_TYPE(ShadowDebug);
+	RENDER_TYPE(DrawNormals);
+	RENDER_TYPE(SSAO);
+	RENDER_TYPE(SSAOBlur);
 };
 struct SShaderTypes
 {

@@ -20,7 +20,6 @@ public:
 
 	uint64_t Signal();
 
-	bool IsFenceComplete(uint64_t FenceValue) const;
 	void WaitForFenceValue(uint64_t FenceValue);
 	void Flush();
 	void TryResetCommandList();

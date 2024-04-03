@@ -24,7 +24,7 @@ ORenderTargetBase* OReflectionNode::Execute(ORenderTargetBase* RenderTarget)
 
 	OEngine::Get()->SetWindowViewport(); // TODO remove this to other place
 
-	CommandQueue->SetResource("cbPass", OEngine::Get()->CurrentFrameResources->PassCB->GetGPUAddress(), PSO);
+	CommandQueue->SetResource("cbPass", OEngine::Get()->CurrentFrameResource->PassCB->GetGPUAddress(), PSO);
 	CommandQueue->SetResource("gCubeMap", cube->GetSRV().GPUHandle, PSO);
 
 	CommandQueue->SetRenderTarget(RenderTarget);

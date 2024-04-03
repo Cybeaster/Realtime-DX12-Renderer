@@ -2,10 +2,11 @@
 #include "ShadowDebugNode.h"
 
 #include "Engine/Engine.h"
+#include "Engine/RenderTarget/SSAORenderTarget/Ssao.h"
 
 void OShadowDebugNode::SetupCommonResources()
 {
-	auto resource = OEngine::Get()->CurrentFrameResources;
+	auto resource = OEngine::Get()->CurrentFrameResource;
 	OEngine::Get()->SetDescriptorHeap(EResourceHeapType::Default);
 
 	CommandQueue->SetPipelineState(PSO);
@@ -14,6 +15,7 @@ void OShadowDebugNode::SetupCommonResources()
 	CommandQueue->SetResource("gPointLights", resource->PointLightBuffer->GetGPUAddress(), PSO);
 	CommandQueue->SetResource("gSpotLights", resource->SpotLightBuffer->GetGPUAddress(), PSO);
 	CommandQueue->SetResource("gShadowMaps", OEngine::Get()->GetRenderGroupStartAddress(ERenderGroup::ShadowTextures), PSO);
+	CommandQueue->SetResource("gSsaoMap", OEngine::Get()->GetSSAORT()->GetAmbientMap1SRV().GPUHandle, PSO);
 }
 
 ORenderTargetBase* OShadowDebugNode::Execute(ORenderTargetBase* RenderTarget)

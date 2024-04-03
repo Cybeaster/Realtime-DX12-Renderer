@@ -1,5 +1,5 @@
 #pragma once
-#include "Filters/BilateralBlur/BilateralBlurFilter.h"
+#include "Engine/RenderTarget/Filters/BilateralBlur/BilateralBlurFilter.h"
 #include "UI/Widget.h"
 
 class OBilateralBlurFilterWidget : public IWidget
