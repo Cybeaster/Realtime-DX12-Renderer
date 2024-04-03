@@ -10,6 +10,25 @@
 #include <d3d12.h>
 #include <wrl/client.h>
 
+struct SSsaoConstants
+{
+	DirectX::XMFLOAT4X4 Proj;
+	DirectX::XMFLOAT4X4 InvProj;
+	DirectX::XMFLOAT4X4 ProjTex;
+	DirectX::XMFLOAT4 OffsetVectors[14];
+
+	// For SsaoBlur.hlsl
+	DirectX::XMFLOAT4 BlurWeights[3];
+
+	DirectX::XMFLOAT2 InvRenderTargetSize = { 0.0f, 0.0f };
+
+	// Coordinates given in view space.
+	float OcclusionRadius = 0.5f;
+	float OcclusionFadeStart = 0.2f;
+	float OcclusionFadeEnd = 2.0f;
+	float SurfaceEpsilon = 0.05f;
+};
+
 struct SFrameResource
 {
 	SFrameResource(ID3D12Device* Device, IRenderObject* Owner);
@@ -29,10 +48,11 @@ struct SFrameResource
 	void SetDirectionalLight(UINT LightCount);
 	void SetPointLight(UINT LightCount);
 	void SetSpotLight(UINT LightCount);
-	unique_ptr<OUploadBuffer<SPassConstants>> PassCB = nullptr;
-	unique_ptr<OUploadBuffer<SMaterialData>> MaterialBuffer = nullptr;
-	std::unique_ptr<OUploadBuffer<SInstanceData>> InstanceBuffer = nullptr;
-
+	void SetSSAO();
+	TUploadBuffer<SPassConstants> PassCB = nullptr;
+	TUploadBuffer<SMaterialData> MaterialBuffer = nullptr;
+	TUploadBuffer<SInstanceData> InstanceBuffer = nullptr;
+	TUploadBuffer<SSsaoConstants> SsaoCB = nullptr;
 	TUploadBuffer<SDirectionalLight> DirectionalLightBuffer;
 	TUploadBuffer<SPointLight> PointLightBuffer;
 	TUploadBuffer<SSpotLight> SpotLightBuffer;
@@ -42,6 +62,4 @@ struct SFrameResource
 	UINT64 Fence = 0;
 	IRenderObject* Owner = nullptr;
 	ID3D12Device* Device = nullptr;
-
 };
-

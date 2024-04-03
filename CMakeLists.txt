@@ -67,8 +67,8 @@ set(SRC_FILES
         Application/Test/TextureTest/TextureWaves.cpp
         Application/Test/TextureTest/TextureWaves.h
         Utils/PathUtils.h
-        Application/Filters/Blur/BlurFilter.cpp
-        Application/Filters/Blur/BlurFilter.h
+        Application/Engine/RenderTarget/Filters/Blur/BlurFilter.cpp
+        Application/Engine/RenderTarget/Filters/Blur/BlurFilter.h
         Types/DirectX/ShaderTypes.h
         Types/DirectX/ShaderTypes.h
         Utils/DirectXUtils.cpp
@@ -76,15 +76,15 @@ set(SRC_FILES
         Application/UI/UIManager/UiManager.h
         Types/Settings.h
         Types/Settings.cpp
-        Application/Filters/SobelFilter/SobelFilter.cpp
-        Application/Filters/SobelFilter/SobelFilter.h
-        Application/Filters/FilterBase.h
+        Application/Engine/RenderTarget/Filters/SobelFilter/SobelFilter.cpp
+        Application/Engine/RenderTarget/Filters/SobelFilter/SobelFilter.h
+        Application/Engine/RenderTarget/Filters/FilterBase.h
         Objects/Geometry/GPUWave/GpuWave.cpp
         Objects/Geometry/GPUWave/GpuWave.h
         Application/Engine/RenderTarget/RenderTarget.cpp
         Application/Engine/RenderTarget/RenderTarget.h
-        Application/Filters/BilateralBlur/BilateralBlurFilter.cpp
-        Application/Filters/BilateralBlur/BilateralBlurFilter.h
+        Application/Engine/RenderTarget/Filters/BilateralBlur/BilateralBlurFilter.cpp
+        Application/Engine/RenderTarget/Filters/BilateralBlur/BilateralBlurFilter.h
         Application/Engine/RenderTarget/RenderObject/RenderObject.h
         Utils/Statics.h
         Application/UI/Filters/BilateralFilterWidget.cpp
@@ -205,6 +205,11 @@ set(SRC_FILES
         Application/RenderGraph/Nodes/ShadowNode/ShadowMapNode.h
         Application/RenderGraph/Nodes/ShadowDebugNode/ShadowDebugNode.cpp
         Application/RenderGraph/Nodes/ShadowDebugNode/ShadowDebugNode.h
+        Application/RenderGraph/Nodes/SSAO/SsaoNode.cpp
+        Application/RenderGraph/Nodes/SSAO/SsaoNode.h
+        Application/RenderGraph/Nodes/SSAO/SsaoNode.h
+        Application/Engine/RenderTarget/SSAORenderTarget/Ssao.cpp
+        Application/Engine/RenderTarget/SSAORenderTarget/Ssao.h
 )
 
 set(DXCOMPILER_PATH_DLL ${CMAKE_SOURCE_DIR}/Externals/directx/Compiler/bin)

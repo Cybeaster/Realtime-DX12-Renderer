@@ -5,8 +5,15 @@
       {
         "Name": "Shadow",
         "PSO": "ShadowMap",
-        "NextNode": "OpaqueDynamicReflections",
+        "NextNode": "SSAO",
         "RenderLayer": "Shadow",
+        "Enabled": true
+      },
+      {
+        "Name": "SSAO",
+        "PSO": "SSAO",
+        "NextNode": "OpaqueDynamicReflections",
+        "RenderLayer": "SSAO",
         "Enabled": true
       },
       {
@@ -28,7 +35,7 @@
         "PSO": "ShadowDebug",
         "NextNode": "Sky",
         "RenderLayer": "ShadowDebug",
-        "Enabled": false
+        "Enabled": true
       },
       {
         "Name": "Sky",

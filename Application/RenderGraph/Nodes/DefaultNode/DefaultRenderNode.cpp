@@ -2,11 +2,12 @@
 #include "DefaultRenderNode.h"
 
 #include "Engine/Engine.h"
+#include "Engine/RenderTarget/SSAORenderTarget/Ssao.h"
 #include "EngineHelper.h"
 
 void ODefaultRenderNode::SetupCommonResources()
 {
-	auto resource = OEngine::Get()->CurrentFrameResources;
+	auto resource = OEngine::Get()->CurrentFrameResource;
 	OEngine::Get()->SetDescriptorHeap(EResourceHeapType::Default);
 
 	CommandQueue->SetPipelineState(PSO);
@@ -18,6 +19,7 @@ void ODefaultRenderNode::SetupCommonResources()
 	CommandQueue->SetResource("gPointLights", resource->PointLightBuffer->GetGPUAddress(), PSO);
 	CommandQueue->SetResource("gSpotLights", resource->SpotLightBuffer->GetGPUAddress(), PSO);
 	CommandQueue->SetResource("gShadowMaps", OEngine::Get()->GetRenderGroupStartAddress(ERenderGroup::ShadowTextures), PSO);
+	CommandQueue->SetResource("gSsaoMap", OEngine::Get()->GetSSAORT()->GetAmbientMap0SRV().GPUHandle, PSO);
 }
 
 void ODefaultRenderNode::Initialize(const SNodeInfo& OtherNodeInfo, OCommandQueue* OtherCommandQueue,

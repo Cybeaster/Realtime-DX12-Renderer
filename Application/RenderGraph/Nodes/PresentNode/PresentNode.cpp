@@ -12,7 +12,7 @@ ORenderTargetBase* OPresentNode::Execute(ORenderTargetBase* RenderTarget)
 	CommandQueue->ExecuteCommandList();
 	THROW_IF_FAILED(window->GetSwapChain()->Present(0, 0));
 	window->MoveToNextFrame();
-	OEngine::Get()->CurrentFrameResources->Fence = CommandQueue->Signal();
+	OEngine::Get()->CurrentFrameResource->Fence = CommandQueue->Signal();
 	OEngine::Get()->FlushGPU();
 	return RenderTarget;
 }
