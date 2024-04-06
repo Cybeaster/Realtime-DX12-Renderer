@@ -22,6 +22,11 @@ SPSODescriptionBase* ORenderNode::FindPSOInfo(string Name) const
 	return ParentGraph->FindPSOInfo(Name);
 }
 
+void ORenderNode::SetNodeEnabled(bool bEnable)
+{
+	NodeInfo.bEnable = bEnable;
+}
+
 void ORenderNode::Initialize(const SNodeInfo& OtherNodeInfo, OCommandQueue* OtherCommandQueue, ORenderGraph* OtherParentGraph, SPSODescriptionBase* OtherPSO)
 {
 	NodeInfo = OtherNodeInfo;

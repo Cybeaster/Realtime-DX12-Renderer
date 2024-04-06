@@ -23,7 +23,7 @@ struct SPassConstants
 	DirectX::XMFLOAT4X4 InvProj = Utils::Math::Identity4x4();
 	DirectX::XMFLOAT4X4 ViewProj = Utils::Math::Identity4x4();
 	DirectX::XMFLOAT4X4 InvViewProj = Utils::Math::Identity4x4();
-
+	DirectX::XMFLOAT4X4 ViewProjTex = Utils::Math::Identity4x4();
 	DirectX::XMFLOAT3 EyePosW = { 0.0f, 0.0f, 0.0f };
 	float cbPerPassPad1; // Use this to pad gEyePosW to 16 bytes
 
@@ -33,7 +33,7 @@ struct SPassConstants
 	float FarZ = 0.0f;
 	float TotalTime = 0.0f;
 	float DeltaTime = 0.0f;
-	DirectX::XMFLOAT4 AmbientLight = { 0.0f, 0.0f, 0.0f, 1.0f };
+	DirectX::XMFLOAT4 AmbientLight = { 0.4f, 0.4f, 0.6f, 1.0f };
 
 	// Allow application to change fog parameters once per frame.
 	// For example, we may only use fog for certain times of day.

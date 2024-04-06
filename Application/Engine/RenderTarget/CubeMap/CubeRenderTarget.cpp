@@ -41,7 +41,7 @@ void OCubeRenderTarget::BuildDepthStencilBuffer()
 	optClear.DepthStencil.Depth = 1.0f;
 	optClear.DepthStencil.Stencil = 0;
 	auto cmd = OEngine::Get()->GetCommandQueue()->GetCommandList().Get();
-	CubeDepthStencilBuffer = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_DEFAULT, depthStencilDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, cmd, &optClear);
+	CubeDepthStencilBuffer = Utils::CreateResource(this, L"CubeDepthStencilBuffer", Device, D3D12_HEAP_TYPE_DEFAULT, depthStencilDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, cmd, &optClear);
 	Device->CreateDepthStencilView(CubeDepthStencilBuffer.Resource.Get(), nullptr, DSVHandle.CPUHandle);
 
 	OEngine::Get()->GetCommandQueue()->ExecuteCommandListAndWait();
@@ -117,7 +117,7 @@ void OCubeRenderTarget::BuildResource()
 	texDesc.SampleDesc.Quality = 0;
 	texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-	RenderTarget = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_GENERIC_READ);
+	RenderTarget = Utils::CreateResource(this, L"RenderTarget", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_GENERIC_READ);
 }
 
 void OCubeRenderTarget::BuildDescriptors()

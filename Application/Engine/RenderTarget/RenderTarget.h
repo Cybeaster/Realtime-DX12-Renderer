@@ -20,13 +20,11 @@ public:
 	                  DXGI_FORMAT Format, EResourceHeapType HeapType)
 	    : Width(Width), Height(Height), Format(Format), Device(Device), ORenderObjectBase(HeapType)
 	{
-		BuildViewport();
 	}
 
 	ORenderTargetBase(const SRenderTargetParams& Params)
 	    : Width(Params.Width), Height(Params.Height), Format(Params.Format), Device(Params.Device), ORenderObjectBase(Params.HeapType)
 	{
-		BuildViewport();
 	}
 
 	ORenderTargetBase(UINT Width, UINT Height, EResourceHeapType HeapType);
@@ -55,9 +53,11 @@ public:
 	{
 		return Name;
 	}
+	LONG GetWidth() const;
+	LONG GetHeight() const;
 
 protected:
-	void BuildViewport();
+	virtual void BuildViewport();
 
 	D3D12_VIEWPORT Viewport;
 	D3D12_RECT ScissorRect;

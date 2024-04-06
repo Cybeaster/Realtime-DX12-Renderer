@@ -46,7 +46,7 @@ void OSobelFilter::BuildResource()
 	texDesc.SampleDesc.Quality = 0;
 	texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-	Output = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_DEFAULT, texDesc);
+	Output = Utils::CreateResource(this, L"Output", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc);
 }
 
 std::pair<bool, CD3DX12_GPU_DESCRIPTOR_HANDLE> OSobelFilter::Execute(SPSODescriptionBase* PSO, CD3DX12_GPU_DESCRIPTOR_HANDLE Input)

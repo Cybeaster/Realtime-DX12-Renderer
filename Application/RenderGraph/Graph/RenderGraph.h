@@ -15,6 +15,8 @@ public:
 	void SetPSO(const string& Type) const;
 	SPSODescriptionBase* FindPSOInfo(const string& Name) const;
 	static unique_ptr<ORenderNode> ResolveNodeType(const string& Type);
+	ORenderNode* GetHead() const;
+	ORenderNode* GetNext(const ORenderNode* Other);
 
 private:
 	unique_ptr<ORenderGraphReader> Reader;

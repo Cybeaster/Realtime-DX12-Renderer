@@ -35,6 +35,16 @@ void ORenderGraph::Initialize(OGraphicsPipelineManager* PipelineManager, OComman
 	}
 }
 
+ORenderNode* ORenderGraph::GetHead() const
+{
+	return Head;
+}
+
+ORenderNode* ORenderGraph::GetNext(const ORenderNode* Other)
+{
+	return Graph[Other->GetNextNode()];
+}
+
 void ORenderGraph::Execute()
 {
 	auto engine = OEngine::Get();
@@ -49,7 +59,7 @@ void ORenderGraph::Execute()
 		{
 			if (!currentNode->GetNodeInfo().bEnable)
 			{
-				currentNode = Graph[currentNode->GetNextNode()];
+				currentNode = GetNext(currentNode);
 				continue;
 			}
 			LOG(Render, Log, "Executing node: {}", TEXT(currentNode->GetNodeInfo().Name));

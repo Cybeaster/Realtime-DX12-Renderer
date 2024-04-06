@@ -150,15 +150,15 @@ void OCommandQueue::SetResource(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Re
 {
 	if (CurrentPSO != PSO)
 	{
-		LOG(Engine, Warning, "Trying to set resource view for a different PSO!")
+		LOG(Engine, Error, "Trying to set resource view for a different PSO!")
 		SetPipelineState(PSO);
 	}
 
-	if (SetResources.contains(Name) && SetResources[Name] == Resource)
+	/*if (SetResources.contains(Name) && SetResources[Name] == Resource)
 	{
 		LOG(Engine, Warning, "Resource {} already set!", TEXT(Name));
 		return;
-	}
+	}*/
 
 	PSO->RootSignature->SetResource(Name, Resource, CommandList.Get());
 	SetResources[Name] = Resource;
@@ -182,19 +182,19 @@ void OCommandQueue::SetResource(const string& Name, D3D12_GPU_DESCRIPTOR_HANDLE 
 	SetResources[Name] = Resource.ptr;
 }
 
-void OCommandQueue::ResourceBarrier(ORenderTargetBase* Resource, D3D12_RESOURCE_STATES StateBefore, D3D12_RESOURCE_STATES StateAfter) const
+D3D12_RESOURCE_STATES OCommandQueue::ResourceBarrier(ORenderTargetBase* Resource, D3D12_RESOURCE_STATES StateBefore, D3D12_RESOURCE_STATES StateAfter) const
 {
-	Utils::ResourceBarrier(CommandList.Get(), Resource->GetResource(), StateBefore, StateAfter);
+	return Utils::ResourceBarrier(CommandList.Get(), Resource->GetResource(), StateBefore, StateAfter);
 }
 
-void OCommandQueue::ResourceBarrier(ORenderTargetBase* Resource, D3D12_RESOURCE_STATES StateAfter) const
+D3D12_RESOURCE_STATES OCommandQueue::ResourceBarrier(ORenderTargetBase* Resource, D3D12_RESOURCE_STATES StateAfter) const
 {
-	Utils::ResourceBarrier(CommandList.Get(), Resource->GetResource(), StateAfter);
+	return Utils::ResourceBarrier(CommandList.Get(), Resource->GetResource(), StateAfter);
 }
 
-void OCommandQueue::ResourceBarrier(SResourceInfo* Resource, D3D12_RESOURCE_STATES StateAfter) const
+D3D12_RESOURCE_STATES OCommandQueue::ResourceBarrier(SResourceInfo* Resource, D3D12_RESOURCE_STATES StateAfter) const
 {
-	Utils::ResourceBarrier(CommandList.Get(), Resource, StateAfter);
+	return Utils::ResourceBarrier(CommandList.Get(), Resource, StateAfter);
 }
 
 void OCommandQueue::CopyResourceTo(ORenderTargetBase* Dest, ORenderTargetBase* Src) const
@@ -204,11 +204,21 @@ void OCommandQueue::CopyResourceTo(ORenderTargetBase* Dest, ORenderTargetBase* S
 		LOG(Engine, Error, "Source and destination are the same!");
 		return;
 	}
+	CopyResourceTo(Dest->GetResource(), Src->GetResource());
+}
 
-	ResourceBarrier(Dest, D3D12_RESOURCE_STATE_COPY_DEST);
-	ResourceBarrier(Src, D3D12_RESOURCE_STATE_COPY_SOURCE);
-	CommandList->CopyResource(Dest->GetResource()->Resource.Get(), Src->GetResource()->Resource.Get());
-	ResourceBarrier(Dest, D3D12_RESOURCE_STATE_RENDER_TARGET);
+void OCommandQueue::CopyResourceTo(SResourceInfo* Dest, SResourceInfo* Src) const
+{
+	if (Dest == Src)
+	{
+		LOG(Engine, Error, "Source and destination are the same!");
+		return;
+	}
+	auto destOld = ResourceBarrier(Dest, D3D12_RESOURCE_STATE_COPY_DEST);
+	auto srcOld = ResourceBarrier(Src, D3D12_RESOURCE_STATE_COPY_SOURCE);
+	CommandList->CopyResource(Dest->Resource.Get(), Src->Resource.Get());
+	ResourceBarrier(Dest, destOld);
+	ResourceBarrier(Src, srcOld);
 }
 
 ORenderTargetBase* OCommandQueue::SetRenderTarget(ORenderTargetBase* RenderTarget, uint32_t Subtarget)

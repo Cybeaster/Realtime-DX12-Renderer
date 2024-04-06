@@ -31,9 +31,9 @@ void OGPUWave::BuildResources()
 	texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
-	NextSol = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
-	PrevSol = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
-	CurrSol = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
+	NextSol = Utils::CreateResource(this, L"NextSol", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
+	PrevSol = Utils::CreateResource(this, L"PrevSol", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
+	CurrSol = Utils::CreateResource(this, L"CurSol", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
 
 	//
 	// In order to copy CPU memory data into our default buffer, we need to create
@@ -44,8 +44,8 @@ void OGPUWave::BuildResources()
 	UINT64 uploadBufferSize = GetRequiredIntermediateSize(CurrSol.Resource.Get(), 0, num2DSubresources);
 	auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize);
 
-	PrevUploadBuffer = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_UPLOAD, resourceDesc);
-	CurrUploadBuffer = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_UPLOAD, resourceDesc);
+	PrevUploadBuffer = Utils::CreateResource(this, L"PrevUploadBuffer", Device, D3D12_HEAP_TYPE_UPLOAD, resourceDesc);
+	CurrUploadBuffer = Utils::CreateResource(this, L"CurrUploadBuffer", Device, D3D12_HEAP_TYPE_UPLOAD, resourceDesc);
 
 	// describe the data, we're going to copy into the default buffer
 	vector<float> initData(NumRows * NumCols, 0.0f);

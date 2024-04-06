@@ -1,3 +1,4 @@
+#include "Samplers.hlsl"
 
 cbuffer cbSsao : register(b0)
 {
@@ -21,18 +22,16 @@ cbuffer cbSsao : register(b0)
 
 cbuffer cbRootConstants : register(b1)
 {
-   bool gHorizontalBlur;
+   uint gHorizontalBlur;
+   float pad1;
+   float pad2;
+   float pad3;
 };
 
 
 Texture2D gNormalMap : register(t0);
 Texture2D gDepthMap  : register(t1);
 Texture2D gInputMap  : register(t2);
-
-SamplerState gsamPointClamp : register(s0);
-SamplerState gsamLinearClamp : register(s1);
-SamplerState gsamDepthMap : register(s2);
-SamplerState gsamLinearWrap : register(s3);
 
 static const int gBlurRadius = 5;
 
@@ -52,6 +51,7 @@ struct VertexOut
 	float2 TexC  : TEXCOORD;
 };
 
+
 VertexOut VS(uint vid : SV_VertexID)
 {
     VertexOut vout;
@@ -59,16 +59,16 @@ VertexOut VS(uint vid : SV_VertexID)
 
     // Quad covering screen in NDC space.
     vout.PosH = float4(2.0f*vout.TexC.x - 1.0f, 1.0f - 2.0f*vout.TexC.y, 0.0f, 1.0f);
+
     return vout;
 }
 
-
-    float NdcDepthToViewDepth(float z_ndc)
-    {
-         // z_ndc = A + B/viewZ, where gProj[2,2]=A and gProj[3,2]=B.
-         float viewZ = gProj[3][2] / (z_ndc - gProj[2][2]);
-         return viewZ;
-    }
+float NdcDepthToViewDepth(float z_ndc)
+{
+    // z_ndc = A + B/viewZ, where gProj[2,2]=A and gProj[3,2]=B.
+    float viewZ = gProj[3][2] / (z_ndc - gProj[2][2]);
+    return viewZ;
+}
 
 float4 PS(VertexOut pin) : SV_Target
 {
@@ -81,7 +81,7 @@ float4 PS(VertexOut pin) : SV_Target
     };
 
 	float2 texOffset;
-	if(gHorizontalBlur)
+	if(gHorizontalBlur == 0)
 	{
 		texOffset = float2(gInvRenderTargetSize.x, 0.0f);
 	}
@@ -89,43 +89,45 @@ float4 PS(VertexOut pin) : SV_Target
 	{
 		texOffset = float2(0.0f, gInvRenderTargetSize.y);
 	}
+
 	// The center value always contributes to the sum.
-    float4 color      = blurWeights[gBlurRadius] * gInputMap.SampleLevel(gsamPointClamp, pin.TexC, 0.0);
-    float totalWeight = blurWeights[gBlurRadius];
+	float4 color      = blurWeights[gBlurRadius] * gInputMap.SampleLevel(gsamPointClamp, pin.TexC, 0.0);
+	float totalWeight = blurWeights[gBlurRadius];
 
     float3 centerNormal = gNormalMap.SampleLevel(gsamPointClamp, pin.TexC, 0.0f).xyz;
     float centerDepth = NdcDepthToViewDepth(gDepthMap.SampleLevel(gsamDepthMap, pin.TexC, 0.0f).r);
 
-    for(float i = -gBlurRadius; i <=gBlurRadius; ++i)
-    {
-    		// We already added in the center weight.
-    		if( i == 0 )
-    			continue;
+	for(float i = -gBlurRadius; i <=gBlurRadius; ++i)
+	{
+		// We already added in the center weight.
+		if( i == 0 )
+			continue;
 
-    		float2 tex = pin.TexC + i*texOffset;
+		float2 tex = pin.TexC + i*texOffset;
 
-    		float3 neighborNormal = gNormalMap.SampleLevel(gsamPointClamp, tex, 0.0f).xyz;
-            float  neighborDepth  = NdcDepthToViewDepth(
-                gDepthMap.SampleLevel(gsamDepthMap, tex, 0.0f).r);
+		float3 neighborNormal = gNormalMap.SampleLevel(gsamPointClamp, tex, 0.0f).xyz;
+        float  neighborDepth  = NdcDepthToViewDepth(
+            gDepthMap.SampleLevel(gsamDepthMap, tex, 0.0f).r);
 
-    		//
-    		// If the center value and neighbor values differ too much (either in
-    		// normal or depth), then we assume we are sampling across a discontinuity.
-    		// We discard such samples from the blur.
-    		//
+		//
+		// If the center value and neighbor values differ too much (either in
+		// normal or depth), then we assume we are sampling across a discontinuity.
+		// We discard such samples from the blur.
+		//
 
-    		if( dot(neighborNormal, centerNormal) >= 0.8f &&
-    		    abs(neighborDepth - centerDepth) <= 0.2f )
-    		{
-                float weight = blurWeights[i + gBlurRadius];
+		if( dot(neighborNormal, centerNormal) >= 0.8f &&
+		    abs(neighborDepth - centerDepth) <= 0.2f )
+		{
+            float weight = blurWeights[i + gBlurRadius];
 
-    			// Add neighbor pixel to blur.
-    			color += weight*gInputMap.SampleLevel(
-                    gsamPointClamp, tex, 0.0);
+			// Add neighbor pixel to blur.
+			color += weight*gInputMap.SampleLevel(
+                gsamPointClamp, tex, 0.0);
 
-    			totalWeight += weight;
-    		}
-    }
-    // Compensate for discarded samples by making total weights sum to 1.
-      return color / totalWeight;
+			totalWeight += weight;
+		}
+	}
+
+	// Compensate for discarded samples by making total weights sum to 1.
+    return color / totalWeight;
 }
