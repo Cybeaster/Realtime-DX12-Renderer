@@ -24,5 +24,4 @@ void OShadowMapNode::SetupCommonResources()
 	CommandQueue->SetPipelineState(PSO);
 	CommandQueue->SetResource("cbPass", resource->PassCB->GetGPUAddress(), PSO);
 	CommandQueue->SetResource("gMaterialData", resource->MaterialBuffer->GetGPUAddress(), PSO);
-	CommandQueue->SetResource("gTextureMaps", OEngine::Get()->GetDescriptorHeap()->GetGPUDescriptorHandleForHeapStart(), PSO);
 }

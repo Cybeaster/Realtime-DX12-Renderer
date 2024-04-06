@@ -488,6 +488,7 @@ void OWindow::ResizeDepthBuffer()
 	optClear.DepthStencil.Stencil = 0;
 
 	DepthBuffer = Utils::CreateResource(this,
+	                                    L"DepthBuffer",
 	                                    device.Get(),
 	                                    D3D12_HEAP_TYPE_DEFAULT,
 	                                    depthStencilDesc,

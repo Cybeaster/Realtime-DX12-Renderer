@@ -25,12 +25,12 @@ public:
 	void TryResetCommandList();
 	ComPtr<ID3D12Fence> GetFence() const;
 	void SetPipelineState(SPSODescriptionBase* PSOInfo);
-	void ResourceBarrier(ORenderTargetBase* Resource, D3D12_RESOURCE_STATES StateBefore, D3D12_RESOURCE_STATES StateAfter) const;
-	void ResourceBarrier(ORenderTargetBase* Resource, D3D12_RESOURCE_STATES StateAfter) const;
-
-	void ResourceBarrier(SResourceInfo* Resource, D3D12_RESOURCE_STATES StateAfter) const;
+	D3D12_RESOURCE_STATES ResourceBarrier(ORenderTargetBase* Resource, D3D12_RESOURCE_STATES StateBefore, D3D12_RESOURCE_STATES StateAfter) const;
+	D3D12_RESOURCE_STATES ResourceBarrier(ORenderTargetBase* Resource, D3D12_RESOURCE_STATES StateAfter) const;
+	D3D12_RESOURCE_STATES ResourceBarrier(SResourceInfo* Resource, D3D12_RESOURCE_STATES StateAfter) const;
 
 	void CopyResourceTo(ORenderTargetBase* Dest, ORenderTargetBase* Src) const;
+	void CopyResourceTo(SResourceInfo* Dest, SResourceInfo* Src) const;
 	ORenderTargetBase* SetRenderTarget(ORenderTargetBase* RenderTarget, uint32_t Subtarget = 0);
 	void ResetQueueState();
 	void SetResource(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Resource, SPSODescriptionBase* PSO);

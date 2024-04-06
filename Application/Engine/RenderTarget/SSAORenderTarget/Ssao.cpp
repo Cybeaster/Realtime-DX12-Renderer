@@ -32,11 +32,11 @@ void OSSAORenderTarget::BuildDescriptors()
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.MipLevels = 1;
 
-	auto buffer = OEngine::Get()->GetWindow()->GetCurrentDepthStencilBuffer();
-
 	Device->CreateShaderResourceView(NormalMap.Resource.Get(), &srvDesc, NormalMapSRV.CPUHandle);
+
 	srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-	Device->CreateShaderResourceView(buffer->Resource.Get(), &srvDesc, DepthMapSRV.CPUHandle); // TODO do we really need a separate dsv?
+	Device->CreateShaderResourceView(DepthMap.Resource.Get(), &srvDesc, DepthMapSRV.CPUHandle);
+
 	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	Device->CreateShaderResourceView(RandomVectorMap.Resource.Get(), &srvDesc, RandomVectorMapSRV.CPUHandle);
 
@@ -65,19 +65,24 @@ void OSSAORenderTarget::BuildResource()
 	AmbientMap1 = nullptr;
 
 	auto desc = GetResourceDesc();
+
 	float normalClearColor[] = { 0.0f, 0.0f, 1.0f, 0.0f };
 	CD3DX12_CLEAR_VALUE optClear(Format, normalClearColor);
-	NormalMap = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ, &optClear);
+	NormalMap = Utils::CreateResource(this, L"NormalMap", Device, D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ, &optClear);
+
+	desc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+	desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+	DepthMap = Utils::CreateResource(this, L"DepthMap", Device, D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ);
 
 	desc.Width = Width / 2;
 	desc.Height = Height / 2;
 	desc.Format = SRenderConstants::AmbientMapFormat;
-
+	desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 	float ambientClearColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	optClear = CD3DX12_CLEAR_VALUE(SRenderConstants::AmbientMapFormat, ambientClearColor);
 
-	AmbientMap0 = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ, &optClear);
-	AmbientMap1 = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ, &optClear);
+	AmbientMap0 = Utils::CreateResource(this, L"AmbientMap0", Device, D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ, &optClear);
+	AmbientMap1 = Utils::CreateResource(this, L"AmbientMap1", Device, D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ, &optClear);
 }
 
 void OSSAORenderTarget::BuildOffsetVectors()
@@ -110,6 +115,7 @@ void OSSAORenderTarget::BuildOffsetVectors()
 	{
 		float s = Utils::Math::Random(0.25f, 1.0f);
 		XMVECTOR v = XMLoadFloat4(&Offsets[i]);
+
 		v = XMVectorScale(XMVector4Normalize(v), s);
 		XMStoreFloat4(&Offsets[i], v);
 	}
@@ -121,10 +127,11 @@ void OSSAORenderTarget::BuildRandomVectorTexture()
 	desc.Width = 256;
 	desc.Height = 256;
 	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	RandomVectorMap = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ);
+	desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	RandomVectorMap = Utils::CreateResource(this, L"RandomVectorMap", Device, D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ);
 	const UINT num2DSubresources = desc.DepthOrArraySize * desc.MipLevels;
 	const UINT64 uploadBufferSize = GetRequiredIntermediateSize(RandomVectorMap.Resource.Get(), 0, num2DSubresources);
-	RandomVectorMapUploadBuffer = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_UPLOAD, CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize), D3D12_RESOURCE_STATE_GENERIC_READ);
+	RandomVectorMapUploadBuffer = Utils::CreateResource(this, L"RandomVectorMapUploadBuffer", Device, D3D12_HEAP_TYPE_UPLOAD, CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize), D3D12_RESOURCE_STATE_GENERIC_READ);
 
 	XMCOLOR initData[256 * 256];
 	for (int i = 0; i < 256; ++i)
@@ -152,15 +159,42 @@ void OSSAORenderTarget::BuildRandomVectorTexture()
 void OSSAORenderTarget::InitRenderObject()
 {
 	ORenderTargetBase::InitRenderObject();
-	BlurCB = make_unique<OUploadBuffer<SConstantBufferBlurData>>(Device, 1, true, this);
+	HBlurCB = make_unique<OUploadBuffer<SConstantBufferBlurData>>(Device, 1, true, this);
+	HBlurCB->CopyData(0, SConstantBufferBlurData{ 0 });
+	VBlurCB = make_unique<OUploadBuffer<SConstantBufferBlurData>>(Device, 1, true, this);
+	VBlurCB->CopyData(0, SConstantBufferBlurData{ 1 });
 	BuildResource();
 	BuildOffsetVectors();
 	BuildRandomVectorTexture();
 }
 
+void OSSAORenderTarget::BuildViewport()
+{
+	Viewport.TopLeftX = 0.0f;
+	Viewport.TopLeftY = 0.0f;
+	Viewport.Width = static_cast<float>(Width / 2);
+	Viewport.Height = static_cast<float>(Height / 2);
+	Viewport.MinDepth = 0.0f;
+	Viewport.MaxDepth = 1.0f;
+
+	ScissorRect = { 0, 0, Width / 2, Height / 2 };
+}
+
 void OSSAORenderTarget::OnResize(const ResizeEventArgs& Args)
 {
-	ORenderTargetBase::OnResize(Args);
+	if (Width != Args.Width || Height != Args.Height)
+	{
+		Width = Args.Width;
+		Height = Args.Height;
+		BuildViewport();
+		BuildResource();
+	}
+	BuildDescriptors();
+}
+
+std::array<DirectX::XMFLOAT4, 14> OSSAORenderTarget::GetOffsetVectors()
+{
+	return Offsets;
 }
 
 SDescriptorPair OSSAORenderTarget::GetAmbientMap0SRV()
@@ -278,6 +312,11 @@ SResourceInfo* OSSAORenderTarget::GetAmbientMap0()
 	return &AmbientMap0;
 }
 
+SResourceInfo* OSSAORenderTarget::GetDepthMap()
+{
+	return &DepthMap;
+}
+
 void OSSAORenderTarget::PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList, uint32_t SubtargetIdx)
 {
 	if (SubtargetIdx == NormalSubtarget)
@@ -291,21 +330,20 @@ void OSSAORenderTarget::PrepareRenderTarget(ID3D12GraphicsCommandList* CommandLi
 	{
 		CommandList->RSSetViewports(1, &Viewport);
 		CommandList->RSSetScissorRects(1, &ScissorRect);
-		CommandList->ClearRenderTargetView(AmbientMap0RTV.CPUHandle, DirectX::Colors::LightSteelBlue, 0, nullptr);
+		float clearValue[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+		CommandList->ClearRenderTargetView(AmbientMap0RTV.CPUHandle, clearValue, 0, nullptr);
 		CommandList->OMSetRenderTargets(1, &AmbientMap0RTV.CPUHandle, true, nullptr);
 	}
 }
 
-void OSSAORenderTarget::SetHorizontalBlur(bool Horizontal) const
+D3D12_GPU_VIRTUAL_ADDRESS OSSAORenderTarget::GetHBlurCBAddress() const
 {
-	SConstantBufferBlurData data;
-	data.Horizontal = Horizontal; //TODO optimize for small chunks of data
-	BlurCB->CopyData(0, data);
+	return HBlurCB->GetGPUAddress();
 }
 
-D3D12_GPU_VIRTUAL_ADDRESS OSSAORenderTarget::GetBlurCBAddress() const
+D3D12_GPU_VIRTUAL_ADDRESS OSSAORenderTarget::GetVBlurCBAddress() const
 {
-	return BlurCB->GetGPUAddress();
+	return VBlurCB->GetGPUAddress();
 }
 
 SResourceInfo* OSSAORenderTarget::GetResource()

@@ -28,8 +28,8 @@ Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(
     ComPtr<ID3D12Resource>& UploadBuffer);
 
 vector<CD3DX12_STATIC_SAMPLER_DESC> GetStaticSamplers();
-void ResourceBarrier(ID3D12GraphicsCommandList* List, SResourceInfo* Resource, D3D12_RESOURCE_STATES Before, D3D12_RESOURCE_STATES After);
-void ResourceBarrier(ID3D12GraphicsCommandList* List, SResourceInfo* Resource, D3D12_RESOURCE_STATES After);
+D3D12_RESOURCE_STATES ResourceBarrier(ID3D12GraphicsCommandList* List, SResourceInfo* Resource, D3D12_RESOURCE_STATES Before, D3D12_RESOURCE_STATES After);
+D3D12_RESOURCE_STATES ResourceBarrier(ID3D12GraphicsCommandList* List, SResourceInfo* Resource, D3D12_RESOURCE_STATES After);
 
 void BuildRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>& RootSignature, const D3D12_ROOT_SIGNATURE_DESC& Desc);
 void BuildRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>& RootSignature, const D3D12_VERSIONED_ROOT_SIGNATURE_DESC& Desc);
@@ -37,12 +37,12 @@ void BuildRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>& RootS
 void CreateRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>& RootSignature, const ComPtr<ID3DBlob>& SerializedRootSig, const ComPtr<ID3DBlob>& ErrorBlob);
 DXGI_FORMAT MaskToFormat(uint32_t Mask);
 bool MatricesEqual(const DirectX::XMFLOAT4X4& mat1, const DirectX::XMFLOAT4X4& mat2, float epsilon = 1e-6f);
-SResourceInfo CreateResource(IRenderObject* Owner, ID3D12Device* Device, D3D12_HEAP_TYPE HeapProperties, const D3D12_RESOURCE_DESC& Desc, D3D12_RESOURCE_STATES InitialState = D3D12_RESOURCE_STATE_GENERIC_READ, const D3D12_CLEAR_VALUE* ClearValue = nullptr);
+SResourceInfo CreateResource(IRenderObject* Owner, const wstring& AppendName, ID3D12Device* Device, D3D12_HEAP_TYPE HeapProperties, const D3D12_RESOURCE_DESC& Desc, D3D12_RESOURCE_STATES InitialState = D3D12_RESOURCE_STATE_GENERIC_READ, const D3D12_CLEAR_VALUE* ClearValue = nullptr);
 SResourceInfo CreateResource(IRenderObject* Owner,
+                             const wstring& AppendName,
                              ID3D12Device* Device,
                              D3D12_HEAP_TYPE HeapProperties,
                              const D3D12_RESOURCE_DESC& Desc,
                              D3D12_RESOURCE_STATES InitialState,
-                             ID3D12GraphicsCommandList* CMDList,
-                             const D3D12_CLEAR_VALUE* ClearValue = nullptr);
+                             ID3D12GraphicsCommandList* CMDList, const D3D12_CLEAR_VALUE* ClearValue = nullptr);
 } // namespace Utils

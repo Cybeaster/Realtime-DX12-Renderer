@@ -38,6 +38,7 @@ SDescriptorPair ORenderTargetBase::GetDSV(uint32_t SubtargetIdx) const
 
 void ORenderTargetBase::InitRenderObject()
 {
+	BuildViewport();
 }
 
 void ORenderTargetBase::SetViewport(ID3D12GraphicsCommandList* List) const
@@ -64,6 +65,15 @@ void ORenderTargetBase::PrepareRenderTarget(ID3D12GraphicsCommandList* CommandLi
 void ORenderTargetBase::UnsetRenderTarget(OCommandQueue* CommandQueue)
 {
 	PreparedTaregts.clear();
+}
+LONG ORenderTargetBase::GetWidth() const
+{
+	return Width;
+}
+
+LONG ORenderTargetBase::GetHeight() const
+{
+	return Height;
 }
 
 TUUID ORenderTargetBase::GetID()
@@ -93,7 +103,7 @@ void ORenderTargetBase::OnResize(const ResizeEventArgs& Args)
 	{
 		Width = Args.Width;
 		Height = Args.Height;
-
+		BuildViewport();
 		BuildResource();
 		BuildDescriptors();
 	}
@@ -175,7 +185,7 @@ void OOffscreenTexture::BuildResource()
 	texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
-	RenderTarget = Utils::CreateResource(this, Device, D3D12_HEAP_TYPE_DEFAULT, texDesc);
+	RenderTarget = Utils::CreateResource(this, L"RenderTarget", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc);
 }
 SResourceInfo* OOffscreenTexture::GetResource()
 {

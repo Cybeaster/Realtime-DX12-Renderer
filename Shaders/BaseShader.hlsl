@@ -12,6 +12,7 @@ struct VertexOut
 {
 	float4 PosH : SV_POSITION;
 	float3 PosW : POSITION;
+    float4 SsaoPosH   : POSITION1;
 	float3 NormalW : NORMAL;
 	float3 TangentW : TANGENT;
 	float2 TexC : TEXCOORD;
@@ -55,6 +56,7 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	float4 texC = mul(float4(Vin.TexC, 0.0f, 1.0f), texTransform);
 	vout.TexC = mul(texC, matData.MatTransform).xy;
     FindShadowPosition(vout.ShadowPositionsH, posW, vout.LightIndices);
+    vout.SsaoPosH = mul(posW, gViewProjTex);
 	return vout;
 }
 
@@ -83,8 +85,11 @@ float4 PS(VertexOut pin)
 	float distToEye = length(toEyeW);
 	toEyeW /= distToEye; // normalize
 
+    pin.SsaoPosH /= pin.SsaoPosH.w;
+	float ambientAccess = gSsaoMap.Sample(gsamLinearWrap, pin.SsaoPosH.xy, 0.0f).r;
+
 	// Light terms.
-	float4 ambient = gAmbientLight * diffuseAlbedo;
+	float4 ambient =  ambientAccess * gAmbientLight * diffuseAlbedo;
 
 	const float shininess = (1.0f - roughness) * normalMapSample.a;
 	Material mat = { diffuseAlbedo, fresnelR0, shininess };
@@ -109,7 +114,7 @@ float4 PS(VertexOut pin)
 	float4 litColor = ambient + float4(light, 1.0f);
 	float3 reflection = reflect(-toEyeW, bumpedNormalW);
 	float4 reflectionColor = gCubeMap.Sample(gsamLinearWrap, reflection);
-	float3 fresnelFactor = SchlickFresnel(fresnelR0, bumpedNormalW, toEyeW);
+	float3 fresnelFactor = SchlickFresnel(fresnelR0, bumpedNormalW, reflection);
 	litColor.rgb += shininess * fresnelFactor * reflectionColor.rgb;
 
 #ifdef FOG

@@ -251,6 +251,7 @@ protected:
 	uint32_t GetLightComponentsCount() const;
 
 private:
+	void UpdateSSAOCB();
 	void BuildSSAO();
 	void RemoveRenderObject(TUUID UUID);
 	void BuildFrameResource(uint32_t Count = 1);
@@ -335,6 +336,7 @@ private:
 public:
 	SDescriptorPair NullCubeSRV;
 	SDescriptorPair NullTexSRV;
+	ORenderGraph* GetRenderGraph() const;
 };
 
 template<typename T, typename... Args>
