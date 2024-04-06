@@ -22,7 +22,7 @@ public:
 	void Update() override;
 
 private:
-	DirectX::XMFLOAT4 AmbientColor = { 0.0f, 0.0f, 0.0f,0.0f };
+	DirectX::XMFLOAT4 AmbientColor = { 0.4f, 0.4f, 0.6f, 1.0f };
 	map<int32_t, SWidgetLight> Lights;
 	int32_t SelectedLightIdx = -1;
 	OEngine* Engine = nullptr;

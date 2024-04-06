@@ -35,7 +35,7 @@
         "PSO": "ShadowDebug",
         "NextNode": "Sky",
         "RenderLayer": "ShadowDebug",
-        "Enabled": true
+        "Enabled": false
       },
       {
         "Name": "Sky",

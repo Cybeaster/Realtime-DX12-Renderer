@@ -195,7 +195,7 @@ SRootParameter& SShaderPipelineDesc::GetRootParameterFromName(const string& Name
 {
 	if (!RootSignatureParams.RootParamMap.contains(UTF8ToWString(Name)))
 	{
-		LOG(Render, Warning, "Descriptor table name not found: {}", TEXT(Name));
+		LOG(Render, Error, "Descriptor table name not found: {}", TEXT(Name));
 	}
 	return RootSignatureParams.RootParamMap[UTF8ToWString(Name)];
 }

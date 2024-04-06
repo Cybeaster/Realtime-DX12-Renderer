@@ -160,13 +160,23 @@ vector<CD3DX12_STATIC_SAMPLER_DESC> Utils::GetStaticSamplers()
 	    D3D12_COMPARISON_FUNC_LESS_EQUAL,
 	    D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK);
 
+	const CD3DX12_STATIC_SAMPLER_DESC depthMapSam(
+	    7, // shaderRegister
+	    D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
+	    D3D12_TEXTURE_ADDRESS_MODE_BORDER, // addressU
+	    D3D12_TEXTURE_ADDRESS_MODE_BORDER, // addressV
+	    D3D12_TEXTURE_ADDRESS_MODE_BORDER, // addressW
+	    0.0f,
+	    0,
+	    D3D12_COMPARISON_FUNC_LESS_EQUAL,
+	    D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE);
 	return {
-		pointWrap, pointClamp, linearWrap, linearClamp, anisotropicWrap, anisotropicClamp, shadow
+		pointWrap, pointClamp, linearWrap, linearClamp, anisotropicWrap, anisotropicClamp, shadow, depthMapSam
 	};
 	//clang-format on
 }
 
-void Utils::ResourceBarrier(ID3D12GraphicsCommandList* List, SResourceInfo* Resource, D3D12_RESOURCE_STATES Before, D3D12_RESOURCE_STATES After)
+D3D12_RESOURCE_STATES Utils::ResourceBarrier(ID3D12GraphicsCommandList* List, SResourceInfo* Resource, D3D12_RESOURCE_STATES Before, D3D12_RESOURCE_STATES After)
 {
 	D3D12_RESOURCE_STATES localBefore = Resource->CurrentState;
 
@@ -178,25 +188,29 @@ void Utils::ResourceBarrier(ID3D12GraphicsCommandList* List, SResourceInfo* Reso
 	if (localBefore == After)
 	{
 		LOG(Debug, Warning, "ResourceBarrier: Resource states must be different {}!", Resource->Context->GetName());
-		return;
+		return localBefore;
 	}
 	Resource->CurrentState = After;
 
 	const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(Resource->Resource.Get(), localBefore, After);
 	List->ResourceBarrier(1, &barrier);
+	return localBefore;
 }
 
-void Utils::ResourceBarrier(ID3D12GraphicsCommandList* List, SResourceInfo* Resource, D3D12_RESOURCE_STATES After)
+D3D12_RESOURCE_STATES Utils::ResourceBarrier(ID3D12GraphicsCommandList* List, SResourceInfo* Resource, D3D12_RESOURCE_STATES After)
 {
 	if (Resource->CurrentState == After)
 	{
 		LOG(Debug, Warning, "ResourceBarrier: Resource states must be different {}!", Resource->Context->GetName());
-		return;
+		return After;
 	}
+
 	LOG(Debug, Log, "ResourceBarrier: Transitioning resource {}", Resource->Context->GetName());
+	auto old = Resource->CurrentState;
 	const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(Resource->Resource.Get(), Resource->CurrentState, After);
 	Resource->CurrentState = After;
 	List->ResourceBarrier(1, &barrier);
+	return old;
 }
 
 void Utils::BuildRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>& RootSignature, const D3D12_ROOT_SIGNATURE_DESC& Desc)
@@ -271,11 +285,12 @@ bool Utils::MatricesEqual(const DirectX::XMFLOAT4X4& mat1, const DirectX::XMFLOA
 	return true;
 }
 
-SResourceInfo Utils::CreateResource(IRenderObject* Owner, ID3D12Device* Device, const D3D12_HEAP_TYPE HeapProperties, const D3D12_RESOURCE_DESC& Desc, const D3D12_RESOURCE_STATES InitialState, const D3D12_CLEAR_VALUE* ClearValue)
+SResourceInfo Utils::CreateResource(IRenderObject* Owner, const wstring& AppendName, ID3D12Device* Device, const D3D12_HEAP_TYPE HeapProperties, const D3D12_RESOURCE_DESC& Desc, const D3D12_RESOURCE_STATES InitialState, const D3D12_CLEAR_VALUE* ClearValue)
 {
 	SResourceInfo info{
 		.CurrentState = InitialState,
-		.Context = Owner
+		.Context = Owner,
+		.Name = Owner->GetName() + L"_" + AppendName
 	};
 	const auto defaultHeap = CD3DX12_HEAP_PROPERTIES(HeapProperties);
 	THROW_IF_FAILED(Device->CreateCommittedResource(&defaultHeap,
@@ -284,12 +299,12 @@ SResourceInfo Utils::CreateResource(IRenderObject* Owner, ID3D12Device* Device, 
 	                                                InitialState,
 	                                                ClearValue,
 	                                                IID_PPV_ARGS(&info.Resource)));
-	info.Resource->SetName(Owner->GetName().c_str());
+	info.Resource->SetName(info.Name.c_str());
 	return info;
 }
-SResourceInfo Utils::CreateResource(IRenderObject* Owner, ID3D12Device* Device, D3D12_HEAP_TYPE HeapProperties, const D3D12_RESOURCE_DESC& Desc, D3D12_RESOURCE_STATES InitialState, ID3D12GraphicsCommandList* CMDList, const D3D12_CLEAR_VALUE* ClearValue)
+SResourceInfo Utils::CreateResource(IRenderObject* Owner, const wstring& AppendName, ID3D12Device* Device, D3D12_HEAP_TYPE HeapProperties, const D3D12_RESOURCE_DESC& Desc, D3D12_RESOURCE_STATES InitialState, ID3D12GraphicsCommandList* CMDList, const D3D12_CLEAR_VALUE* ClearValue)
 {
-	auto resource = CreateResource(Owner, Device, HeapProperties, Desc, D3D12_RESOURCE_STATE_COMMON, ClearValue);
+	auto resource = CreateResource(Owner, AppendName, Device, HeapProperties, Desc, D3D12_RESOURCE_STATE_COMMON, ClearValue);
 	ResourceBarrier(CMDList, &resource, D3D12_RESOURCE_STATE_COMMON, InitialState);
 	return resource;
 }

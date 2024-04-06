@@ -16,12 +16,12 @@
 #define MAX_SHADOW_MAPS 2
 #endif
 
-#define TEXTURE_MAPS_NUM 41
+#define TEXTURE_MAPS_NUM 41 // TODO dynamically calculate shader resource count
 #define SHADOW_MAPS_NUM 2
 
 // Include structures and functions for lighting.
 #include "LightingUtils.hlsl"
-
+#include "Samplers.hlsl"
 struct InstanceData
 {
 	float4x4 World;
@@ -69,6 +69,7 @@ cbuffer cbPass : register(b0)
 	float4x4 gInvProj;
 	float4x4 gViewProj;
 	float4x4 gInvViewProj;
+	float4x4 gViewProjTex;
 	float3 gEyePosW;
 
 	float cbPerPassPad1; // Use this to pad gEyePosW to 16 bytes
@@ -95,13 +96,7 @@ cbuffer cbPass : register(b0)
 };
 
 
-SamplerState gsamPointWrap : register(s0);
-SamplerState gsamPointClamp : register(s1);
-SamplerState gsamLinearWrap : register(s2);
-SamplerState gsamLinearClamp : register(s3);
-SamplerState gsamAnisotropicWrap : register(s4);
-SamplerState gsamAnisotropicClamp : register(s5);
-SamplerComparisonState gsamShadow : register(s6);
+
 
 
 
@@ -183,7 +178,7 @@ float4 ComputeDiffuseMaps(MaterialData MatData, float4 DiffuseAlbedo, float2 Tex
 	for (uint k = 0; k < numDiffuseMaps; ++k)
 	{
 		int diffuseMapIndex = MatData.DiffuseMapIndex[k];
-		DiffuseAlbedo *= gTextureMaps[diffuseMapIndex].Sample(gsamLinearWrap, TexC);
+		DiffuseAlbedo *= gTextureMaps[diffuseMapIndex].Sample(gsamAnisotropicWrap, TexC);
 	}
 	return DiffuseAlbedo;
 }

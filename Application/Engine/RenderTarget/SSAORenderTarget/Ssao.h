@@ -6,7 +6,10 @@ class OSSAORenderTarget : public ORenderTargetBase
 public:
 	struct SConstantBufferBlurData
 	{
-		bool Horizontal = false;
+		UINT Horizontal = 0;
+		float Pad1;
+		float Pad2;
+		float Pad3;
 	};
 
 	enum ESubtargets
@@ -28,8 +31,10 @@ public:
 	void BuildOffsetVectors();
 	void BuildRandomVectorTexture();
 	void InitRenderObject() override;
+	void BuildViewport() override;
 	void OnResize(const ResizeEventArgs& Args) override;
 
+	std::array<DirectX::XMFLOAT4, 14> GetOffsetVectors();
 	static vector<float> CalcGaussWeights(float Sigma);
 	static const int MaxBlurRadius = 5;
 	SResourceInfo* GetSubresource(uint32_t Idx) override;
@@ -41,6 +46,7 @@ public:
 	SResourceInfo* GetRandomVectorMap();
 	SResourceInfo* GetNormalMap();
 	SResourceInfo* GetAmbientMap0();
+	SResourceInfo* GetDepthMap();
 
 	SDescriptorPair GetNormalMapSRV() const;
 	SDescriptorPair GetNormalMapRTV() const;
@@ -52,18 +58,19 @@ public:
 	SDescriptorPair GetAmbientMap1RTV() const;
 
 	void PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList, uint32_t SubtargetIdx) override;
-	void PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList, SResourceInfo* Target, const SDescriptorPair* RTV, const SDescriptorPair* DSV);
-	void SetHorizontalBlur(bool Horizontal) const;
-	D3D12_GPU_VIRTUAL_ADDRESS GetBlurCBAddress() const;
+	D3D12_GPU_VIRTUAL_ADDRESS GetHBlurCBAddress() const;
+	D3D12_GPU_VIRTUAL_ADDRESS GetVBlurCBAddress() const;
 
 private:
-	TUploadBuffer<SConstantBufferBlurData> BlurCB;
+	TUploadBuffer<SConstantBufferBlurData> HBlurCB;
+	TUploadBuffer<SConstantBufferBlurData> VBlurCB;
 
 	SResourceInfo RandomVectorMap;
 	SResourceInfo RandomVectorMapUploadBuffer;
 	SResourceInfo NormalMap;
 	SResourceInfo AmbientMap0;
 	SResourceInfo AmbientMap1;
+	SResourceInfo DepthMap;
 
 	SDescriptorPair NormalMapSRV;
 	SDescriptorPair NormalMapRTV;
@@ -75,5 +82,5 @@ private:
 	SDescriptorPair AmbientMap1SRV;
 	SDescriptorPair AmbientMap1RTV;
 
-	std::array<DirectX::XMFLOAT4, 16> Offsets{};
+	std::array<DirectX::XMFLOAT4, 14> Offsets{};
 };

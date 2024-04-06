@@ -279,7 +279,7 @@ OOffscreenTexture* OEngine::GetOffscreenRT() const
 void OEngine::DrawFullScreenQuad()
 {
 	const auto commandList = GetCommandQueue()->GetCommandList();
-	commandList->IASetVertexBuffers(0, 1, nullptr);
+	commandList->IASetVertexBuffers(0, 0, nullptr);
 	commandList->IASetIndexBuffer(nullptr);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	commandList->DrawInstanced(6, 1, 0, 0);
@@ -556,12 +556,45 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 		UpdateMaterialCB();
 		UpdateObjectCB();
 		UpdateLightCB(Args);
+		UpdateSSAOCB();
 	}
 
 	for (const auto& val : RenderObjects | std::views::values)
 	{
 		val->Update(Args);
 	}
+}
+
+void OEngine::UpdateSSAOCB()
+{
+	SSsaoConstants constants;
+
+	XMMATRIX T(
+	    0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f);
+
+	auto proj = Window->GetCamera()->GetProj();
+
+	constants.Proj = MainPassCB.Proj;
+	constants.InvProj = MainPassCB.InvProj;
+	auto transposed = XMMatrixTranspose(proj * T);
+	Put(constants.ProjTex, transposed);
+
+	for (int i = 0; i < 14; i++)
+	{
+		constants.OffsetVectors[i] = SSAORT->GetOffsetVectors()[i];
+	}
+
+	auto blurWeights = OSSAORenderTarget::CalcGaussWeights(2.5f);
+	constants.BlurWeights[0] = XMFLOAT4(&blurWeights[0]);
+	constants.BlurWeights[1] = XMFLOAT4(&blurWeights[4]);
+	constants.BlurWeights[2] = XMFLOAT4(&blurWeights[8]);
+	constants.InvRenderTargetSize = XMFLOAT2(1.0f / (SSAORT->GetWidth() / 2), 1.0f / (SSAORT->GetHeight() / 2));
+
+	constants.OcclusionRadius = 0.5f;
+	constants.OcclusionFadeStart = 0.2f;
+	constants.OcclusionFadeEnd = 1.0f;
+	constants.SurfaceEpsilon = 0.05f;
+	CurrentFrameResource->SsaoCB->CopyData(0, constants);
 }
 
 void OEngine::DestroyWindow()
@@ -669,7 +702,7 @@ void OEngine::OnResizeRequest(HWND& WindowHandle)
 		test->OnResize(args);
 	}
 
-	if (UIManager)
+	if (UIManager) // TODO pass all the render targets through automatically
 	{
 		UIManager->OnResize(args);
 	}
@@ -697,6 +730,11 @@ void OEngine::OnResizeRequest(HWND& WindowHandle)
 	for (auto shadowMaps : ShadowMaps)
 	{
 		shadowMaps->OnResize(args);
+	}
+
+	if (SSAORT)
+	{
+		SSAORT->OnResize(args);
 	}
 }
 
@@ -1232,7 +1270,7 @@ void OEngine::RebuildGeometry(string Name)
 
 void OEngine::SetAmbientLight(const DirectX::XMFLOAT4& Color)
 {
-	MainPassCB.AmbientLight = XMFLOAT4(Color.x, Color.y, Color.z, Color.w);
+	MainPassCB.AmbientLight = Color;
 }
 
 uint32_t OEngine::GetPassCountRequired() const
@@ -1256,12 +1294,20 @@ void OEngine::UpdateMainPass(const STimer& Timer)
 	const XMMATRIX invProj = XMMatrixInverse(&projDet, proj);
 	const XMMATRIX invViewProj = XMMatrixInverse(&viewProjDet, viewProj);
 
-	XMStoreFloat4x4(&MainPassCB.View, XMMatrixTranspose(view));
-	XMStoreFloat4x4(&MainPassCB.InvView, XMMatrixTranspose(invView));
-	XMStoreFloat4x4(&MainPassCB.Proj, XMMatrixTranspose(proj));
-	XMStoreFloat4x4(&MainPassCB.InvProj, XMMatrixTranspose(invProj));
-	XMStoreFloat4x4(&MainPassCB.ViewProj, XMMatrixTranspose(viewProj));
-	XMStoreFloat4x4(&MainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
+	// clang-format off
+	XMMATRIX T(
+		 0.5f, 0.0f, 0.0f, 0.0f,
+		 0.0f, -0.5f, 0.0f, 0.0f,
+		 0.0f, 0.0f, 1.0f, 0.0f,
+		 0.5f, 0.5f, 0.0f, 1.0f);
+	// clang-format on
+	Put(MainPassCB.ViewProjTex, Transpose(XMMatrixMultiply(viewProj, T)));
+	Put(MainPassCB.View, Transpose(view));
+	Put(MainPassCB.InvView, Transpose(invView));
+	Put(MainPassCB.Proj, Transpose(proj));
+	Put(MainPassCB.InvProj, Transpose(invProj));
+	Put(MainPassCB.ViewProj, Transpose(viewProj));
+	Put(MainPassCB.InvViewProj, Transpose(invViewProj));
 
 	MainPassCB.EyePosW = Window->GetCamera()->GetPosition3f();
 	MainPassCB.RenderTargetSize = XMFLOAT2(static_cast<float>(Window->GetWidth()), static_cast<float>(Window->GetHeight()));
@@ -1295,6 +1341,11 @@ void OEngine::GetNumLights(uint32_t& OutNumPointLights, uint32_t& OutNumSpotLigh
 			break;
 		}
 	}
+}
+
+ORenderGraph* OEngine::GetRenderGraph() const
+{
+	return RenderGraph.get();
 }
 
 uint32_t OEngine::GetDesiredCountOfSRVs(SResourceHeapBitFlag Flag) const

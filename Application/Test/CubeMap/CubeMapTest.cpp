@@ -16,7 +16,7 @@ bool OCubeMapTest::Initialize()
 void OCubeMapTest::OnUpdate(const UpdateEventArgs& Event)
 {
 	OTest::OnUpdate(Event);
-	AnimateSkull(Event);
+	//AnimateSkull(Event);
 }
 
 void OCubeMapTest::AnimateSkull(const UpdateEventArgs& Event)
@@ -99,10 +99,10 @@ void OCubeMapTest::BuildRenderItems()
 	params.bFrustrumCoolingEnabled = false;
 	auto newQuad = CreateQuadRenderItem(SRenderLayer::ShadowDebug,
 	                                    "Quad",
-	                                    0.0f,
-	                                    0.0f,
+	                                    -1.0f,
 	                                    1.0f,
-	                                    1.0f,
+	                                    2.0f,
+	                                    2.0f,
 	                                    0.0f,
 	                                    params);
 
