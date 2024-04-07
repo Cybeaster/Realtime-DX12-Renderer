@@ -35,8 +35,8 @@ public:
 	void OnResize(const ResizeEventArgs& Args) override;
 
 	std::array<DirectX::XMFLOAT4, 14> GetOffsetVectors();
-	static vector<float> CalcGaussWeights(float Sigma);
-	static const int MaxBlurRadius = 5;
+	vector<float> CalcGaussWeights() const;
+	static constexpr int MaxBlurRadius = 5;
 	SResourceInfo* GetSubresource(uint32_t Idx) override;
 
 	uint32_t GetNumRTVRequired() const override;
@@ -60,6 +60,12 @@ public:
 	void PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList, uint32_t SubtargetIdx) override;
 	D3D12_GPU_VIRTUAL_ADDRESS GetHBlurCBAddress() const;
 	D3D12_GPU_VIRTUAL_ADDRESS GetVBlurCBAddress() const;
+
+	float OcclusionRadius = 0.5f;
+	float OcclusionFadeStart = 0.2f;
+	float OcclusionFadeEnd = 1.0f;
+	float SurfaceEpsilon = 0.05f;
+	float GauseWeightSigma = 2.5f;
 
 private:
 	TUploadBuffer<SConstantBufferBlurData> HBlurCB;

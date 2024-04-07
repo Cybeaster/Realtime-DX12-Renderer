@@ -85,9 +85,12 @@ float4 PS(VertexOut pin)
 	float distToEye = length(toEyeW);
 	toEyeW /= distToEye; // normalize
 
-    pin.SsaoPosH /= pin.SsaoPosH.w;
-	float ambientAccess = gSsaoMap.Sample(gsamLinearWrap, pin.SsaoPosH.xy, 0.0f).r;
-
+	float ambientAccess = 1;
+	if (gSSAOEnabled)
+	{
+		pin.SsaoPosH /= pin.SsaoPosH.w;
+		ambientAccess = gSsaoMap.Sample(gsamLinearWrap, pin.SsaoPosH.xy, 0.0f).r;
+	}
 	// Light terms.
 	float4 ambient =  ambientAccess * gAmbientLight * diffuseAlbedo;
 

@@ -212,6 +212,10 @@ set(SRC_FILES
         Application/Engine/RenderTarget/SSAORenderTarget/Ssao.h
         Application/UI/Graph/RenderGraphWidget.cpp
         Application/UI/Graph/RenderGraphWidget.h
+        Application/UI/Graph/SSAORenderNodeWidget/SsaoRenderNodeWidget.cpp
+        Application/UI/Graph/SSAORenderNodeWidget/SsaoRenderNodeWidget.h
+        Application/UI/Graph/ORenderNodeWidgetBase.cpp
+        Application/UI/Graph/ORenderNodeWidgetBase.h
 )
 
 set(DXCOMPILER_PATH_DLL ${CMAKE_SOURCE_DIR}/Externals/directx/Compiler/bin)
