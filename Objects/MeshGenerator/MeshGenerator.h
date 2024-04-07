@@ -3,6 +3,7 @@
 #include "../MeshParser.h"
 #include "DirectX/DXHelper.h"
 
+struct SMeshPayloadData;
 class OCommandQueue;
 enum class EParserType
 {
@@ -26,6 +27,7 @@ public:
 	unique_ptr<SMeshGeometry> CreateGeosphereMesh(string Name, float Radius, uint32_t NumSubdivisions);
 	unique_ptr<SMeshGeometry> CreateQuadMesh(string Name, float X, float Y, float Width, float Height, float Depth);
 
+	unique_ptr<SMeshGeometry> CreateMesh(const SMeshPayloadData& Data) const;
 	unique_ptr<SMeshGeometry> CreateMesh(string Name, const OGeometryGenerator::SMeshData& Data) const;
 	unique_ptr<SMeshGeometry> CreateMesh(const string& Name, const wstring& Path, EParserType Parser, ETextureMapType GenTexels);
 

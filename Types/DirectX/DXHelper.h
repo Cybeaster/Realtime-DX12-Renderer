@@ -68,7 +68,7 @@ struct SSubmeshGeometry
 {
 	UINT IndexCount = 0;
 	UINT StartIndexLocation = 0;
-	INT BaseVertexLocation = 0;
+	UINT BaseVertexLocation = 0;
 	DirectX::BoundingBox Bounds;
 	std::string Name;
 	std::unique_ptr<std::vector<DirectX::XMFLOAT3>> Vertices = nullptr;

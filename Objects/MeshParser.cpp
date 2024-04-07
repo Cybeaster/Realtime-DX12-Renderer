@@ -5,7 +5,7 @@
 
 using namespace Utils::Math;
 using namespace DirectX;
-bool OCustomParser::ParseMesh(const wstring& Path, OGeometryGenerator::SMeshData& MeshData, ETextureMapType Type)
+bool OCustomParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, ETextureMapType Type)
 {
 	std::ifstream fin(Path);
 	CWIN_LOG(!fin, Geometry, Warning, "Could not open the file: {}", Path);
@@ -21,6 +21,7 @@ bool OCustomParser::ParseMesh(const wstring& Path, OGeometryGenerator::SMeshData
 	fin >> ignore >> vcount;
 	fin >> ignore >> tcount;
 	fin >> ignore >> ignore >> ignore >> ignore;
+	MeshData.Name = WStringToUTF8(Path);
 
 	std::vector<OGeometryGenerator::SGeometryExtendedVertex> vertices(vcount);
 
@@ -61,7 +62,11 @@ bool OCustomParser::ParseMesh(const wstring& Path, OGeometryGenerator::SMeshData
 	}
 	fin.close();
 
-	MeshData.Indices32.assign(indices.begin(), indices.end());
-	MeshData.Vertices.assign(vertices.begin(), vertices.end());
+	OGeometryGenerator::SMeshData data;
+	data.Indices32.assign(indices.begin(), indices.end());
+	data.Vertices.assign(vertices.begin(), vertices.end());
+	MeshData.Data.push_back(std::move(data));
+	MeshData.TotalIndices = indices.size();
+	MeshData.TotalVertices = vertices.size();
 	return true;
 }

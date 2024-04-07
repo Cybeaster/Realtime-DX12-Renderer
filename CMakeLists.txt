@@ -218,6 +218,7 @@ set(SRC_FILES
         Application/UI/Graph/ORenderNodeWidgetBase.h
         Objects/TinyObjLoader/TinyObjLoaderParser.h
         Objects/TinyObjLoader/TinyObjLoaderParser.cpp
+        Objects/MeshGenerator/MeshPayload.h
 )
 
 

@@ -63,7 +63,7 @@ struct OGeometryGenerator::SMeshData
 {
 	vector<SGeometryExtendedVertex> Vertices;
 	vector<uint32_t> Indices32;
-
+	string Name;
 	const vector<uint16_t>& GetIndices16()
 	{
 		if (Indices16.empty())

@@ -1,5 +1,6 @@
 #pragma once
 #include "GeomertryGenerator/GeometryGenerator.h"
+#include "MeshGenerator/MeshPayload.h"
 #include "Types.h"
 
 enum class ETextureMapType
@@ -12,7 +13,7 @@ class IMeshParser
 {
 public:
 	virtual ~IMeshParser() = default;
-	virtual bool ParseMesh(const wstring& Path, OGeometryGenerator::SMeshData& MeshData, ETextureMapType = ETextureMapType::None) = 0;
+	virtual bool ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, ETextureMapType = ETextureMapType::None) = 0;
 
 	template<typename T, typename... Args>
 	static unique_ptr<T> CreateParser(Args&&... args)
@@ -25,5 +26,5 @@ private:
 
 class OCustomParser : public IMeshParser
 {
-	bool ParseMesh(const wstring& Path, OGeometryGenerator::SMeshData& MeshData, ETextureMapType Type = ETextureMapType::None) override;
+	bool ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, ETextureMapType Type = ETextureMapType::None) override;
 };
