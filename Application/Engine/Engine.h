@@ -131,13 +131,10 @@ public:
 
 	ORenderItem* BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params);
 	ORenderItem* BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, const SRenderItemParams& Params);
-	ORenderItem* BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, const SRenderItemParams& Params);
-	ORenderItem* BuildRenderItemFromMesh(string Category, const string& Name, const OGeometryGenerator::SMeshData& Data);
+
 
 	OLightComponent* AddLightingComponent(ORenderItem* Item, const ELightType& Type);
 	void BuildPickRenderItem();
-	SMeshGeometry* CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels);
-	unique_ptr<SMeshGeometry> CreateMesh(const string& Name, const OGeometryGenerator::SMeshData& Data) const;
 
 	SMeshGeometry* FindSceneGeometry(const string& Name) const;
 

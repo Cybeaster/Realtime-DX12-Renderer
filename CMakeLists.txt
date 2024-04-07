@@ -216,7 +216,10 @@ set(SRC_FILES
         Application/UI/Graph/SSAORenderNodeWidget/SsaoRenderNodeWidget.h
         Application/UI/Graph/ORenderNodeWidgetBase.cpp
         Application/UI/Graph/ORenderNodeWidgetBase.h
+        Objects/TinyObjLoader/TinyObjLoaderParser.h
+        Objects/TinyObjLoader/TinyObjLoaderParser.cpp
 )
+
 
 set(DXCOMPILER_PATH_DLL ${CMAKE_SOURCE_DIR}/Externals/directx/Compiler/bin)
 set(DXCOMPILER_PATH_LIB ${CMAKE_SOURCE_DIR}/Externals/directx/Compiler/bin/dxcompiler.lib)
@@ -241,12 +244,12 @@ if (MSVC)
     )
     add_compile_options(/wd4996)
 endif ()
-
 include_directories(IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Externals/imgui)
 include_directories(IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Externals/directx/Compiler/inc)
-
+add_subdirectory(Externals/tinyobjloader)
 target_include_directories(DXRenderer PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Externals/directx
+        ${CMAKE_CURRENT_SOURCE_DIR}/Externals/tinyobjloader
         ${CMAKE_CURRENT_SOURCE_DIR}/Types
         ${CMAKE_CURRENT_SOURCE_DIR}/Application
         ${CMAKE_CURRENT_SOURCE_DIR}/Utils
@@ -257,6 +260,7 @@ target_include_directories(DXRenderer PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Components
 
 )
+
 
 # Copy dxcompiler.dll to the output directory
 add_custom_command(TARGET DXRenderer POST_BUILD

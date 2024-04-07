@@ -93,6 +93,8 @@ void OCubeMapTest::BuildRenderItems()
 	                                      20,
 	                                      { FindMaterial("Mirror"), 10 });
 
+	auto other = CreateRenderItem(SRenderLayer::Opaque, "CustomCube", GetResourcePath(L"Resources/Models/cube.obj"), EParserType::TinyObjLoader, ETextureMapType::None, SRenderItemParams{ FindMaterial("Bricks") });
+
 	SRenderItemParams params;
 	params.MaterialParams = FindMaterial("Bricks");
 	params.NumberOfInstances = 1;

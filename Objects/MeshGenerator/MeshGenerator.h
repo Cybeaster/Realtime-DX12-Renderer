@@ -6,7 +6,8 @@
 class OCommandQueue;
 enum class EParserType
 {
-	Custom
+	Custom,
+	TinyObjLoader
 };
 
 class OMeshGenerator
@@ -26,7 +27,7 @@ public:
 	unique_ptr<SMeshGeometry> CreateQuadMesh(string Name, float X, float Y, float Width, float Height, float Depth);
 
 	unique_ptr<SMeshGeometry> CreateMesh(string Name, const OGeometryGenerator::SMeshData& Data) const;
-	unique_ptr<SMeshGeometry> CreateMesh(const string& Name, const string& Path, EParserType Parser, ETextureMapType GenTexels);
+	unique_ptr<SMeshGeometry> CreateMesh(const string& Name, const wstring& Path, EParserType Parser, ETextureMapType GenTexels);
 
 private:
 	OGeometryGenerator Generator;

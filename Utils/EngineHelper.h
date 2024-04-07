@@ -1,6 +1,7 @@
 #pragma once
 #include "../Materials/MaterialManager/MaterialManager.h"
 #include "../Types/TextureConstants.h"
+#include "Application.h"
 #include "DirectX/RenderItem/RenderItem.h"
 #include "Engine/Engine.h"
 #include "GraphicsPipeline/GraphicsPipeline.h"
@@ -50,16 +51,16 @@ inline STexture* FindOrCreateTexture(const wstring& FileName)
 	return OEngine::Get()->GetTextureManager()->FindOrCreateTexture(FileName);
 }
 
-inline auto CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels)
-{
-	return OEngine::Get()->CreateMesh(Name, Path, Parser, GenTexels);
-}
-
-inline auto CreateRenderItem(const string& RenderLayer, const string& MeshName, const string& Path, EParserType ParserType, ETextureMapType TexelGenerator, const SRenderItemParams& Params)
+inline auto CreateRenderItem(const string& RenderLayer, const string& MeshName, const wstring& Path, EParserType ParserType, ETextureMapType TexelGenerator, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
 	return engine->BuildRenderItemFromMesh(RenderLayer, generator->CreateMesh(MeshName, Path, ParserType, TexelGenerator), Params);
+}
+
+inline auto CreateRenderItem(const string& RenderLayer, const string& MeshName, const string& Path, EParserType ParserType, ETextureMapType TexelGenerator, const SRenderItemParams& Params)
+{
+	return CreateRenderItem(RenderLayer, MeshName, UTF8ToWString(Path), ParserType, TexelGenerator, Params);
 }
 
 inline auto CreateGridRenderItem(string Category, string Name, float Width, float Depth, uint32_t Row, uint32_t Column, const SRenderItemParams& Params)
@@ -159,4 +160,9 @@ inline auto CreateLightSource(const string& Category, const SPointLightPayload& 
 	auto component = engine->AddLightingComponent(ri, ELightType::Point);
 	component->SetPointLight(Params);
 	return ri;
+}
+
+inline auto GetResourcePath(const wstring& Path)
+{
+	return OApplication::Get()->GetResourcePath(Path);
 }

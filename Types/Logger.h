@@ -40,6 +40,7 @@ struct SLogCategories
 	LOG_CATEGORY Physics = L"Physics";
 	LOG_CATEGORY Animation = L"Animation";
 	LOG_CATEGORY Config = L"Config";
+	LOG_CATEGORY TinyObjLoader = L"TinyObjLoader";
 };
 #define CWIN_LOG(Condition, Category, LogType, String, ...)                           \
 	if (Condition)                                                                    \

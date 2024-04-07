@@ -4,6 +4,7 @@
 #include "CommandQueue/CommandQueue.h"
 #include "DirectX/Vertex.h"
 #include "Logger.h"
+#include "TinyObjLoader/TinyObjLoaderParser.h"
 using namespace DirectX;
 using namespace Utils::Math;
 
@@ -107,7 +108,7 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(string Name, const OGeometr
 	return move(geo);
 }
 
-unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels)
+unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const string& Name, const wstring& Path, const EParserType Parser, ETextureMapType GenTexels)
 {
 	unique_ptr<IMeshParser> parser = nullptr;
 	switch (Parser)
@@ -115,11 +116,13 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const string& Name, const s
 	case EParserType::Custom:
 		parser = IMeshParser::CreateParser<OCustomParser>();
 		break;
+	case EParserType::TinyObjLoader:
+		parser = IMeshParser::CreateParser<OTinyObjParser>();
 	}
 
 	OGeometryGenerator::SMeshData data;
 	const bool successful = parser->ParseMesh(Path, data, GenTexels);
-	CWIN_LOG(!successful, Geometry, Warning, "Failed to parse the mesh: {}", TEXT(Path));
+	CWIN_LOG(!successful, Geometry, Warning, "Failed to parse the mesh: {}", Path);
 	if (successful)
 	{
 		return CreateMesh(Name, data);

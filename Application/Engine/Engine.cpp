@@ -1432,13 +1432,6 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeome
 	AddRenderItem(Category, std::move(newItem));
 	return itemptr;
 }
-ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Category, const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels, const SRenderItemParams& Params)
-{
-	auto mesh = MeshGenerator->CreateMesh(Name, Path, Parser, GenTexels);
-	const auto meshptr = mesh.get();
-	SetSceneGeometry(std::move(mesh));
-	return BuildRenderItemFromMesh(Category, meshptr, Params);
-}
 
 OLightComponent* OEngine::AddLightingComponent(ORenderItem* Item, const ELightType& Type)
 {
@@ -1465,16 +1458,6 @@ void OEngine::BuildPickRenderItem()
 	newItem->Instances.push_back(defaultInstance);
 	PickedItem = newItem.get();
 	AddRenderItem(SRenderLayer::Highlight, std::move(newItem));
-}
-
-SMeshGeometry* OEngine::CreateMesh(const string& Name, const string& Path, const EParserType Parser, ETextureMapType GenTexels)
-{
-	return SetSceneGeometry(MeshGenerator->CreateMesh(Name, Path, Parser, GenTexels));
-}
-
-unique_ptr<SMeshGeometry> OEngine::CreateMesh(const string& Name, const OGeometryGenerator::SMeshData& Data) const
-{
-	return MeshGenerator->CreateMesh(Name, Data);
 }
 
 SMeshGeometry* OEngine::FindSceneGeometry(const string& Name) const

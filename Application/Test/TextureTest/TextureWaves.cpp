@@ -327,70 +327,7 @@ void OTextureWaves::BuildLandGeometry()
 
 void OTextureWaves::BuildRenderItems()
 {
-	const auto engine = Engine;
-	SRenderItemParams carParams;
-	carParams.NumberOfInstances = 1;
-	carParams.MaterialParams = { FindMaterial(SMaterialNames::Bronze) };
 
-	auto mesh = CreateMesh("Car",
-	                       "Resources/Models/car.txt",
-	                       EParserType::Custom,
-	                       ETextureMapType::None);
-
-	auto car = engine->BuildRenderItemFromMesh(SRenderLayer::Opaque, mesh, carParams);
-
-	SRenderItemParams highlightedParams;
-	highlightedParams.NumberOfInstances = 1;
-	highlightedParams.MaterialParams = { FindMaterial(SMaterialNames::Picked) };
-	highlightedParams.Pickable = false;
-
-	engine->BuildPickRenderItem();
-	CreateGridRenderItem(SRenderLayer::Waves,
-	                     "WaterNode",
-	                     160,
-	                     160,
-	                     Waves->GetRowCount(),
-	                     Waves->GetColumnCount(),
-	                     Waves->GetRIParams());
-
-	constexpr size_t n = 2;
-	SRenderItemParams params;
-	params.Pickable = true;
-	params.NumberOfInstances = n * n * n;
-	params.MaterialParams = { FindMaterial(SMaterialNames::Debug) };
-	auto skull = engine->BuildRenderItemFromMesh(SRenderLayer::Opaque,
-	                                             "Skull",
-	                                             "Resources/Models/skull.txt",
-	                                             EParserType::Custom,
-	                                             ETextureMapType::Spherical,
-	                                             params);
-
-	float width = 200.0f;
-	float height = 200.0f;
-	float depth = 200.0f;
-
-	float x = -0.5f * width;
-	float y = -0.5f * height;
-	float z = -0.5f * depth;
-	float dx = width / (n - 1);
-	float dy = height / (n - 1);
-	float dz = depth / (n - 1);
-	for (int k = 0; k < n; ++k)
-	{
-		for (int i = 0; i < n; ++i)
-		{
-			for (int j = 0; j < n; ++j)
-			{
-				const int idx = k * n * n + i * n + j;
-				skull->Instances[idx].World = XMFLOAT4X4(
-				    1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, x + j * dx, y + i * dy, z + k * dz, 1.0f);
-
-				XMStoreFloat4x4(&skull->Instances[idx].TexTransform, XMMatrixScaling(2.0f, 2.0f, 1.0f));
-				const auto nextMatIdx = idx % GetMaterials().size();
-				skull->Instances[idx].MaterialIndex = nextMatIdx;
-			}
-		}
-	}
 }
 
 float OTextureWaves::GetHillsHeight(float X, float Z) const

@@ -5,10 +5,10 @@
 
 using namespace Utils::Math;
 using namespace DirectX;
-bool OCustomParser::ParseMesh(const string& Path, OGeometryGenerator::SMeshData& MeshData, ETextureMapType Type)
+bool OCustomParser::ParseMesh(const wstring& Path, OGeometryGenerator::SMeshData& MeshData, ETextureMapType Type)
 {
 	std::ifstream fin(Path);
-	CWIN_LOG(!fin, Geometry, Warning, "Could not open the file: {}", TEXT(Path));
+	CWIN_LOG(!fin, Geometry, Warning, "Could not open the file: {}", Path);
 	if (!fin)
 	{
 		return false;

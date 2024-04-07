@@ -12,7 +12,7 @@ class IMeshParser
 {
 public:
 	virtual ~IMeshParser() = default;
-	virtual bool ParseMesh(const string& Path, OGeometryGenerator::SMeshData& MeshData, ETextureMapType = ETextureMapType::None) = 0;
+	virtual bool ParseMesh(const wstring& Path, OGeometryGenerator::SMeshData& MeshData, ETextureMapType = ETextureMapType::None) = 0;
 
 	template<typename T, typename... Args>
 	static unique_ptr<T> CreateParser(Args&&... args)
@@ -25,5 +25,5 @@ private:
 
 class OCustomParser : public IMeshParser
 {
-	bool ParseMesh(const string& Path, OGeometryGenerator::SMeshData& MeshData, ETextureMapType Type = ETextureMapType::None) override;
+	bool ParseMesh(const wstring& Path, OGeometryGenerator::SMeshData& MeshData, ETextureMapType Type = ETextureMapType::None) override;
 };
