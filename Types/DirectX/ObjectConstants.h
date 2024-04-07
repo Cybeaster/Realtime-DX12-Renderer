@@ -47,4 +47,5 @@ struct SPassConstants
 	UINT NumSpotLights = 0;
 	float cbPerPassPad3; // Padding to ensure the cbuffer ends on a 16-byte boundary
 	float cbPerPassPad4; // Padding to ensure the cbuffer ends on a 16-byte boundary
+	bool SSAOEnabled = true;
 };

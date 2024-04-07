@@ -2,6 +2,7 @@
 #include "RenderGraphWidget.h"
 
 #include "RenderGraph/Graph/RenderGraph.h"
+#include "SSAORenderNodeWidget/SsaoRenderNodeWidget.h"
 ORenderGraphWidget::ORenderGraphWidget(ORenderGraph* InGraph)
     : Graph(InGraph)
 {
@@ -24,18 +25,25 @@ void ORenderGraphWidget::Draw()
 			}
 			ImGui::TreePop();
 		}
+
 		if (Node)
 		{
-			ImGui::SeparatorText("Node Info");
-			ImGui::Text("Name: %s", Node->GetNodeInfo().Name.c_str());
-			ImGui::Text("Layer: %s", Node->GetNodeInfo().RenderLayer.c_str());
-			ImGui::Text("PSO: %s", Node->GetNodeInfo().PSOType.c_str());
-			ImGui::Text("Enable: %s", Node->GetNodeInfo().bEnable ? "True" : "False");
-			bool bEnabled = Node->GetNodeInfo().bEnable;
-			if (ImGui::Checkbox("Enable", &bEnabled))
+			if (Node->GetNodeInfo().Name == "SSAO")
 			{
-				Node->SetNodeEnabled(bEnabled);
+				SSAONodeWidget->SetNode(Node);
+				SSAONodeWidget->Draw();
+			}
+			else
+			{
+				BaseNodeWidget->SetNode(Node);
+				BaseNodeWidget->Draw();
 			}
 		}
 	}
+}
+
+void ORenderGraphWidget::InitWidget()
+{
+	SSAONodeWidget = MakeWidget<OSSAORenderNodeWidget>();
+	BaseNodeWidget = MakeWidget<ORenderNodeWidgetBase>();
 }
