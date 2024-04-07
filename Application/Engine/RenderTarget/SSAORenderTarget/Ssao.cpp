@@ -207,15 +207,19 @@ SDescriptorPair OSSAORenderTarget::GetAmbientMap1SRV()
 	return AmbientMap1SRV;
 }
 
-vector<float> OSSAORenderTarget::CalcGaussWeights(float Sigma)
+vector<float> OSSAORenderTarget::CalcGaussWeights() const
 {
-	float twoSigma2 = 2.0f * Sigma * Sigma;
+	float twoSigma2 = 2.0f * GauseWeightSigma * GauseWeightSigma;
 
 	// Estimate the blur radius based on sigma since sigma controls the "width" of the bell curve.
 	// For example, for sigma = 3, the width of the bell curve is
-	int blurRadius = (int)ceil(2.0f * Sigma);
+	int blurRadius = (int)ceil(2.0f * GauseWeightSigma);
 
-	assert(blurRadius <= MaxBlurRadius);
+	if (blurRadius > MaxBlurRadius)
+	{
+		LOG(Render, Warning, "Blur radius is too large.")
+		blurRadius = MaxBlurRadius;
+	}
 
 	std::vector<float> weights;
 	weights.resize(2 * blurRadius + 1);

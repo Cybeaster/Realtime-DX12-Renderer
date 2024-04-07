@@ -584,16 +584,16 @@ void OEngine::UpdateSSAOCB()
 		constants.OffsetVectors[i] = SSAORT->GetOffsetVectors()[i];
 	}
 
-	auto blurWeights = OSSAORenderTarget::CalcGaussWeights(2.5f);
+	auto blurWeights = SSAORT->CalcGaussWeights();
 	constants.BlurWeights[0] = XMFLOAT4(&blurWeights[0]);
 	constants.BlurWeights[1] = XMFLOAT4(&blurWeights[4]);
 	constants.BlurWeights[2] = XMFLOAT4(&blurWeights[8]);
 	constants.InvRenderTargetSize = XMFLOAT2(1.0f / (SSAORT->GetWidth() / 2), 1.0f / (SSAORT->GetHeight() / 2));
 
-	constants.OcclusionRadius = 0.5f;
-	constants.OcclusionFadeStart = 0.2f;
-	constants.OcclusionFadeEnd = 1.0f;
-	constants.SurfaceEpsilon = 0.05f;
+	constants.OcclusionRadius = SSAORT->OcclusionRadius;
+	constants.OcclusionFadeStart = SSAORT->OcclusionFadeStart;
+	constants.OcclusionFadeEnd = SSAORT->OcclusionFadeEnd;
+	constants.SurfaceEpsilon = SSAORT->SurfaceEpsilon;
 	CurrentFrameResource->SsaoCB->CopyData(0, constants);
 }
 

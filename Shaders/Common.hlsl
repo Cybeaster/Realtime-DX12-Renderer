@@ -92,7 +92,7 @@ cbuffer cbPass : register(b0)
 	uint gNumSpotLights;
 	float cbPerPassPad3; // Padding to ensure the cbuffer ends on a 16-byte boundary
 	float cbPerPassPad4; // Padding to ensure the cbuffer ends on a 16-byte boundary
-
+	bool gSSAOEnabled;
 };
 
 
