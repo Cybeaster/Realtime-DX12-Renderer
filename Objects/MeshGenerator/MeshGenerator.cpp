@@ -8,6 +8,7 @@
 #include "TinyObjLoader/TinyObjLoaderParser.h"
 using namespace DirectX;
 using namespace Utils::Math;
+#pragma optimize("", off)
 
 unique_ptr<SMeshGeometry> OMeshGenerator::CreateGridMesh(string Name, float Width, float Depth, uint32_t Row, uint32_t Column)
 {
@@ -42,7 +43,7 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateQuadMesh(string Name, float X, f
 unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const SMeshPayloadData& Data) const
 {
 	std::vector<SVertex> vertices(Data.TotalVertices);
-	std::vector<uint16_t> indices(Data.TotalIndices);
+	std::vector<uint32_t> indices;
 	size_t vertCounter = 0;
 	size_t indexCounter = 0;
 	auto geo = std::make_unique<SMeshGeometry>();
@@ -82,6 +83,7 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const SMeshPayloadData& Dat
 		submesh.Name = payload.Name;
 		vertCounter += payload.Vertices.size();
 		indexCounter += payload.Indices32.size();
+		indices.insert(indices.end(), payload.Indices32.begin(), payload.Indices32.end());
 		geo->SetGeometry(payload.Name, submesh);
 	}
 
@@ -113,14 +115,15 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const SMeshPayloadData& Dat
 	return move(geo);
 }
 
-unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(string Name, const OGeometryGenerator::SMeshData& Data) const
+unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const string& Name, const OGeometryGenerator::SMeshData& Data) const
 {
-	const SMeshPayloadData payload = {
+	SMeshPayloadData payload = {
 		.Data = { Data },
 		.Name = Name,
 		.TotalVertices = Data.Vertices.size(),
 		.TotalIndices = Data.Indices32.size()
 	};
+	payload.Data[0].Name = Name;
 	return CreateMesh(payload);
 }
 
@@ -148,3 +151,5 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const string& Name, const w
 		return nullptr;
 	}
 }
+
+#pragma optimize("", on)

@@ -36,6 +36,7 @@ bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, 
 	{
 		OGeometryGenerator::SMeshData data;
 		data.Name = shapes[s].name;
+
 		// Loop over faces(polygon)
 		size_t index_offset = 0;
 		for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++)
@@ -71,15 +72,15 @@ bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, 
 				// tinyobj::real_t red   = attrib.colors[3*size_t(idx.vertex_index)+0];
 				// tinyobj::real_t green = attrib.colors[3*size_t(idx.vertex_index)+1];
 				// tinyobj::real_t blue  = attrib.colors[3*size_t(idx.vertex_index)+2];
+
+				data.Vertices.push_back(vertex);
+				data.Indices32.push_back(static_cast<uint32_t>(data.Indices32.size()));
 			}
 			index_offset += fv;
-
-			// per-face material
-			//shapes[s].mesh.material_ids[f];
 		}
+		MeshData.TotalIndices += data.Indices32.size();
+		MeshData.TotalVertices += static_cast<uint32_t>(data.Vertices.size());
 		MeshData.Data.push_back(std::move(data));
-		MeshData.TotalIndices += shapes[s].mesh.indices.size();
-		MeshData.TotalVertices += static_cast<uint32_t>(attrib.vertices.size());
 	}
 	return true;
 }

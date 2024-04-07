@@ -131,7 +131,7 @@ public:
 
 	ORenderItem* BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params);
 	ORenderItem* BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, const SRenderItemParams& Params);
-
+	ORenderItem* BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, string Submesh, const SRenderItemParams& Params);
 
 	OLightComponent* AddLightingComponent(ORenderItem* Item, const ELightType& Type);
 	void BuildPickRenderItem();

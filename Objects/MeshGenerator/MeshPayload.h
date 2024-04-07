@@ -3,7 +3,7 @@
 struct SMeshPayloadData
 {
 	vector<OGeometryGenerator::SMeshData> Data;
-	string Name;
-	size_t TotalVertices;
-	size_t TotalIndices;
+	string Name = "NONE";
+	size_t TotalVertices = 0;
+	size_t TotalIndices = 0;
 };

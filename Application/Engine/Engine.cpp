@@ -1404,13 +1404,29 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeome
 	{
 		LOG(Geometry, Error, "Material not specified!");
 	}
+	ORenderItem* item = nullptr;
+	if (Params.Submesh.empty())
+	{
+		item = BuildRenderItemFromMesh(Category, Mesh, Mesh->GetDrawArgs().begin()->first, Params);
+	}
+	else
+	{
+		for (const auto& key : Mesh->GetDrawArgs() | std::views::keys)
+		{
+			item = BuildRenderItemFromMesh(Category, Mesh, key, Params);
+		}
+	}
+	return item;
+}
 
+ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, string Submesh, const SRenderItemParams& Params)
+{
 	auto newItem = make_unique<ORenderItem>();
-
+	const auto res = newItem.get();
 	newItem->bFrustrumCoolingEnabled = Params.bFrustrumCoolingEnabled;
-
 	SInstanceData defaultInstance;
 	auto mat = Params.MaterialParams.Material;
+
 	defaultInstance.MaterialIndex = mat != nullptr ? mat->MaterialCBIndex : MaterialManager->GetMaterialCBIndex(STextureNames::Debug);
 	defaultInstance.GridSpatialStep = Params.MaterialParams.GridSpatialStep;
 	defaultInstance.DisplacementMapTexelSize = Params.MaterialParams.DisplacementMapTexelSize;
@@ -1419,18 +1435,10 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeome
 	newItem->RenderLayer = Category;
 	newItem->Geometry = Mesh;
 	newItem->bTraceable = Params.Pickable;
-	const auto itemptr = newItem.get();
-	auto submesh = Params.Submesh;
-	if (submesh.empty())
-	{
-		LOG(Geometry, Log, "Submesh not specified, using first submesh!");
-		submesh = Mesh->GetDrawArgs().begin()->first;
-	}
-
-	newItem->ChosenSubmesh = Mesh->FindSubmeshGeomentry(submesh);
-	newItem->Name = Mesh->Name + "_" + std::to_string(AllRenderItems.size());
+	newItem->ChosenSubmesh = Mesh->FindSubmeshGeomentry(Submesh);
+	newItem->Name = Mesh->Name + "_" + Submesh + "_" + std::to_string(AllRenderItems.size());
 	AddRenderItem(Category, std::move(newItem));
-	return itemptr;
+	return res;
 }
 
 OLightComponent* OEngine::AddLightingComponent(ORenderItem* Item, const ELightType& Type)
