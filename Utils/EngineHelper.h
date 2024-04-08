@@ -11,6 +11,11 @@ inline void CreateMaterial(const string& Name, STexture* Texture, const SMateria
 	OEngine::Get()->GetMaterialManager()->CreateMaterial(Name, Texture, Constants, Notify);
 }
 
+inline SMaterial* CreateMaterial(const SMaterialPayloadData& Data)
+{
+	OEngine::Get()->GetMaterialManager()->CreateMaterial(Data);
+}
+
 inline auto& GetMaterials()
 {
 	return OEngine::Get()->GetMaterialManager()->GetMaterials();

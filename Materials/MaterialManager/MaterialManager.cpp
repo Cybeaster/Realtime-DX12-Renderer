@@ -13,7 +13,20 @@ void OMaterialManager::CreateMaterial(const string& Name, STexture* Texture, con
 	mat->Name = Name;
 	mat->MaterialCBIndex = Materials.size();
 	mat->MaterialSurface = Surface;
-	AddMaterial(Name, mat, Notify);
+	AddMaterial(Name, std::move(mat), Notify);
+}
+
+SMaterial* OMaterialManager::CreateMaterial(const SMaterialPayloadData& Data)
+{
+	auto mat = make_unique<SMaterial>();
+	mat->Name = Data.Name;
+	mat->MaterialCBIndex = Materials.size();
+	mat->MaterialSurface = Data.MaterialSurface;
+	mat->DiffuseMaps = LoadTexturesFromPaths(Data.DiffuseMaps);
+	mat->NormalMaps = LoadTexturesFromPaths(Data.NormalMaps);
+	mat->HeightMaps = LoadTexturesFromPaths(Data.HeightMaps);
+	AddMaterial(Data.Name, std::move(mat));
+	return mat.get();
 }
 
 OMaterialManager::OMaterialManager()
@@ -21,7 +34,7 @@ OMaterialManager::OMaterialManager()
 	MaterialsConfigParser = make_unique<OMaterialsConfigParser>(OApplication::Get()->GetConfigPath("MaterialsConfigPath"));
 }
 
-void OMaterialManager::AddMaterial(string Name, unique_ptr<SMaterial>& Material, bool Notify /*= false*/)
+void OMaterialManager::AddMaterial(string Name, unique_ptr<SMaterial> Material, bool Notify /*= false*/)
 {
 	if (Materials.contains(Name))
 	{
@@ -76,6 +89,23 @@ uint32_t OMaterialManager::GetMaterialCBIndex(const string& Name)
 uint32_t OMaterialManager::GetNumMaterials()
 {
 	return Materials.size();
+}
+
+vector<STexturePath> OMaterialManager::LoadTexturesFromPaths(const vector<wstring>& Paths)
+{
+	vector<STexturePath> result;
+	for (const auto& path : Paths)
+	{
+		STexturePath texturePath;
+		texturePath.Path = path;
+		texturePath.Texture = FindOrCreateTexture(path);
+		if (!texturePath.Texture)
+		{
+			LOG(Engine, Warning, "Texture with path {} not found!", path);
+		}
+		result.push_back(texturePath);
+	}
+	return result;
 }
 
 void OMaterialManager::LoadMaterialsFromCache()

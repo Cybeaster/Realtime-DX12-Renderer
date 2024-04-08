@@ -2,15 +2,14 @@
 #include "../../../Components/RenderItemComponentBase.h"
 #include "../../Materials/Material.h"
 #include "DirectX/InstanceData.h"
+#include "DirectX/MeshGeometry.h"
 #include "LightComponent/LightComponent.h"
 #include "Logger.h"
 
 struct SFrameResource;
 
-
 struct SRenderItemGeometry
 {
-
 };
 
 /**
@@ -76,4 +75,8 @@ struct SRenderItemParams
 	size_t NumberOfInstances = 1;
 	bool bFrustrumCoolingEnabled = false;
 	bool Pickable = false;
+	void SetPosition(DirectX::XMFLOAT3 P);
+	void SetScale(DirectX::XMFLOAT3 S);
+	std::optional<DirectX::XMFLOAT3> Position;
+	std::optional<DirectX::XMFLOAT3> Scale;
 };

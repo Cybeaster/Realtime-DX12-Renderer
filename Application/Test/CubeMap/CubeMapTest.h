@@ -18,5 +18,5 @@ private:
 	OWaterRenderObject* Water = nullptr;
 
 	SInstanceData* SkullRitem = nullptr;
-	OLightComponent* DirLight;
+	OLightComponent* DirLight = nullptr;
 };

@@ -115,7 +115,7 @@ float4 PS(VertexOut pin)
     }
 
 	float4 litColor = ambient + float4(light, 1.0f);
-	float3 reflection = reflect(-toEyeW, bumpedNormalW);
+	float3 reflection = float3(0.0f, 0.0f, 0.0f);
 	float4 reflectionColor = gCubeMap.Sample(gsamLinearWrap, reflection);
 	float3 fresnelFactor = SchlickFresnel(fresnelR0, bumpedNormalW, reflection);
 	litColor.rgb += shininess * fresnelFactor * reflectionColor.rgb;

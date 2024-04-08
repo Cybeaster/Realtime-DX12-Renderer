@@ -6,8 +6,23 @@ struct SMaterialSurface
 {
 	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
 	DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
+	DirectX::XMFLOAT3 Emission = { 0.0f, 0.0f, 0.0f };
+
 	float Roughness = 0.25f;
+	float IndexOfRefraction;
+	float Dissolve = 1.0f;
 };
+
+/*
+* real_t ambient[3];
+  real_t diffuse[3];
+  real_t specular[3];
+  real_t transmittance[3];
+  real_t emission[3];
+  real_t shininess;
+  real_t ior;       // index of refraction
+  real_t dissolve;  // 1 == opaque; 0 == fully transparent
+ */
 
 struct SMaterialData
 {

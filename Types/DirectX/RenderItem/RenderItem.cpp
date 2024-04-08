@@ -12,10 +12,10 @@ void ORenderItem::BindResources(ID3D12GraphicsCommandList* CmdList, SFrameResour
 
 void ORenderItem::Update(const UpdateEventArgs& Arg) const
 {
-	 for (auto& Component : Components)
-	 {
-		 Component->Tick(Arg);
-	 }
+	for (auto& Component : Components)
+	{
+		Component->Tick(Arg);
+	}
 }
 
 bool ORenderItem::IsValid() const
@@ -37,4 +37,14 @@ SInstanceData* ORenderItem::GetDefaultInstance()
 const vector<unique_ptr<OComponentBase>>& ORenderItem::GetComponents() const
 {
 	return Components;
+}
+
+void SRenderItemParams::SetPosition(DirectX::XMFLOAT3 P)
+{
+	Position = P;
+}
+
+void SRenderItemParams::SetScale(DirectX::XMFLOAT3 S)
+{
+	Scale = S;
 }

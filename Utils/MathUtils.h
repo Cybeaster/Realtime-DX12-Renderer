@@ -87,32 +87,6 @@ inline DirectX::XMVECTOR SphericalToCartesian(float Radius, float Theta, float P
 }
 } // namespace Utils::Math
 
-inline DirectX::XMFLOAT4X4 Scale(DirectX::XMFLOAT4X4& OutOther, DirectX::XMFLOAT3 ScaleFactor)
-{
-	DirectX::XMStoreFloat4x4(&OutOther, DirectX::XMMatrixScaling(ScaleFactor.x, ScaleFactor.y, ScaleFactor.z));
-	return OutOther;
-}
-
-inline DirectX::XMFLOAT4X4 Scale(const DirectX::XMFLOAT4X4& Other, DirectX::XMFLOAT3 ScaleFactor)
-{
-	auto other = Other;
-	DirectX::XMStoreFloat4x4(&other, DirectX::XMMatrixScaling(ScaleFactor.x, ScaleFactor.y, ScaleFactor.z));
-	return other;
-}
-
-inline DirectX::XMFLOAT4X4 Translate(DirectX::XMFLOAT4X4& OutOther, DirectX::XMFLOAT3 TranslationFactor)
-{
-	DirectX::XMStoreFloat4x4(&OutOther, DirectX::XMMatrixTranslation(TranslationFactor.x, TranslationFactor.y, TranslationFactor.z));
-	return OutOther;
-}
-
-inline DirectX::XMFLOAT4X4 Translate(const DirectX::XMFLOAT4X4& Other, DirectX::XMFLOAT3 TranslationFactor)
-{
-	auto other = Other;
-	XMStoreFloat4x4(&other, DirectX::XMMatrixTranslation(TranslationFactor.x, TranslationFactor.y, TranslationFactor.z));
-	return other;
-}
-
 inline DirectX::XMMATRIX Inverse(const DirectX::XMMATRIX& Mat)
 {
 	auto det = XMMatrixDeterminant(Mat);
@@ -138,6 +112,38 @@ inline DirectX::XMMATRIX Transpose(const DirectX::XMMATRIX& Mat)
 inline void Put(DirectX::XMFLOAT4X4& OutOther, const DirectX::XMMATRIX& Mat)
 {
 	XMStoreFloat4x4(&OutOther, Mat);
+}
+
+inline DirectX::XMMATRIX Load(const DirectX::XMFLOAT4X4 Source)
+{
+	return XMLoadFloat4x4(&Source);
+}
+
+inline DirectX::XMFLOAT4X4 Scale(DirectX::XMFLOAT4X4& OutOther, DirectX::XMFLOAT3 ScaleFactor)
+{
+	Put(OutOther, DirectX::XMMatrixMultiply(Load(OutOther), DirectX::XMMatrixScaling(ScaleFactor.x, ScaleFactor.y, ScaleFactor.z)));
+	return OutOther;
+}
+
+inline DirectX::XMFLOAT4X4 Scale(const DirectX::XMFLOAT4X4& Other, DirectX::XMFLOAT3 ScaleFactor)
+{
+	auto other = Other;
+	Put(other, DirectX::XMMatrixMultiply(Load(other), DirectX::XMMatrixScaling(ScaleFactor.x, ScaleFactor.y, ScaleFactor.z)));
+	return other;
+}
+
+inline DirectX::XMFLOAT4X4 Translate(DirectX::XMFLOAT4X4& OutOther, DirectX::XMFLOAT3 TranslationFactor)
+{
+	//Translate the matrix by the given factor
+	Put(OutOther, DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&OutOther), DirectX::XMMatrixTranslation(TranslationFactor.x, TranslationFactor.y, TranslationFactor.z)));
+	return OutOther;
+}
+
+inline DirectX::XMFLOAT4X4 Translate(const DirectX::XMFLOAT4X4& Other, DirectX::XMFLOAT3 TranslationFactor)
+{
+	auto other = Other;
+	Put(other, XMMatrixMultiply(Load(other), DirectX::XMMatrixTranslation(TranslationFactor.x, TranslationFactor.y, TranslationFactor.z)));
+	return other;
 }
 
 inline DirectX::XMFLOAT4X4 MatCast(const DirectX::XMMATRIX& Mat)

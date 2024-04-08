@@ -17,9 +17,9 @@ public:
 	OMaterialManager();
 	using TMaterialsMap = std::unordered_map<string, unique_ptr<SMaterial>>;
 	using TMaterialsIndexMap = std::unordered_map<uint32_t, SMaterial*>;
-	void AddMaterial(string Name, unique_ptr<SMaterial>& Material, bool Notify = false /*= false*/);
+	void AddMaterial(string Name, unique_ptr<SMaterial> Material, bool Notify = false /*= false*/);
 	void CreateMaterial(const string& Name, STexture* Texture, const SMaterialSurface& Surface, bool Notify = false /*= false*/);
-
+	SMaterial* CreateMaterial(const SMaterialPayloadData& Data);
 	const TMaterialsMap& GetMaterials() const;
 	SMaterial* FindMaterial(const string& Name) const;
 	SMaterial* FindMaterial(uint32_t Index) const;
@@ -28,6 +28,7 @@ public:
 
 	void LoadMaterialsFromCache();
 	static void LoadTexturesFromPaths(vector<STexturePath>& OutTextures);
+	static vector<STexturePath> LoadTexturesFromPaths(const vector<wstring>& Paths);
 	void SaveMaterials() const;
 	void BuildMaterialsFromTextures(const std::unordered_map<string, unique_ptr<STexture>>& Textures);
 	OnMaterialsChanged MaterialsRebuld;

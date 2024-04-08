@@ -219,6 +219,7 @@ set(SRC_FILES
         Objects/TinyObjLoader/TinyObjLoaderParser.h
         Objects/TinyObjLoader/TinyObjLoaderParser.cpp
         Objects/MeshGenerator/MeshPayload.h
+        Types/DirectX/MeshGeometry.h
 )
 
 

@@ -16,13 +16,16 @@ bool OCubeMapTest::Initialize()
 void OCubeMapTest::OnUpdate(const UpdateEventArgs& Event)
 {
 	OTest::OnUpdate(Event);
-	SDirectionalLight light = DirLight->GetDirectionalLight();
-	light.Direction.x = sin(Event.Timer.GetTime() * 0.2f);
-	light.Direction.z = cos(Event.Timer.GetTime() * 0.2f);
-	SDirectionalLightPayload payload;
-	payload.Direction = light.Direction;
-	payload.Strength = light.Strength;
-	DirLight->SetDirectionalLight(payload);
+	if (DirLight)
+	{
+		SDirectionalLight light = DirLight->GetDirectionalLight();
+		light.Direction.x = sin(Event.Timer.GetTime() * 0.2f);
+		light.Direction.z = cos(Event.Timer.GetTime() * 0.2f);
+		SDirectionalLightPayload payload;
+		payload.Direction = light.Direction;
+		payload.Strength = light.Strength;
+		DirLight->SetDirectionalLight(payload);
+	}
 }
 
 void OCubeMapTest::AnimateSkull(const UpdateEventArgs& Event)
@@ -39,8 +42,8 @@ void OCubeMapTest::BuildRenderItems()
 	                                  FindMaterial("GrassSky"));
 	Scale(sky->Instances[0].World, { 5000.0f, 5000.0f, 5000.0f });
 
-	auto other = CreateRenderItem(SRenderLayer::Opaque, "Dragon", GetResourcePath(L"Resources/Models/dragon/dragon.obj"), EParserType::TinyObjLoader, ETextureMapType::None, SRenderItemParams{ FindMaterial("Bricks") });
-	Scale(other->GetDefaultInstance()->World, { 5.f, 5.f, 5.f });
+	//auto dragon = CreateRenderItem(SRenderLayer::Opaque, "Dragon", GetResourcePath(L"Resources/Models/dragon/dragon.obj"), EParserType::TinyObjLoader, ETextureMapType::None, SRenderItemParams{ FindMaterial("Bricks") });
+	//Scale(dragon->GetDefaultInstance()->World, { 5.f, 5.f, 5.f });
 	SRenderItemParams params;
 	params.MaterialParams = FindMaterial("Bricks");
 	params.NumberOfInstances = 1;
@@ -53,6 +56,14 @@ void OCubeMapTest::BuildRenderItems()
 	                                    2.0f,
 	                                    0.0f,
 	                                    params);
+
+	SRenderItemParams params2;
+	params2.MaterialParams = FindMaterial("White");
+	params2.NumberOfInstances = 1;
+	params2.bFrustrumCoolingEnabled = false;
+	params2.Pickable = false;
+	auto room = CreateRenderItem(SRenderLayer::Opaque, "Sponza", GetResourcePath(L"Resources/Models/sponza/sponza.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
+
 	SSpotLightPayload light;
 	light.Strength = { 0.5f, 0.5f, 0.5f };
 	light.Direction = { 0.55, -1, 0.055 };

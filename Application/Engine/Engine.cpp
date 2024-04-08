@@ -1313,7 +1313,7 @@ void OEngine::UpdateMainPass(const STimer& Timer)
 	MainPassCB.RenderTargetSize = XMFLOAT2(static_cast<float>(Window->GetWidth()), static_cast<float>(Window->GetHeight()));
 	MainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / Window->GetWidth(), 1.0f / Window->GetHeight());
 	MainPassCB.NearZ = 1.0f;
-	MainPassCB.FarZ = 1000.0f;
+	MainPassCB.FarZ = 10000.0f;
 	MainPassCB.TotalTime = Timer.GetTime();
 	MainPassCB.DeltaTime = Timer.GetDeltaTime();
 	GetNumLights(MainPassCB.NumPointLights, MainPassCB.NumSpotLights, MainPassCB.NumDirLights);
@@ -1407,14 +1407,14 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeome
 	ORenderItem* item = nullptr;
 	if (Params.Submesh.empty())
 	{
-		item = BuildRenderItemFromMesh(Category, Mesh, Mesh->GetDrawArgs().begin()->first, Params);
-	}
-	else
-	{
 		for (const auto& key : Mesh->GetDrawArgs() | std::views::keys)
 		{
 			item = BuildRenderItemFromMesh(Category, Mesh, key, Params);
 		}
+	}
+	else
+	{
+		item = BuildRenderItemFromMesh(Category, Mesh, Mesh->GetDrawArgs().begin()->first, Params);
 	}
 	return item;
 }
@@ -1425,11 +1425,14 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeome
 	const auto res = newItem.get();
 	newItem->bFrustrumCoolingEnabled = Params.bFrustrumCoolingEnabled;
 	SInstanceData defaultInstance;
-	auto mat = Params.MaterialParams.Material;
-
-	defaultInstance.MaterialIndex = mat != nullptr ? mat->MaterialCBIndex : MaterialManager->GetMaterialCBIndex(STextureNames::Debug);
+	const auto submesh = Mesh->FindSubmeshGeomentry(Submesh);
+	const auto mat = submesh->Material;
+	defaultInstance.MaterialIndex = mat != nullptr ? mat->MaterialCBIndex : Params.MaterialParams.Material->MaterialCBIndex;
 	defaultInstance.GridSpatialStep = Params.MaterialParams.GridSpatialStep;
 	defaultInstance.DisplacementMapTexelSize = Params.MaterialParams.DisplacementMapTexelSize;
+
+	Scale(defaultInstance.World, Params.Scale.value_or(XMFLOAT3{ 1, 1, 1 }));
+	Translate(defaultInstance.World, Params.Position.value_or(XMFLOAT3{ 0, 0, 0 }));
 
 	newItem->Instances.resize(Params.NumberOfInstances, defaultInstance);
 	newItem->RenderLayer = Category;
@@ -1437,6 +1440,7 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeome
 	newItem->bTraceable = Params.Pickable;
 	newItem->ChosenSubmesh = Mesh->FindSubmeshGeomentry(Submesh);
 	newItem->Name = Mesh->Name + "_" + Submesh + "_" + std::to_string(AllRenderItems.size());
+
 	AddRenderItem(Category, std::move(newItem));
 	return res;
 }

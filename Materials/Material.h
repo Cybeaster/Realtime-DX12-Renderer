@@ -13,6 +13,15 @@ struct STexturePath
 	wstring Path;
 };
 
+struct SMaterialPayloadData
+{
+	string Name;
+	SMaterialSurface MaterialSurface;
+	vector<wstring> NormalMaps;
+	vector<wstring> DiffuseMaps;
+	vector<wstring> HeightMaps;
+};
+
 struct SMaterial
 {
 	string Name;

@@ -39,7 +39,7 @@ void ODynamicCubeMapRenderTarget::InitRenderObject()
 	{
 		Cameras[i] = make_unique<OCamera>();
 		Cameras[i]->LookAt(Position, targets[i], ups[i]);
-		Cameras[i]->SetLens(0.5f * XM_PI, 1.0f, 0.1f, 1000.0f);
+		Cameras[i]->SetLens(0.5f * XM_PI, 1.0f, 0.1f, 10000.0f);
 		Cameras[i]->UpdateViewMatrix();
 	}
 }

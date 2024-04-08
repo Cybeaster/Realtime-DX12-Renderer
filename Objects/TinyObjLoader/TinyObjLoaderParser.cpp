@@ -24,19 +24,18 @@ bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, 
 	if (!reader.Warning().empty())
 	{
 		LOG(TinyObjLoader, Warning, "TinyObjReader: {}", TEXT(reader.Warning()));
-		return false;
 	}
 
 	auto& attrib = reader.GetAttrib();
 	auto& shapes = reader.GetShapes();
 	auto& materials = reader.GetMaterials();
-
+	MeshData.Data.reserve(shapes.size());
 	// Loop over shapes
 	for (size_t s = 0; s < shapes.size(); s++)
 	{
 		OGeometryGenerator::SMeshData data;
 		data.Name = shapes[s].name;
-
+		data.Vertices.reserve(shapes[s].mesh.indices.size() / 3);
 		// Loop over faces(polygon)
 		size_t index_offset = 0;
 		for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++)
@@ -49,10 +48,14 @@ bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, 
 				OGeometryGenerator::SGeometryExtendedVertex vertex{};
 				// access to vertex
 				tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
-				vertex.Position.x = attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 0];
-				vertex.Position.y = attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 1];
-				vertex.Position.z = attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 2];
-
+				tinyobj::TinyObjPoint point = { attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 0],
+					                            attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 1],
+					                            attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 2] };
+				vertex.Position = { point.x, point.y, point.z };
+				auto min = std::min({ vertex.Position.x, vertex.Position.y, vertex.Position.z });
+				auto max = std::max({ vertex.Position.x, vertex.Position.y, vertex.Position.z });
+				MeshData.MinCooridnate = std::min(MeshData.MinCooridnate, min);
+				MeshData.MaxCooridnate = std::max(MeshData.MaxCooridnate, max);
 				// Check if `normal_index` is zero or positive. negative = no normal data
 				if (idx.normal_index >= 0)
 				{
@@ -77,7 +80,25 @@ bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, 
 				data.Indices32.push_back(static_cast<uint32_t>(data.Indices32.size()));
 			}
 			index_offset += fv;
+
+			// per-face material
+			const auto id = shapes[s].mesh.material_ids[f];
+			const auto& material = materials[id];
+			data.Material.Name = material.name;
+			data.Material.DiffuseMaps.push_back({ material.diffuse_texname });
+			data.Material.NormalMaps.push_back({ material.normal_texname });
+			data.Material.HeightMaps.push_back({ material.bump_texname });
+			const SMaterialSurface surf = {
+				.DiffuseAlbedo = { material.ambient[0], material.ambient[1], material.ambient[2], 1.0 },
+				.FresnelR0 = { material.specular[0], material.specular[1], material.specular[2] },
+				.Emission = { material.emission[0], material.emission[1], material.emission[2] },
+				.Roughness = 1 - material.shininess,
+				.IndexOfRefraction = material.ior,
+				.Dissolve = material.dissolve
+			};
+			data.Material.MaterialSurface = surf;
 		}
+
 		MeshData.TotalIndices += data.Indices32.size();
 		MeshData.TotalVertices += static_cast<uint32_t>(data.Vertices.size());
 		MeshData.Data.push_back(std::move(data));

@@ -3,9 +3,11 @@
 
 #include "CommandQueue/CommandQueue.h"
 #include "DirectX/Vertex.h"
+#include "EngineHelper.h"
 #include "Logger.h"
 #include "MeshPayload.h"
 #include "TinyObjLoader/TinyObjLoaderParser.h"
+#include "tiny_obj_loader.h"
 using namespace DirectX;
 using namespace Utils::Math;
 #pragma optimize("", off)
@@ -42,12 +44,14 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateQuadMesh(string Name, float X, f
 
 unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const SMeshPayloadData& Data) const
 {
-	std::vector<SVertex> vertices(Data.TotalVertices);
+	std::vector<SVertex> vertices;
 	std::vector<uint32_t> indices;
 	size_t vertCounter = 0;
 	size_t indexCounter = 0;
 	auto geo = std::make_unique<SMeshGeometry>();
 	geo->Name = Data.Name;
+	const auto min = Data.MinCooridnate;
+	const auto max = Data.MaxCooridnate;
 	for (const auto& payload : Data.Data)
 	{
 		XMFLOAT3 vMinf3(+Infinity, +Infinity, +Infinity);
@@ -59,12 +63,15 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const SMeshPayloadData& Dat
 
 		for (size_t i = 0; i < payload.Vertices.size(); ++i)
 		{
-			vertices[i].Position = payload.Vertices[i].Position;
-			vertices[i].Normal = payload.Vertices[i].Normal;
-			vertices[i].TexC = payload.Vertices[i].TexC;
-			vertices[i].TangentU = payload.Vertices[i].TangentU;
-			auto pos = XMLoadFloat3(&vertices[i].Position);
-			positions[i] = vertices[i].Position;
+			SVertex vertex;
+			vertex.Position = payload.Vertices[i].Position;
+			vertex.Normal = payload.Vertices[i].Normal;
+			vertex.TexC = payload.Vertices[i].TexC;
+			vertex.TangentU = payload.Vertices[i].TangentU;
+			vertices.push_back(vertex);
+
+			auto pos = XMLoadFloat3(&vertex.Position);
+			positions[i] = vertex.Position;
 			vMax = XMVectorMax(vMax, pos);
 			vMin = XMVectorMin(vMin, pos);
 		}
@@ -81,6 +88,7 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const SMeshPayloadData& Dat
 		submesh.StartIndexLocation = vertCounter;
 		submesh.BaseVertexLocation = indexCounter;
 		submesh.Name = payload.Name;
+		submesh.Material = CreateMaterial(payload.Material);
 		vertCounter += payload.Vertices.size();
 		indexCounter += payload.Indices32.size();
 		indices.insert(indices.end(), payload.Indices32.begin(), payload.Indices32.end());
@@ -141,7 +149,7 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const string& Name, const w
 	SMeshPayloadData meshData;
 	meshData.Name = Name;
 	const bool successful = parser->ParseMesh(Path, meshData, GenTexels);
-	CWIN_LOG(!successful, Geometry, Warning, "Failed to parse the mesh: {}", Path);
+	CWIN_LOG(!successful, Geometry, Error, "Failed to parse the mesh: {}", Path);
 	if (successful)
 	{
 		return CreateMesh(meshData);

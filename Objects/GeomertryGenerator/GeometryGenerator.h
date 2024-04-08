@@ -1,7 +1,11 @@
 #pragma once
+#include "DirectX/MeshGeometry.h"
+#include "Material.h"
+
 #include <DirectX/DXHelper.h>
 #include <Types.h>
 
+struct SMaterial;
 enum class EGeometryType
 {
 	Grid,
@@ -75,6 +79,8 @@ struct OGeometryGenerator::SMeshData
 
 		return Indices16;
 	}
+
+	SMaterialPayloadData Material;
 
 private:
 	vector<uint16_t> Indices16;
