@@ -1,0 +1,940 @@
+newmtl MASTER_Interior_01_Plaster
+	Ns 100.000Textures\
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.000 0.000 0.000
+	Ke 0.000 0.000 0.000
+	map_Ka ..\BuildingTextures\concrete_smooth_02_diff.png
+	map_Kd ..\BuildingTextures\concrete_smooth_02_diff.png
+
+newmtl MASTER_Interior_01_Wood
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\BuildingTextures\wood_polished_01_diff.png
+	map_Kd ..\BuildingTextures\wood_polished_01_diff.png
+	map_Ks ..\BuildingTextures\wood_polished_01_spec.png
+
+newmtl MASTER_Interior_01_Wooden_stuco
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\BuildingTextures\wood_planks_01_diff.png
+	map_Kd ..\BuildingTextures\wood_planks_01_diff.png
+	map_Ks ..\BuildingTextures\wood_polished_01_spec.png
+
+newmtl MASTER_Wood_Painted3
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\BuildingTextures\Wood_Painted_02_Diff.png
+	map_Kd ..\BuildingTextures\Wood_Painted_02_Diff.png
+	map_Ks ..\BuildingTextures\wood_painted_02_spec.png
+
+newmtl MASTER_Interior_01_Plaster_Red
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\BuildingTextures\concrete_smooth_02_red_diff.png
+	map_Kd ..\BuildingTextures\concrete_smooth_02_red_diff.png
+	map_Ks ..\BuildingTextures\concrete_smooth_02_spec.png
+
+newmtl MASTER_Interior_01_Grid
+	Ns 83.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\BuildingTextures\Grey_128.png
+	map_Kd ..\BuildingTextures\Grey_128.png
+	map_Ks ..\BuildingTextures\Metal_Hexagonal_Grid_01_spec.png
+
+newmtl MASTER_Interior_01_Brushed_Metal
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\BuildingTextures\paris_brushed_metal_diff.png
+	map_Kd ..\BuildingTextures\paris_brushed_metal_diff.png
+	map_Ks ..\BuildingTextures\paris_brushed_metal_spec.png
+
+newmtl MASTER_Interior_01_Plaster2
+	Ns 10.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\BuildingTextures\concrete_smooth_02_diff.png
+	map_Kd ..\BuildingTextures\concrete_smooth_02_diff.png
+	map_Ks ..\BuildingTextures\concrete_smooth_02_spec.png
+
+newmtl MASTER_Interior_01_Frozen_Glass
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.120 0.120 0.120
+	Ke 0.000 0.000 0.000
+	map_Ka ..\BuildingTextures\frosted_glass_diff.png
+	map_Kd ..\BuildingTextures\frosted_glass_diff.png
+
+newmtl MASTER_Interior_01_Floor_Tile_Hexagonal_BLENDSHADER
+	Ns 80.000
+	Ni 1.00
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.06 0.06 0.06
+	Ke 0.000 0.000 0.000
+	map_Ka ..\BuildingTextures\tile_hexagonal_01_diff.png
+	map_Kd ..\BuildingTextures\tile_hexagonal_01_diff.png
+	map_bump ..\BuildingTextures\tile_hexagonal_01_ddna.png
+	bump ..\BuildingTextures\tile_hexagonal_01_ddna.png
+
+newmtl MASTER_Interior_01_Glass
+	Ns 100.000
+	Ni 1.500
+	Tr 0.800
+	Tf 0.200 0.200 0.200 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.773 0.773 0.773
+	Ke 0.000 0.000 0.000
+	map_Ka ..\OtherTextures\Colors\Grey_128.png
+	map_Kd ..\OtherTextures\Colors\Grey_128.png
+
+newmtl MASTER_Interior_01_Paris_Bartrim
+	Ns 100.000
+	Ni 1.500
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\BuildingTextures\Paris_BarTrim_01a_diff.png
+	map_Kd ..\BuildingTextures\Paris_BarTrim_01a_diff.png
+	map_Ks ..\BuildingTextures\Paris_BarTrim_01a_spec.png
+
+newmtl MASTER_Interior_01_White_Plastic
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.165 0.165 0.165
+	Ke 0.000 0.000 0.000
+	map_Ka ..\BuildingTextures\White.png
+	map_Kd ..\BuildingTextures\White.png
+
+newmtl MASTER_Interior_01_Grid1
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\BuildingTextures\Metal_Hexagonal_Grid_01_diff.png
+	map_Kd ..\BuildingTextures\Metal_Hexagonal_Grid_01_diff.png
+	map_Ks ..\BuildingTextures\Metal_Hexagonal_Grid_01_spec.png
+
+newmtl MASTER_Interior_01_Material
+	Ns 10.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.000 0.000 0.000
+	Ke 0.000 0.000 0.000
+	map_Ka ..\BuildingTextures\Paris_MenuSign_01B_diff.png
+	map_Kd ..\BuildingTextures\Paris_MenuSign_01B_diff.png
+
+newmtl MASTER_Interior_01_Paris_Lantern
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Street\Paris_Lantern_01\Paris_Lantern_01A_diff.png
+	map_Kd ..\PropTextures\Street\Paris_Lantern_01\Paris_Lantern_01A_diff.png
+	map_Ks ..\BuildingTextures\Paris_Lantern_01A_spec.png
+	map_d ..\BuildingTextures\Paris_Lantern_01A_mask.png
+	map_Ke ..\PropTextures\Street\Paris_Lantern_01\Paris_Lantern_01A_emi.png
+
+newmtl curtainB1
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_Curtain_01\Paris_Curtain_01B_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_Curtain_01\Paris_Curtain_01B_diff.png
+	map_Ks ..\PropTextures\Bistro\Paris_Curtain_01\Paris_Curtain_01B_spec.png
+
+newmtl curtainA
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_Curtain_01\Paris_Curtain_01A_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_Curtain_01\Paris_Curtain_01A_diff.png
+	map_Ks ..\PropTextures\Bistro\Paris_Curtain_01\Paris_Curtain_01A_spec.png
+
+newmtl Paris_Ceiling_Lamp
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_Ceiling_Lamp_01\Paris_Ceiling_Lamp_01_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_Ceiling_Lamp_01\Paris_Ceiling_Lamp_01_diff.png
+	map_Ks ..\PropTextures\Bistro\Paris_Ceiling_Lamp_01\Paris_Ceiling_Lamp_01_spec.png
+	map_Ke ..\PropTextures\Bistro\Paris_Ceiling_Lamp_01\Paris_Ceiling_Lamp_01_emi.png
+
+newmtl Paris_Wall_Light_Interior
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_Wall_Light_Interior_01\Paris_Wall_Light_Interior_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_Wall_Light_Interior_01\Paris_Wall_Light_Interior_diff.png
+	map_Ks ..\PropTextures\Bistro\Paris_Wall_Light_Interior_01\Paris_Wall_Light_Interior_spec.png
+	map_Ke ..\PropTextures\Bistro\Paris_Wall_Light_Interior_01\Paris_Wall_Light_Interior_emi.png
+
+newmtl Paris_Wall_Bulb_Light
+	Ns 10.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.000 0.000 0.000
+	Ke 1.000 1.000 1.000
+	map_Ka ..\OtherTextures\Colors\White.png
+	map_Kd ..\OtherTextures\Colors\White.png
+
+newmtl Wall_Lamp
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Street\Paris_Lantern_01\Paris_Lantern_01A_diff.png
+	map_Kd ..\PropTextures\Street\Paris_Lantern_01\Paris_Lantern_01A_diff.png
+	map_Ks ..\PropTextures\Street\Paris_Lantern_01\Paris_Lantern_01A_spec.png
+	map_Ke ..\PropTextures\Street\Paris_Lantern_01\Paris_Lantern_01A_emi.png
+
+newmtl Metal_Bronze_01
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\OtherTextures\Tiling\Bronze_01\Bronze_01_diff.png
+	map_Kd ..\OtherTextures\Tiling\Bronze_01\Bronze_01_diff.png
+	map_Ks ..\OtherTextures\Tiling\Bronze_01\Bronze_01_spec.png
+
+newmtl Paris_CeilingFan
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_CeilingFan_01\Paris_CeilingFan_01A_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_CeilingFan_01\Paris_CeilingFan_01A_diff.png
+	map_Ks ..\PropTextures\Bistro\Paris_CeilingFan_01\Paris_CeilingFan_01A_spec.png
+	map_Ke ..\PropTextures\Bistro\Paris_CeilingFan_01\Paris_CeilingFan_01A_emi.png
+
+newmtl Paris_Beertap
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_BeerTap_01\Paris_BeerTap_01_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_BeerTap_01\Paris_BeerTap_01_diff.png
+	map_Ks ..\PropTextures\Bistro\Paris_BeerTap_01\Paris_BeerTap_01_spec.png
+
+newmtl Paris_LiquorBottle_02_Glass
+	Ns 5000.000
+	Ni 1.00
+	d 1.000
+	Tf 0.200 0.10 0.000 
+	illum 7
+	Ka 0 0 0
+	Kd 0 0 0
+	Ks 0.5 0.2 0.098
+	Ke 0.000 0.000 0.000
+
+newmtl Paris_LiquorBottle_01_Caps
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_LiquorBottle_01\Paris_LiquorBottle_01_Cap_Diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_LiquorBottle_01\Paris_LiquorBottle_01_Cap_Diff.png
+	map_Ks ..\PropTextures\Bistro\Paris_LiquorBottle_01\Paris_LiquorBottle_01_Cap_Spec.png
+
+newmtl ToffeeJar_Label
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_LiquorBottle_01\Paris_LiquorBottle_labels_01_Diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_LiquorBottle_01\Paris_LiquorBottle_labels_01_Diff.png
+	map_Ks ..\PropTextures\Bistro\Paris_LiquorBottle_01\Paris_LiquorBottle_labels_01_Spec.png
+
+newmtl Paris_LiquorBottle_01_Glass_Wine
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.045 0.051 0.068
+	Ke 0.000 0.000 0.000
+	map_Ka ..\OtherTextures\Colors\Grey_30.png
+	map_Kd ..\OtherTextures\Colors\Grey_30.png
+
+newmtl Paris_LiquorBottle_01_Glass
+	Ns 100.000
+	Ni 1.500
+	Tf 0.200 0.200 0.200 
+	illum 7
+	Ka 0.200 0.200 0.200
+	Kd 0.000 0.000 0.000
+	Ks 0.212 0.212 0.212
+	Ke 0.000 0.000 0.000
+
+newmtl Paris_LiquorBottle_03_Glass
+	Ns 100.000
+	Ni 1.500
+	Tf 0.200 0.200 0.200 
+	illum 7
+	Ka 0.200 0.200 0.200
+	Kd 0.000 0.000 0.000
+	Ks 0.212 0.255 0.333
+	Ke 0.000 0.000 0.000
+
+newmtl Metal_Worn_01
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\OtherTextures\Tiling\Metal_Clean_01\Metal_Clean_01_diff.png
+	map_Kd ..\OtherTextures\Tiling\Metal_Clean_01\Metal_Clean_01_diff.png
+	map_Ks ..\OtherTextures\Tiling\Metal_Clean_01\Metal_Clean_01_spec.png
+
+newmtl Wood
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\OtherTextures\Tiling\Wood_Planks_01\Wood_Planks_01_Diff.png
+	map_Kd ..\OtherTextures\Tiling\Wood_Planks_01\Wood_Planks_01_Diff.png
+	map_Ks ..\OtherTextures\Tiling\Wood_Planks_01\Wood_Planks_01_Spec.png
+
+newmtl Plastic_02
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\OtherTextures\Tiling\Plastic_01\Plastic_01_Diff.png
+	map_Kd ..\OtherTextures\Tiling\Plastic_01\Plastic_01_Diff.png
+	map_Ks ..\OtherTextures\Tiling\Plastic_01\Plastic_01_Spec.png
+
+newmtl Paris_Painting_Metal
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_Painting_01\Paris_Painting_01_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_Painting_01\Paris_Painting_01_diff.png
+	map_Ks ..\PropTextures\Bistro\Paris_Painting_01\Paris_Painting_01_spec.png
+
+newmtl Paris_Paintings
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_Painting_01\Paris_Paintings_01_Diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_Painting_01\Paris_Paintings_01_Diff.png
+	map_Ks ..\PropTextures\Bistro\Paris_Painting_01\Paris_Paintings_01_Spec.png
+
+newmtl Paris_Paintings_Glass
+	Ns 10.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.831 0.831 0.831
+	Ke 0.000 0.000 0.000
+	map_Ka ..\OtherTextures\Tiling\Glass_Dirty_01\Glass_Dirty_01_Diff.png
+	map_Kd ..\OtherTextures\Tiling\Glass_Dirty_01\Glass_Dirty_01_Diff.png
+
+newmtl Paris_BarStool
+	Ns 10.000
+	Ni 1.500
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_BarStool_01\Paris_BarStool_01A_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_BarStool_01\Paris_BarStool_01A_diff.png
+	map_Ks ..\PropTextures\Bistro\Paris_BarStool_01\Paris_BarStool_01A_spec.png
+
+newmtl ToffeeJar_Metal
+	Ns 100.000
+	Ni 1.500
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\OtherTextures\Tiling\Metal_Chrome_01\Metal_Chrome_01_Diff.png
+	map_Kd ..\OtherTextures\Tiling\Metal_Chrome_01\Metal_Chrome_01_Diff.png
+	map_Ks ..\OtherTextures\Tiling\Metal_Chrome_01\Metal_Chrome_01_Spec.png
+
+newmtl Paris_LiquorBottle_01_Glass1
+	Ns 5000.000
+	Ni 1.200
+	Tf 0.030 0.05 0.04
+	illum 7
+	Ka 0 0 0
+	Kd 0 0 0
+	Ks 0.4 0.4 0.4
+	Ke 0 0 0
+
+newmtl ToffeeJar_Toffee
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 0.000 0.000 0.000
+	Ks 0.823 0.456 0.015
+	Ke 0.000 0.000 0.000
+
+newmtl CookieJar_Glass1
+	Ns 500.000
+	Ni 1.000
+	Tf 0.100 0.100 0.100 
+	illum 7
+	Ka 0 0 0
+	Kd 0 0 0
+	Ks 0.3 0.3 0.3
+	Ke 0 0 0
+
+newmtl CookieJar_Cookies
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.0 0 0
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_CookieJar\Cookie_01_Lo_default_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_CookieJar\Cookie_01_Lo_default_diff.png
+
+newmtl Paris_Radiator
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_Radiator_01\Paris_Radiator_01_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_Radiator_01\Paris_Radiator_01_diff.png
+	map_Ks ..\PropTextures\Bistro\Paris_Radiator_01\Paris_Radiator_01_spec.png
+
+newmtl Cutlery_chrome
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 1 1 1
+	Ke 0.000 0.000 0.000
+	map_Ka ..\OtherTextures\Tiling\Metal_Chrome_02\Metal_Chrome_02_diff.png
+	map_Kd ..\OtherTextures\Tiling\Metal_Chrome_02\Metal_Chrome_02_diff.png
+	map_Ks ..\OtherTextures\Tiling\Metal_Chrome_02\Metal_Chrome_02_spec.png
+
+newmtl Cutlery_details
+	Ns 100.000
+	Ni 1.500
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_Cutlery_01\Paris_Cutlery_01_details_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_Cutlery_01\Paris_Cutlery_01_details_diff.png
+	map_Ks ..\PropTextures\Bistro\Paris_Cutlery_01\Paris_Cutlery_01_details_spec.png
+	map_d ..\PropTextures\Bistro\Paris_Cutlery_01\Paris_Cutlery_01_details_diff.png
+
+newmtl Paris_Table_03
+	Ns 80.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.20 0.20 0.20
+	Ke 0.000 0.000 0.000
+	map_Ka ..\OtherTextures\Tiling\Wood_Polished_01\Wood_Polished_01_Diff.png
+	map_Kd ..\OtherTextures\Tiling\Wood_Polished_01\Wood_Polished_01_Diff.png
+	map_Ks ..\OtherTextures\Tiling\Wood_Polished_01\Wood_Polished_01_spec.png
+
+newmtl Plates_Details
+	Ns 100.000
+	Ni 1.500
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.216 0.216 0.216
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_Plates_01\Paris_Plates_details_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_Plates_01\Paris_Plates_details_diff.png
+	map_d ..\PropTextures\Bistro\Paris_Plates_01\Paris_Plates_details_mask.png
+
+newmtl Plates_Ceramic
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.224 0.224 0.224
+	Ke 0.000 0.000 0.000
+	map_Ka ..\OtherTextures\Tiling\Ceramic_01\Ceramic_01_diff.png
+	map_Kd ..\OtherTextures\Tiling\Ceramic_01\Ceramic_01_diff.png
+
+newmtl NapkinHolder_01
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_NapkinHolder_01\Paris_Napkinholder_01_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_NapkinHolder_01\Paris_Napkinholder_01_diff.png
+	map_Ks ..\PropTextures\Bistro\Paris_NapkinHolder_01\Paris_Napkinholder_01_spec.png
+
+newmtl Paris_Table_cloth_01
+	Ns 5.000
+	Ni 1.500
+	illum 2
+	Ka 1 1 1
+	Kd 1.000 1.000 1.000
+	Ks 0.3 0.3 0.3
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_Cotton_Placemat_01\Paris_Cotton_Placemat_01_Diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_Cotton_Placemat_01\Paris_Cotton_Placemat_01_Diff.png
+	map_Ks ..\PropTextures\Bistro\Paris_Cotton_Placemat_01\Paris_Cotton_Placemat_01_Spec.png
+	map_bump ..\PropTextures\Bistro\Paris_Cotton_Placemat_01\Paris_Cotton_Placemat_01_ddna.png
+
+
+newmtl Metal_Chrome1
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 0.000 0.000 0.000
+	Ks 0.769 0.780 0.780
+	Ke 0.000 0.000 0.000
+	map_Ka ..\OtherTextures\Tiling\Metal_Chrome_01\Metal_Chrome_01_Diff.png
+	map_Kd ..\OtherTextures\Tiling\Metal_Chrome_01\Metal_Chrome_01_Diff.png
+	map_Ks ..\OtherTextures\Tiling\Metal_Chrome_02\Metal_Chrome_02_spec.png
+
+newmtl Cloth
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.041 0.041 0.041
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_Wine_Cooler_01\Paris_Cloths_01_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_Wine_Cooler_01\Paris_Cloths_01_diff.png
+
+newmtl Plants_plants
+	Ns 20.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.0500 0.0500 0.0500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_Flower_Pot_01\Paris_interior_plants_01_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_Flower_Pot_01\Paris_interior_plants_01_diff.png
+	map_d ..\PropTextures\Bistro\Paris_Flower_Pot_01\Paris_interior_plants_01_mask.png
+
+newmtl Plants_Metal_Base_01
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\OtherTextures\Tiling\Metal_Clean_01\Metal_Clean_01_diff.png
+	map_Kd ..\OtherTextures\Tiling\Metal_Clean_01\Metal_Clean_01_diff.png
+	map_Ks ..\OtherTextures\Tiling\Bronze_01\Bronze_01_spec.png
+
+newmtl Trolley_Plastic
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\OtherTextures\Tiling\Plastic_01\Plastic_01_Diff.png
+	map_Kd ..\OtherTextures\Tiling\Plastic_01\Plastic_01_Diff.png
+	map_Ks ..\OtherTextures\Tiling\Plastic_01\Plastic_01_Spec.png
+
+newmtl Trolley_Wheels
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Street\Paris_TrashCan_01\Paris_TrashCan_01_diff.png
+	map_Kd ..\PropTextures\Street\Paris_TrashCan_01\Paris_TrashCan_01_diff.png
+	map_Ks ..\PropTextures\Street\Paris_TrashCan_01\Paris_TrashCan_01_spec.png
+
+newmtl Trolley_Wood_Painted
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\OtherTextures\Tiling\Wood_Painted_02\Wood_Painted_02_Diff.png
+	map_Kd ..\OtherTextures\Tiling\Wood_Painted_02\Wood_Painted_02_Diff.png
+	map_Ks ..\OtherTextures\Tiling\Wood_Painted_02\Wood_Painted_02_Spec.png
+
+newmtl WickerBasket
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.188 0.188 0.188
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_WickerBasket_01\Paris_WickerBasket_01_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_WickerBasket_01\Paris_WickerBasket_01_diff.png
+
+newmtl Paris_Coasters_01
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_Coasters_01\Paris_Coasters_01_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_Coasters_01\Paris_Coasters_01_diff.png
+	map_Ks ..\PropTextures\Bistro\Paris_Coasters_01\Paris_Coasters_01_spec.png
+	map_bump ..\PropTextures\Bistro\Paris_Coasters_01\Paris_Coasters_01_ddna.png
+	bump ..\PropTextures\Bistro\Paris_Coasters_01\Paris_Coasters_01_ddna.png
+
+newmtl Paris_Cashregister
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_CashRegister_01\Paris_CashRegister_01_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_CashRegister_01\Paris_CashRegister_01_diff.png
+	map_Ks ..\PropTextures\Bistro\Paris_CashRegister_01\Paris_CashRegister_01_spec.png
+
+newmtl Paris_Cashregister_Buttons
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_CashRegister_01\Paris_CashRegister_Buttons_01_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_CashRegister_01\Paris_CashRegister_Buttons_01_diff.png
+	map_Ks ..\PropTextures\Bistro\Paris_CashRegister_01\Paris_CashRegister_Buttons_01_spec.png
+
+newmtl Paris_Cashregister_Glass
+	Ns 100.000
+	Ni 1.500
+	Tr 0.900
+	Tf 0.100 0.100 0.100 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.831 0.831 0.831
+	Ke 0.000 0.000 0.000
+	map_Ka ..\OtherTextures\Tiling\Glass_Dirty_01\Glass_Dirty_01_Diff.png
+	map_Kd ..\OtherTextures\Tiling\Glass_Dirty_01\Glass_Dirty_01_Diff.png
+
+newmtl Paris_Doormat
+	Ns 0.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.239 0.239 0.239
+	Ke 0.000 0.000 0.000
+	map_Ka ..\PropTextures\Bistro\Paris_Doormats\Paris_Doormat_01_diff.png
+	map_Kd ..\PropTextures\Bistro\Paris_Doormats\Paris_Doormat_01_diff.png
+
+newmtl Rubber_Bar_Mat_01
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\OtherTextures\Tiling\Rubber_Bar_Mat_01\Rubber_Bar_Mat_01_Diff.png
+	map_Kd ..\OtherTextures\Tiling\Rubber_Bar_Mat_01\Rubber_Bar_Mat_01_Diff.png
+	map_Ks ..\OtherTextures\Tiling\Rubber_Bar_Mat_01\Rubber_Bar_Mat_01_Spec.png
+
+newmtl Plastic_01
+	Ns 100.000
+	Ni 1.500
+	d 1.000
+	Tr 0.000
+	Tf 1.000 1.000 1.000 
+	illum 2
+	Ka 0.200 0.200 0.200
+	Kd 1.000 1.000 1.000
+	Ks 0.500 0.500 0.500
+	Ke 0.000 0.000 0.000
+	map_Ka ..\OtherTextures\Tiling\Plastic_01\Plastic_01_Diff.png
+	map_Kd ..\OtherTextures\Tiling\Plastic_01\Plastic_01_Diff.png
+	map_Ks ..\OtherTextures\Tiling\Plastic_01\Plastic_01_Spec.png
