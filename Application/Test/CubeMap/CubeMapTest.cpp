@@ -62,7 +62,9 @@ void OCubeMapTest::BuildRenderItems()
 	params2.NumberOfInstances = 1;
 	params2.bFrustrumCoolingEnabled = false;
 	params2.Pickable = false;
-	auto room = CreateRenderItem(SRenderLayer::Opaque, "Sponza", GetResourcePath(L"Resources/Models/sponza/sponza.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
+	CreateRenderItem(SRenderLayer::Opaque, "Sponza", GetResourcePath(L"Resources/Models/sponza/sponza.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
+	//CreateRenderItem(SRenderLayer::Opaque, "bistro_ext", GetResourcePath(L"Resources/Models/bistro/interior.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
+	//CreateRenderItem(SRenderLayer::Opaque, "bistro_int", GetResourcePath(L"Resources/Models/bistro/exterior.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
 
 	SSpotLightPayload light;
 	light.Strength = { 0.5f, 0.5f, 0.5f };

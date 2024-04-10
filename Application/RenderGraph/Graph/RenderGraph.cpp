@@ -2,6 +2,8 @@
 #include "RenderGraph.h"
 
 #include "Application.h"
+#include "Profiler.h"
+#include "RenderGraph/Nodes/CopyNode/CopyRenderNode.h"
 #include "RenderGraph/Nodes/DefaultNode/DefaultRenderNode.h"
 #include "RenderGraph/Nodes/PostProcessNode/PostProcessNode.h"
 #include "RenderGraph/Nodes/PresentNode/PresentNode.h"
@@ -47,6 +49,8 @@ ORenderNode* ORenderGraph::GetNext(const ORenderNode* Other)
 
 void ORenderGraph::Execute()
 {
+	PROFILE_SCOPE();
+
 	auto engine = OEngine::Get();
 	if (engine->GetDescriptorHeap())
 	{
@@ -121,6 +125,10 @@ unique_ptr<ORenderNode> ORenderGraph::ResolveNodeType(const string& Type)
 	else if (Type == "SSAO")
 	{
 		return make_unique<OSSAONode>();
+	}
+	else if (Type == "CopyTarget")
+	{
+		return make_unique<OCopyRenderNode>(OEngine::Get()->GetWindow());
 	}
 
 	LOG(Render, Warning, "Node type not found: {}", TEXT(Type));

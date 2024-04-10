@@ -11,6 +11,7 @@
 #include "Exception.h"
 #include "Logger.h"
 #include "MathUtils.h"
+#include "Profiler.h"
 #include "Test/TextureTest/TextureWaves.h"
 #include "TextureConstants.h"
 #include "UI/Effects/FogWidget.h"
@@ -24,13 +25,6 @@
 
 using namespace Microsoft::WRL;
 using namespace DirectX;
-
-#define CMD_LIST_EXEC_SCOPE()                             \
-	auto __cmd_queue = OEngine::Get()->GetCommandQueue(); \
-	__cmd_queue->TryResetCommandList();                   \
-	SExitHelper __cmd_exit_helper([__cmd_queue]() {       \
-		__cmd_queue->ExecuteCommandListAndWait();         \
-	});
 
 void OEngine::RemoveWindow(HWND Hwnd)
 {
@@ -49,6 +43,7 @@ OEngine::~OEngine()
 
 bool OEngine::Initialize()
 {
+	PROFILE_SCOPE()
 	UINT createFactoryFlags = 0;
 #if defined(_DEBUG)
 	createFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
@@ -102,6 +97,7 @@ void OEngine::InitManagers()
 
 void OEngine::PostInitialize()
 {
+	PROFILE_SCOPE()
 	UIManager = BuildRenderObject<OUIManager>(UI);
 	BuildFilters();
 	BuildOffscreenRT();
@@ -110,7 +106,7 @@ void OEngine::PostInitialize()
 
 void OEngine::BuildSSAO()
 {
-	SSAORT = BuildRenderObject<OSSAORenderTarget>(ERenderGroup::RenderTargets, Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::NormalMapFormat);
+	SSAORT = BuildRenderObject<OSSAORenderTarget>(RenderTargets, Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::NormalMapFormat);
 }
 
 void OEngine::BuildFilters()
@@ -138,7 +134,8 @@ TUUID OEngine::AddRenderObject(ERenderGroup Group, IRenderObject* RenderObject)
 
 void OEngine::BuildOffscreenRT()
 {
-	OffscreenRT = BuildRenderObject<OOffscreenTexture>(ERenderGroup::RenderTargets, Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
+	PROFILE_SCOPE();
+	OffscreenRT = BuildRenderObject<OOffscreenTexture>(RenderTargets, Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
 }
 
 ODynamicCubeMapRenderTarget* OEngine::BuildCubeRenderTarget(XMFLOAT3 Center)
@@ -162,13 +159,15 @@ void OEngine::DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLay
 
 void OEngine::UpdateMaterialCB() const
 {
+	PROFILE_SCOPE();
+
 	auto copyIndicesTo = [](const vector<uint32_t>& Source, uint32_t* Destination, size_t Size) {
 		if (Source.size() <= Size)
 		{
 			std::ranges::copy(Source, Destination);
 		}
 	};
-
+	unordered_set<uint32_t> updatedIndices;
 	for (auto& materials = GetMaterials(); const auto& val : materials | std::views::values)
 	{
 		if (const auto material = val.get())
@@ -193,8 +192,10 @@ void OEngine::UpdateMaterialCB() const
 				copyIndicesTo(diffuseIndices, matConstants.DiffuseMapIndex, SRenderConstants::MaxDiffuseMapsPerMaterial);
 				copyIndicesTo(normalIndices, matConstants.NormalMapIndex, SRenderConstants::MaxNormalMapsPerMaterial);
 				copyIndicesTo(heightIndices, matConstants.HeightMapIndex, SRenderConstants::MaxHeightMapsPerMaterial);
-
+				CWIN_LOG(material->MaterialCBIndex < 0 || material->MaterialCBIndex >= SRenderConstants::Max2DTextures, Material, Error, "Material index out of bounds!")
 				Put(matConstants.MatTransform, Transpose(matTransform));
+				LOG(Material, Log, "Updated material: {} Index :{}", TEXT(material->Name), TEXT(material->MaterialCBIndex));
+				updatedIndices.insert(material->MaterialCBIndex);
 				for (auto& cb : FrameResources)
 				{
 					cb->MaterialBuffer->CopyData(material->MaterialCBIndex, matConstants);
@@ -203,10 +204,20 @@ void OEngine::UpdateMaterialCB() const
 			}
 		}
 	}
+	uint32_t currIdx = 0;
+	while (updatedIndices.contains(currIdx))
+	{
+		updatedIndices.erase(currIdx);
+		currIdx++;
+	}
+	CWIN_LOG(updatedIndices.size() > 0, Material, Error, "Some materials were not updated!");
+	LOG(Material, Log, "Updated materials till {}.", updatedIndices.size());
 }
 
 void OEngine::UpdateLightCB(const UpdateEventArgs& Args) const
 {
+	PROFILE_SCOPE();
+
 	uint32_t dirIndex = 0;
 	uint32_t pointIndex = 0;
 	uint32_t spotIndex = 0;
@@ -247,6 +258,8 @@ void OEngine::UpdateLightCB(const UpdateEventArgs& Args) const
 
 void OEngine::DrawRenderItemsImpl(SPSODescriptionBase* Description, const vector<ORenderItem*>& RenderItems)
 {
+	PROFILE_SCOPE();
+
 	auto cmd = GetCommandQueue()->GetCommandList();
 	for (size_t i = 0; i < RenderItems.size(); i++)
 	{
@@ -255,6 +268,7 @@ void OEngine::DrawRenderItemsImpl(SPSODescriptionBase* Description, const vector
 		{
 			continue;
 		}
+		PROFILE_BLOCK_START(renderItem->Name.c_str());
 		if (!renderItem->Instances.empty() && renderItem->Geometry)
 		{
 			renderItem->BindResources(cmd.Get(), Engine->CurrentFrameResource);
@@ -268,6 +282,7 @@ void OEngine::DrawRenderItemsImpl(SPSODescriptionBase* Description, const vector
 			    renderItem->ChosenSubmesh->BaseVertexLocation,
 			    0);
 		}
+		PROFILE_BLOCK_END();
 	}
 }
 
@@ -359,11 +374,12 @@ void OEngine::BuildDescriptorHeaps()
 		SetObjectDescriptor(heap);
 	};
 
-	build(DefaultGlobalHeap, EResourceHeapType::Default, L"GlobalHeap", UIManager->GetNumSRVRequired() + GetTextureManager()->GetNumTotalTextures() + 2);
+	build(DefaultGlobalHeap, EResourceHeapType::Default, L"GlobalHeap", UIManager->GetNumSRVRequired() + SRenderConstants::Max2DTextures + 2);
 }
 
 void OEngine::PostTestInit()
 {
+	PROFILE_SCOPE()
 	BuildDescriptorHeaps();
 	Window->InitRenderObject();
 	BuildFrameResource(GetPassCountRequired());
@@ -449,6 +465,7 @@ OShaderCompiler* OEngine::GetShaderCompiler() const
 
 void OEngine::Draw(UpdateEventArgs& Args)
 {
+	PROFILE_SCOPE()
 	if (HasInitializedTests)
 	{
 		DirectCommandQueue->TryResetCommandList();
@@ -460,6 +477,7 @@ void OEngine::Draw(UpdateEventArgs& Args)
 
 void OEngine::Render(UpdateEventArgs& Args)
 {
+	PROFILE_SCOPE()
 	Args.IsUIInfocus = UIManager->IsInFocus();
 
 	TickTimer = Args.Timer;
@@ -469,6 +487,7 @@ void OEngine::Render(UpdateEventArgs& Args)
 
 void OEngine::Update(UpdateEventArgs& Args)
 {
+	PROFILE_SCOPE()
 	Args.IsUIInfocus = UIManager->IsInFocus();
 	OnUpdate(Args);
 	for (const auto val : Tests | std::views::values)
@@ -479,6 +498,7 @@ void OEngine::Update(UpdateEventArgs& Args)
 
 void OEngine::UpdateFrameResource()
 {
+	PROFILE_SCOPE()
 	CurrentFrameResourceIndex = (CurrentFrameResourceIndex + 1) % SRenderConstants::NumFrameResources;
 	CurrentFrameResource = FrameResources[CurrentFrameResourceIndex].get();
 
@@ -542,6 +562,7 @@ void OEngine::UpdateObjectCB() const
 
 void OEngine::OnUpdate(UpdateEventArgs& Args)
 {
+	PROFILE_SCOPE();
 	UpdateFrameResource();
 	PerformFrustrumCulling();
 
@@ -567,6 +588,7 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 
 void OEngine::UpdateSSAOCB()
 {
+	PROFILE_SCOPE();
 	SSsaoConstants constants;
 
 	XMMATRIX T(
@@ -691,6 +713,7 @@ void OEngine::OnMouseWheel(MouseWheelEventArgs& Args)
 
 void OEngine::OnResizeRequest(HWND& WindowHandle)
 {
+	PROFILE_SCOPE();
 	LOG(Engine, Log, "Engine::OnResize")
 	const auto window = GetWindowByHWND(WindowHandle);
 	ResizeEventArgs args = { window->GetWidth(), window->GetHeight(), WindowHandle };
@@ -784,35 +807,49 @@ bool OEngine::GetMSAAState(UINT& Quality) const
 
 void OEngine::FillDescriptorHeaps()
 {
+	PROFILE_SCOPE();
 	// Textures, SRV offset only
 	uint32_t texturesOffset = 0;
-	auto buildSRV = [&](STexture* Texture) {
-		auto resourceSRV = Texture->GetSRVDesc();
+	auto whiteTex = TextureManager->FindTextureByName("white1x1");
+	auto buildSRV = [&, whiteTex](STexture* Texture) {
 		auto pair = DefaultGlobalHeap.SRVHandle.Offset();
-
+		Texture = Texture ? Texture : whiteTex;
+		auto resourceSRV = Texture->GetSRVDesc();
 		Device->CreateShaderResourceView(Texture->Resource.Resource.Get(), &resourceSRV, pair.CPUHandle);
 		Texture->HeapIdx = texturesOffset;
+
 		texturesOffset++;
 	};
 
-	for (auto& texture : TextureManager->GetTextures() | std::views::values)
-	{
-		if (texture->ViewType != STextureViewType::Texture2D)
+	auto build2DTextures = [&]() {
+		for (auto& texture : TextureManager->GetTextures() | std::views::values)
 		{
-			continue;
+			if (texture->ViewType != STextureViewType::Texture2D)
+			{
+				continue;
+			}
+			buildSRV(texture.get());
 		}
-		buildSRV(texture.get());
-	}
 
-	// Only 3D textures
-	for (const auto& texture : TextureManager->GetTextures() | std::views::values) // make a separate srv heap for 3d textures
-	{
-		if (texture->ViewType == STextureViewType::Texture2D)
+		while (texturesOffset < SRenderConstants::Max2DTextures)
 		{
-			continue;
+			buildSRV(nullptr);
 		}
-		buildSRV(texture.get());
-	}
+	};
+
+	auto build3DTextures = [&]() {
+		for (const auto& texture : TextureManager->GetTextures() | std::views::values) // make a separate srv heap for 3d textures
+		{
+			if (texture->ViewType == STextureViewType::Texture2D)
+			{
+				continue;
+			}
+			buildSRV(texture.get());
+		}
+	};
+
+	build2DTextures();
+	build3DTextures();
 
 	std::for_each(RenderGroups.begin(), RenderGroups.end(), [&](const auto& objects) {
 		std::for_each(objects.second.begin(), objects.second.end(), [&](const auto& id) {
@@ -830,6 +867,7 @@ void OEngine::FillDescriptorHeaps()
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.MipLevels = 1;
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
 	Device->CreateShaderResourceView(nullptr, &srvDesc, NullTexSRV.CPUHandle);
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 	Device->CreateShaderResourceView(nullptr, &srvDesc, NullCubeSRV.CPUHandle);
@@ -1166,6 +1204,7 @@ OEngine::TRenderLayer& OEngine::GetRenderLayers()
 
 void OEngine::PerformFrustrumCulling()
 {
+	PROFILE_SCOPE();
 	if (CurrentFrameResource == nullptr)
 	{
 		return;
@@ -1428,6 +1467,8 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeome
 	const auto submesh = Mesh->FindSubmeshGeomentry(Submesh);
 	const auto mat = submesh->Material;
 	defaultInstance.MaterialIndex = mat != nullptr ? mat->MaterialCBIndex : Params.MaterialParams.Material->MaterialCBIndex;
+	CWIN_LOG(defaultInstance.MaterialIndex < 0, Geometry, Error, "Material not found!");
+
 	defaultInstance.GridSpatialStep = Params.MaterialParams.GridSpatialStep;
 	defaultInstance.DisplacementMapTexelSize = Params.MaterialParams.DisplacementMapTexelSize;
 

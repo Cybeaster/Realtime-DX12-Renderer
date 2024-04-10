@@ -31,16 +31,16 @@ unordered_map<string, vector<SPipelineStage>> OShaderReader::LoadShaders()
 	}
 	return result;
 }
-vector<D3D_SHADER_MACRO> OShaderReader::FindDefines(const boost::property_tree::ptree& Tree)
+vector<SShaderMacro> OShaderReader::FindDefines(const boost::property_tree::ptree& Tree)
 {
 	if (const auto Optional = Tree.get_child_optional("Defines"))
 	{
-		vector<D3D_SHADER_MACRO> result;
+		vector<SShaderMacro> result;
 		for (auto& val : Optional.get() | std::views::values)
 		{
-			D3D_SHADER_MACRO macro;
-			macro.Name = val.get<string>("Name").c_str();
-			macro.Definition = val.get<string>("Value").c_str();
+			SShaderMacro macro;
+			macro.Name = val.get<string>("Name");
+			macro.Definition = val.get<string>("Value");
 			result.push_back(macro);
 		}
 		return result;

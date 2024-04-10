@@ -3,9 +3,12 @@
 
 #include "Engine/Engine.h"
 #include "EngineHelper.h"
+#include "Profiler.h"
 #include "Window/Window.h"
 ORenderTargetBase* OReflectionNode::Execute(ORenderTargetBase* RenderTarget)
 {
+	PROFILE_SCOPE();
+
 	auto cube = OEngine::Get()->GetCubeRenderTarget();
 	auto cmdList = CommandQueue->GetCommandList();
 	OEngine::Get()->SetDescriptorHeap(EResourceHeapType::Default);

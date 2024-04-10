@@ -2,6 +2,7 @@
 
 #include "Logger.h"
 #define TINYOBJLOADER_IMPLEMENTATION
+#include "Application.h"
 #include "MeshGenerator/MeshPayload.h"
 #include "tiny_obj_loader.h"
 
@@ -54,8 +55,6 @@ bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, 
 				vertex.Position = { point.x, point.y, point.z };
 				auto min = std::min({ vertex.Position.x, vertex.Position.y, vertex.Position.z });
 				auto max = std::max({ vertex.Position.x, vertex.Position.y, vertex.Position.z });
-				MeshData.MinCooridnate = std::min(MeshData.MinCooridnate, min);
-				MeshData.MaxCooridnate = std::max(MeshData.MaxCooridnate, max);
 				// Check if `normal_index` is zero or positive. negative = no normal data
 				if (idx.normal_index >= 0)
 				{
@@ -80,25 +79,37 @@ bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, 
 				data.Indices32.push_back(static_cast<uint32_t>(data.Indices32.size()));
 			}
 			index_offset += fv;
-
-			// per-face material
-			const auto id = shapes[s].mesh.material_ids[f];
-			const auto& material = materials[id];
-			data.Material.Name = material.name;
-			data.Material.DiffuseMaps.push_back({ material.diffuse_texname });
-			data.Material.NormalMaps.push_back({ material.normal_texname });
-			data.Material.HeightMaps.push_back({ material.bump_texname });
-			const SMaterialSurface surf = {
-				.DiffuseAlbedo = { material.ambient[0], material.ambient[1], material.ambient[2], 1.0 },
-				.FresnelR0 = { material.specular[0], material.specular[1], material.specular[2] },
-				.Emission = { material.emission[0], material.emission[1], material.emission[2] },
-				.Roughness = 1 - material.shininess,
-				.IndexOfRefraction = material.ior,
-				.Dissolve = material.dissolve
-			};
-			data.Material.MaterialSurface = surf;
 		}
 
+		// per-face material
+		const auto id = shapes[s].mesh.material_ids[0];
+
+		const auto& material = materials[id];
+		auto diff = OApplication::Get()->GetTexturesPath(Path, UTF8ToWString(material.diffuse_texname));
+		auto norm = OApplication::Get()->GetTexturesPath(Path, UTF8ToWString(material.normal_texname));
+		auto height = OApplication::Get()->GetTexturesPath(Path, UTF8ToWString(material.bump_texname));
+		data.Material.Name = material.name;
+		if (!diff.empty())
+		{
+			data.Material.DiffuseMaps.push_back(diff);
+		}
+		if (!norm.empty())
+		{
+			data.Material.NormalMaps.push_back(norm);
+		}
+		if (!height.empty())
+		{
+			data.Material.HeightMaps.push_back(height);
+		}
+		const SMaterialSurface surf = {
+			.DiffuseAlbedo = { material.ambient[0], material.ambient[1], material.ambient[2], 1.0 },
+			.FresnelR0 = { material.specular[0], material.specular[1], material.specular[2] },
+			.Emission = { material.emission[0], material.emission[1], material.emission[2] },
+			.Roughness = 1 - (material.shininess / 100),
+			.IndexOfRefraction = material.ior,
+			.Dissolve = material.dissolve
+		};
+		data.Material.MaterialSurface = surf;
 		MeshData.TotalIndices += data.Indices32.size();
 		MeshData.TotalVertices += static_cast<uint32_t>(data.Vertices.size());
 		MeshData.Data.push_back(std::move(data));

@@ -2,9 +2,11 @@
 
 #include "Engine/Engine.h"
 #include "Engine/RenderTarget/SSAORenderTarget/Ssao.h"
+#include "Profiler.h"
 #include "Window/Window.h"
 ORenderTargetBase* OSSAONode::Execute(ORenderTargetBase* RenderTarget)
 {
+	PROFILE_SCOPE();
 	DrawNormals();
 	DrawSSAO();
 	BlurSSAO();
@@ -32,6 +34,7 @@ void OSSAONode::DrawNormals()
 
 void OSSAONode::DrawSSAO()
 {
+	PROFILE_SCOPE();
 	auto frameResource = OEngine::Get()->CurrentFrameResource;
 	auto ssao = OEngine::Get()->GetSSAORT();
 	auto pso = FindPSOInfo(SPSOType::SSAO);
@@ -49,6 +52,7 @@ void OSSAONode::DrawSSAO()
 
 void OSSAONode::BlurSSAO()
 {
+	PROFILE_SCOPE();
 	SetPSO(SPSOType::SSAOBlur);
 	auto frameResource = OEngine::Get()->CurrentFrameResource;
 	auto ssao = OEngine::Get()->GetSSAORT();

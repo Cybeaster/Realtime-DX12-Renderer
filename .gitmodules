@@ -1,3 +1,12 @@
 [submodule "Externals/tinyobjloader"]
 	path = Externals/tinyobjloader
 	url = git@github.com:tinyobjloader/tinyobjloader.git
+[submodule "Externals/DXTK"]
+	path = Externals/DXTK
+	url = git@github.com:microsoft/DirectXTK.git
+[submodule "Externals/DXC"]
+	path = Externals/DXC
+	url = git@github.com:microsoft/DirectXShaderCompiler.git
+[submodule "Externals/DXHeaders"]
+	path = Externals/DXHeaders
+	url = git@github.com:microsoft/DirectX-Headers.git

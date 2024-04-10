@@ -13,7 +13,7 @@ inline void CreateMaterial(const string& Name, STexture* Texture, const SMateria
 
 inline SMaterial* CreateMaterial(const SMaterialPayloadData& Data)
 {
-	OEngine::Get()->GetMaterialManager()->CreateMaterial(Data);
+	return OEngine::Get()->GetMaterialManager()->CreateMaterial(Data);
 }
 
 inline auto& GetMaterials()

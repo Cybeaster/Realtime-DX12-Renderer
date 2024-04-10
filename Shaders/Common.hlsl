@@ -16,7 +16,7 @@
 #define MAX_SHADOW_MAPS 2
 #endif
 
-#define TEXTURE_MAPS_NUM 41 // TODO dynamically calculate shader resource count
+#define TEXTURE_MAPS_NUM 256
 #define SHADOW_MAPS_NUM 2
 
 // Include structures and functions for lighting.
@@ -35,7 +35,16 @@ struct MaterialData
 {
 	float4 DiffuseAlbedo;
 	float3 FresnelR0;
+	float pad1;
+
+	float3 Emission;
+	float pad2;
+
 	float Roughness;
+	float IndexOfRefraction;
+	float Dissolve;
+	float pad3;
+
 	float4x4 MatTransform;
 	uint DiffuseMapCount;
 	uint NormalMapCount;
@@ -43,8 +52,9 @@ struct MaterialData
 	uint DiffuseMapIndex[MAX_DIFFUSE_MAPS];
 	uint NormalMapIndex[MAX_NORMAL_MAPS];
 	uint HeightMapIndex[MAX_HEIGHT_MAPS];
-	float pad1;
-	float pad2;
+	float pad4;
+	float pad5;
+
 };
 
 

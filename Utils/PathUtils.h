@@ -16,4 +16,9 @@ inline unique_ptr<std::fstream> OpenFile(const string& FileName, const std::ios_
 	}
 	return move(fIn);
 }
+} // namespace Utils
+
+inline wstring ToString(const std::filesystem::path& Path)
+{
+	return Path.wstring();
 }

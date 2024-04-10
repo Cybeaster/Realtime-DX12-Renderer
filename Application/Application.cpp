@@ -405,6 +405,23 @@ wstring OApplication::GetResourcePath(const wstring& Resource) const
 {
 	return RootDirPath.GetWPath() + Resource;
 }
+
+wstring OApplication::GetModelsPath(const wstring& Resource) const
+{
+	return RootDirPath.GetWPath() + L"Resources/Models/" + Resource;
+}
+
+wstring OApplication::GetTexturesPath(const wstring& PathToObj, const wstring& PathToTex) const
+{
+	if (PathToTex.empty() || PathToObj.empty())
+	{
+		return L"";
+	}
+
+	size_t lastSep = PathToObj.find_last_of(L"/\\");
+	return PathToObj.substr(0, lastSep + 1) + PathToTex;
+}
+
 const wstring& OApplication::GetShadersFolder() const
 {
 	static wstring ShadersFolder = L"";

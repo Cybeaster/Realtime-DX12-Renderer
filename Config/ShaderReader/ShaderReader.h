@@ -12,5 +12,5 @@ public:
 	unordered_map<string, vector<SPipelineStage>> LoadShaders();
 
 private:
-	vector<D3D_SHADER_MACRO> FindDefines(const boost::property_tree::ptree& Tree);
+	vector<SShaderMacro> FindDefines(const boost::property_tree::ptree& Tree);
 };

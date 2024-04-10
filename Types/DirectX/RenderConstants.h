@@ -28,6 +28,7 @@ struct SRenderConstants
 	inline static constexpr uint32_t NumFrameResources = 3;
 	inline static constexpr uint32_t MaxLights = 16;
 	inline static constexpr uint32_t RenderBuffersCount = 2;
+	inline static constexpr uint32_t Max2DTextures = 256;
 	inline static constexpr DirectX::XMUINT2 CubeMapDefaultResolution = { 1024, 1024 };
 
 	inline static constexpr uint32_t MaxDiffuseMapsPerMaterial = 3;
@@ -37,7 +38,21 @@ struct SRenderConstants
 	inline static constexpr SSphere Sphere;
 	inline static constexpr SCylinder Cylinder;
 	inline static const string DefaultSkyTexture = "grasscube1024";
+
+	static D3D12_SHADER_RESOURCE_VIEW_DESC GetNullSRV();
 };
+
+inline D3D12_SHADER_RESOURCE_VIEW_DESC SRenderConstants::GetNullSRV()
+{
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels = 1;
+	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+	return srvDesc;
+}
 
 struct SRenderLayer
 {

@@ -6,6 +6,4 @@ struct SMeshPayloadData
 	string Name = "NONE";
 	size_t TotalVertices = 0;
 	size_t TotalIndices = 0;
-	float MinCooridnate = -1;
-	float MaxCooridnate = 1;
 };

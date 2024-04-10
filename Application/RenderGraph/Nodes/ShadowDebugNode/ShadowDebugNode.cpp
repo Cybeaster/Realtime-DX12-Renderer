@@ -3,10 +3,12 @@
 
 #include "Engine/Engine.h"
 #include "Engine/RenderTarget/SSAORenderTarget/Ssao.h"
+#include "Profiler.h"
 #include "Window/Window.h"
 
 void OShadowDebugNode::SetupCommonResources()
 {
+	PROFILE_SCOPE();
 	auto resource = OEngine::Get()->CurrentFrameResource;
 	OEngine::Get()->SetDescriptorHeap(EResourceHeapType::Default);
 	auto ssao = OEngine::Get()->GetSSAORT();
@@ -25,6 +27,8 @@ void OShadowDebugNode::SetupCommonResources()
 
 ORenderTargetBase* OShadowDebugNode::Execute(ORenderTargetBase* RenderTarget)
 {
+	PROFILE_SCOPE();
+
 	OEngine::Get()->DrawRenderItems(FindPSOInfo(SPSOType::ShadowDebug), SRenderLayer::ShadowDebug);
 	return RenderTarget;
 }

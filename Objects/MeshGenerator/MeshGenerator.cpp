@@ -6,6 +6,7 @@
 #include "EngineHelper.h"
 #include "Logger.h"
 #include "MeshPayload.h"
+#include "Profiler.h"
 #include "TinyObjLoader/TinyObjLoaderParser.h"
 #include "tiny_obj_loader.h"
 using namespace DirectX;
@@ -44,14 +45,15 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateQuadMesh(string Name, float X, f
 
 unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const SMeshPayloadData& Data) const
 {
-	std::vector<SVertex> vertices;
+	PROFILE_SCOPE();
+
+	std::vector<SVertex> vertices; //TODO reserrve
 	std::vector<uint32_t> indices;
 	size_t vertCounter = 0;
 	size_t indexCounter = 0;
 	auto geo = std::make_unique<SMeshGeometry>();
 	geo->Name = Data.Name;
-	const auto min = Data.MinCooridnate;
-	const auto max = Data.MaxCooridnate;
+	size_t numMeshes = 0;
 	for (const auto& payload : Data.Data)
 	{
 		XMFLOAT3 vMinf3(+Infinity, +Infinity, +Infinity);
@@ -93,6 +95,8 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const SMeshPayloadData& Dat
 		indexCounter += payload.Indices32.size();
 		indices.insert(indices.end(), payload.Indices32.begin(), payload.Indices32.end());
 		geo->SetGeometry(payload.Name, submesh);
+		numMeshes++;
+		LOG(Geometry, Log, "Mesh: {} has been created! Remaining Meshes: {}", TEXT(payload.Name), TEXT(Data.Data.size() - numMeshes));
 	}
 
 	UINT vbByteSize = vertices.size() * sizeof(SVertex);

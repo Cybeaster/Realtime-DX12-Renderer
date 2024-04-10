@@ -3,11 +3,11 @@
 
 #include "CommandQueue/CommandQueue.h"
 #include "Engine/Engine.h"
+#include "Profiler.h"
 #include "Window/Window.h"
 ORenderTargetBase* OPostProcessNode::Execute(ORenderTargetBase* RenderTarget)
 {
-	CommandQueue->SetRenderTarget(Window);
-	CommandQueue->CopyResourceTo(Window, RenderTarget);
+	PROFILE_SCOPE();
 	DrawSobel(RenderTarget);
 	DrawBlurFilter(Window);
 	CommandQueue->ResourceBarrier(Window, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -24,7 +24,7 @@ void OPostProcessNode::DrawSobel(ORenderTargetBase* RenderTarget)
 	if (engine->GetSobelFilter()->GetIsEnabled())
 	{
 		CommandQueue->ResourceBarrier(RenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
-		auto [executed, result] = engine->GetSobelFilter()->Execute(FindPSOInfo(SPSOType::SobelFilter),RenderTarget->GetSRV().GPUHandle);
+		auto [executed, result] = engine->GetSobelFilter()->Execute(FindPSOInfo(SPSOType::SobelFilter), RenderTarget->GetSRV().GPUHandle);
 		if (executed)
 		{
 			DrawComposite(RenderTarget->GetSRV().GPUHandle, result);

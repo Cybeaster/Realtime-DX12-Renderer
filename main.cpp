@@ -4,6 +4,7 @@
 #define _DEBUG
 #endif
 
+#include "Profiler.h"
 #include "Test/CubeMap/CubeMapTest.h"
 #include "Test/TextureTest/TextureWaves.h"
 
@@ -13,6 +14,7 @@
 
 int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLine, int nCmdShow)
 {
+	ENABLE_PROFILER
 	int returnCode = 0;
 
 	const HMODULE hModule = GetModuleHandleW(NULL);
@@ -28,6 +30,6 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 
 	returnCode = application->Run<OCubeMapTest>();
 	application->Destory();
-
+	DUMP_PROFILE_TO_FILE(ProfilerResult.prof);
 	return returnCode;
 }

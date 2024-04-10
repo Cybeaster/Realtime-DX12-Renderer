@@ -132,12 +132,18 @@ private:
 	void SetGraphicsResourceCBView(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Handle, ID3D12GraphicsCommandList* CmdList);
 };
 
+struct SShaderMacro
+{
+	string Name;
+	string Definition;
+};
+
 struct SPipelineStage
 {
 	wstring ShaderPath;
 	string ShaderName;
 	SShaderDefinition ShaderDefinition;
-	vector<D3D_SHADER_MACRO> Defines;
+	vector<SShaderMacro> Defines;
 	class OShader* Shader;
 	D3D12_SHADER_BYTECODE GetShaderByteCode() const;
 };

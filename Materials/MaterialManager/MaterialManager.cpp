@@ -3,6 +3,7 @@
 #include "Application.h"
 #include "EngineHelper.h"
 #include "Logger.h"
+#include "PathUtils.h"
 #include "TextureConstants.h"
 
 #include <future>
@@ -18,15 +19,31 @@ void OMaterialManager::CreateMaterial(const string& Name, STexture* Texture, con
 
 SMaterial* OMaterialManager::CreateMaterial(const SMaterialPayloadData& Data)
 {
+	auto name = Data.Name;
+	if (name.empty() || (Data.DiffuseMaps.size() == 0 && Data.NormalMaps.size() == 0 && Data.HeightMaps.size() == 0))
+	{
+		LOG(Engine, Warning, "Material is empty!");
+		return nullptr;
+	}
+
+	if (Materials.contains(name))
+	{
+		LOG(Engine, Warning, "Material with name {} already exists!", TEXT(name));
+		//name = name + "_" + std::to_string(Materials.size());
+		return Materials.at(name).get();
+	}
+
 	auto mat = make_unique<SMaterial>();
-	mat->Name = Data.Name;
+	auto res = mat.get();
+	mat->Name = name;
 	mat->MaterialCBIndex = Materials.size();
+	CWIN_LOG(mat->MaterialCBIndex > SRenderConstants::Max2DTextures, Material, Error, "Material index is out of range!");
 	mat->MaterialSurface = Data.MaterialSurface;
 	mat->DiffuseMaps = LoadTexturesFromPaths(Data.DiffuseMaps);
 	mat->NormalMaps = LoadTexturesFromPaths(Data.NormalMaps);
 	mat->HeightMaps = LoadTexturesFromPaths(Data.HeightMaps);
-	AddMaterial(Data.Name, std::move(mat));
-	return mat.get();
+	AddMaterial(name, std::move(mat));
+	return res;
 }
 
 OMaterialManager::OMaterialManager()
@@ -38,9 +55,10 @@ void OMaterialManager::AddMaterial(string Name, unique_ptr<SMaterial> Material, 
 {
 	if (Materials.contains(Name))
 	{
-		LOG(Engine, Warning, "Material with this name already exists!");
+		LOG(Engine, Error, "Material with name {} already exists!", TEXT(Name));
 		return;
 	}
+
 	MaterialsIndicesMap[Material->MaterialCBIndex] = Material.get();
 	Materials[Name] = move(Material);
 	if (Notify)
@@ -94,14 +112,30 @@ uint32_t OMaterialManager::GetNumMaterials()
 vector<STexturePath> OMaterialManager::LoadTexturesFromPaths(const vector<wstring>& Paths)
 {
 	vector<STexturePath> result;
-	for (const auto& path : Paths)
+	for (const auto& str : Paths)
 	{
+		if (str.empty())
+		{
+			continue;
+		}
+		std::filesystem::path path(str);
+		if (!std::filesystem::exists(path))
+		{
+			LOG(Engine, Warning, "Texture file not found!");
+			continue;
+		}
+
+		if (path.extension() != ".dds")
+		{
+			path.replace_extension(".dds");
+		}
+		auto filename = path.filename().string();
 		STexturePath texturePath;
-		texturePath.Path = path;
-		texturePath.Texture = FindOrCreateTexture(path);
+		texturePath.Path = path.c_str();
+		texturePath.Texture = FindOrCreateTexture(filename, path);
 		if (!texturePath.Texture)
 		{
-			LOG(Engine, Warning, "Texture with path {} not found!", path);
+			LOG(Engine, Warning, "Texture with path {} not found!", TEXT(path));
 		}
 		result.push_back(texturePath);
 	}
@@ -110,9 +144,9 @@ vector<STexturePath> OMaterialManager::LoadTexturesFromPaths(const vector<wstrin
 
 void OMaterialManager::LoadMaterialsFromCache()
 {
-	Materials = std::move(MaterialsConfigParser->LoadMaterials());
+	auto materials = std::move(MaterialsConfigParser->LoadMaterials());
 	uint32_t it = 0;
-	for (auto& val : Materials | std::views::values)
+	for (auto& val : materials | std::views::values)
 	{
 		auto& mat = val;
 		LoadTexturesFromPaths(mat->DiffuseMaps);
@@ -121,6 +155,8 @@ void OMaterialManager::LoadMaterialsFromCache()
 		mat->MaterialCBIndex = it;
 		MaterialsIndicesMap[it] = val.get();
 		++it;
+		auto name = mat->Name;
+		AddMaterial(name, std::move(val), false);
 	}
 	MaterialsRebuld.Broadcast();
 }

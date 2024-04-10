@@ -2,9 +2,12 @@
 
 #include "Engine/Engine.h"
 #include "EngineHelper.h"
+#include "Profiler.h"
 
 ORenderTargetBase* OShadowMapNode::Execute(ORenderTargetBase* RenderTarget)
 {
+	PROFILE_SCOPE();
+
 	for (auto map : OEngine::Get()->GetShadowMaps())
 	{
 		CommandQueue->SetRenderTarget(map);
@@ -20,6 +23,7 @@ ORenderTargetBase* OShadowMapNode::Execute(ORenderTargetBase* RenderTarget)
 
 void OShadowMapNode::SetupCommonResources()
 {
+	PROFILE_SCOPE();
 	auto resource = OEngine::Get()->CurrentFrameResource;
 	CommandQueue->SetPipelineState(PSO);
 	CommandQueue->SetResource("cbPass", resource->PassCB->GetGPUAddress(), PSO);

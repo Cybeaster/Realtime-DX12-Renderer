@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.27)
 project(DXRenderer)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -12,10 +12,14 @@ set(IMGUI_BACKENDS
 
 # Use solution folders to organize projects
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+find_package(Python REQUIRED)
 
 source_group("Resources\\Shaders" FILES ${SHADER_FILES})
 
+
 add_definitions(-D_UNICODE -DUNICODE)
+set(CMAKE_PREFIX_PATH Externals/EasyProfiler)
+find_package(easy_profiler REQUIRED)
 find_package(Boost REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 set(SRC_FILES
@@ -220,11 +224,15 @@ set(SRC_FILES
         Objects/TinyObjLoader/TinyObjLoaderParser.cpp
         Objects/MeshGenerator/MeshPayload.h
         Types/DirectX/MeshGeometry.h
+        Application/RenderGraph/Nodes/CopyNode/CopyRenderNode.cpp
+        Application/RenderGraph/Nodes/CopyNode/CopyRenderNode.h
+        Profiler/Profiler.h
 )
 
 
-set(DXCOMPILER_PATH_DLL ${CMAKE_SOURCE_DIR}/Externals/directx/Compiler/bin)
-set(DXCOMPILER_PATH_LIB ${CMAKE_SOURCE_DIR}/Externals/directx/Compiler/bin/dxcompiler.lib)
+set(DXCOMPILER_PATH_DLL ${CMAKE_SOURCE_DIR}/Externals/DXC/bin)
+set(DXCOMPILER_PATH_LIB ${CMAKE_SOURCE_DIR}/Externals/DXC/bin/dxcompiler.lib)
+set(EASY_PROFILER_DLL ${CMAKE_SOURCE_DIR}/Externals/EasyProfiler/bin/easy_profiler.dll)
 
 # Add sources to the project
 add_executable(DXRenderer
@@ -247,11 +255,15 @@ if (MSVC)
     add_compile_options(/wd4996)
 endif ()
 include_directories(IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Externals/imgui)
-include_directories(IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Externals/directx/Compiler/inc)
+include_directories(IMGUI_INCLUDE_DIR Externals/DXC/inc)
+
 add_subdirectory(Externals/tinyobjloader)
+
 target_include_directories(DXRenderer PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Externals/directx
+        ${CMAKE_CURRENT_SOURCE_DIR}/Profiler
         ${CMAKE_CURRENT_SOURCE_DIR}/Externals/tinyobjloader
+        ${CMAKE_CURRENT_SOURCE_DIR}/Externals/DXTK/Inc
         ${CMAKE_CURRENT_SOURCE_DIR}/Types
         ${CMAKE_CURRENT_SOURCE_DIR}/Application
         ${CMAKE_CURRENT_SOURCE_DIR}/Utils
@@ -263,12 +275,27 @@ target_include_directories(DXRenderer PUBLIC
 
 )
 
-
 # Copy dxcompiler.dll to the output directory
 add_custom_command(TARGET DXRenderer POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${DXCOMPILER_PATH_DLL}
         $<TARGET_FILE_DIR:DXRenderer>)
 
+# Copy dxcompiler.dll to the output directory
+add_custom_command(TARGET DXRenderer POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+        ${EASY_PROFILER_DLL}
+        $<TARGET_FILE_DIR:DXRenderer>)
 
-target_link_libraries(DXRenderer d3d12.lib dxgi.lib dxguid.lib d3dcompiler.lib Shlwapi.lib imgui ${Boost_LIBRARIES} Bcrypt.lib ${DXCOMPILER_PATH_LIB})
+
+target_link_libraries(DXRenderer
+        d3d12.lib
+        dxgi.lib
+        dxguid.lib
+        d3dcompiler.lib
+        Shlwapi.lib
+        imgui
+        ${Boost_LIBRARIES}
+        Bcrypt.lib
+        ${DXCOMPILER_PATH_LIB}
+        easy_profiler)

@@ -15,7 +15,7 @@ public:
 	using TTexturesMapPath = std::unordered_map<wstring, STexture*>;
 	OTextureManager(ID3D12Device* Device, OCommandQueue* CommandList);
 
-	STexture* CreateTexture(string Name, wstring FileName);
+	STexture* CreateTexture(const string& Name, wstring FileName);
 	STexture* CreateTexture(const wstring& FileName);
 
 	STexture* FindTextureByName(string Name) const;
@@ -30,8 +30,6 @@ public:
 	void LoadLocalTextures();
 	void SaveLocalTextures();
 	wstring GetName() override;
-	const uint32_t MaxNumberOf2DTextures = 50;
-
 private:
 	void AddTexture(unique_ptr<STexture> Texture);
 	void RemoveAllTextures();

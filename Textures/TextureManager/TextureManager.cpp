@@ -49,7 +49,6 @@ uint32_t OTextureManager::GetNumTotalTextures() const
 	return Textures.size();
 }
 
-
 void OTextureManager::LoadLocalTextures()
 {
 	CommandQueue->TryResetCommandList();
@@ -64,10 +63,10 @@ void OTextureManager::LoadLocalTextures()
 		                                                    OApplication::Get()->GetResourcePath(texture->FileName).c_str(),
 		                                                    texture->Resource.Resource,
 		                                                    texture->UploadHeap.Resource));
-		texture->Resource.Init(this,D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		texture->Resource.Init(this, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 		texture->Resource.Resource->SetName(texture->FileName.c_str());
 
-			CommandQueue->ResourceBarrier(&texture->Resource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+		CommandQueue->ResourceBarrier(&texture->Resource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
 		LOG(Engine, Log, "Texture created from config: Name : {}, Path: {}", TEXT(texture->Name), texture->FileName);
 		AddTexture(make_unique<STexture>(*texture));
 	}
@@ -98,6 +97,18 @@ wstring OTextureManager::GetName()
 
 void OTextureManager::AddTexture(unique_ptr<STexture> Texture)
 {
+	if (Texture->Name.empty())
+	{
+		LOG(Engine, Error, "Texture name is empty!");
+		return;
+	}
+
+	if (Textures.contains(Texture->Name))
+	{
+		LOG(Engine, Error, "Texture with this name already exists!");
+		return;
+	}
+
 	TexturesPath[Texture->FileName] = Texture.get();
 	Textures[Texture->Name] = move(Texture);
 }
@@ -124,12 +135,17 @@ void OTextureManager::RemoveTexture(const wstring& Path)
 	Textures.erase(texture->Name);
 }
 
-STexture* OTextureManager::CreateTexture(string Name, wstring FileName)
+STexture* OTextureManager::CreateTexture(const string& Name, wstring FileName)
 {
-	if (Textures.contains(Name))
+	auto name = Name;
+	if (Textures.contains(name))
 	{
-		LOG(Engine, Error, "Texture with this name already exists!");
-		return nullptr;
+		if (TexturesPath.contains(FileName))
+		{
+			LOG(Engine, Warning, "Texture with this name already exists!");
+			return Textures[name].get();
+		}
+		name = name + "_" + std::to_string(Textures.size());
 	}
 
 	std::filesystem::path path(FileName);
@@ -140,25 +156,37 @@ STexture* OTextureManager::CreateTexture(string Name, wstring FileName)
 	}
 
 	auto texture = make_unique<STexture>();
-	texture->Name = Name;
+	texture->Name = name;
 	texture->FileName = FileName;
 	texture->HeapIdx = Textures.size();
-
 	CWIN_LOG(TexturesHeapIndicesTable.contains(texture->HeapIdx), Engine, Error, "Texture heap index already exists! {}", texture->HeapIdx);
+	CWIN_LOG(texture->HeapIdx > SRenderConstants::Max2DTextures, Engine, Error, "Texture index is out of range!");
 	TexturesHeapIndicesTable.insert(texture->HeapIdx);
+	//Check texture extension
+	if (path.extension() != ".dds")
+	{
+		path.replace_extension(".dds");
+	}
+
+	if (!exists(path))
+	{
+		LOG(Engine, Warning, "Texture file not found!");
+		return nullptr;
+	}
 
 	THROW_IF_FAILED(DirectX::CreateDDSTextureFromFile12(Device,
 	                                                    CommandQueue->GetCommandList().Get(),
-	                                                    texture->FileName.c_str(),
+	                                                    path.c_str(),
 	                                                    texture->Resource.Resource,
 	                                                    texture->UploadHeap.Resource));
-	texture->Resource.Init(this,D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+	texture->Resource.Init(this, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	if (texture->Type == ETextureType::Height)
 	{
 		CommandQueue->ResourceBarrier(&texture->Resource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
 	}
 
-	LOG(Engine, Log, "Texture created: Name : {}, Path: {}", TEXT(Name), FileName);
+	LOG(Engine, Log, "Texture created: Name : {}, Path: {}", TEXT(name), FileName);
 
 	auto result = texture.get();
 	AddTexture(std::move(texture));

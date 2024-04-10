@@ -4,9 +4,12 @@
 #include "Engine/Engine.h"
 #include "Engine/RenderTarget/SSAORenderTarget/Ssao.h"
 #include "EngineHelper.h"
+#include "Profiler.h"
 
 void ODefaultRenderNode::SetupCommonResources()
 {
+	PROFILE_SCOPE();
+
 	auto resource = OEngine::Get()->CurrentFrameResource;
 	OEngine::Get()->SetDescriptorHeap(EResourceHeapType::Default);
 
@@ -30,6 +33,7 @@ void ODefaultRenderNode::Initialize(const SNodeInfo& OtherNodeInfo, OCommandQueu
 
 ORenderTargetBase* ODefaultRenderNode::Execute(ORenderTargetBase* RenderTarget)
 {
+	PROFILE_SCOPE();
 	OEngine::Get()->DrawRenderItems(PSO, GetNodeInfo().RenderLayer);
 	return RenderTarget;
 }

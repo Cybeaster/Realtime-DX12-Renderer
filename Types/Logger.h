@@ -95,26 +95,30 @@ struct SLogUtils
 		{
 			return;
 		}
-
+		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 		switch (Type)
 		{
 		case ELogType::Log:
+			SetConsoleTextAttribute(hConsole, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
 			std::wcout << "\n"
 			           << L"Log: " << String.c_str() << std::endl;
 			break;
 
 		case ELogType::Warning:
+			SetConsoleTextAttribute(hConsole, FOREGROUND_BLUE | FOREGROUND_INTENSITY);
 			std::wcout << "\n"
 			           << L"Warning: " << String.c_str() << std::endl;
 			break;
-
 		case ELogType::Error:
+			SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_INTENSITY);
 			std::wcout << "\n \t \t"
 			           << L"Error: " << String.c_str() << std::endl;
 			__debugbreak();
 			break;
 
 		case ELogType::Critical:
+			SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_INTENSITY);
+
 			std::wcout << "\n \t \t"
 			           << L"Critical: " << String.c_str() << std::endl;
 			assert(false);
@@ -152,6 +156,11 @@ inline std::wstring ToString(int Argument) noexcept
 }
 
 inline std::wstring ToString(float Argument) noexcept
+{
+	return std::to_wstring(Argument);
+}
+
+inline std::wstring ToString(unsigned long long Argument) noexcept
 {
 	return std::to_wstring(Argument);
 }
