@@ -36,6 +36,7 @@ struct ORenderItem
 	T* AddComponent(Args&&... Arg);
 	SMaterial* DefaultMaterial = nullptr;
 	SMeshGeometry* Geometry = nullptr;
+
 	SSubmeshGeometry* ChosenSubmesh = nullptr;
 
 	DirectX::BoundingBox Bounds;

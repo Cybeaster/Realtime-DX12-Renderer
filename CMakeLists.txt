@@ -227,6 +227,9 @@ set(SRC_FILES
         Application/RenderGraph/Nodes/CopyNode/CopyRenderNode.cpp
         Application/RenderGraph/Nodes/CopyNode/CopyRenderNode.h
         Profiler/Profiler.h
+        Textures/SDLTextureLoader.h
+        Application/UI/Engine/PerfomanceWidget.cpp
+        Application/UI/Engine/PerfomanceWidget.h
 )
 
 
@@ -260,6 +263,7 @@ include_directories(IMGUI_INCLUDE_DIR Externals/DXC/inc)
 add_subdirectory(Externals/tinyobjloader)
 
 target_include_directories(DXRenderer PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/Externals/STB
         ${CMAKE_CURRENT_SOURCE_DIR}/Externals/directx
         ${CMAKE_CURRENT_SOURCE_DIR}/Profiler
         ${CMAKE_CURRENT_SOURCE_DIR}/Externals/tinyobjloader

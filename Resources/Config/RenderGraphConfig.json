@@ -7,14 +7,14 @@
         "PSO": "ShadowMap",
         "NextNode": "SSAO",
         "RenderLayer": "Shadow",
-        "Enabled": false
+        "Enabled": true
       },
       {
         "Name": "SSAO",
         "PSO": "SSAO",
         "NextNode": "OpaqueDynamicReflections",
         "RenderLayer": "SSAO",
-        "Enabled": false
+        "Enabled": true
       },
       {
         "Name": "OpaqueDynamicReflections",
@@ -42,14 +42,14 @@
         "PSO": "Sky",
         "NextNode": "Transparent",
         "RenderLayer": "Sky",
-        "Enabled": false
+        "Enabled": true
       },
       {
         "Name": "Transparent",
         "PSO": "Transparent",
         "NextNode": "Water",
         "RenderLayer": "Transparent",
-        "Enabled": false
+        "Enabled": true
       },
       {
         "Name": "Water",
@@ -63,7 +63,7 @@
         "PSO": "Opaque",
         "NextNode": "CopyTarget",
         "RenderLayer": "LightObjects",
-        "Enabled": false
+        "Enabled": true
       },
       {
         "Name": "CopyTarget",
@@ -77,7 +77,7 @@
         "PSO": "Opaque",
         "NextNode": "UI",
         "RenderLayer": "PostProcess",
-        "Enabled": false
+        "Enabled": true
       },
       {
         "Name": "UI",

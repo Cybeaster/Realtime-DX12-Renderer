@@ -2,6 +2,7 @@
 #include "LightComponent.h"
 
 #include "Engine/Engine.h"
+#include "Profiler.h"
 
 OLightComponent::OLightComponent(uint32_t DirLightIdx, uint32_t PointLightIdx, uint32_t SpotLightIdx, ELightType Type)
     : DirLightBufferInfo(DirLightIdx), PointLightBufferInfo(PointLightIdx), SpotLightBufferInfo(SpotLightIdx), LightType(Type)
@@ -11,6 +12,7 @@ OLightComponent::OLightComponent(uint32_t DirLightIdx, uint32_t PointLightIdx, u
 
 void OLightComponent::Tick(UpdateEventArgs Arg)
 {
+	PROFILE_SCOPE();
 	if (!Utils::MatricesEqual(Owner->GetDefaultInstance()->World, Position)) // make delegate based
 	{
 		DirectX::XMVECTOR scale, rotation, translation;
@@ -19,6 +21,7 @@ void OLightComponent::Tick(UpdateEventArgs Arg)
 		DirectX::XMFLOAT4 pos{};
 		DirectX::XMStoreFloat4(&pos, translation);
 		GlobalPosition = translation;
+
 		SpotLight.Position = { pos.x, pos.y, pos.z };
 		PointLight.Position = { pos.x, pos.y, pos.z };
 
@@ -32,6 +35,7 @@ void OLightComponent::SetDirectionalLight(const SDirectionalLightPayload& Light)
 	LightType = ELightType::Directional;
 	DirectionalLight.Direction = Light.Direction;
 	DirectionalLight.Strength = Light.Strength;
+	UpdateLightData();
 }
 
 void OLightComponent::SetPointLight(const SPointLightPayload& Light)
@@ -167,19 +171,19 @@ void OLightComponent::SetPassConstant(SPassConstants& OutConstant)
 void OLightComponent::UpdateLightData()
 {
 	using namespace DirectX;
-
+	PROFILE_SCOPE();
 	auto lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	const auto& bounds = OEngine::Get()->GetSceneBounds();
 	XMVECTOR lightDir;
 	XMVECTOR lightTarget; // Calculate target point using direction
-	XMVECTOR lightPos = GlobalPosition;
 	XMMATRIX T(
 	    0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f);
-
+	XMVECTOR lightPos;
 	if (LightType == ELightType::Directional)
 	{
 		lightDir = XMVector3Normalize(XMLoadFloat3(&DirectionalLight.Direction));
-		lightTarget = XMVectorAdd(lightPos, lightDir); // Calculate target point using direction
+		lightPos = -2.0f * bounds.Radius * lightDir;
+		lightTarget = Load(bounds.Center); // Calculate target point using direction
 
 		// Assuming lightDir is already normalized
 		auto view = XMMatrixLookAtLH(lightPos, lightTarget, lightUp);
@@ -207,6 +211,7 @@ void OLightComponent::UpdateLightData()
 	}
 	else if (LightType == ELightType::Spot)
 	{
+		lightPos = GlobalPosition;
 		lightDir = XMVector3Normalize(XMLoadFloat3(&SpotLight.Direction));
 		lightTarget = XMVectorAdd(lightPos, lightDir); // Calculate target point using direction
 		NearZ = SpotLight.FallOffStart;

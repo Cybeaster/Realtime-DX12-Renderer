@@ -11,7 +11,6 @@ ORenderTargetBase* OReflectionNode::Execute(ORenderTargetBase* RenderTarget)
 
 	auto cube = OEngine::Get()->GetCubeRenderTarget();
 	auto cmdList = CommandQueue->GetCommandList();
-	OEngine::Get()->SetDescriptorHeap(EResourceHeapType::Default);
 	CommandQueue->SetResource("gCubeMap", GetSkyTextureSRV(), PSO);
 
 	cube->SetViewport(CommandQueue->GetCommandList().Get());

@@ -16,16 +16,6 @@ bool OCubeMapTest::Initialize()
 void OCubeMapTest::OnUpdate(const UpdateEventArgs& Event)
 {
 	OTest::OnUpdate(Event);
-	if (DirLight)
-	{
-		SDirectionalLight light = DirLight->GetDirectionalLight();
-		light.Direction.x = sin(Event.Timer.GetTime() * 0.2f);
-		light.Direction.z = cos(Event.Timer.GetTime() * 0.2f);
-		SDirectionalLightPayload payload;
-		payload.Direction = light.Direction;
-		payload.Strength = light.Strength;
-		DirLight->SetDirectionalLight(payload);
-	}
 }
 
 void OCubeMapTest::AnimateSkull(const UpdateEventArgs& Event)
@@ -60,11 +50,11 @@ void OCubeMapTest::BuildRenderItems()
 	SRenderItemParams params2;
 	params2.MaterialParams = FindMaterial("White");
 	params2.NumberOfInstances = 1;
-	params2.bFrustrumCoolingEnabled = false;
+	params2.bFrustrumCoolingEnabled = true;
 	params2.Pickable = false;
-	CreateRenderItem(SRenderLayer::Opaque, "Sponza", GetResourcePath(L"Resources/Models/sponza/sponza.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
-	//CreateRenderItem(SRenderLayer::Opaque, "bistro_ext", GetResourcePath(L"Resources/Models/bistro/interior.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
-	//CreateRenderItem(SRenderLayer::Opaque, "bistro_int", GetResourcePath(L"Resources/Models/bistro/exterior.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
+	//CreateRenderItem(SRenderLayer::Opaque, "Sponza", GetResourcePath(L"Resources/Models/sponza/sponza.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
+	CreateRenderItem(SRenderLayer::Opaque, "bistro_ext", GetResourcePath(L"Resources/Models/bistro/interior.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
+	CreateRenderItem(SRenderLayer::Opaque, "bistro_int", GetResourcePath(L"Resources/Models/bistro/exterior.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
 
 	SSpotLightPayload light;
 	light.Strength = { 0.5f, 0.5f, 0.5f };

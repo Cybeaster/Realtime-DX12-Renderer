@@ -10,6 +10,7 @@ ORenderTargetBase* OSSAONode::Execute(ORenderTargetBase* RenderTarget)
 	DrawNormals();
 	DrawSSAO();
 	BlurSSAO();
+	CommandQueue->SetRenderTarget(RenderTarget);
 	OEngine::Get()->GetWindow()->SetViewport(CommandQueue->GetCommandList().Get());
 	return RenderTarget;
 }
@@ -66,7 +67,7 @@ void OSSAONode::BlurSSAO()
 	auto srv1 = ssao->GetAmbientMap1SRV();
 	auto rtv1 = ssao->GetAmbientMap1RTV();
 
-	for (int i = 0; i < 3; i++)
+	for (int i = 0; i < 5; i++)
 	{
 		CommandQueue->SetResource("cbRootConstants", ssao->GetHBlurCBAddress(), pso);
 		BlurSSAO(OSSAORenderTarget::ESubtargets::AmbientSubtarget1, &srv0, &rtv1);

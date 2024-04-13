@@ -33,7 +33,7 @@ void OLightComponentWidget::Draw()
 			dirty |= ImGui::DragFloat3("Direction", &spotLight.Direction.x, 0.01, -1.0, 1.0);
 			dirty |= ImGui::ColorEdit3("Color", &spotLight.Strength.x);
 			dirty |= ImGui::DragFloat("Falloff Start", &spotLight.FallOffStart, 0.1f, 0.1f, spotLight.FallOffEnd - 0.1f);
-			dirty |= ImGui::DragFloat("Falloff End", &spotLight.FallOffEnd, 0.1f, spotLight.FallOffStart + 0.1f, 100.0f);
+			dirty |= ImGui::DragFloat("Falloff End", &spotLight.FallOffEnd, 1.f, spotLight.FallOffStart + 0.1f, 5000.0f);
 			dirty |= ImGui::DragFloat("Spot Power", &spotLight.SpotPower, 0.1f, 0.1f, 100.0f);
 			dirty |= ImGui::DragFloat("Cone Angle", &spotLight.ConeAngle, 0.1f, 1.0f, 90.0f);
 			break;

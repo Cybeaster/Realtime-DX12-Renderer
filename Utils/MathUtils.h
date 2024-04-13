@@ -114,9 +114,14 @@ inline void Put(DirectX::XMFLOAT4X4& OutOther, const DirectX::XMMATRIX& Mat)
 	XMStoreFloat4x4(&OutOther, Mat);
 }
 
-inline DirectX::XMMATRIX Load(const DirectX::XMFLOAT4X4 Source)
+inline DirectX::XMMATRIX Load(const DirectX::XMFLOAT4X4& Source)
 {
 	return XMLoadFloat4x4(&Source);
+}
+
+inline DirectX::XMVECTOR Load(const DirectX::XMFLOAT3& Source)
+{
+	return DirectX::XMLoadFloat3(&Source);
 }
 
 inline DirectX::XMFLOAT4X4 Scale(DirectX::XMFLOAT4X4& OutOther, DirectX::XMFLOAT3 ScaleFactor)

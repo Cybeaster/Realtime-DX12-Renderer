@@ -10,3 +10,6 @@
 [submodule "Externals/DXHeaders"]
 	path = Externals/DXHeaders
 	url = git@github.com:microsoft/DirectX-Headers.git
+[submodule "Externals/STB"]
+	path = Externals/STB
+	url = git@github.com:nothings/stb.git

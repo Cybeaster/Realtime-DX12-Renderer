@@ -25,7 +25,7 @@ Texture2D gNormalMap    : register(t0);
 Texture2D gDepthMap     : register(t1);
 Texture2D gRandomVecMap : register(t2);
 
-static const int gSampleCount = 14;
+static const int gSampleCount = 128;
 
 static const float2 gTexCoords[6] =
 {

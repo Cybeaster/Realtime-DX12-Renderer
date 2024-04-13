@@ -21,7 +21,8 @@ vector<unique_ptr<OShader>> OShaderCompiler::CompileShaders(vector<SPipelineStag
 	for (auto& shader : OutPipelines)
 	{
 		LOG(Engine, Log, "Compiling shader: {}", shader.ShaderPath);
-		auto temp = CompileShader(shader.ShaderDefinition, shader.ShaderPath, OutShadersPipeline);
+
+		auto temp = CompileShader(shader.ShaderDefinition, shader.Defines, shader.ShaderPath, OutShadersPipeline);
 		shader.Shader = temp.get();
 		shaders.push_back(std::move(temp));
 	}
@@ -29,20 +30,25 @@ vector<unique_ptr<OShader>> OShaderCompiler::CompileShaders(vector<SPipelineStag
 	return shaders;
 }
 
-void OShaderCompiler::SetCompilationArgs(const SShaderDefinition& Definition)
+void OShaderCompiler::SetCompilationArgs(const SShaderDefinition& Definition, const vector<SShaderMacro>& Macros)
 {
-	Entry = Definition.ShaderEntry;
-	TargetProfile = Definition.TargetProfile;
 	CompilationArgs = {
 		L"-E",
-		Entry.c_str(),
+		Definition.ShaderEntry,
 		L"-T",
-		TargetProfile.c_str(),
+		Definition.TargetProfile,
 		DXC_ARG_WARNINGS_ARE_ERRORS,
 		DXC_ARG_ALL_RESOURCES_BOUND,
 		L"-I",
-		OApplication::Get()->GetShadersFolder().c_str(),
+		OApplication::Get()->GetShadersFolder(),
 	};
+
+	for (auto& macro : Macros)
+	{
+		CompilationArgs.push_back(L"-D");
+		CompilationArgs.push_back(UTF8ToWString(macro.Name));
+		CompilationArgs.push_back(UTF8ToWString(macro.Definition));
+	}
 
 	if constexpr (_DEBUG)
 	{
@@ -193,9 +199,16 @@ std::tuple<DxcBuffer, ComPtr<IDxcResult>> OShaderCompiler::CreateDxcBuffer(const
 		.Encoding = 0
 	};
 	ComPtr<IDxcResult> compiledShaderBuffer{};
+
+	vector<LPCWSTR> args;
+	for (auto& arg : CompilationArgs)
+	{
+		args.push_back(arg.c_str());
+	}
+
 	const HRESULT hr = Compiler->Compile(&sourceBuffer,
-	                                     CompilationArgs.data(),
-	                                     static_cast<uint32_t>(CompilationArgs.size()),
+	                                     args.data(),
+	                                     static_cast<uint32_t>(args.size()),
 	                                     IncludeHandler.Get(),
 	                                     IID_PPV_ARGS(&compiledShaderBuffer));
 
@@ -257,9 +270,9 @@ D3D12_SHADER_DESC OShaderCompiler::BuildReflection(DxcBuffer Buffer, ComPtr<ID3D
 	return shaderDesc;
 }
 
-unique_ptr<OShader> OShaderCompiler::CompileShader(const SShaderDefinition& Definition, const wstring& ShaderPath, SShaderPipelineDesc& OutPipelineInfo)
+unique_ptr<OShader> OShaderCompiler::CompileShader(const SShaderDefinition& Definition, const vector<SShaderMacro>& Macros, const wstring& ShaderPath, SShaderPipelineDesc& OutPipelineInfo)
 {
-	SetCompilationArgs(Definition);
+	SetCompilationArgs(Definition, Macros);
 	auto [buffer, compiledShaderBuffer] = CreateDxcBuffer(ShaderPath);
 
 	ComPtr<ID3D12ShaderReflection> shaderReflection{};

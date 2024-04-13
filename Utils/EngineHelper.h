@@ -118,11 +118,6 @@ inline auto CreateQuadRenderItem(string Category, string Name, float X, float Y,
 	return engine->BuildRenderItemFromMesh(Category, generator->CreateQuadMesh(Name, X, Y, Width, Height, Depth), Params);
 }
 
-inline auto CompilerShader(const SShaderDefinition& Definition, const wstring& ShaderPath, SShaderPipelineDesc& OutPipelineInfo)
-{
-	return OEngine::Get()->GetShaderCompiler()->CompileShader(Definition, ShaderPath, OutPipelineInfo);
-}
-
 inline auto GetSkyTextureSRV()
 {
 	return OEngine::Get()->GetSRVDescHandleForTexture(FindTextureByName(SRenderConstants::DefaultSkyTexture));

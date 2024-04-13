@@ -125,10 +125,6 @@ vector<STexturePath> OMaterialManager::LoadTexturesFromPaths(const vector<wstrin
 			continue;
 		}
 
-		if (path.extension() != ".dds")
-		{
-			path.replace_extension(".dds");
-		}
 		auto filename = path.filename().string();
 		STexturePath texturePath;
 		texturePath.Path = path.c_str();

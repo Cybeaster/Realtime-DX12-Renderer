@@ -5,6 +5,7 @@
 #include "DDSTextureLoader/DDSTextureLoader.h"
 #include "Exception.h"
 #include "Logger.h"
+#include "SDLTextureLoader.h"
 
 #include <filesystem>
 #include <numeric>
@@ -162,24 +163,9 @@ STexture* OTextureManager::CreateTexture(const string& Name, wstring FileName)
 	CWIN_LOG(TexturesHeapIndicesTable.contains(texture->HeapIdx), Engine, Error, "Texture heap index already exists! {}", texture->HeapIdx);
 	CWIN_LOG(texture->HeapIdx > SRenderConstants::Max2DTextures, Engine, Error, "Texture index is out of range!");
 	TexturesHeapIndicesTable.insert(texture->HeapIdx);
-	//Check texture extension
-	if (path.extension() != ".dds")
-	{
-		path.replace_extension(".dds");
-	}
 
-	if (!exists(path))
-	{
-		LOG(Engine, Warning, "Texture file not found!");
-		return nullptr;
-	}
-
-	THROW_IF_FAILED(DirectX::CreateDDSTextureFromFile12(Device,
-	                                                    CommandQueue->GetCommandList().Get(),
-	                                                    path.c_str(),
-	                                                    texture->Resource.Resource,
-	                                                    texture->UploadHeap.Resource));
-
+	auto res = DirectX::LoadTexture(FileName, Device, CommandQueue->GetCommandList().Get(), texture->Resource.Resource, texture->UploadHeap.Resource, path.extension() == ".dds");
+	CWIN_LOG(!SUCCEEDED(res), Engine, Error, "Failed to load texture from file: {}", FileName);
 	texture->Resource.Init(this, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	if (texture->Type == ETextureType::Height)
 	{

@@ -13,10 +13,17 @@ struct STexturePath
 	wstring Path;
 };
 
+enum class EMaterialType
+{
+	Opaque,
+	Transparent,
+	AlphaTested
+};
 struct SMaterialPayloadData
 {
 	string Name;
 	SMaterialSurface MaterialSurface;
+	EMaterialType MaterialType = EMaterialType::Opaque;
 	vector<wstring> NormalMaps;
 	vector<wstring> DiffuseMaps;
 	vector<wstring> HeightMaps;
@@ -25,11 +32,10 @@ struct SMaterialPayloadData
 struct SMaterial
 {
 	string Name;
-
 	vector<STexturePath> NormalMaps;
 	vector<STexturePath> DiffuseMaps;
 	vector<STexturePath> HeightMaps;
-
+	EMaterialType MaterialType = EMaterialType::Opaque;
 	// Index into constant buffer corresponding to this material.
 	int32_t MaterialCBIndex = -1;
 

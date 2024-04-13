@@ -264,10 +264,12 @@ void OEngine::DrawRenderItemsImpl(SPSODescriptionBase* Description, const vector
 	for (size_t i = 0; i < RenderItems.size(); i++)
 	{
 		const auto renderItem = RenderItems[i];
-		if (!renderItem->IsValidChecked())
+
+		if (!renderItem->IsValidChecked() || !renderItem->VisibleInstanceCount > 0)
 		{
 			continue;
 		}
+
 		PROFILE_BLOCK_START(renderItem->Name.c_str());
 		if (!renderItem->Instances.empty() && renderItem->Geometry)
 		{
@@ -389,7 +391,7 @@ void OEngine::PostTestInit()
 	GetCommandQueue()->ExecuteCommandListAndWait();
 	HasInitializedTests = true;
 	SceneBounds.Center = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	SceneBounds.Radius = sqrtf(10.0f * 10.0f + 15.0f * 15.0f); // todo estimate manually
+	SceneBounds.Radius = 5000; // todo estimate manually
 }
 
 OCommandQueue* OEngine::GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type)
@@ -423,6 +425,15 @@ void OEngine::TryRebuildFrameResource()
 	{
 		FrameResources.clear();
 		BuildFrameResource(PassCount);
+	}
+}
+
+void OEngine::UpdateBoundingSphere()
+{
+	PROFILE_SCOPE()
+	for (const auto& val : AllRenderItems)
+	{
+		SceneBounds.Radius = std::max(SceneBounds.Radius, std::max({ val->Bounds.Extents.x, val->Bounds.Extents.y, val->Bounds.Extents.z }));
 	}
 }
 
@@ -563,6 +574,7 @@ void OEngine::UpdateObjectCB() const
 void OEngine::OnUpdate(UpdateEventArgs& Args)
 {
 	PROFILE_SCOPE();
+	UpdateBoundingSphere();
 	UpdateFrameResource();
 	PerformFrustrumCulling();
 
@@ -1205,6 +1217,9 @@ OEngine::TRenderLayer& OEngine::GetRenderLayers()
 void OEngine::PerformFrustrumCulling()
 {
 	PROFILE_SCOPE();
+	RenderedItems.clear();
+	RenderedItems.reserve(AllRenderItems.size());
+
 	if (CurrentFrameResource == nullptr)
 	{
 		return;
@@ -1251,6 +1266,7 @@ void OEngine::PerformFrustrumCulling()
 				data.DisplacementMapTexelSize = instData[i].DisplacementMapTexelSize;
 				currentInstanceBuffer->CopyData(counter++, data);
 				visibleInstanceCount++;
+				RenderedItems.insert(e.get());
 			}
 		}
 		e->VisibleInstanceCount = visibleInstanceCount;
@@ -1321,6 +1337,7 @@ uint32_t OEngine::GetPassCountRequired() const
 
 void OEngine::UpdateMainPass(const STimer& Timer)
 {
+	PROFILE_SCOPE();
 	const XMMATRIX view = Window->GetCamera()->GetView();
 	const XMMATRIX proj = Window->GetCamera()->GetProj();
 	const XMMATRIX viewProj = XMMatrixMultiply(view, proj);
@@ -1355,6 +1372,7 @@ void OEngine::UpdateMainPass(const STimer& Timer)
 	MainPassCB.FarZ = 10000.0f;
 	MainPassCB.TotalTime = Timer.GetTime();
 	MainPassCB.DeltaTime = Timer.GetDeltaTime();
+
 	GetNumLights(MainPassCB.NumPointLights, MainPassCB.NumSpotLights, MainPassCB.NumDirLights);
 	const auto currPassCB = CurrentFrameResource->PassCB.get();
 	currPassCB->CopyData(0, MainPassCB);
@@ -1478,6 +1496,7 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeome
 	newItem->Instances.resize(Params.NumberOfInstances, defaultInstance);
 	newItem->RenderLayer = Category;
 	newItem->Geometry = Mesh;
+	newItem->Bounds = submesh->Bounds;
 	newItem->bTraceable = Params.Pickable;
 	newItem->ChosenSubmesh = Mesh->FindSubmeshGeomentry(Submesh);
 	newItem->Name = Mesh->Name + "_" + Submesh + "_" + std::to_string(AllRenderItems.size());

@@ -90,7 +90,7 @@ public:
 	void OnEnd(shared_ptr<OTest> Test) const;
 
 	void TryRebuildFrameResource();
-
+	void UpdateBoundingSphere();
 	void Draw(UpdateEventArgs& Args);
 	void Render(UpdateEventArgs& Args);
 	void Update(UpdateEventArgs& Args);
@@ -229,6 +229,10 @@ public:
 
 	SRenderObjectHeap DefaultGlobalHeap;
 	SRenderObjectHeap ShadowHeap;
+	const auto& GetRenderedItems()
+	{
+		return RenderedItems;
+	}
 
 protected:
 	void DrawRenderItemsImpl(SPSODescriptionBase* Desc, const vector<ORenderItem*>& RenderItems);
@@ -310,7 +314,7 @@ private:
 	map<TUUID, unique_ptr<IRenderObject>> RenderObjects;
 
 	int32_t LightCount = 0;
-	bool FrustrumCullingEnabled = false;
+	bool FrustrumCullingEnabled = true;
 
 	unique_ptr<OMeshGenerator> MeshGenerator;
 	unique_ptr<OTextureManager> TextureManager;
@@ -329,6 +333,7 @@ private:
 	vector<OShadowMap*> ShadowMaps;
 	DirectX::BoundingSphere SceneBounds;
 	OSSAORenderTarget* SSAORT = nullptr;
+	unordered_set<ORenderItem*> RenderedItems;
 
 public:
 	SDescriptorPair NullCubeSRV;

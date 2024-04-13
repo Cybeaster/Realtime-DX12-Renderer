@@ -18,7 +18,6 @@ void OSSAORenderNodeWidget::Draw()
 	ImGui::DragFloat("OcclusionRadius", &rt->OcclusionRadius, 0.01f, 0.0f, OSSAORenderTarget::MaxBlurRadius);
 	ImGui::DragFloat("OcclusionFadeStart", &rt->OcclusionFadeStart, 0.01f, 0.0f, 1.0f);
 	ImGui::DragFloat("OcclusionFadeEnd", &rt->OcclusionFadeEnd, 0.01f, 0.0f, 10.0f);
-	ImGui::DragFloat("SurfaceEpsilon", &rt->SurfaceEpsilon, 0.01f, 0.0f, 1.0f);
 }
 
 OSSAONode* OSSAORenderNodeWidget::GetRenderNode() const
