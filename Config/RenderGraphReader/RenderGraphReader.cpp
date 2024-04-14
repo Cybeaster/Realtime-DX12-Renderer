@@ -1,5 +1,7 @@
 #include "RenderGraphReader.h"
 
+#include "Material.h"
+
 #include <ranges>
 
 vector<SNodeInfo> ORenderGraphReader::LoadRenderGraph(string& OutHead)

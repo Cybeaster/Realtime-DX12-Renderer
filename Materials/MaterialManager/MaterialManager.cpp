@@ -42,6 +42,9 @@ SMaterial* OMaterialManager::CreateMaterial(const SMaterialPayloadData& Data)
 	mat->DiffuseMaps = LoadTexturesFromPaths(Data.DiffuseMaps);
 	mat->NormalMaps = LoadTexturesFromPaths(Data.NormalMaps);
 	mat->HeightMaps = LoadTexturesFromPaths(Data.HeightMaps);
+	LoadTextureFromPath(Data.AlphaMap, mat->AlphaMap);
+	LoadTextureFromPath(Data.AmbientMap, mat->AmbientMap);
+	LoadTextureFromPath(Data.SpecularMap, mat->SpecularMap);
 	AddMaterial(name, std::move(mat));
 	return res;
 }
@@ -60,6 +63,18 @@ void OMaterialManager::AddMaterial(string Name, unique_ptr<SMaterial> Material, 
 	}
 
 	MaterialsIndicesMap[Material->MaterialCBIndex] = Material.get();
+
+	auto type = SRenderLayers::Opaque;
+	constexpr auto eps = 1 - Utils::Math::Epsilon;
+	if (Material->AlphaMap.IsValid())
+	{
+		type = SRenderLayers::AlphaTested;
+	}
+	else if (Material->MaterialSurface.Dissolve < eps)
+	{
+		type = SRenderLayers::Transparent;
+	}
+	Material->RenderLayer = type;
 	Materials[Name] = move(Material);
 	if (Notify)
 	{
@@ -114,28 +129,36 @@ vector<STexturePath> OMaterialManager::LoadTexturesFromPaths(const vector<wstrin
 	vector<STexturePath> result;
 	for (const auto& str : Paths)
 	{
-		if (str.empty())
+		if (STexturePath texturePath; LoadTextureFromPath(str, texturePath))
 		{
-			continue;
+			result.push_back(texturePath);
 		}
-		std::filesystem::path path(str);
-		if (!std::filesystem::exists(path))
-		{
-			LOG(Engine, Warning, "Texture file not found!");
-			continue;
-		}
-
-		auto filename = path.filename().string();
-		STexturePath texturePath;
-		texturePath.Path = path.c_str();
-		texturePath.Texture = FindOrCreateTexture(filename, path);
-		if (!texturePath.Texture)
-		{
-			LOG(Engine, Warning, "Texture with path {} not found!", TEXT(path));
-		}
-		result.push_back(texturePath);
 	}
 	return result;
+}
+
+bool OMaterialManager::LoadTextureFromPath(const wstring& Path, STexturePath& OutTexture)
+{
+	if (Path.empty())
+	{
+		return false;
+	}
+
+	std::filesystem::path path(Path);
+	if (!std::filesystem::exists(path))
+	{
+		LOG(Engine, Warning, "Texture file not found!");
+		return false;
+	}
+
+	auto filename = path.filename().string();
+	OutTexture.Path = path.c_str();
+	OutTexture.Texture = FindOrCreateTexture(filename, path);
+	if (!OutTexture.Texture)
+	{
+		LOG(Engine, Warning, "Texture with path {} not found!", TEXT(path));
+	}
+	return true;
 }
 
 void OMaterialManager::LoadMaterialsFromCache()

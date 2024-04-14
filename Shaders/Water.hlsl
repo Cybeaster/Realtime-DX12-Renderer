@@ -127,10 +127,13 @@ float4 PS(VertexOut pin)
 	clip(diffuseAlbedo.a - 0.1f);
 #endif
 
-	float3 bumpedNormalW = pin.NormalW;
-	float4 normalMapSample = float4(0.f, 0.f, 1.0f, 1.0f);
 	pin.NormalW = normalize(pin.NormalW);
-	bumpedNormalW = ComputeNormalMaps(pin.NormalW, pin.TangentW, matData, pin.WaveNormalTex0, normalMapSample.a);
+
+
+	BumpedData data = ComputeNormalMaps(pin.NormalW, pin.TangentW, matData, pin.TexC);
+	float3 bumpedNormalW = data.BumpedNormalW;
+	float4 normalMapSample = data.NormalMapSample;
+
 	diffuseAlbedo = ComputeDiffuseMaps(matData, diffuseAlbedo, pin.WaveNormalTex0);
 
 	// Vector from point being lit to eye.

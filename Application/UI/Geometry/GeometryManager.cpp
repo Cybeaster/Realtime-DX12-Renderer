@@ -20,6 +20,11 @@ void OGeometryManagerWidget::Draw()
 				{
 					if (const auto ri = widget->GetRenderItem())
 					{
+						if (ri->bIsDisplayable == false)
+						{
+							continue;
+						}
+
 						if (ImGui::Selectable(ri->Name.c_str(), SelectedRenderItem == ri->Name))
 						{
 							SelectedRenderItem = ri->Name;
@@ -51,18 +56,16 @@ void OGeometryManagerWidget::InitWidget()
 	PickedRenderItemWidget = MakeWidget<OPickedRenderItemWidget>();
 	for (auto& layer : *RenderLayers)
 	{
-
-			for (auto item : layer.second)
+		for (auto item : layer.second)
+		{
+			if (item->Geometry)
 			{
-				if (item->Geometry)
-				{
-					MakeWidget<OGeometryEntityWidget>(item, Engine, this);
-					StringToGeo[item->Name] = item;
-				}
+				MakeWidget<OGeometryEntityWidget>(item, Engine, this);
+				StringToGeo[item->Name] = item;
 			}
-
+		}
 	}
-	LightComponentWidget = MakeWidget<OLightComponentWidget>();//TODO: move to its own widget
+	LightComponentWidget = MakeWidget<OLightComponentWidget>(); //TODO: move to its own widget
 }
 
 void OGeometryManagerWidget::RebuildRequest() const
@@ -74,20 +77,20 @@ void OGeometryManagerWidget::DrawComponentWidgets()
 {
 	ImGui::SeparatorText("Item components");
 	auto item = StringToGeo[SelectedRenderItem];
-	if(item)
+	if (item)
 	{
 		auto compNum = item->GetComponents().size();
 		ImGui::Text("Number of components %zu", compNum);
-		if(compNum> 0)
+		if (compNum > 0)
 		{
-			if(ImGui::TreeNode("Components"))
+			if (ImGui::TreeNode("Components"))
 			{
 				uint32_t it = 0;
 				for (auto& comp : item->GetComponents())
 				{
 					auto name = comp->GetName();
 					name += "##" + std::to_string(it);
-					if(ImGui::Selectable(name.c_str()))
+					if (ImGui::Selectable(name.c_str()))
 					{
 						SelectedComponentName = comp->GetName();
 						SelectedComponent = comp.get();
@@ -95,22 +98,18 @@ void OGeometryManagerWidget::DrawComponentWidgets()
 					it++;
 				}
 				ImGui::TreePop();
-
 			}
-			if(SelectedComponentName != "")
+			if (SelectedComponentName != "")
 			{
-				if(SelectedComponent)
+				if (SelectedComponent)
 				{
-					if(auto casted = Cast<OLightComponent>(SelectedComponent))
+					if (auto casted = Cast<OLightComponent>(SelectedComponent))
 					{
 						LightComponentWidget->SetComponent(casted);
 						LightComponentWidget->Draw();
 					}
-
 				}
 			}
 		}
-
-
 	}
 }

@@ -29,6 +29,6 @@ ORenderTargetBase* OShadowDebugNode::Execute(ORenderTargetBase* RenderTarget)
 {
 	PROFILE_SCOPE();
 
-	OEngine::Get()->DrawRenderItems(FindPSOInfo(SPSOType::ShadowDebug), SRenderLayer::ShadowDebug);
+	OEngine::Get()->DrawRenderItems(FindPSOInfo(SPSOType::ShadowDebug), SRenderLayers::ShadowDebug);
 	return RenderTarget;
 }

@@ -25,9 +25,9 @@
 #include "DirectXUtils.h"
 #include "Logger.h"
 #include "PathUtils.h"
-
+#define STB_IMAGE_IMPLEMENTATION
+#include <STB/stb_image.h>
 #include <assert.h>
-#include <stb_image.h>
 #include <wrl.h>
 
 #include <algorithm>
@@ -2537,6 +2537,8 @@ HRESULT DirectX::LoadTextureFromNonDDS(const std::filesystem::path& FilePath, ID
                                        ComPtr<ID3D12Resource>& TextureUploadHeap)
 {
 	// Load the image
+	stbi_set_flip_vertically_on_load(true);
+
 	int width, height, channels;
 	uint8_t* data = stbi_load(FilePath.string().c_str(), &width, &height, &channels, STBI_rgb_alpha); // Force RGBA
 	if (!data)
@@ -2561,7 +2563,7 @@ HRESULT DirectX::LoadTextureFromNonDDS(const std::filesystem::path& FilePath, ID
 	    1, // depth
 	    1, // mipLevels
 	    1, // arraySize
-	    DXGI_FORMAT_R8G8B8A8_UNORM,
+	    DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
 	    false, // isCubeMap
 	    false, // forceSRGB
 	    &initData,

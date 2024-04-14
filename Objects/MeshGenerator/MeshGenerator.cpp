@@ -8,10 +8,8 @@
 #include "MeshPayload.h"
 #include "Profiler.h"
 #include "TinyObjLoader/TinyObjLoaderParser.h"
-#include "tiny_obj_loader.h"
 using namespace DirectX;
 using namespace Utils::Math;
-#pragma optimize("", off)
 
 unique_ptr<SMeshGeometry> OMeshGenerator::CreateGridMesh(string Name, float Width, float Depth, uint32_t Row, uint32_t Column)
 {
@@ -163,5 +161,3 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const string& Name, const w
 		return nullptr;
 	}
 }
-
-#pragma optimize("", on)

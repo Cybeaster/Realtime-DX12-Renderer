@@ -5,7 +5,6 @@
 #include "DDSTextureLoader/DDSTextureLoader.h"
 #include "Exception.h"
 #include "Logger.h"
-#include "SDLTextureLoader.h"
 
 #include <filesystem>
 #include <numeric>

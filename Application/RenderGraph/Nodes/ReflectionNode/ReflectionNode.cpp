@@ -19,8 +19,8 @@ ORenderTargetBase* OReflectionNode::Execute(ORenderTargetBase* RenderTarget)
 		CommandQueue->SetPipelineState(PSO);
 		CommandQueue->SetRenderTarget(cube, i);
 		CommandQueue->SetResource("cbPass", cube->GetPassConstantAddresss(i), PSO);
-		OEngine::Get()->DrawRenderItems(PSO, SRenderLayer::Opaque);
-		OEngine::Get()->DrawRenderItems(PSO, SRenderLayer::Sky);
+		OEngine::Get()->DrawRenderItems(PSO, SRenderLayers::Opaque);
+		OEngine::Get()->DrawRenderItems(PSO, SRenderLayers::Sky);
 	}
 	Utils::ResourceBarrier(cmdList.Get(), cube->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ);
 

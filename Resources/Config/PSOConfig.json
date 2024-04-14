@@ -286,7 +286,7 @@
     },
     {
       "Name": "AlphaTested",
-      "RootSignature": "BaseShader",
+      "RootSignature": "AlphaTested",
       "Type": "Graphics",
       "ShaderPipeline": {
         "VertexShader": "AlphaTested",

@@ -8,7 +8,9 @@
 
 namespace Utils::Math
 {
+using namespace DirectX;
 constexpr float Infinity = FLT_MAX;
+constexpr float Epsilon = 1e-6f;
 
 template<typename T>
 T Clamp(const T& x, const T& Low, const T& High)
@@ -85,6 +87,41 @@ inline DirectX::XMVECTOR SphericalToCartesian(float Radius, float Theta, float P
 	    Radius * sinf(Theta) * sinf(Phi),
 	    1.0f);
 }
+
+inline void ComputeTangent(
+    const XMFLOAT3& v0, const XMFLOAT3& v1, const XMFLOAT3& v2,
+    const XMFLOAT2& uv0, const XMFLOAT2& uv1, const XMFLOAT2& uv2,
+    XMFLOAT3& tangent)
+{
+	XMVECTOR p0 = XMLoadFloat3(&v0);
+	XMVECTOR p1 = XMLoadFloat3(&v1);
+	XMVECTOR p2 = XMLoadFloat3(&v2);
+
+	XMVECTOR uv0v = XMLoadFloat2(&uv0);
+	XMVECTOR uv1v = XMLoadFloat2(&uv1);
+	XMVECTOR uv2v = XMLoadFloat2(&uv2);
+
+	// Compute deltas for positions and UVs
+	XMVECTOR deltaPos1 = p1 - p0;
+	XMVECTOR deltaPos2 = p2 - p0;
+
+	XMFLOAT2 deltaUV1, deltaUV2;
+	XMStoreFloat2(&deltaUV1, uv1v - uv0v);
+	XMStoreFloat2(&deltaUV2, uv2v - uv0v);
+
+	// Computing the determinant of a 2x2 matrix from UV deltas
+	float det = deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x;
+	auto eps = 1e-6f;
+	float r = det >= eps ? 1.0f / det : 0.0f; // Handle the zero determinant case
+
+	// Calculate tangent using the formula provided
+	// T = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y) * (1.0 / det)
+	XMVECTOR tangentv = (deltaPos1 * XMVectorSet(deltaUV2.y, deltaUV2.y, deltaUV2.y, 0.0f) - deltaPos2 * XMVectorSet(deltaUV1.y, deltaUV1.y, deltaUV1.y, 0.0f)) * XMVectorReplicate(r);
+
+	tangentv = XMVector3Normalize(tangentv);
+
+	XMStoreFloat3(&tangent, tangentv);
+}
 } // namespace Utils::Math
 
 inline DirectX::XMMATRIX Inverse(const DirectX::XMMATRIX& Mat)
@@ -114,6 +151,46 @@ inline void Put(DirectX::XMFLOAT4X4& OutOther, const DirectX::XMMATRIX& Mat)
 	XMStoreFloat4x4(&OutOther, Mat);
 }
 
+inline void Put(DirectX::XMFLOAT3& OutOther, const DirectX::XMVECTOR& Vec)
+{
+	XMStoreFloat3(&OutOther, Vec);
+}
+
+inline void Put(DirectX::XMFLOAT2& OutOther, const DirectX::XMVECTOR& Vec)
+{
+	XMStoreFloat2(&OutOther, Vec);
+}
+
+inline DirectX::XMFLOAT2 operator-(const DirectX::XMFLOAT2& A, const DirectX::XMFLOAT2& B)
+{
+	return { A.x - B.x, A.y - B.y };
+}
+
+inline DirectX::XMFLOAT3 operator-(const DirectX::XMFLOAT3& A, const DirectX::XMFLOAT3& B)
+{
+	return { A.x - B.x, A.y - B.y, A.z - B.z };
+}
+
+inline DirectX::XMFLOAT3 operator+(const DirectX::XMFLOAT3& A, const DirectX::XMFLOAT3& B)
+{
+	return { A.x + B.x, A.y + B.y, A.z + B.z };
+}
+
+inline DirectX::XMFLOAT3 operator*(const DirectX::XMFLOAT3& A, const DirectX::XMFLOAT3& B)
+{
+	return { A.x * B.x, A.y * B.y, A.z * B.z };
+}
+
+inline DirectX::XMFLOAT3 operator*(const DirectX::XMFLOAT3& A, float B)
+{
+	return { A.x * B, A.y * B, A.z * B };
+}
+
+inline DirectX::XMMATRIX Load(const DirectX::XMMATRIX& Source)
+{
+	return Source;
+}
+
 inline DirectX::XMMATRIX Load(const DirectX::XMFLOAT4X4& Source)
 {
 	return XMLoadFloat4x4(&Source);
@@ -122,6 +199,11 @@ inline DirectX::XMMATRIX Load(const DirectX::XMFLOAT4X4& Source)
 inline DirectX::XMVECTOR Load(const DirectX::XMFLOAT3& Source)
 {
 	return DirectX::XMLoadFloat3(&Source);
+}
+
+inline DirectX::XMVECTOR Load(const DirectX::XMFLOAT2& Source)
+{
+	return DirectX::XMLoadFloat2(&Source);
 }
 
 inline DirectX::XMFLOAT4X4 Scale(DirectX::XMFLOAT4X4& OutOther, DirectX::XMFLOAT3 ScaleFactor)

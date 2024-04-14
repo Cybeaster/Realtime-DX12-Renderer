@@ -19,6 +19,8 @@
 #define TEXTURE_MAPS_NUM 256
 #define SHADOW_MAPS_NUM 2
 
+#define EPSILON 0.0001f
+
 // Include structures and functions for lighting.
 #include "LightingUtils.hlsl"
 #include "Samplers.hlsl"
@@ -31,27 +33,38 @@ struct InstanceData
 	float GridSpatialStep;
 };
 
+struct TextureData
+{
+	uint bIsEnabled;
+	uint TextureIndex;
+};
+
 struct MaterialData
 {
 	float4 DiffuseAlbedo;
 	float3 FresnelR0;
-	float pad1;
-
-	float3 Emission;
-	float pad2;
-
 	float Roughness;
+	float3 Transmittance;
 	float IndexOfRefraction;
+	float3 Emission;
 	float Dissolve;
-	float pad3;
 
 	float4x4 MatTransform;
 	uint DiffuseMapCount;
 	uint NormalMapCount;
 	uint HeightMapCount;
+	float pad0;
+
 	uint DiffuseMapIndex[MAX_DIFFUSE_MAPS];
+	float pad01;
+
 	uint NormalMapIndex[MAX_NORMAL_MAPS];
+	float pad02;
+
 	uint HeightMapIndex[MAX_HEIGHT_MAPS];
+	TextureData AlphaMap;
+	TextureData SpecularMap;
+	TextureData AmbientMap;
 	float pad4;
 	float pad5;
 
@@ -106,15 +119,10 @@ cbuffer cbPass : register(b0)
 };
 
 
-
-
-
-
 bool IsTangentValid(float3 TangentW)
 {
-    float epsilon = 0.0001f;
     float sum = abs(TangentW.x) + abs(TangentW.y) + abs(TangentW.z);
-	return sum > epsilon;
+	return sum > EPSILON;
 }
 
 float3 NormalSampleToWorldSpace(float3 NormalMapSample, float3 UnitNormalW, float3 TangentW)
@@ -132,26 +140,25 @@ float3 NormalSampleToWorldSpace(float3 NormalMapSample, float3 UnitNormalW, floa
 	return bumpedNormal;
 }
 
-float3 ComputeNormalMaps(float3 NormalW, float3 TangentW, MaterialData matData, float2 TexC, out float NormalMapSampleA)
+struct BumpedData
 {
-	float3 bumpedNormalW = NormalW;
-	float4 normalMapSample = float4(0.f, 0.f, 1.0f, 1.0f);
-	NormalMapSampleA = 1.0f;
-    if(IsTangentValid(TangentW))
+    float4 NormalMapSample;
+	float3 BumpedNormalW;
+};
+
+BumpedData ComputeNormalMaps(float3 NormalW, float3 TangentW, MaterialData matData, float2 TexC)
+{
+    BumpedData data = (BumpedData)0.0;
+	data.BumpedNormalW = NormalW;
+	data.NormalMapSample = float4(0.f, 0.f, 1.0f, 1.0f);
+    uint numNormalMaps = matData.NormalMapCount;
+    for (uint i = 0; i < numNormalMaps; ++i)
     {
-      uint numNormalMaps = matData.NormalMapCount;
-    	for (uint i = 0; i < numNormalMaps; ++i)
-    	{
-    		int normalMapIndex = matData.NormalMapIndex[i];
-    		normalMapSample = gTextureMaps[normalMapIndex].Sample(gsamAnisotropicWrap, TexC);
-    		bumpedNormalW += NormalSampleToWorldSpace(normalMapSample.rgb, normalize(NormalW), TangentW);
-    		NormalMapSampleA += normalMapSample.a;
-    	}
-        NormalMapSampleA = NormalMapSampleA / numNormalMaps;
+    	int normalMapIndex = matData.NormalMapIndex[i];
+    	data.NormalMapSample = gTextureMaps[normalMapIndex].Sample(gsamAnisotropicWrap, TexC);
+    	data.BumpedNormalW = NormalSampleToWorldSpace(data.NormalMapSample.rgb, normalize(NormalW), TangentW);
     }
-
-
-	return normalize(bumpedNormalW);
+	return data;
 }
 
 float3 ComputeNormalMap(uint Index, float3 NormalW, float3 TangentW, MaterialData matData, float2 TexC, out float NormalMapSampleA)
@@ -252,3 +259,50 @@ void GetShadowFactor(out float ShadowFactors[MAX_SHADOW_MAPS],uint ShadowMapIndi
 
 }
 
+bool IsNormalized(float3 vector)
+{
+    float lengthSquared = dot(vector, vector);
+    return abs(lengthSquared - 1.0) < EPSILON;
+}
+
+bool AreOrthogonal(float3 vec1, float3 vec2)
+ {
+    float dotProduct = dot(vec1, vec2);
+    return abs(dotProduct) < EPSILON;
+}
+
+float GetAlphaValue(MaterialData Data, float2 TexC,float CurrAlpha)
+{
+	if(Data.AlphaMap.bIsEnabled == 1)
+	{
+		return gTextureMaps[Data.AlphaMap.TextureIndex].Sample(gsamAnisotropicWrap, TexC).r;
+	}
+	else
+	{
+		return Data.Dissolve;
+	}
+}
+
+float4 GetSpecularValue(MaterialData Data, float2 TexC)
+{
+	if(Data.SpecularMap.bIsEnabled == 1)
+	{
+		return gTextureMaps[Data.SpecularMap.TextureIndex].Sample(gsamAnisotropicWrap, TexC);
+	}
+	else
+	{
+		return float4(1.0,1.0,1.0,1.0);
+	}
+}
+
+float4 GetAmbientValue(MaterialData Data, float2 TexC)
+{
+	if(Data.AmbientMap.bIsEnabled == 1)
+	{
+		return gTextureMaps[Data.AmbientMap.TextureIndex].Sample(gsamAnisotropicWrap, TexC);
+	}
+	else
+	{
+		return float4(1.0,1.0,1.0,1.0);
+	}
+}

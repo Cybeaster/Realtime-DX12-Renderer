@@ -40,8 +40,15 @@
       {
         "Name": "Sky",
         "PSO": "Sky",
-        "NextNode": "Transparent",
+        "NextNode": "AlphaTested",
         "RenderLayer": "Sky",
+        "Enabled": true
+      },
+      {
+        "Name": "AlphaTested",
+        "PSO": "AlphaTested",
+        "NextNode": "Transparent",
+        "RenderLayer": "AlphaTested",
         "Enabled": true
       },
       {

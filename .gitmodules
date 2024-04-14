@@ -13,3 +13,6 @@
 [submodule "Externals/STB"]
 	path = Externals/STB
 	url = git@github.com:nothings/stb.git
+[submodule "Externals/DXMesh"]
+	path = Externals/DXMesh
+	url = git@github.com:microsoft/DirectXMesh.git

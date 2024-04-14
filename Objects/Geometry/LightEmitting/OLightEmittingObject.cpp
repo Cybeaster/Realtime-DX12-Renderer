@@ -6,5 +6,5 @@ OLightEmittingObject::OLightEmittingObject(SMeshGeometry* Mesh, SMaterial* Mater
 {
 	SRenderItemParams params;
 	params.MaterialParams.Material = Material;
-	RenderItem = OEngine::Get()->BuildRenderItemFromMesh(SRenderLayer::Opaque, Mesh, params);
+	RenderItem = OEngine::Get()->BuildRenderItemFromMesh(Mesh, params);
 }

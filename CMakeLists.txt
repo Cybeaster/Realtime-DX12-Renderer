@@ -227,7 +227,6 @@ set(SRC_FILES
         Application/RenderGraph/Nodes/CopyNode/CopyRenderNode.cpp
         Application/RenderGraph/Nodes/CopyNode/CopyRenderNode.h
         Profiler/Profiler.h
-        Textures/SDLTextureLoader.h
         Application/UI/Engine/PerfomanceWidget.cpp
         Application/UI/Engine/PerfomanceWidget.h
 )
@@ -261,13 +260,11 @@ include_directories(IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Externals/imgu
 include_directories(IMGUI_INCLUDE_DIR Externals/DXC/inc)
 
 add_subdirectory(Externals/tinyobjloader)
+add_subdirectory(Externals/DXMesh)
 
 target_include_directories(DXRenderer PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/Externals/STB
-        ${CMAKE_CURRENT_SOURCE_DIR}/Externals/directx
+        ${CMAKE_CURRENT_SOURCE_DIR}/Externals
         ${CMAKE_CURRENT_SOURCE_DIR}/Profiler
-        ${CMAKE_CURRENT_SOURCE_DIR}/Externals/tinyobjloader
-        ${CMAKE_CURRENT_SOURCE_DIR}/Externals/DXTK/Inc
         ${CMAKE_CURRENT_SOURCE_DIR}/Types
         ${CMAKE_CURRENT_SOURCE_DIR}/Application
         ${CMAKE_CURRENT_SOURCE_DIR}/Utils
@@ -302,4 +299,5 @@ target_link_libraries(DXRenderer
         ${Boost_LIBRARIES}
         Bcrypt.lib
         ${DXCOMPILER_PATH_LIB}
-        easy_profiler)
+        easy_profiler
+        DirectXMesh)

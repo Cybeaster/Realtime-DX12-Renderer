@@ -109,8 +109,7 @@ public:
 	void CreateWindow();
 	bool GetMSAAState(UINT& Quality) const;
 
-	vector<ORenderItem*>& GetRenderItems(const string& Type);
-
+	vector<ORenderItem*>& GetRenderItems(const SRenderLayer& Type);
 	D3D12_RENDER_TARGET_BLEND_DESC GetTransparentBlendState();
 	D3D12_SHADER_BYTECODE GetShaderByteCode(const string& ShaderName);
 	void FillDescriptorHeaps();
@@ -129,9 +128,9 @@ public:
 	SMeshGeometry* SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry);
 	ORenderItem* BuildRenderItemFromMesh(const string& Name, string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params);
 
-	ORenderItem* BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params);
-	ORenderItem* BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, const SRenderItemParams& Params);
-	ORenderItem* BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, string Submesh, const SRenderItemParams& Params);
+	ORenderItem* BuildRenderItemFromMesh(unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params);
+	ORenderItem* BuildRenderItemFromMesh(SMeshGeometry* Mesh, const SRenderItemParams& Params);
+	ORenderItem* BuildRenderItemFromMesh(SMeshGeometry* Mesh, const string& Submesh, const SRenderItemParams& Params);
 
 	OLightComponent* AddLightingComponent(ORenderItem* Item, const ELightType& Type);
 	void BuildPickRenderItem();
@@ -217,7 +216,7 @@ public:
 	ODynamicCubeMapRenderTarget* GetCubeRenderTarget() const;
 	ODynamicCubeMapRenderTarget* BuildCubeRenderTarget(DirectX::XMFLOAT3 Center);
 	void DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer);
-
+	void DrawRenderItems(SPSODescriptionBase* Desc, EMaterialType Type);
 	void UpdateMaterialCB() const;
 	void UpdateLightCB(const UpdateEventArgs& Args) const;
 	void UpdateObjectCB() const;

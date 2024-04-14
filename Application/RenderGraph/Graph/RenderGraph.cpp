@@ -94,11 +94,7 @@ unique_ptr<ORenderNode> ORenderGraph::ResolveNodeType(const string& Type)
 	{
 		return make_unique<OReflectionNode>();
 	}
-	if (Type == "Opaque")
-	{
-		return make_unique<ODefaultRenderNode>();
-	}
-	else if (Type == "Transparent")
+	if (Type == "Opaque" || Type == "Transparent" || Type == "AlphaTested")
 	{
 		return make_unique<ODefaultRenderNode>();
 	}

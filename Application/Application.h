@@ -36,7 +36,7 @@ public:
 	string GetConfigPath(const string& Key) const;
 	wstring GetResourcePath(const wstring& Resource) const;
 	wstring GetModelsPath(const wstring& Resource) const;
-	wstring GetTexturesPath(const wstring& PathToObj, const wstring& PathToTex) const;
+	static wstring GetTexturesPath(const wstring& PathToObj, const wstring& PathToTex);
 	const wstring& GetShadersFolder() const;
 
 private:

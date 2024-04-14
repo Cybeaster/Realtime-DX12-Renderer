@@ -29,7 +29,7 @@ void OSSAONode::DrawNormals()
 	CommandQueue->SetResource("cbPass", resource->PassCB->GetGPUAddress(), pso);
 	CommandQueue->SetResource("gMaterialData", resource->MaterialBuffer->GetGPUAddress(), pso);
 	CommandQueue->SetResource("gTextureMaps", OEngine::Get()->GetDescriptorHeap()->GetGPUDescriptorHandleForHeapStart(), pso);
-	OEngine::Get()->DrawRenderItems(pso, SRenderLayer::Opaque);
+	OEngine::Get()->DrawRenderItems(pso, SRenderLayers::Opaque);
 	CommandQueue->ResourceBarrier(ssao->GetNormalMap(), D3D12_RESOURCE_STATE_GENERIC_READ);
 }
 

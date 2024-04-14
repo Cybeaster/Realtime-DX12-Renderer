@@ -184,6 +184,9 @@ void OEngine::UpdateMaterialCB() const
 				matConstants.MaterialSurface.DiffuseAlbedo = material->MaterialSurface.DiffuseAlbedo;
 				matConstants.MaterialSurface.FresnelR0 = material->MaterialSurface.FresnelR0;
 				matConstants.MaterialSurface.Roughness = material->MaterialSurface.Roughness;
+				matConstants.MaterialSurface.Dissolve = material->MaterialSurface.Dissolve;
+				matConstants.MaterialSurface.Emission = material->MaterialSurface.Emission;
+				matConstants.MaterialSurface.Transmittance = material->MaterialSurface.Transmittance;
 
 				matConstants.DiffuseMapCount = diffuseIndices.size();
 				matConstants.NormalMapCount = normalIndices.size();
@@ -192,6 +195,18 @@ void OEngine::UpdateMaterialCB() const
 				copyIndicesTo(diffuseIndices, matConstants.DiffuseMapIndex, SRenderConstants::MaxDiffuseMapsPerMaterial);
 				copyIndicesTo(normalIndices, matConstants.NormalMapIndex, SRenderConstants::MaxNormalMapsPerMaterial);
 				copyIndicesTo(heightIndices, matConstants.HeightMapIndex, SRenderConstants::MaxHeightMapsPerMaterial);
+				auto setTexIdx = [](STextureShaderData& Out, const STexturePath& Path) {
+					if (Path.IsValid())
+					{
+						Out.TextureIndex = Path.Texture->HeapIdx;
+						Out.bIsEnabled = Path.Texture->HeapIdx > 0 ? 1 : 0;
+					}
+				};
+
+				setTexIdx(matConstants.AlphaMap, material->AlphaMap);
+				setTexIdx(matConstants.SpecularMap, material->SpecularMap);
+				setTexIdx(matConstants.AmbientMap, material->AmbientMap);
+
 				CWIN_LOG(material->MaterialCBIndex < 0 || material->MaterialCBIndex >= SRenderConstants::Max2DTextures, Material, Error, "Material index out of bounds!")
 				Put(matConstants.MatTransform, Transpose(matTransform));
 				LOG(Material, Log, "Updated material: {} Index :{}", TEXT(material->Name), TEXT(material->MaterialCBIndex));
@@ -1450,12 +1465,12 @@ SMeshGeometry* OEngine::SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry)
 	return geo;
 }
 
-ORenderItem* OEngine::BuildRenderItemFromMesh(string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params)
+ORenderItem* OEngine::BuildRenderItemFromMesh(unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params)
 {
-	return BuildRenderItemFromMesh(Category, SetSceneGeometry(move(Mesh)), Params);
+	return BuildRenderItemFromMesh(SetSceneGeometry(move(Mesh)), Params);
 }
 
-ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, const SRenderItemParams& Params)
+ORenderItem* OEngine::BuildRenderItemFromMesh(SMeshGeometry* Mesh, const SRenderItemParams& Params)
 {
 	if (Params.MaterialParams.Material == nullptr || Params.MaterialParams.Material->MaterialCBIndex == -1)
 	{
@@ -1466,42 +1481,56 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeome
 	{
 		for (const auto& key : Mesh->GetDrawArgs() | std::views::keys)
 		{
-			item = BuildRenderItemFromMesh(Category, Mesh, key, Params);
+			item = BuildRenderItemFromMesh(Mesh, key, Params);
 		}
 	}
 	else
 	{
-		item = BuildRenderItemFromMesh(Category, Mesh, Mesh->GetDrawArgs().begin()->first, Params);
+		item = BuildRenderItemFromMesh(Mesh, Mesh->GetDrawArgs().begin()->first, Params);
 	}
 	return item;
 }
 
-ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Category, SMeshGeometry* Mesh, string Submesh, const SRenderItemParams& Params)
+ORenderItem* OEngine::BuildRenderItemFromMesh(SMeshGeometry* Mesh, const string& Submesh, const SRenderItemParams& Params)
 {
-	auto newItem = make_unique<ORenderItem>();
-	const auto res = newItem.get();
-	newItem->bFrustrumCoolingEnabled = Params.bFrustrumCoolingEnabled;
-	SInstanceData defaultInstance;
 	const auto submesh = Mesh->FindSubmeshGeomentry(Submesh);
 	const auto mat = submesh->Material;
-	defaultInstance.MaterialIndex = mat != nullptr ? mat->MaterialCBIndex : Params.MaterialParams.Material->MaterialCBIndex;
-	CWIN_LOG(defaultInstance.MaterialIndex < 0, Geometry, Error, "Material not found!");
+	auto newItem = make_unique<ORenderItem>();
 
+	newItem->bFrustrumCoolingEnabled = Params.bFrustrumCoolingEnabled;
+
+	uint32_t matIdx = 0;
+	SRenderLayer layer;
+	if (mat != nullptr)
+	{
+		matIdx = mat->MaterialCBIndex;
+		layer = Params.OverrideLayer.value_or(mat->RenderLayer);
+	}
+	else
+	{
+		matIdx = Params.MaterialParams.Material->MaterialCBIndex;
+		layer = Params.OverrideLayer.value_or(SRenderLayers::Opaque);
+	}
+
+	SInstanceData defaultInstance;
+	defaultInstance.MaterialIndex = matIdx;
+	CWIN_LOG(defaultInstance.MaterialIndex < 0, Geometry, Error, "Material not found!");
 	defaultInstance.GridSpatialStep = Params.MaterialParams.GridSpatialStep;
 	defaultInstance.DisplacementMapTexelSize = Params.MaterialParams.DisplacementMapTexelSize;
-
 	Scale(defaultInstance.World, Params.Scale.value_or(XMFLOAT3{ 1, 1, 1 }));
 	Translate(defaultInstance.World, Params.Position.value_or(XMFLOAT3{ 0, 0, 0 }));
 
 	newItem->Instances.resize(Params.NumberOfInstances, defaultInstance);
-	newItem->RenderLayer = Category;
+	newItem->RenderLayer = layer;
+	newItem->bIsDisplayable = Params.Displayable;
 	newItem->Geometry = Mesh;
 	newItem->Bounds = submesh->Bounds;
 	newItem->bTraceable = Params.Pickable;
 	newItem->ChosenSubmesh = Mesh->FindSubmeshGeomentry(Submesh);
 	newItem->Name = Mesh->Name + "_" + Submesh + "_" + std::to_string(AllRenderItems.size());
 
-	AddRenderItem(Category, std::move(newItem));
+	const auto res = newItem.get();
+	AddRenderItem(layer, std::move(newItem));
 	return res;
 }
 
@@ -1521,7 +1550,7 @@ void OEngine::BuildPickRenderItem()
 	auto newItem = make_unique<ORenderItem>();
 	newItem->bFrustrumCoolingEnabled = false;
 	newItem->DefaultMaterial = MaterialManager->FindMaterial(SMaterialNames::Picked);
-	newItem->RenderLayer = SRenderLayer::Highlight;
+	newItem->RenderLayer = SRenderLayers::Highlight;
 	newItem->bTraceable = false;
 
 	SInstanceData defaultInstance;
@@ -1529,7 +1558,7 @@ void OEngine::BuildPickRenderItem()
 
 	newItem->Instances.push_back(defaultInstance);
 	PickedItem = newItem.get();
-	AddRenderItem(SRenderLayer::Highlight, std::move(newItem));
+	AddRenderItem(SRenderLayers::Highlight, std::move(newItem));
 }
 
 SMeshGeometry* OEngine::FindSceneGeometry(const string& Name) const
@@ -1604,7 +1633,7 @@ void OEngine::CreatePSO(const string& PSOName, const D3D12_COMPUTE_PIPELINE_STAT
 
 ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Name, string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params)
 {
-	auto ri = BuildRenderItemFromMesh(Category, std::move(Mesh), Params);
+	auto ri = BuildRenderItemFromMesh(std::move(Mesh), Params);
 	ri->Name = Name + std::to_string(AllRenderItems.size());
 	return ri;
 }

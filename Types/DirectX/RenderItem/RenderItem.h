@@ -44,7 +44,8 @@ struct ORenderItem
 
 	UINT VisibleInstanceCount = 0;
 	int32_t StartInstanceLocation = 0;
-
+	/*UI*/
+	bool bIsDisplayable = true;
 	SInstanceData* GetDefaultInstance();
 	const vector<unique_ptr<OComponentBase>>& GetComponents() const;
 
@@ -71,6 +72,8 @@ struct SRenderItemParams
 	SRenderItemParams(SMaterial* Material, size_t Instances)
 	    : MaterialParams(Material), NumberOfInstances(Instances) {}
 
+	std::optional<SRenderLayer> OverrideLayer;
+
 	string Submesh;
 	SMaterialParams MaterialParams;
 	size_t NumberOfInstances = 1;
@@ -80,4 +83,5 @@ struct SRenderItemParams
 	void SetScale(DirectX::XMFLOAT3 S);
 	std::optional<DirectX::XMFLOAT3> Position;
 	std::optional<DirectX::XMFLOAT3> Scale;
+	bool Displayable = true;
 };

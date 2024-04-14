@@ -54,8 +54,9 @@ inline D3D12_SHADER_RESOURCE_VIEW_DESC SRenderConstants::GetNullSRV()
 	return srvDesc;
 }
 
-struct SRenderLayer
+struct SRenderLayers
 {
+	RENDER_TYPE(None);
 	RENDER_TYPE(Opaque);
 	RENDER_TYPE(OpaqueDynamicReflections);
 	RENDER_TYPE(Transparent);
@@ -141,3 +142,5 @@ struct SShaderTypes
 	RENDER_TYPE(VSSky);
 	RENDER_TYPE(PSSky);
 };
+
+using SRenderLayer = string;

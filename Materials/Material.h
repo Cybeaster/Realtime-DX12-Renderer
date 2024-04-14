@@ -9,24 +9,25 @@ struct STexture;
 
 struct STexturePath
 {
+	bool IsValid() const
+	{
+		return Texture != nullptr && !Path.empty();
+	}
+
 	STexture* Texture = nullptr;
 	wstring Path;
 };
 
-enum class EMaterialType
-{
-	Opaque,
-	Transparent,
-	AlphaTested
-};
 struct SMaterialPayloadData
 {
 	string Name;
 	SMaterialSurface MaterialSurface;
-	EMaterialType MaterialType = EMaterialType::Opaque;
 	vector<wstring> NormalMaps;
 	vector<wstring> DiffuseMaps;
 	vector<wstring> HeightMaps;
+	wstring AlphaMap;
+	wstring AmbientMap;
+	wstring SpecularMap;
 };
 
 struct SMaterial
@@ -35,7 +36,10 @@ struct SMaterial
 	vector<STexturePath> NormalMaps;
 	vector<STexturePath> DiffuseMaps;
 	vector<STexturePath> HeightMaps;
-	EMaterialType MaterialType = EMaterialType::Opaque;
+	STexturePath AlphaMap;
+	STexturePath AmbientMap;
+	STexturePath SpecularMap;
+	SRenderLayer RenderLayer = SRenderLayers::Opaque;
 	// Index into constant buffer corresponding to this material.
 	int32_t MaterialCBIndex = -1;
 

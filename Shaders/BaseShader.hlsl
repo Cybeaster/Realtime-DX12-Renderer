@@ -21,6 +21,23 @@ struct VertexOut
 	nointerpolation uint MaterialIndex : MATERIALINDEX;
 };
 
+bool ValidateTangent(VertexIn input)
+{
+    // Check if the normal and tangent are normalized
+    if (!IsNormalized(input.NormalL) || !IsNormalized(input.TangentU)) {
+        return false;
+    }
+
+    // Check if the normal and tangent are orthogonal
+    if (!AreOrthogonal(input.NormalL, input.TangentU)) {
+        return false;
+    }
+
+    // Optionally check the bitangent
+    float3 bitangent = cross(input.NormalL, input.TangentU);
+    return IsNormalized(bitangent) && AreOrthogonal(bitangent, input.NormalL) && AreOrthogonal(bitangent, input.TangentU);
+}
+
 VertexOut VS(VertexIn Vin, uint InstanceID
              : SV_InstanceID)
 {
@@ -39,15 +56,7 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 
 	// Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
 	vout.NormalW = mul(Vin.NormalL, (float3x3)world);
-
-	if (!IsTangentValid(Vin.TangentU))
-	{
-		vout.TangentW = float3(0.0f, 0.0f, 0.0f);
-	}
-	else
-	{
-		vout.TangentW = mul(Vin.TangentU, (float3x3)world);
-	}
+	vout.TangentW = mul(Vin.TangentU, (float3x3)world);
 
 	// Transform to homogeneous clip space.
 	vout.PosH = mul(posW, gViewProj);
@@ -57,6 +66,11 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	vout.TexC = mul(texC, matData.MatTransform).xy;
     FindShadowPosition(vout.ShadowPositionsH, posW, vout.LightIndices);
     vout.SsaoPosH = mul(posW, gViewProjTex);
+
+	if(!ValidateTangent(Vin))
+    {
+        vout.PosW = float3(1e5, 1e5, 1e5);
+    }
 	return vout;
 }
 
@@ -67,7 +81,9 @@ float4 PS(VertexOut pin)
 	float4 diffuseAlbedo = matData.DiffuseAlbedo;
 	float3 fresnelR0 = matData.FresnelR0;
 	float roughness = matData.Roughness;
+	pin.NormalW = normalize(pin.NormalW);
 
+	diffuseAlbedo.a = GetAlphaValue(matData, pin.TexC, diffuseAlbedo.a);
 #ifdef ALPHA_TEST
 	// Discard pixel if texture alpha < 0.1.  We do this test as soon
 	// as possible in the shader so that we can potentially exit the
@@ -75,11 +91,14 @@ float4 PS(VertexOut pin)
 	clip(diffuseAlbedo.a - 0.1f);
 #endif
 
+	BumpedData data = ComputeNormalMaps(pin.NormalW, pin.TangentW, matData, pin.TexC);
 	float3 bumpedNormalW = pin.NormalW;
-	float4 normalMapSample = float4(0.f, 0.f, 1.0f, 1.0f);
-	pin.NormalW = normalize(pin.NormalW);
-	bumpedNormalW = ComputeNormalMaps(pin.NormalW, pin.TangentW, matData, pin.TexC, normalMapSample.a);
+	float4 normalMapSample = data.NormalMapSample;
+
 	diffuseAlbedo = ComputeDiffuseMaps(matData, diffuseAlbedo, pin.TexC);
+	float4 specularAlbedo  = GetSpecularValue(matData, pin.TexC);
+	float4 ambientAlbedo  = GetAmbientValue(matData, pin.TexC);
+
 	// Vector from point being lit to eye.
 	float3 toEyeW = gEyePosW - pin.PosW;
 	float distToEye = length(toEyeW);
@@ -92,9 +111,9 @@ float4 PS(VertexOut pin)
 		ambientAccess = gSsaoMap.Sample(gsamLinearWrap, pin.SsaoPosH.xy, 0.0f).r;
 	}
 	// Light terms.
-	float4 ambient =  ambientAccess * gAmbientLight * diffuseAlbedo;
+	float4 ambient =  ambientAccess * gAmbientLight * ambientAlbedo;
 
-	const float shininess = (1.0f - roughness) * normalMapSample.a;
+	const float shininess = (1.0f - roughness) * specularAlbedo.r;
 	Material mat = { diffuseAlbedo, fresnelR0, shininess };
 	float3 light = {0.0f, 0.0f, 0.0f};
 
@@ -110,20 +129,21 @@ float4 PS(VertexOut pin)
 
     for (uint k = 0; k < gNumSpotLights; k++)
     {
-       light += shadowFactor[idx] * ComputeSpotLight(gSpotLights[k], mat, pin.PosW, bumpedNormalW, toEyeW);
+       light += shadowFactor[idx] * ComputeSpotLight(gSpotLights[k], mat, pin.PosW,bumpedNormalW, toEyeW);
        idx++;
     }
 
-	float4 litColor = ambient + float4(light, 1.0f);
-	float3 reflection = float3(0.0f, 0.0f, 0.0f);
+	float4 litColor = ambient + float4(light, 1.0f) ;
+	float3 reflection = reflect(-toEyeW, bumpedNormalW);
 	float4 reflectionColor = gCubeMap.Sample(gsamLinearWrap, reflection);
 	float3 fresnelFactor = SchlickFresnel(fresnelR0, bumpedNormalW, reflection);
-	litColor.rgb += shininess * fresnelFactor * reflectionColor.rgb;
+//	litColor.rgb += shininess * fresnelFactor * reflectionColor.rgb;
 
 #ifdef FOG
 	float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
 	litColor = lerp(litColor, gFogColor, fogAmount); //TODO fix fog
 #endif
+
 	// Common convention to take alpha from diffuse albedo.
 	litColor.a = diffuseAlbedo.a;
 	return litColor;

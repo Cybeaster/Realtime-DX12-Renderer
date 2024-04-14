@@ -411,7 +411,7 @@ wstring OApplication::GetModelsPath(const wstring& Resource) const
 	return RootDirPath.GetWPath() + L"Resources/Models/" + Resource;
 }
 
-wstring OApplication::GetTexturesPath(const wstring& PathToObj, const wstring& PathToTex) const
+wstring OApplication::GetTexturesPath(const wstring& PathToObj, const wstring& PathToTex)
 {
 	if (PathToTex.empty() || PathToObj.empty())
 	{

@@ -2,6 +2,7 @@
 #pragma once
 #include "ConfigReader.h"
 #include "RenderNodeInfo.h"
+enum class EMaterialType : uint8_t;
 class ORenderGraphReader : public OConfigReader
 {
 public:

@@ -52,29 +52,60 @@ void OMaterialManagerWidget::DrawProperty()
 		ImGui::NewLine();
 
 		ImGui::SeparatorText("Normal Texture");
-		for (auto& path : CurrentMaterial->NormalMaps)
+		if (CurrentMaterial->NormalMaps.empty())
 		{
-			const auto difTextureName = path.Texture ? WStringToUTF8(path.Texture->FileName) : string("No texture selected");
-			ImGui::Text(difTextureName.c_str());
-			if (path.Texture)
-			{
-				auto srv = reinterpret_cast<void*>(OEngine::Get()->GetSRVDescHandleForTexture(path.Texture).ptr);
-				ImGui::Image(srv, ImVec2(100, 100));
-			}
-			ImGui::SameLine();
+			ImGui::Text("No normal map");
 		}
-		ImGui::NewLine();
-
-		for (auto& path : CurrentMaterial->HeightMaps)
+		else
 		{
-			const auto difTextureName = path.Texture ? WStringToUTF8(path.Texture->FileName) : string("No texture selected");
-			ImGui::Text(difTextureName.c_str());
-			if (path.Texture)
+			for (auto& path : CurrentMaterial->NormalMaps)
 			{
-				auto srv = reinterpret_cast<void*>(OEngine::Get()->GetSRVDescHandleForTexture(path.Texture).ptr);
-				ImGui::Image(srv, ImVec2(100, 100));
+				if (path.Texture)
+				{
+					const auto difTextureName = WStringToUTF8(path.Texture->FileName);
+					ImGui::Text(difTextureName.c_str());
+					if (path.Texture)
+					{
+						auto srv = reinterpret_cast<void*>(OEngine::Get()->GetSRVDescHandleForTexture(path.Texture).ptr);
+						ImGui::Image(srv, ImVec2(100, 100));
+					}
+					ImGui::SameLine();
+				}
 			}
-			ImGui::SameLine();
+			ImGui::NewLine();
+		}
+
+		ImGui::SeparatorText("Height Texture");
+		if (!CurrentMaterial->HeightMaps.empty())
+		{
+			for (auto& path : CurrentMaterial->HeightMaps)
+			{
+				if (path.Texture)
+				{
+					const auto difTextureName = WStringToUTF8(path.Texture->FileName);
+					ImGui::Text(difTextureName.c_str());
+					if (path.Texture)
+					{
+						auto srv = reinterpret_cast<void*>(OEngine::Get()->GetSRVDescHandleForTexture(path.Texture).ptr);
+						ImGui::Image(srv, ImVec2(100, 100));
+					}
+					ImGui::SameLine();
+				}
+			}
+			ImGui::NewLine();
+		}
+		else
+		{
+			ImGui::Text("No height map");
+		}
+
+		ImGui::SeparatorText("Alpha Texture");
+		const auto difTextureName = CurrentMaterial->AlphaMap.Texture ? WStringToUTF8(CurrentMaterial->AlphaMap.Texture->FileName) : string("No texture selected");
+		ImGui::Text(difTextureName.c_str());
+		if (CurrentMaterial->AlphaMap.Texture)
+		{
+			auto srv = reinterpret_cast<void*>(OEngine::Get()->GetSRVDescHandleForTexture(CurrentMaterial->AlphaMap.Texture).ptr);
+			ImGui::Image(srv, ImVec2(100, 100));
 		}
 	}
 	else
