@@ -33,9 +33,16 @@
       {
         "Name": "ShadowDebug",
         "PSO": "ShadowDebug",
-        "NextNode": "Sky",
+        "NextNode": "TangentNormalDebug",
         "RenderLayer": "ShadowDebug",
         "Enabled": false
+      },
+      {
+        "Name": "TangentNormalDebug",
+        "PSO": "TangentNormalDebug",
+        "NextNode": "Sky",
+        "RenderLayer": "Opaque",
+        "Enabled": true
       },
       {
         "Name": "Sky",

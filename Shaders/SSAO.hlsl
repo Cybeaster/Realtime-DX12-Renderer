@@ -7,7 +7,7 @@ cbuffer cbSsao : register(b0)
     float4x4 gProjTex;
 	float4   gOffsetVectors[14];
 
-    // For SsaoBlur.hlsl
+    // For SsaoBlur.DisneyBRDF.hlsl
     float4 gBlurWeights[3];
 
     float2 gInvRenderTargetSize;

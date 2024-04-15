@@ -189,7 +189,7 @@ float3 ComputeHeightMaps(MaterialData matData, float3 NormalW, float3 TangentW, 
 	{
 		int heightMapIndex = matData.HeightMapIndex[j];
 		float heightMapSample = gTextureMaps[heightMapIndex].SampleLevel(gsamAnisotropicWrap, TexC,Offset).r;
-		pos +=  heightMapSample;
+		pos += heightMapSample;
 	}
 	return pos;
 }

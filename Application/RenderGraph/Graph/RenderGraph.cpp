@@ -2,6 +2,7 @@
 #include "RenderGraph.h"
 
 #include "Application.h"
+#include "Engine/RenderTarget/NormalTangetDebugTarget/NormalTangentDebugTarget.h"
 #include "Profiler.h"
 #include "RenderGraph/Nodes/CopyNode/CopyRenderNode.h"
 #include "RenderGraph/Nodes/DefaultNode/DefaultRenderNode.h"
@@ -11,6 +12,7 @@
 #include "RenderGraph/Nodes/SSAO/SsaoNode.h"
 #include "RenderGraph/Nodes/ShadowDebugNode/ShadowDebugNode.h"
 #include "RenderGraph/Nodes/ShadowNode/ShadowMapNode.h"
+#include "RenderGraph/Nodes/TangentNormalDebugNode/TangentNormalDebugNode.h"
 #include "RenderGraph/Nodes/UINode/UiRenderNode.h"
 
 ORenderGraph::ORenderGraph()
@@ -126,7 +128,10 @@ unique_ptr<ORenderNode> ORenderGraph::ResolveNodeType(const string& Type)
 	{
 		return make_unique<OCopyRenderNode>(OEngine::Get()->GetWindow());
 	}
-
+	else if (Type == "TangentNormalDebug")
+	{
+		return make_unique<TangentNormalDebugNode>();
+	}
 	LOG(Render, Warning, "Node type not found: {}", TEXT(Type));
 	return make_unique<ODefaultRenderNode>();
 }

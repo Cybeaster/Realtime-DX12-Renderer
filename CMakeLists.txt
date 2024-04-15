@@ -229,6 +229,10 @@ set(SRC_FILES
         Profiler/Profiler.h
         Application/UI/Engine/PerfomanceWidget.cpp
         Application/UI/Engine/PerfomanceWidget.h
+        Application/Engine/RenderTarget/NormalTangetDebugTarget/NormalTangentDebugTarget.cpp
+        Application/Engine/RenderTarget/NormalTangetDebugTarget/NormalTangentDebugTarget.h
+        Application/RenderGraph/Nodes/TangentNormalDebugNode/TangentNormalDebugNode.cpp
+        Application/RenderGraph/Nodes/TangentNormalDebugNode/TangentNormalDebugNode.h
 )
 
 

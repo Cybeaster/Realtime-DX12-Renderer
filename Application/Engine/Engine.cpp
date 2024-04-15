@@ -102,11 +102,17 @@ void OEngine::PostInitialize()
 	BuildFilters();
 	BuildOffscreenRT();
 	BuildSSAO();
+	BuildNormalTangentDebugTarget();
 }
 
 void OEngine::BuildSSAO()
 {
 	SSAORT = BuildRenderObject<OSSAORenderTarget>(RenderTargets, Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::NormalMapFormat);
+}
+
+void OEngine::BuildNormalTangentDebugTarget()
+{
+	NormalTangentDebugTarget = BuildRenderObject<ONormalTangentDebugTarget>(RenderTargets, Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
 }
 
 void OEngine::BuildFilters()
@@ -1421,6 +1427,11 @@ void OEngine::GetNumLights(uint32_t& OutNumPointLights, uint32_t& OutNumSpotLigh
 ORenderGraph* OEngine::GetRenderGraph() const
 {
 	return RenderGraph.get();
+}
+
+ONormalTangentDebugTarget* OEngine::GetNormalTangentDebugTarget() const
+{
+	return NormalTangentDebugTarget;
 }
 
 uint32_t OEngine::GetDesiredCountOfSRVs(SResourceHeapBitFlag Flag) const

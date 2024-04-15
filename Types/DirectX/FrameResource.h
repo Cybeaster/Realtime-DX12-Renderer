@@ -17,7 +17,7 @@ struct SSsaoConstants
 	DirectX::XMFLOAT4X4 ProjTex;
 	DirectX::XMFLOAT4 OffsetVectors[14] = {};
 
-	// For SsaoBlur.hlsl
+	// For SsaoBlur.DisneyBRDF.hlsl
 	DirectX::XMFLOAT4 BlurWeights[3] = {};
 
 	DirectX::XMFLOAT2 InvRenderTargetSize = { 0.0f, 0.0f };

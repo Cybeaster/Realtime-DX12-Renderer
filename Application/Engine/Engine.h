@@ -12,6 +12,7 @@
 #include "MeshGenerator/MeshGenerator.h"
 #include "RenderGraph/Graph/RenderGraph.h"
 #include "RenderTarget/CubeMap/DynamicCubeMap/DynamicCubeMapTarget.h"
+#include "RenderTarget/NormalTangetDebugTarget/NormalTangentDebugTarget.h"
 #include "RenderTarget/RenderTarget.h"
 #include "ShaderCompiler/Compiler.h"
 #include "TextureManager/TextureManager.h"
@@ -253,6 +254,7 @@ protected:
 private:
 	void UpdateSSAOCB();
 	void BuildSSAO();
+	void BuildNormalTangentDebugTarget();
 	void RemoveRenderObject(TUUID UUID);
 	void BuildFrameResource(uint32_t Count = 1);
 
@@ -332,12 +334,14 @@ private:
 	vector<OShadowMap*> ShadowMaps;
 	DirectX::BoundingSphere SceneBounds;
 	OSSAORenderTarget* SSAORT = nullptr;
+	ONormalTangentDebugTarget* NormalTangentDebugTarget = nullptr;
 	unordered_set<ORenderItem*> RenderedItems;
 
 public:
 	SDescriptorPair NullCubeSRV;
 	SDescriptorPair NullTexSRV;
 	ORenderGraph* GetRenderGraph() const;
+	ONormalTangentDebugTarget* GetNormalTangentDebugTarget() const;
 };
 
 template<typename T, typename... Args>
