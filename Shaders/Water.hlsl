@@ -116,8 +116,8 @@ float4 PS(VertexOut pin)
     : SV_Target
 {
 	MaterialData matData = gMaterialData[pin.MaterialIndex];
-	float4 diffuseAlbedo = matData.DiffuseAlbedo;
-	float3 fresnelR0 = matData.FresnelR0;
+	float4 diffuseAlbedo = float4(matData.DiffuseAlbedo,1);
+	float3 fresnelR0 = float3(1,1,1);
 	float roughness = matData.Roughness;
 
 #ifdef ALPHA_TEST

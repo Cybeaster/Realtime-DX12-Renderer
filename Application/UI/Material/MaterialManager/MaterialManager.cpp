@@ -30,9 +30,19 @@ void OMaterialManagerWidget::DrawProperty()
 	{
 		bool isMatChanged = false;
 		ImGui::SeparatorText("Material Surfaces");
-		isMatChanged |= ImGui::InputFloat4("Diffuse", &CurrentMaterial->MaterialSurface.DiffuseAlbedo.x);
-		isMatChanged |= ImGui::InputFloat3("Fesnel", &CurrentMaterial->MaterialSurface.FresnelR0.x);
+		isMatChanged |= ImGui::InputFloat3("Diffuse", &CurrentMaterial->MaterialSurface.DiffuseAlbedo.x);
+		isMatChanged |= ImGui::InputFloat3("Ambient", &CurrentMaterial->MaterialSurface.AmbientAlbedo.x);
+		isMatChanged |= ImGui::InputFloat3("Specular", &CurrentMaterial->MaterialSurface.SpecularAlbedo.x);
 		isMatChanged |= ImGui::InputFloat("Roughness", &CurrentMaterial->MaterialSurface.Roughness);
+		isMatChanged |= ImGui::InputFloat("Metallic", &CurrentMaterial->MaterialSurface.Metallic);
+		isMatChanged |= ImGui::InputFloat("Sheen", &CurrentMaterial->MaterialSurface.Sheen);
+		isMatChanged |= ImGui::InputFloat("Shininess", &CurrentMaterial->MaterialSurface.Shininess);
+		isMatChanged |= ImGui::InputFloat3("Transmittance", &CurrentMaterial->MaterialSurface.Transmittance.x);
+		isMatChanged |= ImGui::InputFloat3("Emission", &CurrentMaterial->MaterialSurface.Emission.x);
+		isMatChanged |= ImGui::InputFloat("IndexOfRefraction", &CurrentMaterial->MaterialSurface.IndexOfRefraction);
+		isMatChanged |= ImGui::InputInt("Illumination", &CurrentMaterial->MaterialSurface.Illumination);
+		isMatChanged |= ImGui::InputFloat("Dissolve", &CurrentMaterial->MaterialSurface.Dissolve);
+
 		if (isMatChanged)
 		{
 			MaterialManager->OnMaterialChanged(CurrentMaterial->Name);

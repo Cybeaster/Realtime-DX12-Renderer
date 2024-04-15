@@ -30,12 +30,6 @@ std::unordered_map<string, unique_ptr<SMaterial>> OMaterialsConfigParser::LoadMa
 		material->MaterialSurface.DiffuseAlbedo.x = diffChild.get<float>("x");
 		material->MaterialSurface.DiffuseAlbedo.y = diffChild.get<float>("y");
 		material->MaterialSurface.DiffuseAlbedo.z = diffChild.get<float>("z");
-		material->MaterialSurface.DiffuseAlbedo.w = diffChild.get<float>("w");
-
-		auto& fresnelChild = data.get_child("Fresnel");
-		material->MaterialSurface.FresnelR0.x = fresnelChild.get<float>("x");
-		material->MaterialSurface.FresnelR0.y = fresnelChild.get<float>("y");
-		material->MaterialSurface.FresnelR0.z = fresnelChild.get<float>("z");
 
 		material->MaterialSurface.Roughness = data.get<float>("Roughness");
 		Materials[material->Name] = std::move(material);
@@ -48,11 +42,7 @@ void OMaterialsConfigParser::AddDataToNode(const SMaterial* Mat, boost::property
 	OutNode.put("Diffuse.x", Mat->MaterialSurface.DiffuseAlbedo.x);
 	OutNode.put("Diffuse.y", Mat->MaterialSurface.DiffuseAlbedo.y);
 	OutNode.put("Diffuse.z", Mat->MaterialSurface.DiffuseAlbedo.z);
-	OutNode.put("Diffuse.w", Mat->MaterialSurface.DiffuseAlbedo.w);
 
-	OutNode.put("Fresnel.x", Mat->MaterialSurface.FresnelR0.x);
-	OutNode.put("Fresnel.y", Mat->MaterialSurface.FresnelR0.y);
-	OutNode.put("Fresnel.z", Mat->MaterialSurface.FresnelR0.z);
 	OutNode.put("Roughness", Mat->MaterialSurface.Roughness);
 }
 

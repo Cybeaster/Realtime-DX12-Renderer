@@ -27,7 +27,7 @@ struct ORenderItem
 	void Update(const UpdateEventArgs& Arg) const;
 	bool IsValid() const;
 	bool IsValidChecked() const;
-	string RenderLayer = "NONE";
+	SRenderLayer RenderLayer = "NONE";
 	string Name;
 
 	bool bTraceable = true;
@@ -48,6 +48,7 @@ struct ORenderItem
 	bool bIsDisplayable = true;
 	SInstanceData* GetDefaultInstance();
 	const vector<unique_ptr<OComponentBase>>& GetComponents() const;
+	void OnMaterialChanged();
 
 private:
 	vector<unique_ptr<OComponentBase>> Components;

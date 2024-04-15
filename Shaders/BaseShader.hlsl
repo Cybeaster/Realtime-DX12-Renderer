@@ -67,10 +67,6 @@ VertexOut VS(VertexIn Vin, uint InstanceID
     FindShadowPosition(vout.ShadowPositionsH, posW, vout.LightIndices);
     vout.SsaoPosH = mul(posW, gViewProjTex);
 
-	if(!ValidateTangent(Vin))
-    {
-        vout.PosW = float3(1e5, 1e5, 1e5);
-    }
 	return vout;
 }
 
@@ -78,12 +74,7 @@ float4 PS(VertexOut pin)
     : SV_Target
 {
 	MaterialData matData = gMaterialData[pin.MaterialIndex];
-	float4 diffuseAlbedo = matData.DiffuseAlbedo;
-	float3 fresnelR0 = matData.FresnelR0;
-	float roughness = matData.Roughness;
-	pin.NormalW = normalize(pin.NormalW);
-
-	diffuseAlbedo.a = GetAlphaValue(matData, pin.TexC, diffuseAlbedo.a);
+	float4 diffuseAlbedo = float4(matData.DiffuseAlbedo,GetAlphaValue(matData, pin.TexC));
 #ifdef ALPHA_TEST
 	// Discard pixel if texture alpha < 0.1.  We do this test as soon
 	// as possible in the shader so that we can potentially exit the
@@ -91,13 +82,13 @@ float4 PS(VertexOut pin)
 	clip(diffuseAlbedo.a - 0.1f);
 #endif
 
+	pin.NormalW = normalize(pin.NormalW);
 	BumpedData data = ComputeNormalMaps(pin.NormalW, pin.TangentW, matData, pin.TexC);
 	float3 bumpedNormalW = pin.NormalW;
 	float4 normalMapSample = data.NormalMapSample;
 
 	diffuseAlbedo = ComputeDiffuseMaps(matData, diffuseAlbedo, pin.TexC);
-	float4 specularAlbedo  = GetSpecularValue(matData, pin.TexC);
-	float4 ambientAlbedo  = GetAmbientValue(matData, pin.TexC);
+
 
 	// Vector from point being lit to eye.
 	float3 toEyeW = gEyePosW - pin.PosW;
@@ -110,15 +101,16 @@ float4 PS(VertexOut pin)
 		pin.SsaoPosH /= pin.SsaoPosH.w;
 		ambientAccess = gSsaoMap.Sample(gsamLinearWrap, pin.SsaoPosH.xy, 0.0f).r;
 	}
-	// Light terms.
-	float4 ambient =  ambientAccess * gAmbientLight * ambientAlbedo;
 
-	const float shininess = (1.0f - roughness) * specularAlbedo.r;
-	Material mat = { diffuseAlbedo, fresnelR0, shininess };
+
 	float3 light = {0.0f, 0.0f, 0.0f};
 
     float shadowFactor[MAX_SHADOW_MAPS];
     GetShadowFactor(shadowFactor,  pin.LightIndices,pin.ShadowPositionsH);
+
+	float scalar = CalcFresnelR0(matData.IndexOfRefraction);
+	float3 fresnelR0 = float3(scalar,scalar,scalar);
+	Material mat = { diffuseAlbedo, fresnelR0, matData.Shininess };
 
     uint idx = 0;
 	for (uint i = 0; i < gNumDirLights; i++)
@@ -132,12 +124,19 @@ float4 PS(VertexOut pin)
        light += shadowFactor[idx] * ComputeSpotLight(gSpotLights[k], mat, pin.PosW,bumpedNormalW, toEyeW);
        idx++;
     }
+	float4 ambientAlbedo = GetAmbientValue(matData, pin.TexC) * float4(matData.AmbientAlbedo,1);
 
-	float4 litColor = ambient + float4(light, 1.0f) ;
+	// Light terms.
+	float4 ambient =  ambientAccess * gAmbientLight * ambientAlbedo;
+	float4 litColor = ambient + float4(light, 1.0f);
+
 	float3 reflection = reflect(-toEyeW, bumpedNormalW);
 	float4 reflectionColor = gCubeMap.Sample(gsamLinearWrap, reflection);
-	float3 fresnelFactor = SchlickFresnel(fresnelR0, bumpedNormalW, reflection);
-//	litColor.rgb += shininess * fresnelFactor * reflectionColor.rgb;
+	float3 fresnelFactor = SchlickFresnel(fresnelR0, bumpedNormalW, toEyeW);
+
+	float4 specularAlbedo  = GetSpecularValue(matData, pin.TexC) * float4(matData.SpecularAlbedo,1);
+	litColor.rgb +=fresnelFactor * specularAlbedo.rgb * pow(saturate(dot(reflect(-toEyeW, bumpedNormalW), toEyeW)), matData.Shininess);
+	litColor.rgb *= lerp(1.0f - matData.Roughness, 1.0f, matData.Metalness);
 
 #ifdef FOG
 	float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
@@ -146,5 +145,6 @@ float4 PS(VertexOut pin)
 
 	// Common convention to take alpha from diffuse albedo.
 	litColor.a = diffuseAlbedo.a;
+	litColor.rgb = GammaCorrect(litColor.rgb);
 	return litColor;
 }

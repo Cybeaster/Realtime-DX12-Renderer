@@ -40,7 +40,7 @@ public:
 	using TWindowMap = std::map<HWND, TWindowPtr>;
 	using WindowNameMap = std::map<std::wstring, TWindowPtr>;
 	using TSceneGeometryMap = std::unordered_map<string, unique_ptr<SMeshGeometry>>;
-	using TRenderLayer = map<string, vector<ORenderItem*>>;
+	using TRenderLayer = map<SRenderLayer, vector<ORenderItem*>>;
 	vector<unique_ptr<SFrameResource>> FrameResources;
 	SFrameResource* CurrentFrameResource = nullptr;
 	UINT CurrentFrameResourceIndex = 0;
@@ -143,10 +143,10 @@ public:
 	void CreatePSO(const string& PSOName, const D3D12_COMPUTE_PIPELINE_STATE_DESC& PSODesc);
 	ComPtr<ID3D12PipelineState> GetPSO(const string& PSOName);
 
-	void AddRenderItem(string Category, unique_ptr<ORenderItem> RenderItem);
-	void AddRenderItem(const vector<string>& Categories, unique_ptr<ORenderItem> RenderItem);
-
-	const vector<unique_ptr<ORenderItem>>& GetAllRenderItems();
+	void AddRenderItem(string Category, shared_ptr<ORenderItem> RenderItem);
+	void AddRenderItem(const vector<string>& Categories, shared_ptr<ORenderItem> RenderItem);
+	void MoveRIToNewLayer(ORenderItem* Item, const SRenderLayer& NewLayer, const SRenderLayer& OldLayer);
+	const vector<shared_ptr<ORenderItem>>& GetAllRenderItems();
 	void SetPipelineState(string PSOName);
 	void SetPipelineState(SPSODescriptionBase* PSOInfo);
 
@@ -282,7 +282,7 @@ private:
 	ComPtr<IDXGIFactory4> Factory;
 
 	TRenderLayer RenderLayers;
-	vector<unique_ptr<ORenderItem>> AllRenderItems;
+	vector<shared_ptr<ORenderItem>> AllRenderItems;
 
 	std::unordered_map<string, ComPtr<ID3DBlob>> Shaders;
 	std::unordered_map<string, ComPtr<ID3D12PipelineState>> PSOs;

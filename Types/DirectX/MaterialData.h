@@ -5,16 +5,18 @@
 struct STexturePath;
 struct SMaterialSurface
 {
-	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
-
-	DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
-	float Roughness = 0.25f;
-
+	DirectX::XMFLOAT3 AmbientAlbedo = { 1.0f, 1.0f, 1.0f };
+	DirectX::XMFLOAT3 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f };
+	DirectX::XMFLOAT3 SpecularAlbedo = { 0.5f, 0.5f, 0.5f };
 	DirectX::XMFLOAT3 Transmittance = { 0.0f, 0.0f, 0.0f };
-	float IndexOfRefraction;
-
 	DirectX::XMFLOAT3 Emission = { 0.0f, 0.0f, 0.0f };
+	float Shininess = 1.0f;
+	float IndexOfRefraction;
 	float Dissolve = 1.0f;
+	int32_t Illumination = 0.0f;
+	float Roughness = 0.25f;
+	float Metallic = 0.0f;
+	float Sheen = 0.0f;
 };
 
 struct STextureShaderData

@@ -44,7 +44,7 @@ VertexOut VS(VertexIn Vin, uint InstanceID : SV_InstanceID)
 float4 PS(VertexOut pin) : SV_Target
 {
     MaterialData matData = gMaterialData[pin.MaterialIndex];
-    float4 diffuseAlbedo = matData.DiffuseAlbedo;
+    float4 diffuseAlbedo = float4(matData.DiffuseAlbedo,1);
     diffuseAlbedo *= ComputeDiffuseMaps(matData, diffuseAlbedo, pin.TexC);
 
 #ifdef ALPHA_TEST

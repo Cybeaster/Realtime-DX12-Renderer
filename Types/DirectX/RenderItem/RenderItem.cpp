@@ -1,5 +1,7 @@
 
 #include "RenderItem.h"
+
+#include "Engine/Engine.h"
 void ORenderItem::BindResources(ID3D12GraphicsCommandList* CmdList, SFrameResource* Frame) const
 {
 	auto idxBufferView = Geometry->IndexBufferView();
@@ -37,6 +39,13 @@ SInstanceData* ORenderItem::GetDefaultInstance()
 const vector<unique_ptr<OComponentBase>>& ORenderItem::GetComponents() const
 {
 	return Components;
+}
+
+void ORenderItem::OnMaterialChanged()
+{
+	auto old = RenderLayer;
+	RenderLayer = DefaultMaterial->RenderLayer;
+	OEngine::Get()->MoveRIToNewLayer(this, RenderLayer, old);
 }
 
 void SRenderItemParams::SetPosition(DirectX::XMFLOAT3 P)

@@ -188,7 +188,7 @@ STexture* OTextureManager::FindTextureByName(string Name) const
 {
 	if (!Textures.contains(Name))
 	{
-		LOG(Engine, Warning, "Texture not found!");
+		LOG(Engine, Warning, "Texture not found! Name: {}", TEXT(Name));
 		return nullptr;
 	}
 	return Textures.at(Name).get();
@@ -198,7 +198,6 @@ STexture* OTextureManager::FindTextureByPath(wstring Path) const
 {
 	if (!TexturesPath.contains(Path))
 	{
-		LOG(Engine, Warning, "Texture not found!");
 		return nullptr;
 	}
 	return TexturesPath.at(Path);

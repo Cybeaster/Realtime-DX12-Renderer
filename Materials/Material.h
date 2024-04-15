@@ -60,6 +60,8 @@ struct SMaterial
 	vector<uint32_t> GetNormalMapIndices() const;
 	vector<uint32_t> GetHeightMapIndices() const;
 
+	SDelegate<void> OnMaterialChanged;
+
 private:
 	static vector<uint32_t> GetTextureIndices(const vector<STexturePath>& Textures);
 };

@@ -7,6 +7,7 @@
 #include "TextureConstants.h"
 
 #include <future>
+constexpr auto eps = 1 - Utils::Math::Epsilon;
 
 void OMaterialManager::CreateMaterial(const string& Name, STexture* Texture, const SMaterialSurface& Surface, bool Notify /*= false*/)
 {
@@ -65,7 +66,6 @@ void OMaterialManager::AddMaterial(string Name, unique_ptr<SMaterial> Material, 
 	MaterialsIndicesMap[Material->MaterialCBIndex] = Material.get();
 
 	auto type = SRenderLayers::Opaque;
-	constexpr auto eps = 1 - Utils::Math::Epsilon;
 	if (Material->AlphaMap.IsValid())
 	{
 		type = SRenderLayers::AlphaTested;
@@ -218,4 +218,13 @@ void OMaterialManager::BuildMaterialsFromTextures(const std::unordered_map<strin
 void OMaterialManager::OnMaterialChanged(const string& Name)
 {
 	Materials[Name]->NumFramesDirty = SRenderConstants::NumFrameResources;
+	auto mat = Materials[Name].get();
+	SRenderLayer type = SRenderLayers::Opaque;
+	if (mat->MaterialSurface.Dissolve < eps)
+	{
+		type = SRenderLayers::Transparent;
+	}
+
+	mat->RenderLayer = type;
+	mat->OnMaterialChanged.Broadcast();
 }

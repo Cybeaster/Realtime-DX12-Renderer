@@ -41,13 +41,18 @@ struct TextureData
 
 struct MaterialData
 {
-	float4 DiffuseAlbedo;
-	float3 FresnelR0;
-	float Roughness;
+	float3 AmbientAlbedo;
+	float3 DiffuseAlbedo;
+	float3 SpecularAlbedo;
 	float3 Transmittance;
+    float3 Emission;
+	float Shininess;
 	float IndexOfRefraction;
-	float3 Emission;
 	float Dissolve;
+	int Illumination;
+	float Roughness;
+	float Metalness;
+	float Sheen;
 
 	float4x4 MatTransform;
 	uint DiffuseMapCount;
@@ -271,7 +276,7 @@ bool AreOrthogonal(float3 vec1, float3 vec2)
     return abs(dotProduct) < EPSILON;
 }
 
-float GetAlphaValue(MaterialData Data, float2 TexC,float CurrAlpha)
+float GetAlphaValue(MaterialData Data, float2 TexC)
 {
 	if(Data.AlphaMap.bIsEnabled == 1)
 	{
@@ -305,4 +310,14 @@ float4 GetAmbientValue(MaterialData Data, float2 TexC)
 	{
 		return float4(1.0,1.0,1.0,1.0);
 	}
+}
+
+float3 GammaCorrect(float3 Color)
+{
+    return pow(Color, 1.0 / 2.2);
+}
+
+float CalcFresnelR0(float Ior)
+{
+    return pow((1.0 - Ior) / (1.0 + Ior), 2.0);
 }

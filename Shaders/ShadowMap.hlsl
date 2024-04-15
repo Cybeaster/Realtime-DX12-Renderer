@@ -47,7 +47,7 @@ void PS(VertexOut pin)
 {
 	// Fetch the material data.
 	MaterialData matData = gMaterialData[pin.MaterialIndex];
-    float4 diffuseAlbedo = matData.DiffuseAlbedo;
+    float4 diffuseAlbedo = float4(matData.DiffuseAlbedo,1);
 
 	// Dynamically look up the texture in the array.
 	diffuseAlbedo *= gTextureMaps[matData.DiffuseMapIndex[0]].Sample(gsamAnisotropicWrap, pin.TexC);

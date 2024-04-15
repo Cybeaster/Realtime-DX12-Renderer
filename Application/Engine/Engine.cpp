@@ -181,12 +181,7 @@ void OEngine::UpdateMaterialCB() const
 				auto heightIndices = material->GetHeightMapIndices();
 
 				SMaterialData matConstants;
-				matConstants.MaterialSurface.DiffuseAlbedo = material->MaterialSurface.DiffuseAlbedo;
-				matConstants.MaterialSurface.FresnelR0 = material->MaterialSurface.FresnelR0;
-				matConstants.MaterialSurface.Roughness = material->MaterialSurface.Roughness;
-				matConstants.MaterialSurface.Dissolve = material->MaterialSurface.Dissolve;
-				matConstants.MaterialSurface.Emission = material->MaterialSurface.Emission;
-				matConstants.MaterialSurface.Transmittance = material->MaterialSurface.Transmittance;
+				matConstants.MaterialSurface = material->MaterialSurface;
 
 				matConstants.DiffuseMapCount = diffuseIndices.size();
 				matConstants.NormalMapCount = normalIndices.size();
@@ -225,7 +220,6 @@ void OEngine::UpdateMaterialCB() const
 		updatedIndices.erase(currIdx);
 		currIdx++;
 	}
-	CWIN_LOG(updatedIndices.size() > 0, Material, Error, "Some materials were not updated!");
 	LOG(Material, Log, "Updated materials till {}.", updatedIndices.size());
 }
 
@@ -406,7 +400,7 @@ void OEngine::PostTestInit()
 	GetCommandQueue()->ExecuteCommandListAndWait();
 	HasInitializedTests = true;
 	SceneBounds.Center = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	SceneBounds.Radius = 5000; // todo estimate manually
+	SceneBounds.Radius = 10000; // todo estimate manually
 }
 
 OCommandQueue* OEngine::GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type)
@@ -926,13 +920,13 @@ ComPtr<IDXGIFactory2> OEngine::GetFactory() const
 	return Factory;
 }
 
-void OEngine::AddRenderItem(string Category, unique_ptr<ORenderItem> RenderItem)
+void OEngine::AddRenderItem(string Category, shared_ptr<ORenderItem> RenderItem)
 {
 	RenderLayers[Category].push_back(RenderItem.get());
 	AllRenderItems.push_back(move(RenderItem));
 }
 
-void OEngine::AddRenderItem(const vector<string>& Categories, unique_ptr<ORenderItem> RenderItem)
+void OEngine::AddRenderItem(const vector<string>& Categories, shared_ptr<ORenderItem> RenderItem)
 {
 	for (auto category : Categories)
 	{
@@ -941,7 +935,16 @@ void OEngine::AddRenderItem(const vector<string>& Categories, unique_ptr<ORender
 	AllRenderItems.push_back(move(RenderItem));
 }
 
-const vector<unique_ptr<ORenderItem>>& OEngine::GetAllRenderItems()
+void OEngine::MoveRIToNewLayer(ORenderItem* Item, const SRenderLayer& NewLayer, const SRenderLayer& OldLayer)
+{
+	if (RenderLayers.contains(OldLayer))
+	{
+		std::erase(RenderLayers[OldLayer], Item);
+	}
+	RenderLayers[NewLayer].push_back(Item);
+}
+
+const vector<shared_ptr<ORenderItem>>& OEngine::GetAllRenderItems()
 {
 	return AllRenderItems;
 }
@@ -1495,7 +1498,7 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(SMeshGeometry* Mesh, const string&
 {
 	const auto submesh = Mesh->FindSubmeshGeomentry(Submesh);
 	const auto mat = submesh->Material;
-	auto newItem = make_unique<ORenderItem>();
+	auto newItem = make_shared<ORenderItem>();
 
 	newItem->bFrustrumCoolingEnabled = Params.bFrustrumCoolingEnabled;
 
@@ -1530,6 +1533,20 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(SMeshGeometry* Mesh, const string&
 	newItem->Name = Mesh->Name + "_" + Submesh + "_" + std::to_string(AllRenderItems.size());
 
 	const auto res = newItem.get();
+	if (mat)
+	{
+		auto weak = std::weak_ptr(newItem);
+		mat->OnMaterialChanged.Add([this, weak, mat]() {
+			if (weak.expired())
+			{
+				return;
+			}
+			auto res = weak.lock();
+			auto oldLayer = res->RenderLayer;
+			res->RenderLayer = mat->RenderLayer;
+			MoveRIToNewLayer(res.get(), res->RenderLayer, oldLayer);
+		});
+	}
 	AddRenderItem(layer, std::move(newItem));
 	return res;
 }
