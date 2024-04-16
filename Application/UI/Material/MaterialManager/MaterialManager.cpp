@@ -34,7 +34,7 @@ void OMaterialManagerWidget::DrawProperty()
 		isMatChanged |= ImGui::InputFloat3("Ambient", &CurrentMaterial->MaterialSurface.AmbientAlbedo.x);
 		isMatChanged |= ImGui::InputFloat3("Specular", &CurrentMaterial->MaterialSurface.SpecularAlbedo.x);
 		isMatChanged |= ImGui::InputFloat("Roughness", &CurrentMaterial->MaterialSurface.Roughness);
-		isMatChanged |= ImGui::InputFloat("Metallic", &CurrentMaterial->MaterialSurface.Metallic);
+		isMatChanged |= ImGui::InputFloat("Metallic", &CurrentMaterial->MaterialSurface.Metallness);
 		isMatChanged |= ImGui::InputFloat("Sheen", &CurrentMaterial->MaterialSurface.Sheen);
 		isMatChanged |= ImGui::InputFloat("Shininess", &CurrentMaterial->MaterialSurface.Shininess);
 		isMatChanged |= ImGui::InputFloat3("Transmittance", &CurrentMaterial->MaterialSurface.Transmittance.x);
@@ -48,60 +48,52 @@ void OMaterialManagerWidget::DrawProperty()
 			MaterialManager->OnMaterialChanged(CurrentMaterial->Name);
 		}
 		ImGui::SeparatorText("Diffuse Texture");
-		for (auto& path : CurrentMaterial->DiffuseMaps)
+		const auto& diffuse = CurrentMaterial->DiffuseMap;
+		if (diffuse.IsValid())
 		{
-			const auto difTextureName = path.Texture ? WStringToUTF8(path.Texture->FileName) : string("No texture selected");
+			const auto difTextureName = diffuse.Texture ? WStringToUTF8(diffuse.Texture->FileName) : string("No texture selected");
 			ImGui::Text(difTextureName.c_str());
-			if (path.Texture)
+			if (diffuse.Texture)
 			{
-				auto srv = reinterpret_cast<void*>(OEngine::Get()->GetSRVDescHandleForTexture(path.Texture).ptr);
+				auto srv = reinterpret_cast<void*>(OEngine::Get()->GetSRVDescHandleForTexture(diffuse.Texture).ptr);
 				ImGui::Image(srv, ImVec2(100, 100));
 			}
-			ImGui::SameLine();
 		}
+		else
+		{
+			ImGui::Text("No diffuse map");
+		}
+
 		ImGui::NewLine();
 
 		ImGui::SeparatorText("Normal Texture");
-		if (CurrentMaterial->NormalMaps.empty())
+		const auto& normMap = CurrentMaterial->NormalMap;
+		if (!normMap.IsValid())
 		{
 			ImGui::Text("No normal map");
 		}
 		else
 		{
-			for (auto& path : CurrentMaterial->NormalMaps)
-			{
-				if (path.Texture)
-				{
-					const auto difTextureName = WStringToUTF8(path.Texture->FileName);
-					ImGui::Text(difTextureName.c_str());
-					if (path.Texture)
-					{
-						auto srv = reinterpret_cast<void*>(OEngine::Get()->GetSRVDescHandleForTexture(path.Texture).ptr);
-						ImGui::Image(srv, ImVec2(100, 100));
-					}
-					ImGui::SameLine();
-				}
-			}
+			const auto normMapName = WStringToUTF8(CurrentMaterial->NormalMap.Texture->FileName);
+			ImGui::Text(normMapName.c_str());
+			auto srv = reinterpret_cast<void*>(OEngine::Get()->GetSRVDescHandleForTexture(normMap.Texture).ptr);
+			ImGui::Image(srv, ImVec2(100, 100));
+
 			ImGui::NewLine();
 		}
 
 		ImGui::SeparatorText("Height Texture");
-		if (!CurrentMaterial->HeightMaps.empty())
+		const auto& heightMap = CurrentMaterial->HeightMap;
+		if (heightMap.IsValid())
 		{
-			for (auto& path : CurrentMaterial->HeightMaps)
+			const auto heighTexName = WStringToUTF8(CurrentMaterial->HeightMap.Texture->FileName);
+			ImGui::Text(heighTexName.c_str());
+			if (heightMap.Texture)
 			{
-				if (path.Texture)
-				{
-					const auto difTextureName = WStringToUTF8(path.Texture->FileName);
-					ImGui::Text(difTextureName.c_str());
-					if (path.Texture)
-					{
-						auto srv = reinterpret_cast<void*>(OEngine::Get()->GetSRVDescHandleForTexture(path.Texture).ptr);
-						ImGui::Image(srv, ImVec2(100, 100));
-					}
-					ImGui::SameLine();
-				}
+				auto srv = reinterpret_cast<void*>(OEngine::Get()->GetSRVDescHandleForTexture(heightMap.Texture).ptr);
+				ImGui::Image(srv, ImVec2(100, 100));
 			}
+
 			ImGui::NewLine();
 		}
 		else
@@ -110,8 +102,8 @@ void OMaterialManagerWidget::DrawProperty()
 		}
 
 		ImGui::SeparatorText("Alpha Texture");
-		const auto difTextureName = CurrentMaterial->AlphaMap.Texture ? WStringToUTF8(CurrentMaterial->AlphaMap.Texture->FileName) : string("No texture selected");
-		ImGui::Text(difTextureName.c_str());
+		const auto alphaTexName = CurrentMaterial->AlphaMap.Texture ? WStringToUTF8(CurrentMaterial->AlphaMap.Texture->FileName) : string("No texture selected");
+		ImGui::Text(alphaTexName.c_str());
 		if (CurrentMaterial->AlphaMap.Texture)
 		{
 			auto srv = reinterpret_cast<void*>(OEngine::Get()->GetSRVDescHandleForTexture(CurrentMaterial->AlphaMap.Texture).ptr);

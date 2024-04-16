@@ -24,7 +24,7 @@ void OLightComponent::Tick(UpdateEventArgs Arg)
 
 		SpotLight.Position = { pos.x, pos.y, pos.z };
 		PointLight.Position = { pos.x, pos.y, pos.z };
-
+		OnLightChanged.Broadcast();
 		MarkDirty();
 	}
 	UpdateLightData();
@@ -135,6 +135,7 @@ void OLightComponent::MarkDirty()
 {
 	LOG(Render, Log, "Marking light as dirty");
 	NumFramesDirty = SRenderConstants::NumFrameResources;
+	OnLightChanged.Broadcast();
 }
 
 void OLightComponent::SetPassConstant(SPassConstants& OutConstant)

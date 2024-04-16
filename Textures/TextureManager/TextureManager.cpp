@@ -166,6 +166,7 @@ STexture* OTextureManager::CreateTexture(const string& Name, wstring FileName)
 	auto res = DirectX::LoadTexture(FileName, Device, CommandQueue->GetCommandList().Get(), texture->Resource.Resource, texture->UploadHeap.Resource, path.extension() == ".dds");
 	CWIN_LOG(!SUCCEEDED(res), Engine, Error, "Failed to load texture from file: {}", FileName);
 	texture->Resource.Init(this, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	texture->Resource.Resource->SetName(path.filename().c_str());
 	if (texture->Type == ETextureType::Height)
 	{
 		CommandQueue->ResourceBarrier(&texture->Resource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);

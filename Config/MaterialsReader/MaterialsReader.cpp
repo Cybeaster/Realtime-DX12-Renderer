@@ -22,9 +22,13 @@ std::unordered_map<string, unique_ptr<SMaterial>> OMaterialsConfigParser::LoadMa
 		material->Name = val.get<string>("Name");
 		auto& data = val.get_child("Data");
 
-		material->DiffuseMaps = GetTexturePaths(data, "DiffuseMapPaths");
-		material->NormalMaps = GetTexturePaths(data, "NormalMapPaths");
-		material->HeightMaps = GetTexturePaths(data, "HeightMapPaths");
+		auto diffuse = GetTexturePaths(data, "DiffuseMapPaths");
+		auto normal = GetTexturePaths(data, "NormalMapPaths");
+		auto height = GetTexturePaths(data, "HeightMapPaths");
+
+		material->DiffuseMap = !diffuse.empty() ? diffuse.at(0) : STexturePath();
+		material->NormalMap = !normal.empty() ? normal.at(0) : STexturePath();
+		material->HeightMap = !height.empty() ? height.at(0) : STexturePath();
 
 		auto& diffChild = data.get_child("Diffuse");
 		material->MaterialSurface.DiffuseAlbedo.x = diffChild.get<float>("x");

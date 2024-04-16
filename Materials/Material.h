@@ -22,9 +22,9 @@ struct SMaterialPayloadData
 {
 	string Name;
 	SMaterialSurface MaterialSurface;
-	vector<wstring> NormalMaps;
-	vector<wstring> DiffuseMaps;
-	vector<wstring> HeightMaps;
+	wstring NormalMap;
+	wstring DiffuseMap;
+	wstring HeightMap;
 	wstring AlphaMap;
 	wstring AmbientMap;
 	wstring SpecularMap;
@@ -33,13 +33,14 @@ struct SMaterialPayloadData
 struct SMaterial
 {
 	string Name;
-	vector<STexturePath> NormalMaps;
-	vector<STexturePath> DiffuseMaps;
-	vector<STexturePath> HeightMaps;
+	STexturePath DiffuseMap;
+	STexturePath NormalMap;
+	STexturePath HeightMap;
 	STexturePath AlphaMap;
 	STexturePath AmbientMap;
 	STexturePath SpecularMap;
 	SRenderLayer RenderLayer = SRenderLayers::Opaque;
+
 	// Index into constant buffer corresponding to this material.
 	int32_t MaterialCBIndex = -1;
 
@@ -56,43 +57,12 @@ struct SMaterial
 	SMaterialSurface MaterialSurface;
 	// Used in texture mapping.
 	DirectX::XMFLOAT4X4 MatTransform = Utils::Math::Identity4x4();
-	vector<uint32_t> GetDiffuseMapIndices() const;
-	vector<uint32_t> GetNormalMapIndices() const;
-	vector<uint32_t> GetHeightMapIndices() const;
 
 	SDelegate<void> OnMaterialChanged;
 
 private:
 	static vector<uint32_t> GetTextureIndices(const vector<STexturePath>& Textures);
 };
-
-inline vector<uint32_t> SMaterial::GetDiffuseMapIndices() const
-{
-	return GetTextureIndices(DiffuseMaps);
-}
-
-inline vector<uint32_t> SMaterial::GetNormalMapIndices() const
-{
-	return GetTextureIndices(NormalMaps);
-}
-
-inline vector<uint32_t> SMaterial::GetHeightMapIndices() const
-{
-	return GetTextureIndices(HeightMaps);
-}
-
-inline vector<uint32_t> SMaterial::GetTextureIndices(const vector<STexturePath>& Textures)
-{
-	vector<uint32_t> indices;
-	for (auto [texture, path] : Textures)
-	{
-		if (texture)
-		{
-			indices.push_back(texture->HeapIdx);
-		}
-	}
-	return indices;
-}
 
 struct SMaterialParams
 {

@@ -21,7 +21,7 @@ void OMaterialManager::CreateMaterial(const string& Name, STexture* Texture, con
 SMaterial* OMaterialManager::CreateMaterial(const SMaterialPayloadData& Data)
 {
 	auto name = Data.Name;
-	if (name.empty() || (Data.DiffuseMaps.size() == 0 && Data.NormalMaps.size() == 0 && Data.HeightMaps.size() == 0))
+	if (name.empty())
 	{
 		LOG(Engine, Warning, "Material is empty!");
 		return nullptr;
@@ -38,11 +38,10 @@ SMaterial* OMaterialManager::CreateMaterial(const SMaterialPayloadData& Data)
 	auto res = mat.get();
 	mat->Name = name;
 	mat->MaterialCBIndex = Materials.size();
-	CWIN_LOG(mat->MaterialCBIndex > SRenderConstants::Max2DTextures, Material, Error, "Material index is out of range!");
 	mat->MaterialSurface = Data.MaterialSurface;
-	mat->DiffuseMaps = LoadTexturesFromPaths(Data.DiffuseMaps);
-	mat->NormalMaps = LoadTexturesFromPaths(Data.NormalMaps);
-	mat->HeightMaps = LoadTexturesFromPaths(Data.HeightMaps);
+	LoadTextureFromPath(Data.DiffuseMap, mat->DiffuseMap);
+	LoadTextureFromPath(Data.NormalMap, mat->NormalMap);
+	LoadTextureFromPath(Data.HeightMap, mat->HeightMap);
 	LoadTextureFromPath(Data.AlphaMap, mat->AlphaMap);
 	LoadTextureFromPath(Data.AmbientMap, mat->AmbientMap);
 	LoadTextureFromPath(Data.SpecularMap, mat->SpecularMap);
@@ -168,9 +167,9 @@ void OMaterialManager::LoadMaterialsFromCache()
 	for (auto& val : materials | std::views::values)
 	{
 		auto& mat = val;
-		LoadTexturesFromPaths(mat->DiffuseMaps);
-		LoadTexturesFromPaths(mat->NormalMaps);
-		LoadTexturesFromPaths(mat->HeightMaps);
+		LoadTextureFromPath(mat->DiffuseMap.Path, mat->DiffuseMap);
+		LoadTextureFromPath(mat->NormalMap.Path, mat->NormalMap);
+		LoadTextureFromPath(mat->HeightMap.Path, mat->HeightMap);
 		mat->MaterialCBIndex = it;
 		MaterialsIndicesMap[it] = val.get();
 		++it;

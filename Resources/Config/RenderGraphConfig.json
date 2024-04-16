@@ -42,7 +42,7 @@
         "PSO": "TangentNormalDebug",
         "NextNode": "Sky",
         "RenderLayer": "Opaque",
-        "Enabled": true
+        "Enabled": false
       },
       {
         "Name": "Sky",

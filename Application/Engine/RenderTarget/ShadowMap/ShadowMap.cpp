@@ -26,6 +26,15 @@ void OShadowMap::BuildResource()
 	RenderTarget = Utils::CreateResource(this, L"RenderTarget", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_GENERIC_READ, &optClear);
 }
 
+OShadowMap::OShadowMap(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format, OLightComponent* InLightComponent)
+    : ORenderTargetBase(Device, Width, Height, Format, EResourceHeapType::Default), LightComponent(InLightComponent)
+{
+	LightComponent->OnLightChanged.Add([this]() {
+		bNeedToUpdate = true;
+	});
+	Name = L"ShadowMap";
+}
+
 void OShadowMap::BuildDescriptors()
 {
 	// Create SRV to resource so we can sample the shadow map in a shader program.
@@ -101,6 +110,16 @@ void OShadowMap::SetPassConstant()
 	LightComponent->SetPassConstant(PassConstant);
 	PassConstant.RenderTargetSize = XMFLOAT2(static_cast<float>(Width), static_cast<float>(Height));
 	PassConstant.InvRenderTargetSize = XMFLOAT2(1.0f / Width, 1.0f / Height);
+}
+
+bool OShadowMap::ConsumeUpdate()
+{
+	if (bNeedToUpdate)
+	{
+		bNeedToUpdate = false;
+		return true;
+	}
+	return false;
 }
 
 uint32_t OShadowMap::GetNumDSVRequired() const

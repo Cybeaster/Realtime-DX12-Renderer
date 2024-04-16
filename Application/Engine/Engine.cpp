@@ -157,10 +157,10 @@ ODynamicCubeMapRenderTarget* OEngine::BuildCubeRenderTarget(XMFLOAT3 Center)
 	return CubeRenderTarget;
 }
 
-void OEngine::DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer)
+void OEngine::DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, bool ForceDrawAll)
 {
 	auto renderItems = GetRenderItems(RenderLayer);
-	DrawRenderItemsImpl(Desc, renderItems);
+	DrawRenderItemsImpl(Desc, renderItems, ForceDrawAll);
 }
 
 void OEngine::UpdateMaterialCB() const
@@ -173,6 +173,7 @@ void OEngine::UpdateMaterialCB() const
 			std::ranges::copy(Source, Destination);
 		}
 	};
+
 	unordered_set<uint32_t> updatedIndices;
 	for (auto& materials = GetMaterials(); const auto& val : materials | std::views::values)
 	{
@@ -182,20 +183,9 @@ void OEngine::UpdateMaterialCB() const
 			{
 				const auto matTransform = XMLoadFloat4x4(&material->MatTransform);
 
-				auto diffuseIndices = material->GetDiffuseMapIndices();
-				auto normalIndices = material->GetNormalMapIndices();
-				auto heightIndices = material->GetHeightMapIndices();
-
 				SMaterialData matConstants;
 				matConstants.MaterialSurface = material->MaterialSurface;
 
-				matConstants.DiffuseMapCount = diffuseIndices.size();
-				matConstants.NormalMapCount = normalIndices.size();
-				matConstants.HeightMapCount = heightIndices.size();
-
-				copyIndicesTo(diffuseIndices, matConstants.DiffuseMapIndex, SRenderConstants::MaxDiffuseMapsPerMaterial);
-				copyIndicesTo(normalIndices, matConstants.NormalMapIndex, SRenderConstants::MaxNormalMapsPerMaterial);
-				copyIndicesTo(heightIndices, matConstants.HeightMapIndex, SRenderConstants::MaxHeightMapsPerMaterial);
 				auto setTexIdx = [](STextureShaderData& Out, const STexturePath& Path) {
 					if (Path.IsValid())
 					{
@@ -207,6 +197,9 @@ void OEngine::UpdateMaterialCB() const
 				setTexIdx(matConstants.AlphaMap, material->AlphaMap);
 				setTexIdx(matConstants.SpecularMap, material->SpecularMap);
 				setTexIdx(matConstants.AmbientMap, material->AmbientMap);
+				setTexIdx(matConstants.DiffuseMap, material->DiffuseMap);
+				setTexIdx(matConstants.NormalMap, material->NormalMap);
+				setTexIdx(matConstants.HeightMap, material->HeightMap);
 
 				CWIN_LOG(material->MaterialCBIndex < 0 || material->MaterialCBIndex >= SRenderConstants::Max2DTextures, Material, Error, "Material index out of bounds!")
 				Put(matConstants.MatTransform, Transpose(matTransform));
@@ -271,7 +264,7 @@ void OEngine::UpdateLightCB(const UpdateEventArgs& Args) const
 	}
 }
 
-void OEngine::DrawRenderItemsImpl(SPSODescriptionBase* Description, const vector<ORenderItem*>& RenderItems)
+void OEngine::DrawRenderItemsImpl(SPSODescriptionBase* Description, const vector<ORenderItem*>& RenderItems, bool bIgnoreVisibility)
 {
 	PROFILE_SCOPE();
 
@@ -280,7 +273,8 @@ void OEngine::DrawRenderItemsImpl(SPSODescriptionBase* Description, const vector
 	{
 		const auto renderItem = RenderItems[i];
 
-		if (!renderItem->IsValidChecked() || !renderItem->VisibleInstanceCount > 0)
+		auto visibleInstances = bIgnoreVisibility ? renderItem->Instances.size() : renderItem->VisibleInstanceCount;
+		if (!renderItem->IsValidChecked() || visibleInstances == 0)
 		{
 			continue;
 		}
@@ -294,7 +288,7 @@ void OEngine::DrawRenderItemsImpl(SPSODescriptionBase* Description, const vector
 			GetCommandQueue()->SetResource("gInstanceData", location, Description);
 			cmd->DrawIndexedInstanced(
 			    renderItem->ChosenSubmesh->IndexCount,
-			    renderItem->VisibleInstanceCount,
+			    visibleInstances,
 			    renderItem->ChosenSubmesh->StartIndexLocation,
 			    renderItem->ChosenSubmesh->BaseVertexLocation,
 			    0);
@@ -1280,7 +1274,7 @@ void OEngine::PerformFrustrumCulling()
 			BoundingFrustum localSpaceFrustum;
 			camera->GetFrustrum().Transform(localSpaceFrustum, viewToLocal);
 
-			if (localSpaceFrustum.Contains(e->Bounds) != DirectX::DISJOINT || !FrustrumCullingEnabled)
+			if (localSpaceFrustum.Contains(e->Bounds) != DirectX::DISJOINT || !bFrustrumCullingEnabled)
 			{
 				SInstanceData data;
 				XMStoreFloat4x4(&data.World, XMMatrixTranspose(world));

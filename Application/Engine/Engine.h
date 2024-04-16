@@ -216,7 +216,7 @@ public:
 	SOnFrameResourceChanged OnFrameResourceChanged;
 	ODynamicCubeMapRenderTarget* GetCubeRenderTarget() const;
 	ODynamicCubeMapRenderTarget* BuildCubeRenderTarget(DirectX::XMFLOAT3 Center);
-	void DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer);
+	void DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, bool ForceDrawAll = false);
 	void DrawRenderItems(SPSODescriptionBase* Desc, EMaterialType Type);
 	void UpdateMaterialCB() const;
 	void UpdateLightCB(const UpdateEventArgs& Args) const;
@@ -235,7 +235,7 @@ public:
 	}
 
 protected:
-	void DrawRenderItemsImpl(SPSODescriptionBase* Desc, const vector<ORenderItem*>& RenderItems);
+	void DrawRenderItemsImpl(SPSODescriptionBase* Description, const vector<ORenderItem*>& RenderItems, bool bIgnoreVisibility);
 	template<typename T, typename... Args>
 	T* BuildRenderObjectImpl(ERenderGroup Group, Args&&... Params);
 
@@ -315,7 +315,6 @@ private:
 	map<TUUID, unique_ptr<IRenderObject>> RenderObjects;
 
 	int32_t LightCount = 0;
-	bool FrustrumCullingEnabled = true;
 
 	unique_ptr<OMeshGenerator> MeshGenerator;
 	unique_ptr<OTextureManager> TextureManager;
@@ -338,6 +337,8 @@ private:
 	unordered_set<ORenderItem*> RenderedItems;
 
 public:
+	bool bFrustrumCullingEnabled = true;
+
 	SDescriptorPair NullCubeSRV;
 	SDescriptorPair NullTexSRV;
 	ORenderGraph* GetRenderGraph() const;

@@ -4,12 +4,7 @@ class OLightComponent;
 class OShadowMap : public ORenderTargetBase
 {
 public:
-	OShadowMap(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format, OLightComponent* InLightComponent)
-	    : ORenderTargetBase(Device, Width, Height, Format, EResourceHeapType::Default), LightComponent(InLightComponent)
-
-	{
-		Name = L"ShadowMap";
-	}
+	OShadowMap(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format, OLightComponent* InLightComponent);
 
 	void BuildDescriptors() override;
 	void BuildResource() override;
@@ -29,8 +24,10 @@ public:
 		return PassConstantBuffer.Buffer->GetGPUAddress() + PassConstantBuffer.StartIndex * Utils::CalcBufferByteSize(sizeof(SPassConstants));
 	}
 	void SetPassConstant();
+	bool ConsumeUpdate();
 
 private:
+	bool bNeedToUpdate = true;
 	OLightComponent* LightComponent;
 	SPassConstants PassConstant;
 	SDescriptorPair SRV;

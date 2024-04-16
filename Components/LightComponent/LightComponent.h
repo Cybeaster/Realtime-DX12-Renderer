@@ -56,10 +56,10 @@ public:
 	void SetPassConstant(SPassConstants& OutConstant);
 	void UpdateLightData();
 	void SetShadowMapIndex(UINT Index);
+	SDelegate<void> OnLightChanged;
 
 private:
 	ELightType LightType = ELightType::Spot;
-
 	TUploadBufferData<SDirectionalLight> DirLightBufferInfo;
 	TUploadBufferData<SPointLight> PointLightBufferInfo;
 	TUploadBufferData<SSpotLight> SpotLightBufferInfo;

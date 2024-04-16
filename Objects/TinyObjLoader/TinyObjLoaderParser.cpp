@@ -129,18 +129,8 @@ bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, 
 			auto specular = OApplication::GetTexturesPath(Path, UTF8ToWString(material.specular_texname));
 
 			data.Material.Name = material.name;
-			if (!diff.empty())
-			{
-				data.Material.DiffuseMaps.push_back(diff);
-			}
-			if (!norm.empty())
-			{
-				data.Material.NormalMaps.push_back(norm);
-			}
-			if (!height.empty())
-			{
-				data.Material.HeightMaps.push_back(height);
-			}
+			data.Material.DiffuseMap = diff;
+			data.Material.NormalMap = height;
 			data.Material.AlphaMap = alpha;
 			data.Material.AmbientMap = ambient;
 			data.Material.SpecularMap = specular;
@@ -155,7 +145,7 @@ bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, 
 				.Dissolve = material.dissolve,
 				.Illumination = material.illum,
 				.Roughness = material.roughness,
-				.Metallic = material.metallic,
+				.Metallness = material.metallic,
 				.Sheen = material.sheen
 			};
 

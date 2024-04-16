@@ -73,7 +73,7 @@ VertexOut VS(VertexIn Vin, uint InstanceID
     float wave = amplitude1 * cos(coord1.x) + amplitude2 * cos(coord2.x) + amplitude3 * cos(coord3.x);
 
     // Sample the height map
-    float baseHeight = ComputeHeightMaps(matData, Vin.NormalL, Vin.TangentU, Vin.TexC, 1.0).r;
+    float baseHeight = ComputeHeightMap(matData, Vin.NormalL, Vin.TangentU, Vin.TexC, 1.0).r;
 
     // Calculate damping factor based on wave height
     float dampingFactor = 1.0 / (1.0 + abs(wave) * dampingStrength);
@@ -130,11 +130,11 @@ float4 PS(VertexOut pin)
 	pin.NormalW = normalize(pin.NormalW);
 
 
-	BumpedData data = ComputeNormalMaps(pin.NormalW, pin.TangentW, matData, pin.TexC);
+	BumpedData data = ComputeNormalMap(pin.NormalW, pin.TangentW, matData, pin.TexC);
 	float3 bumpedNormalW = data.BumpedNormalW;
 	float4 normalMapSample = data.NormalMapSample;
 
-	diffuseAlbedo = ComputeDiffuseMaps(matData, diffuseAlbedo, pin.WaveNormalTex0);
+	diffuseAlbedo *= ComputeDiffuseMap(matData, pin.WaveNormalTex0);
 
 	// Vector from point being lit to eye.
 	float3 toEyeW = gEyePosW - pin.PosW;
@@ -145,25 +145,23 @@ float4 PS(VertexOut pin)
 	float4 ambient = gAmbientLight * diffuseAlbedo;
 
 	const float shininess = (1.0f - roughness) * normalMapSample.a;
-	Material mat = { diffuseAlbedo, fresnelR0, shininess };
+	Material mat = { diffuseAlbedo, fresnelR0, shininess, roughness};
 	float3 shadowFactor = 1.0f;
 
 	float3 light = {0.0f, 0.0f, 0.0f};
 
-	 for (uint i = 0; i < gNumDirLights; i++)
+	uint idx = 0;
+	for (uint i = 0; i < gNumDirLights; i++)
 	{
-        light += shadowFactor* ComputeDirectionalLight(gDirectionalLights[i], mat, bumpedNormalW, toEyeW);
-    }
+		light += shadowFactor[idx] * ComputeDirectionalLight_BRDF(gDirectionalLights[i], mat, bumpedNormalW, toEyeW);
+		idx++;
+	}
 
-     for (uint j = 0; j < gNumPointLights; j++)
-    {
-        light += ComputePointLight(gPointLights[j], mat, pin.PosW, bumpedNormalW, toEyeW);
-    }
-
-    for (uint k = 0; k < gNumSpotLights; k++)
-    {
-        light += ComputeSpotLight(gSpotLights[k], mat, pin.PosW, bumpedNormalW, toEyeW);
-    }
+	for (uint k = 0; k < gNumSpotLights; k++)
+	{
+		light += shadowFactor[idx] * ComputeSpotLight_BRDF(gSpotLights[k], mat, pin.PosW, bumpedNormalW, toEyeW);
+		idx++;
+	}
 
 	float4 litColor = ambient + float4(light, 1.0f);
 

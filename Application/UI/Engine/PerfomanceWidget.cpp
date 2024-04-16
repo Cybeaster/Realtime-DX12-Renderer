@@ -14,5 +14,6 @@ void OPerfomanceWidget::Draw()
 			numTriangles += item->ChosenSubmesh->Vertices->size() / 3;
 		}
 		ImGui::Text("Number of rendered triangles: %d", numTriangles);
+		ImGui::Checkbox("Enable Frustum Cooling", &OEngine::Get()->bFrustrumCullingEnabled);
 	}
 }
