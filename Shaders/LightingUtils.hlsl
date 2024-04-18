@@ -133,8 +133,8 @@ float3 BRDF(float3 View, float3 Light,float3 LightColor, float3 Normal, Material
 	float V = V_SmithGGXCorrelated(NoV, NoL, roughness);
 
 	float3 Fr = (D * V) * F;
-	float3 Fd = Mat.DiffuseAlbedo.rgb * Fd_Lambert();
-	return LightColor * ( Fr + Fd );
+	float3 Fd = LightColor.rgb * Fd_Lambert();
+	return ( Fr + Fd );
 }
 
 //---------------------------------------------------------------------------------------

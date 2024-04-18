@@ -74,22 +74,32 @@ float4 PS(VertexOut pin)
     : SV_Target
 {
 	MaterialData matData = gMaterialData[pin.MaterialIndex];
-	float4 baseColor = float4(matData.DiffuseAlbedo,GetAlphaValue(matData, pin.TexC));
+	float4 diffuseColor = float4(matData.DiffuseAlbedo,GetAlphaValue(matData, pin.TexC));
 #ifdef ALPHA_TEST
 	// Discard pixel if texture alpha < 0.1.  We do this test as soon
 	// as possible in the shader so that we can potentially exit the
 	// shader early, thereby skipping the rest of the shader code.
-	clip(baseColor.a - 0.1f);
+	clip(diffuseColor.a - 0.1f);
 #endif
 
 	pin.NormalW = normalize(pin.NormalW);
 	pin.TangentW = normalize(pin.TangentW);
 	float IoR = matData.IndexOfRefraction;
-	float reflectance = ((IoR - 1) / (IoR + 1)) * ((IoR - 1) / (IoR + 1));
-	float4 f0 = 0.16 * SQUARE(reflectance) * (1 - matData.Metalness) + baseColor * matData.Metalness;
-	baseColor *= ComputeDiffuseMap(matData, pin.TexC);
+	float reflectance = SQUARE(IoR - 1) / SQUARE(IoR + 1);
+	float4 specular = GetSpecularValue(matData, pin.TexC);
+	float3 f0 = diffuseColor.rgb * matData.Metalness;
+	if(matData.SpecularMap.bIsEnabled)
+    {
+		f0 += specular.rgb * (1 - matData.Metalness);
+    }
+    else
+    {
+        f0 += 0.16 * SQUARE(reflectance) * (1 - matData.Metalness);
+    }
 
-	float4 diffuseAlbedo = (1.0 - matData.Metalness) * baseColor;
+	float4 diffuseAlbedo = (1.0 - matData.Metalness) * diffuseColor;
+	diffuseAlbedo *= ComputeDiffuseMap(matData, pin.TexC);
+
 	// Vector from point being lit to eye.
 	float3 toEyeW = gEyePosW - pin.PosW;
 	float distToEye = length(toEyeW);
@@ -109,7 +119,6 @@ float4 PS(VertexOut pin)
     GetShadowFactor(shadowFactor,  pin.LightIndices,pin.ShadowPositionsH);
 
 	Material mat = { diffuseAlbedo, f0.rgb, matData.Shininess, matData.Roughness };
-
 	BumpedData data = ComputeNormalMap(pin.NormalW, pin.TangentW, matData, pin.TexC);
 	float3 bumpedNormalW = data.BumpedNormalW;
 

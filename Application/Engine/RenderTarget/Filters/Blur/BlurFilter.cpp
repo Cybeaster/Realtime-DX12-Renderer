@@ -3,20 +3,20 @@
 #include "DirectX/ShaderTypes.h"
 #include "Logger.h"
 
-OBlurFilter::OBlurFilter(ID3D12Device* Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format)
+OGaussianBlurFilter::OGaussianBlurFilter(ID3D12Device* Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format)
     : OFilterBase(Device, Other, Width, Height, Format)
 {
 	Buffer = make_unique<OUploadBuffer<SConstantBlurSettings>>(Device, 1, true, this);
 	FilterName = L"BlurFilter";
 }
 
-void OBlurFilter::OutputTo(SResourceInfo* Destination)
+void OGaussianBlurFilter::OutputTo(SResourceInfo* Destination)
 {
 	Utils::ResourceBarrier(Queue->GetCommandList().Get(), Destination, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
 	Queue->GetCommandList()->CopyResource(Destination->Resource.Get(), BlurMap0.Resource.Get());
 }
 
-void OBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
+void OGaussianBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
 {
 	const auto descriptor = Cast<SRenderObjectHeap>(Descriptor);
 	if (!descriptor)
@@ -32,7 +32,7 @@ void OBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
 	BuildDescriptors();
 }
 
-void OBlurFilter::BuildDescriptors() const
+void OGaussianBlurFilter::BuildDescriptors() const
 {
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -53,7 +53,7 @@ void OBlurFilter::BuildDescriptors() const
 	Device->CreateUnorderedAccessView(BlurMap1.Resource.Get(), nullptr, &uavDesc, UAV1Handle.CPUHandle);
 }
 
-void OBlurFilter::BuildResource()
+void OGaussianBlurFilter::BuildResource()
 {
 	D3D12_RESOURCE_DESC texDesc = {};
 	ZeroMemory(&texDesc, sizeof(D3D12_RESOURCE_DESC));
@@ -73,7 +73,7 @@ void OBlurFilter::BuildResource()
 	BlurMap1 = Utils::CreateResource(this, L"BlurMap1", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
 }
 
-void OBlurFilter::Execute(
+void OGaussianBlurFilter::Execute(
     const SPSODescriptionBase* HorizontalBlurPSO,
     const SPSODescriptionBase* VerticalBlurPSO,
     SResourceInfo* Input)
@@ -139,7 +139,7 @@ void OBlurFilter::Execute(
 	}
 }
 
-vector<float> OBlurFilter::CalcGaussWeights(float Sigma) const
+vector<float> OGaussianBlurFilter::CalcGaussWeights(float Sigma) const
 {
 	float twoSigma = 2.0f * Sigma * Sigma;
 

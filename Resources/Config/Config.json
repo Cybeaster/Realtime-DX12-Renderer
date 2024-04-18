@@ -4,5 +4,6 @@
   "TexturesConfigPath": "Resources/Config/TexturesConfig.json",
   "ShadersConfigPath": "Resources/Config/ShaderConfig.json",
   "PSOConfigPath": "Resources/Config/PSOConfig.json",
-  "RenderGraphConfigPath": "Resources/Config/RenderGraphConfig.json"
+  "RenderGraphConfigPath": "Resources/Config/RenderGraphConfig.json",
+  "SceneConfigPath": "Resources/Config/SceneConfig.json"
 }

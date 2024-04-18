@@ -14,7 +14,12 @@
           "Type": "Pixel",
           "EntryPoint": "PS",
           "TargetProfile": "ps_6_0",
-          "Defines": []
+          "Defines": [
+            {
+              "Name": "FOG",
+              "Value": "1"
+            }
+          ]
         }
       ]
     },
@@ -68,6 +73,10 @@
           "Defines": [
             {
               "Name": "ALPHA_TEST",
+              "Value": "1"
+            },
+            {
+              "Name": "FOG",
               "Value": "1"
             }
           ]

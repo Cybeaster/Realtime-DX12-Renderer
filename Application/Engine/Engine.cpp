@@ -93,6 +93,8 @@ void OEngine::InitManagers()
 	MaterialManager = make_unique<OMaterialManager>();
 	MaterialManager->LoadMaterialsFromCache();
 	MaterialManager->MaterialsRebuld.AddMember(this, &OEngine::TryRebuildFrameResource);
+	SceneManager = make_unique<OSceneManager>();
+	SceneManager->LoadScenes();
 }
 
 void OEngine::PostInitialize()
@@ -117,7 +119,7 @@ void OEngine::BuildNormalTangentDebugTarget()
 
 void OEngine::BuildFilters()
 {
-	BlurFilterUUID = AddFilter<OBlurFilter>();
+	BlurFilterUUID = AddFilter<OGaussianBlurFilter>();
 	SobelFilterUUID = AddFilter<OSobelFilter>();
 	BilateralFilterUUID = AddFilter<OBilateralBlurFilter>();
 }
@@ -964,9 +966,9 @@ void OEngine::SetPipelineState(SPSODescriptionBase* PSOInfo)
 	GetCommandQueue()->SetPipelineState(PSOInfo);
 }
 
-OBlurFilter* OEngine::GetBlurFilter()
+OGaussianBlurFilter* OEngine::GetBlurFilter()
 {
-	return GetObjectByUUID<OBlurFilter>(BlurFilterUUID);
+	return GetObjectByUUID<OGaussianBlurFilter>(BlurFilterUUID);
 }
 
 OBilateralBlurFilter* OEngine::GetBilateralBlurFilter()

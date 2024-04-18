@@ -134,7 +134,7 @@ bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, 
 			data.Material.AlphaMap = alpha;
 			data.Material.AmbientMap = ambient;
 			data.Material.SpecularMap = specular;
-			const SMaterialSurface surf = {
+			SMaterialSurface surf = {
 				.AmbientAlbedo = { material.ambient[0], material.ambient[1], material.ambient[2] },
 				.DiffuseAlbedo = { material.diffuse[0], material.diffuse[1], material.diffuse[2] },
 				.SpecularAlbedo = { material.specular[0], material.specular[1], material.specular[2] },
@@ -148,6 +148,13 @@ bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, 
 				.Metallness = material.metallic,
 				.Sheen = material.sheen
 			};
+			auto shininess = material.shininess / 100;
+			surf.Shininess = shininess;
+
+			if (material.roughness == 0 && shininess > Utils::Math::Epsilon)
+			{
+				surf.Roughness = 1 - shininess;
+			}
 
 			data.Material.MaterialSurface = surf;
 			payload.TotalIndices += data.Indices32.size();

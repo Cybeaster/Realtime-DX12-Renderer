@@ -9,5 +9,5 @@ ORenderTargetBase* OCopyRenderNode::Execute(ORenderTargetBase* RenderTarget)
 	PROFILE_SCOPE();
 	CommandQueue->SetRenderTarget(OutTexture);
 	CommandQueue->CopyResourceTo(OutTexture, RenderTarget);
-	return OutTexture;
+	return RenderTarget;
 }

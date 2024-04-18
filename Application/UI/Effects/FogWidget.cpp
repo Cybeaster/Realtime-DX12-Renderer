@@ -8,7 +8,7 @@ void OFogWidget::Draw()
 	if (bEnabled)
 	{
 		ImGui::SliderFloat("Fog Start", &FogStart, 0.0f, 200.0f);
-		ImGui::SliderFloat("Fog Range", &FogRange, 0.0f, 200.0f);
+		ImGui::SliderFloat("Fog Range", &FogRange, 0.0f, 10000.0f);
 		ImGui::ColorEdit3("Fog Color", &FogColor.x, ImGuiColorEditFlags_Float);
 	}
 }

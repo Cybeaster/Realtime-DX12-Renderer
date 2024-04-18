@@ -14,6 +14,7 @@
 #include "RenderTarget/CubeMap/DynamicCubeMap/DynamicCubeMapTarget.h"
 #include "RenderTarget/NormalTangetDebugTarget/NormalTangentDebugTarget.h"
 #include "RenderTarget/RenderTarget.h"
+#include "Scene/SceneManager.h"
 #include "ShaderCompiler/Compiler.h"
 #include "TextureManager/TextureManager.h"
 #include "UI/UIManager/UiManager.h"
@@ -160,7 +161,7 @@ public:
 
 	vector<D3D12_INPUT_ELEMENT_DESC>& GetDefaultInputLayout();
 
-	OBlurFilter* GetBlurFilter();
+	OGaussianBlurFilter* GetBlurFilter();
 	OBilateralBlurFilter* GetBilateralBlurFilter();
 	OSobelFilter* GetSobelFilter();
 	void BuildFilters();
@@ -335,6 +336,7 @@ private:
 	OSSAORenderTarget* SSAORT = nullptr;
 	ONormalTangentDebugTarget* NormalTangentDebugTarget = nullptr;
 	unordered_set<ORenderItem*> RenderedItems;
+	unique_ptr<OSceneManager> SceneManager;
 
 public:
 	bool bFrustrumCullingEnabled = true;

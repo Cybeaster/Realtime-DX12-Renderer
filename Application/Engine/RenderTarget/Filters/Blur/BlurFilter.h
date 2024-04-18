@@ -21,12 +21,12 @@ struct SConstantBlurSettings
 	float w10;
 };
 
-class OBlurFilter : public OFilterBase
+class OGaussianBlurFilter : public OFilterBase
 {
 public:
-	OBlurFilter(ID3D12Device* Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format);
-	OBlurFilter(const OBlurFilter& rhs) = delete;
-	OBlurFilter& operator=(const OBlurFilter& rhs) = delete;
+	OGaussianBlurFilter(ID3D12Device* Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format);
+	OGaussianBlurFilter(const OGaussianBlurFilter& rhs) = delete;
+	OGaussianBlurFilter& operator=(const OGaussianBlurFilter& rhs) = delete;
 
 	void OutputTo(SResourceInfo* Destination);
 

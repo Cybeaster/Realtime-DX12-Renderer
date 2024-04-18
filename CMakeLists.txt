@@ -233,6 +233,12 @@ set(SRC_FILES
         Application/Engine/RenderTarget/NormalTangetDebugTarget/NormalTangentDebugTarget.h
         Application/RenderGraph/Nodes/TangentNormalDebugNode/TangentNormalDebugNode.cpp
         Application/RenderGraph/Nodes/TangentNormalDebugNode/TangentNormalDebugNode.h
+        Config/SceneReader/SceneReader.cpp
+        Config/SceneReader/SceneReader.h
+        Application/Engine/Scene/SceneManager.cpp
+        Application/Engine/Scene/SceneManager.h
+        Application/Engine/Scene/Scene.cpp
+        Application/Engine/Scene/Scene.h
 )
 
 
