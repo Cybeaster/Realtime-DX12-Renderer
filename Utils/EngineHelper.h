@@ -6,7 +6,7 @@
 #include "Engine/Engine.h"
 #include "GraphicsPipeline/GraphicsPipeline.h"
 
-inline void CreateMaterial(const string& Name, STexture* Texture, const SMaterialSurface& Constants, bool Notify = false)
+inline void CreateMaterial(const string& Name, STexture* Texture, const HLSL::MaterialData& Constants, bool Notify = false)
 {
 	OEngine::Get()->GetMaterialManager()->CreateMaterial(Name, Texture, Constants, Notify);
 }

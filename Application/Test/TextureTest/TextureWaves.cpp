@@ -212,7 +212,7 @@ void OTextureWaves::BuildPSOTreeSprites()
 	treeSpritePSO.SampleDesc.Count = enable ? state - 1 : 1;
 	treeSpritePSO.SampleDesc.Quality = enable ? (state - 1) : 0;
 	treeSpritePSO.DSVFormat = SRenderConstants::DepthBufferFormat;
-	GetEngine()->CreatePSO(SPSOType::TreeSprites, treeSpritePSO);
+	GetEngine()->CreatePSO(SPSOTypes::TreeSprites, treeSpritePSO);
 }
 
 void OTextureWaves::BuildPSOGeosphere()
@@ -249,7 +249,7 @@ void OTextureWaves::BuildPSOGeosphere()
 	IcosahedronPSO.SampleDesc.Count = enable ? state - 1 : 1;
 	IcosahedronPSO.SampleDesc.Quality = enable ? (state - 1) : 0;
 	IcosahedronPSO.DSVFormat = SRenderConstants::DepthBufferFormat;
-	GetEngine()->CreatePSO(SPSOType::Icosahedron, IcosahedronPSO);
+	GetEngine()->CreatePSO(SPSOTypes::Icosahedron, IcosahedronPSO);
 }
 
 void OTextureWaves::UpdateMaterialCB()

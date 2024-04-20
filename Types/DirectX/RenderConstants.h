@@ -77,7 +77,7 @@ struct SRenderLayers
 	RENDER_TYPE(ShadowDebug);
 };
 
-struct SPSOType
+struct SPSOTypes
 {
 	RENDER_TYPE(Opaque);
 	RENDER_TYPE(Transparent);
@@ -144,3 +144,4 @@ struct SShaderTypes
 };
 
 using SRenderLayer = string;
+using SPSOType = string;

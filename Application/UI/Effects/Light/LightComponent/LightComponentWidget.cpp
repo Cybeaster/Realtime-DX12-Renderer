@@ -16,24 +16,24 @@ void OLightComponentWidget::Draw()
 		{
 			auto& dirLight = LightComponent->GetDirectionalLight();
 			dirty |= ImGui::DragFloat3("Direction", &dirLight.Direction.x, 0.01, -1.0, 1.0);
-			dirty |= ImGui::ColorEdit3("Color", &dirLight.Strength.x);
+			dirty |= ImGui::ColorEdit3("Color", &dirLight.Intensity.x);
 			break;
 		}
 		case ELightType::Point:
 		{
 			auto& pointLight = LightComponent->GetPointLight();
-			dirty |= ImGui::ColorEdit3("Color", &pointLight.Strength.x);
-			dirty |= ImGui::InputFloat("Falloff Start", &pointLight.FallOffStart, 0.1f);
-			dirty |= ImGui::InputFloat("Falloff End", &pointLight.FallOffEnd, 0.1f);
+			dirty |= ImGui::ColorEdit3("Color", &pointLight.Intensity.x);
+			dirty |= ImGui::InputFloat("Falloff Start", &pointLight.FalloffStart, 0.1f);
+			dirty |= ImGui::InputFloat("Falloff End", &pointLight.FalloffEnd, 0.1f);
 			break;
 		}
 		case ELightType::Spot:
 		{
 			auto& spotLight = LightComponent->GetSpotLight();
 			dirty |= ImGui::DragFloat3("Direction", &spotLight.Direction.x, 0.01, -1.0, 1.0);
-			dirty |= ImGui::ColorEdit3("Color", &spotLight.Strength.x);
-			dirty |= ImGui::DragFloat("Falloff Start", &spotLight.FallOffStart, 0.1f, 0.1f, spotLight.FallOffEnd - 0.1f);
-			dirty |= ImGui::DragFloat("Falloff End", &spotLight.FallOffEnd, 1.f, spotLight.FallOffStart + 0.1f, 5000.0f);
+			dirty |= ImGui::ColorEdit3("Color", &spotLight.Intensity.x);
+			dirty |= ImGui::DragFloat("Falloff Start", &spotLight.FalloffStart, 0.1f, 0.1f, spotLight.FalloffEnd - 0.1f);
+			dirty |= ImGui::DragFloat("Falloff End", &spotLight.FalloffEnd, 1.f, spotLight.FalloffStart + 0.1f, 5000.0f);
 			dirty |= ImGui::DragFloat("Spot Power", &spotLight.SpotPower, 0.1f, 0.1f, 100.0f);
 			dirty |= ImGui::DragFloat("Cone Angle", &spotLight.ConeAngle, 0.1f, 1.0f, 90.0f);
 			break;

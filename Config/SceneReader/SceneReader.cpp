@@ -30,7 +30,7 @@ SSceneSettings OSceneReader::LoadScene()
 					light.second.get_child("Direction").get<float>("Y"),
 					light.second.get_child("Direction").get<float>("Z")
 				};
-				dirLight.Strength = {
+				dirLight.Intensity = {
 					light.second.get_child("Color").get<float>("R"),
 					light.second.get_child("Color").get<float>("G"),
 					light.second.get_child("Color").get<float>("B")

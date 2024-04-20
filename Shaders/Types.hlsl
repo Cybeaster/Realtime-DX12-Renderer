@@ -9,9 +9,14 @@
 #define MEDIUMP_FLT_MAX    65504.0
 #define SaturateMediumUp(x) min(x, MEDIUMP_FLT_MAX)
 #define SQUARE(x) (x * x)
+
+#define HLSL
+#include "../Types/DirectX/HlslTypes.h"
+
 void Swap(inout float A, inout float B)
 {
 	float temp = A;
 	A = B;
 	B = temp;
 }
+

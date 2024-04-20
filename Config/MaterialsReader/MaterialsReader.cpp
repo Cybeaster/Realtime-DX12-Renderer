@@ -31,11 +31,11 @@ std::unordered_map<string, unique_ptr<SMaterial>> OMaterialsConfigParser::LoadMa
 		material->HeightMap = !height.empty() ? height.at(0) : STexturePath();
 
 		auto& diffChild = data.get_child("Diffuse");
-		material->MaterialSurface.DiffuseAlbedo.x = diffChild.get<float>("x");
-		material->MaterialSurface.DiffuseAlbedo.y = diffChild.get<float>("y");
-		material->MaterialSurface.DiffuseAlbedo.z = diffChild.get<float>("z");
+		material->MaterialData.DiffuseAlbedo.x = diffChild.get<float>("x");
+		material->MaterialData.DiffuseAlbedo.y = diffChild.get<float>("y");
+		material->MaterialData.DiffuseAlbedo.z = diffChild.get<float>("z");
 
-		material->MaterialSurface.Roughness = data.get<float>("Roughness");
+		material->MaterialData.Roughness = data.get<float>("Roughness");
 		Materials[material->Name] = std::move(material);
 	}
 	return std::move(Materials);
@@ -43,11 +43,11 @@ std::unordered_map<string, unique_ptr<SMaterial>> OMaterialsConfigParser::LoadMa
 
 void OMaterialsConfigParser::AddDataToNode(const SMaterial* Mat, boost::property_tree::ptree& OutNode)
 {
-	OutNode.put("Diffuse.x", Mat->MaterialSurface.DiffuseAlbedo.x);
-	OutNode.put("Diffuse.y", Mat->MaterialSurface.DiffuseAlbedo.y);
-	OutNode.put("Diffuse.z", Mat->MaterialSurface.DiffuseAlbedo.z);
+	OutNode.put("Diffuse.x", Mat->MaterialData.DiffuseAlbedo.x);
+	OutNode.put("Diffuse.y", Mat->MaterialData.DiffuseAlbedo.y);
+	OutNode.put("Diffuse.z", Mat->MaterialData.DiffuseAlbedo.z);
 
-	OutNode.put("Roughness", Mat->MaterialSurface.Roughness);
+	OutNode.put("Roughness", Mat->MaterialData.Roughness);
 }
 
 void OMaterialsConfigParser::AddMaterial(const SMaterial* Material)

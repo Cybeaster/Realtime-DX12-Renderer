@@ -126,7 +126,7 @@ Microsoft::WRL::ComPtr<ID3D12Fence> OCommandQueue::GetFence() const
 
 void OCommandQueue::SetPipelineState(SPSODescriptionBase* PSOInfo)
 {
-	if (CurrentPSO == PSOInfo)
+	if (CurrentPSO == PSOInfo || PSOInfo == nullptr)
 	{
 		return;
 	}
@@ -150,15 +150,21 @@ void OCommandQueue::SetResource(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Re
 {
 	if (CurrentPSO != PSO)
 	{
-		LOG(Engine, Error, "Trying to set resource view for a different PSO!")
+		LOG(Engine, Warning, "Trying to set resource view for a different PSO!")
 		SetPipelineState(PSO);
 	}
 
-	/*if (SetResources.contains(Name) && SetResources[Name] == Resource)
+	if (PSO == nullptr)
+	{
+		LOG(Engine, Warning, "PSO is nullptr!")
+		return;
+	}
+
+	if (SetResources.contains(Name) && SetResources[Name] == Resource)
 	{
 		LOG(Engine, Warning, "Resource {} already set!", TEXT(Name));
 		return;
-	}*/
+	}
 
 	PSO->RootSignature->SetResource(Name, Resource, CommandList.Get());
 	SetResources[Name] = Resource;
@@ -168,8 +174,14 @@ void OCommandQueue::SetResource(const string& Name, D3D12_GPU_DESCRIPTOR_HANDLE 
 {
 	if (CurrentPSO != PSO)
 	{
-		LOG(Engine, Error, "Trying to set resource view for a different PSO!")
+		LOG(Engine, Warning, "Trying to set resource view for a different PSO!")
 		SetPipelineState(PSO);
+	}
+
+	if (PSO == nullptr)
+	{
+		LOG(Engine, Warning, "PSO is nullptr!")
+		return;
 	}
 
 	if (SetResources.contains(Name) && SetResources[Name] == Resource.ptr)

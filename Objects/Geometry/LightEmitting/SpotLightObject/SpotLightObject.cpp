@@ -3,7 +3,7 @@
 
 #include "Engine/Engine.h"
 
-OSpotLightObject::OSpotLightObject(const SSpotLight& Data, SMeshGeometry* Mesh, SMaterial* Mat) : OLightEmittingObject(Mesh, Mat), LightData(Data)
+OSpotLightObject::OSpotLightObject(const HLSL::SpotLight& Data, SMeshGeometry* Mesh, SMaterial* Mat)
+    : OLightEmittingObject(Mesh, Mat), LightData(Data)
 {
-
 }

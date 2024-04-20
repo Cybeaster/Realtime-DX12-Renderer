@@ -1,4 +1,5 @@
 #pragma once
+#include "Events.h"
 #include "GraphicsPipeline/GraphicsPipeline.h"
 #include "PSOReader/PsoReader.h"
 #include "ShaderReader/ShaderReader.h"
@@ -13,6 +14,7 @@ struct SRootSignature
 
 class OGraphicsPipelineManager
 {
+	DECLARE_DELEGATE(SOnPipelineLoaded, SPSODescriptionBase*);
 	using SGlobalShaderPipelineMap = unordered_map<string, SShadersPipeline>;
 	using SGlobalShaderMap = unordered_map<string, unordered_map<EShaderLevel, unique_ptr<OShader>>>;
 	using SGlobalPSOMap = unordered_map<string, unique_ptr<SPSODescriptionBase>>;
@@ -22,6 +24,9 @@ public:
 	SPSODescriptionBase* FindPSO(const string& PipelineName);
 	SShadersPipeline* FindShadersPipeline(const string& PipelineName);
 	OShader* FindShader(const string& PipelineName, EShaderLevel ShaderType);
+	void ReloadShaders();
+
+	SOnPipelineLoaded OnPipelineLoaded;
 
 protected:
 	void LoadShaders();

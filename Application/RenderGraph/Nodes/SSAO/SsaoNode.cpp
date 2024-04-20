@@ -22,7 +22,7 @@ void OSSAONode::DrawNormals()
 	OEngine::Get()->GetWindow()->SetViewport(CommandQueue->GetCommandList().Get());
 	CommandQueue->ResourceBarrier(ssao->GetNormalMap(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 	CommandQueue->SetRenderTarget(ssao, OSSAORenderTarget::ESubtargets::NormalSubtarget);
-	auto pso = FindPSOInfo(SPSOType::DrawNormals);
+	auto pso = FindPSOInfo(SPSOTypes::DrawNormals);
 	auto resource = OEngine::Get()->CurrentFrameResource;
 
 	CommandQueue->SetPipelineState(pso);
@@ -38,7 +38,7 @@ void OSSAONode::DrawSSAO()
 	PROFILE_SCOPE();
 	auto frameResource = OEngine::Get()->CurrentFrameResource;
 	auto ssao = OEngine::Get()->GetSSAORT();
-	auto pso = FindPSOInfo(SPSOType::SSAO);
+	auto pso = FindPSOInfo(SPSOTypes::SSAO);
 	CommandQueue->ResourceBarrier(ssao->GetAmbientMap0(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 	CommandQueue->CopyResourceTo(ssao->GetDepthMap(), OEngine::Get()->GetWindow()->GetCurrentDepthStencilBuffer());
 	CommandQueue->SetRenderTarget(ssao, OSSAORenderTarget::ESubtargets::AmbientSubtarget0);
@@ -54,10 +54,10 @@ void OSSAONode::DrawSSAO()
 void OSSAONode::BlurSSAO()
 {
 	PROFILE_SCOPE();
-	SetPSO(SPSOType::SSAOBlur);
+	SetPSO(SPSOTypes::SSAOBlur);
 	auto frameResource = OEngine::Get()->CurrentFrameResource;
 	auto ssao = OEngine::Get()->GetSSAORT();
-	auto pso = FindPSOInfo(SPSOType::SSAOBlur);
+	auto pso = FindPSOInfo(SPSOTypes::SSAOBlur);
 	CommandQueue->SetResource("gNormalMap", ssao->GetNormalMapSRV().GPUHandle, pso);
 	CommandQueue->SetResource("gDepthMap", ssao->GetDepthMapSRV().GPUHandle, pso);
 	CommandQueue->SetResource("cbSsao", frameResource->SsaoCB->GetGPUAddress(), pso);
@@ -84,7 +84,7 @@ void OSSAONode::BlurSSAO(OSSAORenderTarget::ESubtargets OutputTarget, const SDes
 	float clearValue[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	CommandQueue->GetCommandList()->ClearRenderTargetView(OutputRTV->CPUHandle, clearValue, 0, nullptr); //TODO Make support without calling command list directly
 	CommandQueue->GetCommandList()->OMSetRenderTargets(1, &OutputRTV->CPUHandle, true, nullptr);
-	auto pso = FindPSOInfo(SPSOType::SSAOBlur);
+	auto pso = FindPSOInfo(SPSOTypes::SSAOBlur);
 	CommandQueue->SetResource("gInputMap", InputSRV->GPUHandle, pso);
 	const auto commandList = CommandQueue->GetCommandList();
 	OEngine::Get()->DrawFullScreenQuad();

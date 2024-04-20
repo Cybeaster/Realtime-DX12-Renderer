@@ -74,37 +74,26 @@ float4 PS(VertexOut pin)
     : SV_Target
 {
 	MaterialData matData = gMaterialData[pin.MaterialIndex];
-	float4 diffuseColor = float4(matData.DiffuseAlbedo,GetAlphaValue(matData, pin.TexC));
+	float alpha = SampleAlphaMap(matData, pin.TexC);
 #ifdef ALPHA_TEST
 	// Discard pixel if texture alpha < 0.1.  We do this test as soon
 	// as possible in the shader so that we can potentially exit the
 	// shader early, thereby skipping the rest of the shader code.
-	clip(diffuseColor.a - 0.1f);
+	clip(alpha - 0.1f);
 #endif
+
+	float3 diffuseAlbedo = matData.DiffuseAlbedo * SampleDiffuseMap(matData, pin.TexC).rgb;
+	float3 specularAlbedo = matData.SpecularAlbedo * SampleSpecularMap(matData, pin.TexC).rgb;
 
 	pin.NormalW = normalize(pin.NormalW);
 	pin.TangentW = normalize(pin.TangentW);
-	float IoR = matData.IndexOfRefraction;
-	float reflectance = SQUARE(IoR - 1) / SQUARE(IoR + 1);
-	float4 specular = GetSpecularValue(matData, pin.TexC);
-	float3 f0 = diffuseColor.rgb * matData.Metalness;
-	if(matData.SpecularMap.bIsEnabled)
-    {
-		f0 += specular.rgb * (1 - matData.Metalness);
-    }
-    else
-    {
-        f0 += 0.16 * SQUARE(reflectance) * (1 - matData.Metalness);
-    }
 
-	float4 diffuseAlbedo = (1.0 - matData.Metalness) * diffuseColor;
-	diffuseAlbedo *= ComputeDiffuseMap(matData, pin.TexC);
+	float reflectance = CalcFresnelR0(matData.IndexOfRefraction); //TODO fix if IndexOfRefraction == 0
+    float3 f0 = lerp(F0_COEFF * SQUARE(reflectance) ,specularAlbedo, matData.Metalness);
 
 	// Vector from point being lit to eye.
-	float3 toEyeW = gEyePosW - pin.PosW;
+	float3 toEyeW = normalize(gEyePosW - pin.PosW);
 	float distToEye = length(toEyeW);
-	toEyeW /= distToEye; // normalize
-
 
 	float ambientAccess = 1;
 	if (gSSAOEnabled)
@@ -113,33 +102,33 @@ float4 PS(VertexOut pin)
 		ambientAccess = gSsaoMap.Sample(gsamLinearWrap, pin.SsaoPosH.xy, 0.0f).r;
 	}
 
-	float3 light = {0.0f, 0.0f, 0.0f};
-
     float shadowFactor[MAX_SHADOW_MAPS];
     GetShadowFactor(shadowFactor,  pin.LightIndices,pin.ShadowPositionsH);
 
-	Material mat = { diffuseAlbedo, f0.rgb, matData.Shininess, matData.Roughness };
-	BumpedData data = ComputeNormalMap(pin.NormalW, pin.TangentW, matData, pin.TexC);
+	//diffuse incorporating metalness
+	Material mat = { diffuseAlbedo * (1.0f - matData.Metalness), f0.rgb, matData.Shininess, 1 -  (matData.Shininess / 100) };
+	BumpedData data = SampleNormalMap(pin.NormalW, pin.TangentW, matData, pin.TexC);
 	float3 bumpedNormalW = data.BumpedNormalW;
 
     uint idx = 0;
+	float3 directLighting = {0.0f, 0.0f, 0.0f};
 	for (uint i = 0; i < gNumDirLights; i++)
 	{
-        light += shadowFactor[idx] * ComputeDirectionalLight_BRDF(gDirectionalLights[i], mat, bumpedNormalW, toEyeW);
+		DirectionalLight curLight = gDirectionalLights[i];
+        directLighting += shadowFactor[idx] * ComputeDirectionalLight_BlinnPhong(curLight, mat, bumpedNormalW, toEyeW) * curLight.Intensity;
         idx++;
     }
 
     for (uint k = 0; k < gNumSpotLights; k++)
     {
-       light += shadowFactor[idx] * ComputeSpotLight_BRDF(gSpotLights[k], mat, pin.PosW, bumpedNormalW, toEyeW);
+       SpotLight light = gSpotLights[k];
+       directLighting += shadowFactor[idx] * ComputeSpotLight_BRDF(gSpotLights[k], mat, pin.PosW, bumpedNormalW, toEyeW) * light.Intensity;
        idx++;
     }
 
-	float4 ambientAlbedo = GetAmbientValue(matData, pin.TexC) * float4(matData.AmbientAlbedo,1);
-
 	// Light terms.
-	float4 ambient =  ambientAccess * gAmbientLight * ambientAlbedo;
-	float4 litColor = ambient + float4(light, 1.0f);
+	float4 ambient =  ambientAccess * gAmbientLight * float4(diffuseAlbedo,1.0);
+	float4 litColor = ambient + float4(directLighting, 1.0f);
 
 #ifdef FOG
 	float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
@@ -147,7 +136,7 @@ float4 PS(VertexOut pin)
 #endif
 
 	// Common convention to take alpha from diffuse albedo.
-	litColor.a = diffuseAlbedo.a;
+	litColor.a = alpha;
 	litColor.rgb = GammaCorrect(litColor.rgb);
 	return litColor;
 }

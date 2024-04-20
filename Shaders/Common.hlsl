@@ -20,10 +20,14 @@
 #define SHADOW_MAPS_NUM 2
 
 #define EPSILON 0.0001f
+#define F0_COEFF 0.16f
+
 
 // Include structures and functions for lighting.
 #include "LightingUtils.hlsl"
 #include "Samplers.hlsl"
+
+
 struct InstanceData
 {
 	float4x4 World;
@@ -33,38 +37,6 @@ struct InstanceData
 	float GridSpatialStep;
 };
 
-struct TextureData
-{
-	uint bIsEnabled;
-	uint TextureIndex;
-};
-
-struct MaterialData
-{
-	float3 AmbientAlbedo;
-	float3 DiffuseAlbedo;
-	float3 SpecularAlbedo;
-	float3 Transmittance;
-    float3 Emission;
-	float Shininess;
-	float IndexOfRefraction;
-	float Dissolve;
-	int Illumination;
-	float Roughness;
-	float Metalness;
-	float Sheen;
-
-	float4x4 MatTransform;
-
-	TextureData DiffuseMap;
-	TextureData NormalMap;
-	TextureData HeightMap;
-	TextureData AlphaMap;
-	TextureData SpecularMap;
-	TextureData AmbientMap;
-
-
-};
 
 Texture2D gTextureMaps[TEXTURE_MAPS_NUM] : register(t0);
 Texture2D gShadowMaps[SHADOW_MAPS_NUM] : register(t1,space2);
@@ -144,7 +116,7 @@ struct BumpedData
 
 
 /*
-float3 ComputeNormalMaps(float3 NormalW, float3 TangentW, MaterialData matData, float2 TexC, out float NormalMapSampleA)
+float3 SampleNormalMap(float3 NormalW, float3 TangentW, MaterialData matData, float2 TexC, out float NormalMapSampleA)
 {
 	float3 bumpedNormalW = NormalW;
 	float4 normalMapSample = float4(0.f, 0.f, 1.0f, 1.0f);
@@ -246,7 +218,7 @@ bool AreOrthogonal(float3 vec1, float3 vec2)
     return abs(dotProduct) < EPSILON;
 }
 
-float GetAlphaValue(MaterialData Data, float2 TexC)
+float SampleAlphaMap(MaterialData Data, float2 TexC)
 {
 	if(Data.AlphaMap.bIsEnabled == 1)
 	{
@@ -258,7 +230,7 @@ float GetAlphaValue(MaterialData Data, float2 TexC)
 	}
 }
 
-float4 GetSpecularValue(MaterialData Data, float2 TexC)
+float4 SampleSpecularMap(MaterialData Data, float2 TexC)
 {
 	if(Data.SpecularMap.bIsEnabled == 1)
 	{
@@ -270,7 +242,7 @@ float4 GetSpecularValue(MaterialData Data, float2 TexC)
 	}
 }
 
-float4 GetAmbientValue(MaterialData Data, float2 TexC)
+float4 SampleAmbientMap(MaterialData Data, float2 TexC)
 {
 	if(Data.AmbientMap.bIsEnabled == 1)
 	{
@@ -282,7 +254,7 @@ float4 GetAmbientValue(MaterialData Data, float2 TexC)
 	}
 }
 
-float4 ComputeDiffuseMap(MaterialData MatData, float2 TexC)
+float4 SampleDiffuseMap(MaterialData MatData, float2 TexC)
 {
 	if(MatData.DiffuseMap.bIsEnabled == 1)
 	{
@@ -294,7 +266,7 @@ float4 ComputeDiffuseMap(MaterialData MatData, float2 TexC)
 	}
 }
 
-BumpedData ComputeNormalMap(float3 NormalW, float3 TangentW, MaterialData MatData, float2 TexC)
+BumpedData SampleNormalMap(float3 NormalW, float3 TangentW, MaterialData MatData, float2 TexC)
 {
 	BumpedData data = (BumpedData)0.0;
 	data.BumpedNormalW = NormalW;
@@ -303,6 +275,7 @@ BumpedData ComputeNormalMap(float3 NormalW, float3 TangentW, MaterialData MatDat
   	{
 		data.NormalMapSample = gTextureMaps[MatData.NormalMap.TextureIndex].Sample(gsamAnisotropicWrap, TexC);
 		data.BumpedNormalW = NormalSampleToWorldSpace(data.NormalMapSample.rgb, NormalW, TangentW);
+  		data.BumpedNormalW = normalize(data.BumpedNormalW);
   	}
   	return data;
 }

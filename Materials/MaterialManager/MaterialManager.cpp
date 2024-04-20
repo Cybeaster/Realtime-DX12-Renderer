@@ -9,12 +9,12 @@
 #include <future>
 constexpr auto eps = 1 - Utils::Math::Epsilon;
 
-void OMaterialManager::CreateMaterial(const string& Name, STexture* Texture, const SMaterialSurface& Surface, bool Notify /*= false*/)
+void OMaterialManager::CreateMaterial(const string& Name, STexture* Texture, const HLSL::MaterialData& Surface, bool Notify /*= false*/)
 {
 	auto mat = make_unique<SMaterial>();
 	mat->Name = Name;
 	mat->MaterialCBIndex = Materials.size();
-	mat->MaterialSurface = Surface;
+	mat->MaterialData = Surface;
 	AddMaterial(Name, std::move(mat), Notify);
 }
 
@@ -38,7 +38,7 @@ SMaterial* OMaterialManager::CreateMaterial(const SMaterialPayloadData& Data)
 	auto res = mat.get();
 	mat->Name = name;
 	mat->MaterialCBIndex = Materials.size();
-	mat->MaterialSurface = Data.MaterialSurface;
+	mat->MaterialData = Data.MaterialSurface;
 	LoadTextureFromPath(Data.DiffuseMap, mat->DiffuseMap);
 	LoadTextureFromPath(Data.NormalMap, mat->NormalMap);
 	LoadTextureFromPath(Data.HeightMap, mat->HeightMap);
@@ -69,7 +69,7 @@ void OMaterialManager::AddMaterial(string Name, unique_ptr<SMaterial> Material, 
 	{
 		type = SRenderLayers::AlphaTested;
 	}
-	else if (Material->MaterialSurface.Dissolve < eps)
+	else if (Material->MaterialData.Dissolve < eps)
 	{
 		type = SRenderLayers::Transparent;
 	}
@@ -209,7 +209,7 @@ void OMaterialManager::BuildMaterialsFromTextures(const std::unordered_map<strin
 {
 	for (auto& texture : Textures)
 	{
-		CreateMaterial(texture.first, texture.second.get(), SMaterialSurface());
+		CreateMaterial(texture.first, texture.second.get(), HLSL::MaterialData());
 	}
 	MaterialsRebuld.Broadcast();
 }
@@ -219,7 +219,7 @@ void OMaterialManager::OnMaterialChanged(const string& Name)
 	Materials[Name]->NumFramesDirty = SRenderConstants::NumFrameResources;
 	auto mat = Materials[Name].get();
 	SRenderLayer type = SRenderLayers::Opaque;
-	if (mat->MaterialSurface.Dissolve < eps)
+	if (mat->MaterialData.Dissolve < eps)
 	{
 		type = SRenderLayers::Transparent;
 	}

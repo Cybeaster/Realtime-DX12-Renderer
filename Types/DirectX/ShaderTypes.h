@@ -1,8 +1,8 @@
 #pragma once
 #include "DXHelper.h"
 #include "Logger.h"
+#include "RenderConstants.h"
 #include "Types.h"
-
 struct SRootSignatureParams;
 struct SShadersPipeline;
 struct SShaderPipelineDesc;
@@ -39,7 +39,7 @@ struct SPSODescriptionBase
 {
 	virtual ~SPSODescriptionBase() {}
 	EPSOType Type;
-	string Name;
+	SPSOType Name;
 	string RootSignatureName;
 	SShaderArrayText ShaderPipeline;
 	shared_ptr<SShaderPipelineDesc> RootSignature;

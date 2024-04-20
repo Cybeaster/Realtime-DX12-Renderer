@@ -17,7 +17,7 @@ void ORenderNode::SetPSO(const string& PSOType) const
 	ParentGraph->SetPSO(PSOType);
 }
 
-SPSODescriptionBase* ORenderNode::FindPSOInfo(string Name) const
+SPSODescriptionBase* ORenderNode::FindPSOInfo(SPSOType Name) const
 {
 	return ParentGraph->FindPSOInfo(Name);
 }
@@ -27,10 +27,10 @@ void ORenderNode::SetNodeEnabled(bool bEnable)
 	NodeInfo.bEnable = bEnable;
 }
 
-void ORenderNode::Initialize(const SNodeInfo& OtherNodeInfo, OCommandQueue* OtherCommandQueue, ORenderGraph* OtherParentGraph, SPSODescriptionBase* OtherPSO)
+void ORenderNode::Initialize(const SNodeInfo& OtherNodeInfo, OCommandQueue* OtherCommandQueue, ORenderGraph* OtherParentGraph, const SPSOType& Type)
 {
 	NodeInfo = OtherNodeInfo;
 	CommandQueue = OtherCommandQueue;
-	PSO = OtherPSO;
+	PSO = Type;
 	ParentGraph = OtherParentGraph;
 }

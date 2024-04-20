@@ -1,5 +1,6 @@
 
 #pragma once
+#include "DirectX/HlslTypes.h"
 #include "DirectX/Light/Light.h"
 #include "Engine/RenderTarget/RenderObject/RenderObject.h"
 #include "RenderItemComponentBase.h"
@@ -41,17 +42,17 @@ public:
 
 	void Init(ORenderItem* Other) override;
 	void UpdateFrameResource(const SFrameResource* FrameResource);
-	void InitFrameResource(const TUploadBufferData<SDirectionalLight>& Dir,
-	                       const TUploadBufferData<SPointLight>& Point,
-	                       const TUploadBufferData<SSpotLight>& Spot);
+	void InitFrameResource(const TUploadBufferData<HLSL::DirectionalLight>& Dir,
+	                       const TUploadBufferData<HLSL::PointLight>& Point,
+	                       const TUploadBufferData<HLSL::SpotLight>& Spot);
 
 	int NumFramesDirty = SRenderConstants::NumFrameResources;
 	bool TryUpdate();
 	ELightType GetLightType() const;
 	int32_t GetLightIndex() const;
-	SDirectionalLight& GetDirectionalLight();
-	SPointLight& GetPointLight();
-	SSpotLight& GetSpotLight();
+	HLSL::DirectionalLight& GetDirectionalLight();
+	HLSL::PointLight& GetPointLight();
+	HLSL::SpotLight& GetSpotLight();
 	void MarkDirty();
 	void SetPassConstant(SPassConstants& OutConstant);
 	void UpdateLightData();
@@ -60,14 +61,14 @@ public:
 
 private:
 	ELightType LightType = ELightType::Spot;
-	TUploadBufferData<SDirectionalLight> DirLightBufferInfo;
-	TUploadBufferData<SPointLight> PointLightBufferInfo;
-	TUploadBufferData<SSpotLight> SpotLightBufferInfo;
+	TUploadBufferData<HLSL::DirectionalLight> DirLightBufferInfo;
+	TUploadBufferData<HLSL::PointLight> PointLightBufferInfo;
+	TUploadBufferData<HLSL::SpotLight> SpotLightBufferInfo;
 	DirectX::XMVECTOR GlobalPosition;
 
-	SDirectionalLight DirectionalLight;
-	SPointLight PointLight;
-	SSpotLight SpotLight;
+	HLSL::DirectionalLight DirectionalLight;
+	HLSL::PointLight PointLight;
+	HLSL::SpotLight SpotLight;
 
 	DirectX::XMFLOAT3 LightPos;
 	DirectX::XMFLOAT4X4 View;

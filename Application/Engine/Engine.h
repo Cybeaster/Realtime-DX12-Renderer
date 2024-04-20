@@ -340,11 +340,12 @@ private:
 
 public:
 	bool bFrustrumCullingEnabled = true;
-
+	bool ReloadShadersRequested = false;
 	SDescriptorPair NullCubeSRV;
 	SDescriptorPair NullTexSRV;
 	ORenderGraph* GetRenderGraph() const;
 	ONormalTangentDebugTarget* GetNormalTangentDebugTarget() const;
+	void ReloadShaders();
 };
 
 template<typename T, typename... Args>

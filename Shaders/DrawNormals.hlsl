@@ -45,7 +45,7 @@ float4 PS(VertexOut pin) : SV_Target
 {
     MaterialData matData = gMaterialData[pin.MaterialIndex];
     float4 diffuseAlbedo = float4(matData.DiffuseAlbedo,1);
-    diffuseAlbedo *= ComputeDiffuseMap(matData, pin.TexC);
+    diffuseAlbedo *= SampleDiffuseMap(matData, pin.TexC);
 
 #ifdef ALPHA_TEST
     clip(diffuseAlbedo.a - 0.1f);

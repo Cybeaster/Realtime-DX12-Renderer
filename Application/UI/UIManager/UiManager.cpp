@@ -5,6 +5,7 @@
 #include "UI/Effects/Light/LightWidget.h"
 #include "UI/Engine/Camera.h"
 #include "UI/Engine/PerfomanceWidget.h"
+#include "UI/Engine/ShaderSettings.h"
 #include "UI/Filters/FilterManager.h"
 #include "UI/Geometry/GeometryManager.h"
 #include "UI/Graph/RenderGraphWidget.h"
@@ -78,10 +79,15 @@ void OUIManager::InitWidgets(OEngine* Engine)
 	MakeWidget<OTextureManagerWidget>(Engine->GetTextureManager());
 	MakeWidget<ORenderGraphWidget>(Engine->GetRenderGraph());
 	MakeWidget<OPerfomanceWidget>();
+	MakeWidget<OShaderSettings>();
 }
 
 void OUIManager::OnMouseButtonPressed(MouseButtonEventArgs& Args)
 {
+	if (IO == nullptr)
+	{
+		return;
+	}
 	switch (Args.Button)
 	{
 	case MouseButtonEventArgs::None:
@@ -100,6 +106,10 @@ void OUIManager::OnMouseButtonPressed(MouseButtonEventArgs& Args)
 
 void OUIManager::OnMouseButtonReleased(MouseButtonEventArgs& Args)
 {
+	if (IO == nullptr)
+	{
+		return;
+	}
 	switch (Args.Button)
 	{
 	case MouseButtonEventArgs::None:

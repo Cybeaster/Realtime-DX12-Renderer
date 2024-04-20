@@ -99,29 +99,26 @@ struct SLogUtils
 		switch (Type)
 		{
 		case ELogType::Log:
-			SetConsoleTextAttribute(hConsole, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
-			std::wcout << "\n"
-			           << L"Log: " << String.c_str() << std::endl;
+			std::wcout << L"\033[90m" // Gray
+			           << L"Log: " << String.c_str() << L"\033[0m" << std::endl;
 			break;
 
 		case ELogType::Warning:
-			SetConsoleTextAttribute(hConsole, FOREGROUND_BLUE | FOREGROUND_INTENSITY);
-			std::wcout << "\n"
-			           << L"Warning: " << String.c_str() << std::endl;
+			std::wcout << L"\033[93m" // Yellow
+			           << L"Warning: " << String.c_str() << L"\033[0m" << std::endl;
 			break;
+
 		case ELogType::Error:
-			SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_INTENSITY);
-			std::wcout << "\n \t \t"
-			           << L"Error: " << String.c_str() << std::endl;
-			__debugbreak();
+			std::wcout << "\n"
+			           << L"\033[31m" // White text on Red background
+			           << L"\t\tError: " << String.c_str() << L"\033[0m" << std::endl;
 			break;
 
 		case ELogType::Critical:
-			SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_INTENSITY);
-
-			std::wcout << "\n \t \t"
-			           << L"Critical: " << String.c_str() << std::endl;
-			assert(false);
+			std::wcout << "\n"
+			           << L"\033[31m" // Dark Red (closest to Burgundy in basic ANSI)
+			           << L"\t\tCritical: " << String.c_str() << L"\033[0m" << std::endl;
+			__debugbreak();
 			break;
 		}
 	}

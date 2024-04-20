@@ -161,6 +161,12 @@ ODynamicCubeMapRenderTarget* OEngine::BuildCubeRenderTarget(XMFLOAT3 Center)
 
 void OEngine::DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, bool ForceDrawAll)
 {
+	if (Desc == nullptr)
+	{
+		LOG(Engine, Warning, "PSO is nullptr!")
+		return;
+	}
+
 	auto renderItems = GetRenderItems(RenderLayer);
 	DrawRenderItemsImpl(Desc, renderItems, ForceDrawAll);
 }
@@ -185,10 +191,10 @@ void OEngine::UpdateMaterialCB() const
 			{
 				const auto matTransform = XMLoadFloat4x4(&material->MatTransform);
 
-				SMaterialData matConstants;
-				matConstants.MaterialSurface = material->MaterialSurface;
+				HLSL::MaterialData matConstants;
+				matConstants = material->MaterialData;
 
-				auto setTexIdx = [](STextureShaderData& Out, const STexturePath& Path) {
+				auto setTexIdx = [](HLSL::TextureData& Out, const STexturePath& Path) {
 					if (Path.IsValid())
 					{
 						Out.TextureIndex = Path.Texture->HeapIdx;
@@ -402,7 +408,7 @@ void OEngine::PostTestInit()
 	GetCommandQueue()->ExecuteCommandListAndWait();
 	HasInitializedTests = true;
 	SceneBounds.Center = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	SceneBounds.Radius = 10000; // todo estimate manually
+	SceneBounds.Radius = 5000; // todo estimate manually
 }
 
 OCommandQueue* OEngine::GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type)
@@ -606,6 +612,11 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 	for (const auto& val : RenderObjects | std::views::values)
 	{
 		val->Update(Args);
+	}
+	if (ReloadShadersRequested)
+	{
+		RenderGraph->ReloadShaders();
+		ReloadShadersRequested = false;
 	}
 }
 
@@ -1428,6 +1439,11 @@ ORenderGraph* OEngine::GetRenderGraph() const
 ONormalTangentDebugTarget* OEngine::GetNormalTangentDebugTarget() const
 {
 	return NormalTangentDebugTarget;
+}
+
+void OEngine::ReloadShaders()
+{
+	ReloadShadersRequested = true;
 }
 
 uint32_t OEngine::GetDesiredCountOfSRVs(SResourceHeapBitFlag Flag) const

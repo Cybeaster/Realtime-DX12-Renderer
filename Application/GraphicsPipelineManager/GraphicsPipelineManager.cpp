@@ -5,7 +5,11 @@
 
 void OGraphicsPipelineManager::LoadPipelines()
 {
-	PSOReader = make_unique<OPSOReader>(OApplication::Get()->GetConfigPath("PSOConfigPath"));
+	if (PSOReader == nullptr)
+	{
+		PSOReader = make_unique<OPSOReader>(OApplication::Get()->GetConfigPath("PSOConfigPath"));
+	}
+
 	auto psos = PSOReader->LoadPSOs();
 	for (auto& pso : psos)
 	{
@@ -40,14 +44,21 @@ void OGraphicsPipelineManager::LoadPipelines()
 		{
 			pso->SetComputeByteCode(compute->GetShaderByteCode());
 		}
-		pso->RootSignature = FindRootSignatureForPipeline(pso->RootSignatureName);
-		if(pso->RootSignature != nullptr)
+
+		if (auto rootSig = FindRootSignatureForPipeline(pso->RootSignatureName); rootSig != nullptr)
 		{
+			pso->RootSignature = rootSig;
 			pso->BuildPipelineState(OEngine::Get()->GetDevice().Get());
 			GlobalPSOMap[pso->Name] = std::move(pso);
+			OnPipelineLoaded.Broadcast(pso.get());
 		}
-
 	}
+}
+
+void OGraphicsPipelineManager::ReloadShaders()
+{
+	LoadShaders();
+	LoadPipelines();
 }
 
 OShader* OGraphicsPipelineManager::FindShader(const string& PipelineName, EShaderLevel ShaderType)
@@ -59,7 +70,7 @@ OShader* OGraphicsPipelineManager::FindShader(const string& PipelineName, EShade
 
 	if (!GlobalShaderMap.contains(PipelineName))
 	{
-		LOG(Render, Error, "Shader not found: {}", TEXT(PipelineName));
+		LOG(Render, Warning, "Shader not found: {}", TEXT(PipelineName));
 		return nullptr;
 	}
 	return GlobalShaderMap[PipelineName][ShaderType].get();
@@ -93,13 +104,25 @@ SShadersPipeline* OGraphicsPipelineManager::FindShadersPipeline(const string& Pi
 
 void OGraphicsPipelineManager::LoadShaders()
 {
-	ShaderReader = make_unique<OShaderReader>(OApplication::Get()->GetConfigPath("ShadersConfigPath"));
+	if (ShaderReader == nullptr)
+	{
+		ShaderReader = make_unique<OShaderReader>(OApplication::Get()->GetConfigPath("ShadersConfigPath"));
+	}
+
 	auto pipelines = ShaderReader->LoadShaders();
 	for (auto& pipeline : pipelines)
 	{
 		const auto newSignature = make_shared<SShaderPipelineDesc>();
-		auto shaders = OEngine::Get()->GetShaderCompiler()->CompileShaders(pipeline.second, *newSignature);
+		vector<unique_ptr<OShader>> shaders;
+		auto res = OEngine::Get()->GetShaderCompiler()->CompileShaders(pipeline.second, *newSignature, shaders);
+		if (res == false)
+		{
+			LOG(Render, Warning, "Failed to compile shaders for pipeline: {}", TEXT(pipeline.first));
+			continue;
+		}
+
 		newSignature->PipelineName = pipeline.first;
+
 		SShadersPipeline shadersPipeline;
 		shadersPipeline.BuildFromStages(pipeline.second);
 		shadersPipeline.PipelineInfo = newSignature;
@@ -114,7 +137,10 @@ void OGraphicsPipelineManager::PutShaderContainer(const string& PipelineName, ve
 {
 	for (auto& shader : Shaders)
 	{
-		GlobalShaderMap[PipelineName][shader->GetShaderType()] = std::move(shader);
+		if (shader != nullptr)
+		{
+			GlobalShaderMap[PipelineName][shader->GetShaderType()] = std::move(shader);
+		}
 	}
 }
 

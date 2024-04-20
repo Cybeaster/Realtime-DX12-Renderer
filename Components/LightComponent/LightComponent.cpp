@@ -34,17 +34,17 @@ void OLightComponent::SetDirectionalLight(const SDirectionalLightPayload& Light)
 {
 	LightType = ELightType::Directional;
 	DirectionalLight.Direction = Light.Direction;
-	DirectionalLight.Strength = Light.Strength;
+	DirectionalLight.Intensity = Light.Intensity;
 	UpdateLightData();
 }
 
 void OLightComponent::SetPointLight(const SPointLightPayload& Light)
 {
 	LightType = ELightType::Point;
-	PointLight.FallOffStart = Light.FallOffStart;
-	PointLight.FallOffEnd = Light.FallOffEnd;
+	PointLight.FalloffStart = Light.FallOffStart;
+	PointLight.FalloffEnd = Light.FallOffEnd;
 	PointLight.Position = Light.Position;
-	PointLight.Strength = Light.Strength;
+	PointLight.Intensity = Light.Intensity;
 }
 
 void OLightComponent::SetSpotLight(const SSpotLightPayload& Light)
@@ -52,10 +52,10 @@ void OLightComponent::SetSpotLight(const SSpotLightPayload& Light)
 	LightType = ELightType::Spot;
 	SpotLight.ConeAngle = Light.ConeAngle;
 	SpotLight.Direction = Light.Direction;
-	SpotLight.FallOffEnd = Light.FallOffEnd;
-	SpotLight.FallOffStart = Light.FallOffStart;
+	SpotLight.FalloffEnd = Light.FallOffEnd;
+	SpotLight.FalloffStart = Light.FallOffStart;
 	SpotLight.SpotPower = Light.SpotPower;
-	SpotLight.Strength = Light.Strength;
+	SpotLight.Intensity = Light.Strength;
 }
 
 void OLightComponent::Init(ORenderItem* Other)
@@ -79,7 +79,7 @@ void OLightComponent::UpdateFrameResource(const SFrameResource* FrameResource)
 	}
 }
 
-void OLightComponent::InitFrameResource(const TUploadBufferData<SDirectionalLight>& Dir, const TUploadBufferData<SPointLight>& Point, const TUploadBufferData<SSpotLight>& Spot)
+void OLightComponent::InitFrameResource(const TUploadBufferData<HLSL::DirectionalLight>& Dir, const TUploadBufferData<HLSL::PointLight>& Point, const TUploadBufferData<HLSL::SpotLight>& Spot)
 {
 	DirLightBufferInfo = Dir;
 	PointLightBufferInfo = Point;
@@ -116,17 +116,17 @@ int32_t OLightComponent::GetLightIndex() const
 	return -1;
 }
 
-SDirectionalLight& OLightComponent::GetDirectionalLight()
+HLSL::DirectionalLight& OLightComponent::GetDirectionalLight()
 {
 	return DirectionalLight;
 }
 
-SPointLight& OLightComponent::GetPointLight()
+HLSL::PointLight& OLightComponent::GetPointLight()
 {
 	return PointLight;
 }
 
-SSpotLight& OLightComponent::GetSpotLight()
+HLSL::SpotLight& OLightComponent::GetSpotLight()
 {
 	return SpotLight;
 }
@@ -215,8 +215,8 @@ void OLightComponent::UpdateLightData()
 		lightPos = GlobalPosition;
 		lightDir = XMVector3Normalize(XMLoadFloat3(&SpotLight.Direction));
 		lightTarget = XMVectorAdd(lightPos, lightDir); // Calculate target point using direction
-		NearZ = SpotLight.FallOffStart;
-		FarZ = SpotLight.FallOffEnd;
+		NearZ = SpotLight.FalloffStart;
+		FarZ = SpotLight.FalloffEnd;
 
 		// Create the view matrix for the spotlight
 		auto view = XMMatrixLookAtLH(lightPos, lightTarget, lightUp);

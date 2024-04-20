@@ -7,15 +7,15 @@
 ORenderTargetBase* OShadowMapNode::Execute(ORenderTargetBase* RenderTarget)
 {
 	PROFILE_SCOPE();
-
+	auto pso = FindPSOInfo(PSO);
 	for (auto map : OEngine::Get()->GetShadowMaps())
 	{
 		if (map->ConsumeUpdate())
 		{
 			CommandQueue->SetRenderTarget(map);
 			CommandQueue->ResourceBarrier(map, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-			CommandQueue->SetResource("cbPass", map->GetPassConstantAddresss(), PSO);
-			OEngine::Get()->DrawRenderItems(PSO, SRenderLayers::Opaque, true);
+			CommandQueue->SetResource("cbPass", map->GetPassConstantAddresss(), pso);
+			OEngine::Get()->DrawRenderItems(pso, SRenderLayers::Opaque, true);
 			CommandQueue->ResourceBarrier(map, D3D12_RESOURCE_STATE_GENERIC_READ);
 		}
 	}
@@ -28,7 +28,8 @@ void OShadowMapNode::SetupCommonResources()
 {
 	PROFILE_SCOPE();
 	auto resource = OEngine::Get()->CurrentFrameResource;
-	CommandQueue->SetPipelineState(PSO);
-	CommandQueue->SetResource("cbPass", resource->PassCB->GetGPUAddress(), PSO);
-	CommandQueue->SetResource("gMaterialData", resource->MaterialBuffer->GetGPUAddress(), PSO);
+	auto pso = FindPSOInfo(PSO);
+	CommandQueue->SetPipelineState(pso);
+	CommandQueue->SetResource("cbPass", resource->PassCB->GetGPUAddress(), pso);
+	CommandQueue->SetResource("gMaterialData", resource->MaterialBuffer->GetGPUAddress(), pso);
 }

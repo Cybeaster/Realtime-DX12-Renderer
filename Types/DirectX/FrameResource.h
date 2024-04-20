@@ -1,8 +1,8 @@
 #pragma once
 #include "Engine/UploadBuffer/UploadBuffer.h"
+#include "HlslTypes.h"
 #include "InstanceData.h"
 #include "Logger.h"
-#include "MaterialData.h"
 #include "ObjectConstants.h"
 #include "Vertex.h"
 
@@ -50,12 +50,12 @@ struct SFrameResource
 	void SetSpotLight(UINT LightCount);
 	void SetSSAO();
 	TUploadBuffer<SPassConstants> PassCB = nullptr;
-	TUploadBuffer<SMaterialData> MaterialBuffer = nullptr;
+	TUploadBuffer<HLSL::MaterialData> MaterialBuffer = nullptr;
 	TUploadBuffer<SInstanceData> InstanceBuffer = nullptr;
 	TUploadBuffer<SSsaoConstants> SsaoCB = nullptr;
-	TUploadBuffer<SDirectionalLight> DirectionalLightBuffer;
-	TUploadBuffer<SPointLight> PointLightBuffer;
-	TUploadBuffer<SSpotLight> SpotLightBuffer;
+	TUploadBuffer<HLSL::DirectionalLight> DirectionalLightBuffer;
+	TUploadBuffer<HLSL::PointLight> PointLightBuffer;
+	TUploadBuffer<HLSL::SpotLight> SpotLightBuffer;
 
 	// Fence value to mark commands up to this fence point. This lets us
 	// check if these frame resources are still in use by the GPU.

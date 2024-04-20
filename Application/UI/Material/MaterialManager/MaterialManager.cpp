@@ -30,18 +30,18 @@ void OMaterialManagerWidget::DrawProperty()
 	{
 		bool isMatChanged = false;
 		ImGui::SeparatorText("Material Surfaces");
-		isMatChanged |= ImGui::InputFloat3("Diffuse", &CurrentMaterial->MaterialSurface.DiffuseAlbedo.x);
-		isMatChanged |= ImGui::InputFloat3("Ambient", &CurrentMaterial->MaterialSurface.AmbientAlbedo.x);
-		isMatChanged |= ImGui::InputFloat3("Specular", &CurrentMaterial->MaterialSurface.SpecularAlbedo.x);
-		isMatChanged |= ImGui::InputFloat("Roughness", &CurrentMaterial->MaterialSurface.Roughness);
-		isMatChanged |= ImGui::InputFloat("Metallic", &CurrentMaterial->MaterialSurface.Metallness);
-		isMatChanged |= ImGui::InputFloat("Sheen", &CurrentMaterial->MaterialSurface.Sheen);
-		isMatChanged |= ImGui::InputFloat("Shininess", &CurrentMaterial->MaterialSurface.Shininess);
-		isMatChanged |= ImGui::InputFloat3("Transmittance", &CurrentMaterial->MaterialSurface.Transmittance.x);
-		isMatChanged |= ImGui::InputFloat3("Emission", &CurrentMaterial->MaterialSurface.Emission.x);
-		isMatChanged |= ImGui::InputFloat("IndexOfRefraction", &CurrentMaterial->MaterialSurface.IndexOfRefraction);
-		isMatChanged |= ImGui::InputInt("Illumination", &CurrentMaterial->MaterialSurface.Illumination);
-		isMatChanged |= ImGui::InputFloat("Dissolve", &CurrentMaterial->MaterialSurface.Dissolve);
+		isMatChanged |= ImGui::InputFloat3("Diffuse", &CurrentMaterial->MaterialData.DiffuseAlbedo.x);
+		isMatChanged |= ImGui::InputFloat3("Ambient", &CurrentMaterial->MaterialData.AmbientAlbedo.x);
+		isMatChanged |= ImGui::InputFloat3("Specular", &CurrentMaterial->MaterialData.SpecularAlbedo.x);
+		isMatChanged |= ImGui::InputFloat("Roughness", &CurrentMaterial->MaterialData.Roughness);
+		isMatChanged |= ImGui::InputFloat("Metallic", &CurrentMaterial->MaterialData.Metalness);
+		isMatChanged |= ImGui::InputFloat("Sheen", &CurrentMaterial->MaterialData.Sheen);
+		isMatChanged |= ImGui::InputFloat("Shininess", &CurrentMaterial->MaterialData.Shininess);
+		isMatChanged |= ImGui::InputFloat3("Transmittance", &CurrentMaterial->MaterialData.Transmittance.x);
+		isMatChanged |= ImGui::InputFloat3("Emission", &CurrentMaterial->MaterialData.Emission.x);
+		isMatChanged |= ImGui::InputFloat("IndexOfRefraction", &CurrentMaterial->MaterialData.IndexOfRefraction);
+		isMatChanged |= ImGui::InputInt("Illumination", &CurrentMaterial->MaterialData.Illumination);
+		isMatChanged |= ImGui::InputFloat("Dissolve", &CurrentMaterial->MaterialData.Dissolve);
 
 		if (isMatChanged)
 		{

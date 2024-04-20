@@ -12,28 +12,28 @@ void ODefaultRenderNode::SetupCommonResources()
 
 	auto resource = OEngine::Get()->CurrentFrameResource;
 	OEngine::Get()->SetDescriptorHeap(EResourceHeapType::Default);
-
-	CommandQueue->SetPipelineState(PSO);
-	CommandQueue->SetResource("cbPass", resource->PassCB->GetGPUAddress(), PSO);
-	CommandQueue->SetResource("gMaterialData", resource->MaterialBuffer->GetGPUAddress(), PSO);
-	CommandQueue->SetResource("gTextureMaps", OEngine::Get()->GetDescriptorHeap()->GetGPUDescriptorHandleForHeapStart(), PSO);
-	CommandQueue->SetResource("gCubeMap", GetSkyTextureSRV(), PSO);
-	CommandQueue->SetResource("gDirectionalLights", resource->DirectionalLightBuffer->GetGPUAddress(), PSO);
-	CommandQueue->SetResource("gPointLights", resource->PointLightBuffer->GetGPUAddress(), PSO);
-	CommandQueue->SetResource("gSpotLights", resource->SpotLightBuffer->GetGPUAddress(), PSO);
-	CommandQueue->SetResource("gShadowMaps", OEngine::Get()->GetRenderGroupStartAddress(ERenderGroup::ShadowTextures), PSO);
-	CommandQueue->SetResource("gSsaoMap", OEngine::Get()->GetSSAORT()->GetAmbientMap0SRV().GPUHandle, PSO);
+	auto pso = FindPSOInfo(PSO);
+	CommandQueue->SetPipelineState(pso);
+	CommandQueue->SetResource("cbPass", resource->PassCB->GetGPUAddress(), pso);
+	CommandQueue->SetResource("gMaterialData", resource->MaterialBuffer->GetGPUAddress(), pso);
+	CommandQueue->SetResource("gTextureMaps", OEngine::Get()->GetDescriptorHeap()->GetGPUDescriptorHandleForHeapStart(), pso);
+	CommandQueue->SetResource("gCubeMap", GetSkyTextureSRV(), pso);
+	CommandQueue->SetResource("gDirectionalLights", resource->DirectionalLightBuffer->GetGPUAddress(), pso);
+	CommandQueue->SetResource("gPointLights", resource->PointLightBuffer->GetGPUAddress(), pso);
+	CommandQueue->SetResource("gSpotLights", resource->SpotLightBuffer->GetGPUAddress(), pso);
+	CommandQueue->SetResource("gShadowMaps", OEngine::Get()->GetRenderGroupStartAddress(ERenderGroup::ShadowTextures), pso);
+	CommandQueue->SetResource("gSsaoMap", OEngine::Get()->GetSSAORT()->GetAmbientMap0SRV().GPUHandle, pso);
 }
 
 void ODefaultRenderNode::Initialize(const SNodeInfo& OtherNodeInfo, OCommandQueue* OtherCommandQueue,
-                                    ORenderGraph* OtherParentGraph, SPSODescriptionBase* OtherPSO)
+                                    ORenderGraph* OtherParentGraph, const SPSOType& Type)
 {
-	ORenderNode::Initialize(OtherNodeInfo, OtherCommandQueue, OtherParentGraph, OtherPSO);
+	ORenderNode::Initialize(OtherNodeInfo, OtherCommandQueue, OtherParentGraph, Type);
 }
 
 ORenderTargetBase* ODefaultRenderNode::Execute(ORenderTargetBase* RenderTarget)
 {
 	PROFILE_SCOPE();
-	OEngine::Get()->DrawRenderItems(PSO, GetNodeInfo().RenderLayer);
+	OEngine::Get()->DrawRenderItems(FindPSOInfo(PSO), GetNodeInfo().RenderLayer);
 	return RenderTarget;
 }

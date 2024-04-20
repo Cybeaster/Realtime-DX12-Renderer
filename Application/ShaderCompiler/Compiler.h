@@ -10,7 +10,7 @@ class OShaderCompiler
 {
 public:
 	unique_ptr<OShader> CompileShader(const SShaderDefinition& Definition, const vector<SShaderMacro>& Macros, const wstring& ShaderPath, SShaderPipelineDesc& OutPipelineInfo);
-	vector<unique_ptr<OShader>> CompileShaders(vector<SPipelineStage>& OutPipelines, SShaderPipelineDesc& OutShadersPipeline);
+	bool CompileShaders(vector<SPipelineStage>& OutPipelines, SShaderPipelineDesc& OutShadersPipeline, vector<unique_ptr<OShader>>& OutShaders);
 	void Init();
 
 private:
@@ -24,7 +24,7 @@ private:
 	void ResolveStructuredBuffer(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc, SShaderPipelineDesc& OutPipelineInfo, EShaderLevel ShaderType);
 
 	D3D12_DESCRIPTOR_RANGE_TYPE GetRangeType(const D3D12_SHADER_INPUT_BIND_DESC& BindDesc);
-	std::tuple<DxcBuffer, ComPtr<IDxcResult>> CreateDxcBuffer(const wstring& ShaderPath);
+	bool CreateDxcBuffer(const wstring& ShaderPath, ComPtr<IDxcResult>& OutCompiledShaderBuffer, DxcBuffer& OutReflectionBuffe);
 	ComPtr<IDxcCompiler3> Compiler;
 	ComPtr<IDxcUtils> Utils;
 	ComPtr<IDxcIncludeHandler> IncludeHandler;

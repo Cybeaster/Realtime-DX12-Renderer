@@ -62,8 +62,6 @@ set(SRC_FILES
         Objects/Geometry/Wave/Waves.cpp
         Objects/Geometry/Wave/Waves.h
         Materials/Material.h
-        Types/DirectX/MaterialData.h
-        Types/DirectX/MaterialData.h
         Types/DirectX/Light/Light.h
         Textures/DDSTextureLoader/DDSTextureLoader.cpp
         Textures/DDSTextureLoader/DDSTextureLoader.h
@@ -239,6 +237,9 @@ set(SRC_FILES
         Application/Engine/Scene/SceneManager.h
         Application/Engine/Scene/Scene.cpp
         Application/Engine/Scene/Scene.h
+        Application/UI/Engine/ShaderSettings.cpp
+        Application/UI/Engine/ShaderSettings.h
+        Types/DirectX/HlslTypes.h
 )
 
 

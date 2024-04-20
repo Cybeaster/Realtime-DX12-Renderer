@@ -17,6 +17,7 @@ public:
 	static unique_ptr<ORenderNode> ResolveNodeType(const string& Type);
 	ORenderNode* GetHead() const;
 	ORenderNode* GetNext(const ORenderNode* Other);
+	void ReloadShaders();
 
 private:
 	unique_ptr<ORenderGraphReader> Reader;

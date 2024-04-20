@@ -15,7 +15,7 @@ void OShaderCompiler::Init()
 	THROW_IF_FAILED(Utils->CreateDefaultIncludeHandler(&IncludeHandler));
 }
 
-vector<unique_ptr<OShader>> OShaderCompiler::CompileShaders(vector<SPipelineStage>& OutPipelines, SShaderPipelineDesc& OutShadersPipeline)
+bool OShaderCompiler::CompileShaders(vector<SPipelineStage>& OutPipelines, SShaderPipelineDesc& OutShadersPipeline, vector<unique_ptr<OShader>>& OutResult)
 {
 	vector<unique_ptr<OShader>> shaders;
 	for (auto& shader : OutPipelines)
@@ -23,11 +23,16 @@ vector<unique_ptr<OShader>> OShaderCompiler::CompileShaders(vector<SPipelineStag
 		LOG(Engine, Log, "Compiling shader: {}", shader.ShaderPath);
 
 		auto temp = CompileShader(shader.ShaderDefinition, shader.Defines, shader.ShaderPath, OutShadersPipeline);
+		if (temp == nullptr)
+		{
+			return false;
+		}
+
 		shader.Shader = temp.get();
-		shaders.push_back(std::move(temp));
+		OutResult.push_back(std::move(temp));
 	}
 	OutShadersPipeline.RootSignatureParams.RootSignature = BuildRootSignature(OutShadersPipeline.BuildParameterArray(), Utils::GetStaticSamplers(), OutShadersPipeline.RootSignatureParams.RootSignatureDesc);
-	return shaders;
+	return true;
 }
 
 void OShaderCompiler::SetCompilationArgs(const SShaderDefinition& Definition, const vector<SShaderMacro>& Macros)
@@ -189,7 +194,7 @@ D3D12_DESCRIPTOR_RANGE_TYPE OShaderCompiler::GetRangeType(const D3D12_SHADER_INP
 	return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 }
 
-std::tuple<DxcBuffer, ComPtr<IDxcResult>> OShaderCompiler::CreateDxcBuffer(const wstring& ShaderPath)
+bool OShaderCompiler::CreateDxcBuffer(const wstring& ShaderPath, ComPtr<IDxcResult>& OutCompiledShaderBuffer, DxcBuffer& OutReflectionBuffe)
 {
 	ComPtr<IDxcBlobEncoding> sourceBlob;
 	THROW_IF_FAILED(Utils->LoadFile(ShaderPath.c_str(), nullptr, &sourceBlob));
@@ -198,7 +203,6 @@ std::tuple<DxcBuffer, ComPtr<IDxcResult>> OShaderCompiler::CreateDxcBuffer(const
 		.Size = sourceBlob->GetBufferSize(),
 		.Encoding = 0
 	};
-	ComPtr<IDxcResult> compiledShaderBuffer{};
 
 	vector<LPCWSTR> args;
 	for (auto& arg : CompilationArgs)
@@ -210,30 +214,30 @@ std::tuple<DxcBuffer, ComPtr<IDxcResult>> OShaderCompiler::CreateDxcBuffer(const
 	                                     args.data(),
 	                                     static_cast<uint32_t>(args.size()),
 	                                     IncludeHandler.Get(),
-	                                     IID_PPV_ARGS(&compiledShaderBuffer));
+	                                     IID_PPV_ARGS(&OutCompiledShaderBuffer));
 
 	if (FAILED(hr))
 	{
-		WIN_LOG(Engine, Error, "Failed to compile shader: {}", ShaderPath);
+		LOG(Engine, Error, "Failed to compile shader: {}", ShaderPath);
 	}
 
 	ComPtr<IDxcBlobUtf8> errors{};
-	THROW_IF_FAILED(compiledShaderBuffer->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errors), nullptr));
+	OutCompiledShaderBuffer->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errors), nullptr);
 	if (errors && errors->GetStringLength() > 0)
 	{
-		WIN_LOG(Engine, Error, "Shader compilation error: {}", TEXT(errors->GetStringPointer()));
-		return {};
+		LOG(Engine, Error, "Shader compilation error: {}", TEXT(errors->GetStringPointer()));
+		return false;
 	}
 
 	ComPtr<IDxcBlob> reflectionBlob{};
-	THROW_IF_FAILED(compiledShaderBuffer->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&reflectionBlob), nullptr));
+	OutCompiledShaderBuffer->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&reflectionBlob), nullptr);
 
-	const DxcBuffer reflectionBuffer{
+	OutReflectionBuffe = {
 		.Ptr = reflectionBlob->GetBufferPointer(),
 		.Size = reflectionBlob->GetBufferSize(),
 		.Encoding = 0
 	};
-	return { reflectionBuffer, compiledShaderBuffer };
+	return true;
 }
 
 void OShaderCompiler::GetInputLayoutDesc(const ComPtr<ID3D12ShaderReflection>& Reflection, SShaderPipelineDesc& OutPipelineInfo)
@@ -273,10 +277,15 @@ D3D12_SHADER_DESC OShaderCompiler::BuildReflection(DxcBuffer Buffer, ComPtr<ID3D
 unique_ptr<OShader> OShaderCompiler::CompileShader(const SShaderDefinition& Definition, const vector<SShaderMacro>& Macros, const wstring& ShaderPath, SShaderPipelineDesc& OutPipelineInfo)
 {
 	SetCompilationArgs(Definition, Macros);
-	auto [buffer, compiledShaderBuffer] = CreateDxcBuffer(ShaderPath);
+	ComPtr<IDxcResult> compiledShaderBuffer;
+	DxcBuffer reflectionBuffe;
+	if (!CreateDxcBuffer(ShaderPath, compiledShaderBuffer, reflectionBuffe))
+	{
+		return nullptr;
+	}
 
 	ComPtr<ID3D12ShaderReflection> shaderReflection{};
-	const D3D12_SHADER_DESC shaderDesc = BuildReflection(buffer, shaderReflection);
+	const D3D12_SHADER_DESC shaderDesc = BuildReflection(reflectionBuffe, shaderReflection);
 
 	ResolveBoundResources(shaderReflection, shaderDesc, OutPipelineInfo, Definition.ShaderType);
 	if (Definition.ShaderType == EShaderLevel::VertexShader)

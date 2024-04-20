@@ -32,47 +32,9 @@ float CartoonSpecular(float Specular)
 	return Specular;
 }
 
-struct SpotLight
-{
-	float3 Position;
-	float pad1; // Padding to align with HLSL's float4
-	float3 Direction;
-	float pad2; // Additional padding if necessary
-	float3 Strength;
-	float FalloffStart;
-	float FalloffEnd;
-	float SpotPower;
-	uint ShadowMapIndex; // Index to the shadow map texture array
-	float ConeAngle;
-	float4x4 Transform;
-};
-
-struct PointLight
-{
-	float3 Position;
-	float pad1; // Padding to align with HLSL's float4
-	float3 Strength;
-	float FalloffStart;
-	float FalloffEnd;
-	uint ShadowMapIndex; // Index to the shadow map texture array
-	float pad2; // Padding to align with HLSL's float4
-	float4x4 Transform;
-};
-
-struct DirectionalLight
-{
-	float3 Direction;
-	float pad1; // Padding to align with HLSL's float4
-	float3 Strength;
-	float pad2; // Additional padding if necessary
-	uint ShadowMapIndex; // Index to the shadow map texture array
-	float pad3; // Padding to make the structure size a multiple of 16 bytes
-	float4x4 Transform;
-};
-
 struct Material
 {
-	float4 DiffuseAlbedo;
+	float3 DiffuseAlbedo;
 	float3 FresnelR0;
 	float Shininess;
 	float Roughness;
@@ -119,22 +81,35 @@ float3 BlinnPhong(float3 lightStrength, float3 lightVec, float3 normal, float3 t
 }
 
 
-float3 BRDF(float3 View, float3 Light,float3 LightColor, float3 Normal, Material Mat)
+//
+
+//struct Material
+///	float4 DiffuseAlbedo;
+	//float3 FresnelR0;
+	//float Shininess;
+	//float Roughness;
+//};
+
+float3 BRDF(float3 View, float3 Light, float3 Normal, Material Mat)
 {
 	float3 h = normalize(View + Light);
-	float NoV = saturate(dot(Normal, View));
+	float NoV = abs(dot(Normal, View)) + EPSILON;
 	float NoL = saturate(dot(Normal, Light));
 	float NoH = saturate(dot(Normal, h));
 	float LoH = saturate(dot(Light, h));
+
 	float roughness = Mat.Roughness * Mat.Roughness;
 
 	float D = D_GGX(NoH, roughness);
 	float3 F = F_Schlick(LoH, Mat.FresnelR0);
 	float V = V_SmithGGXCorrelated(NoV, NoL, roughness);
 
+    // specular BRDF
 	float3 Fr = (D * V) * F;
-	float3 Fd = LightColor.rgb * Fd_Lambert();
-	return ( Fr + Fd );
+
+    // diffuse BRDF
+	float3 Fd =  Mat.DiffuseAlbedo.rgb * Fd_Lambert();
+	return ( Fr + Fd ) ;
 }
 
 //---------------------------------------------------------------------------------------
@@ -152,14 +127,14 @@ float3 ComputeDirectionalLight_BlinnPhong(DirectionalLight L, Material mat, floa
 	ndotl = CartoonDiffuse(ndotl);
 #endif
 
-	float3 lightStrength = L.Strength * NoL;
+	float3 lightStrength = L.Intensity * NoL;
 
 	return BlinnPhong(lightStrength, lightVec, normal, toEye, mat);
 }
 
 float3 ComputeDirectionalLight_BRDF(DirectionalLight L, Material Mat, float3 Normal, float3 ToEye)
 {
-	return BRDF(ToEye, -L.Direction, L.Strength, Normal, Mat);
+	return BRDF(ToEye, -L.Direction, Normal, Mat);
 }
 
 float3 ComputeSpotLight_BRDF(SpotLight L, Material Mat,float3 Position, float3 Normal, float3 ToEye)
@@ -175,7 +150,7 @@ float3 ComputeSpotLight_BRDF(SpotLight L, Material Mat,float3 Position, float3 N
 	lightVec /= d;
 	// Scale light down by Lambert's cosine law.
 	float NoL = max(dot(lightVec, Normal), 0.0f);
-	float3 lightStrength = L.Strength * NoL;
+	float3 lightStrength = L.Intensity * NoL;
 
 	// Attenuate light by distance.
 	float att = CalcAttenuation(d, L.FalloffStart, L.FalloffEnd);
@@ -185,7 +160,7 @@ float3 ComputeSpotLight_BRDF(SpotLight L, Material Mat,float3 Position, float3 N
 	float spotFactor = pow(max(dot(-lightVec, L.Direction), 0.0f), L.SpotPower);
 	lightStrength *= spotFactor;
 
-	return BRDF(ToEye, lightVec, L.Strength, Normal, Mat);
+	return BRDF(ToEye, lightVec, Normal, Mat);
 }
 
 
@@ -209,7 +184,7 @@ float3 ComputeSpotLight(SpotLight L, Material mat, float3 pos, float3 normal, fl
 
 	// Scale light down by Lambert's cosine law.
 	float ndotl = max(dot(lightVec, normal), 0.0f);
-	float3 lightStrength = L.Strength * ndotl;
+	float3 lightStrength = L.Intensity * ndotl;
 
 	// Attenuate light by distance.
 	float att = CalcAttenuation(d, L.FalloffStart, L.FalloffEnd);
@@ -242,7 +217,7 @@ float3 ComputePointLight(PointLight L, Material mat, float3 pos, float3 normal, 
 
 	// Scale light down by Lambert's cosine law.
 	float ndotl = max(dot(lightVec, normal), 0.0f);
-	float3 lightStrength = L.Strength * ndotl;
+	float3 lightStrength = L.Intensity * ndotl;
 
 	// Attenuate light by distance.
 	float att = CalcAttenuation(d, L.FalloffStart, L.FalloffEnd);

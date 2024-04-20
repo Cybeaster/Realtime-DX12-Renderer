@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../Textures/Texture.h"
-#include "DirectX/MaterialData.h"
 #include "DirectX/RenderConstants.h"
 #include "LightComponent/LightComponent.h"
 
@@ -21,7 +20,7 @@ struct STexturePath
 struct SMaterialPayloadData
 {
 	string Name;
-	SMaterialSurface MaterialSurface;
+	HLSL::MaterialData MaterialSurface;
 	wstring NormalMap;
 	wstring DiffuseMap;
 	wstring HeightMap;
@@ -54,7 +53,7 @@ struct SMaterial
 	int NumFramesDirty = SRenderConstants::NumFrameResources;
 
 	// Material constant buffer data used for shading.
-	SMaterialSurface MaterialSurface;
+	HLSL::MaterialData MaterialData;
 	// Used in texture mapping.
 	DirectX::XMFLOAT4X4 MatTransform = Utils::Math::Identity4x4();
 

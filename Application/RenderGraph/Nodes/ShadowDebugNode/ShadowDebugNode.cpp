@@ -12,23 +12,23 @@ void OShadowDebugNode::SetupCommonResources()
 	auto resource = OEngine::Get()->CurrentFrameResource;
 	OEngine::Get()->SetDescriptorHeap(EResourceHeapType::Default);
 	auto ssao = OEngine::Get()->GetSSAORT();
-
-	CommandQueue->SetPipelineState(PSO);
+	auto pso = FindPSOInfo(PSO);
+	CommandQueue->SetPipelineState(pso);
 	//CommandQueue->SetResource("cbPass", resource->PassCB->GetGPUAddress(), PSO);
 	//CommandQueue->SetResource("gDirectionalLights", resource->DirectionalLightBuffer->GetGPUAddress(), PSO);
 	//CommandQueue->SetResource("gPointLights", resource->PointLightBuffer->GetGPUAddress(), PSO);
 	//CommandQueue->SetResource("gSpotLights", resource->SpotLightBuffer->GetGPUAddress(), PSO);
 	//CommandQueue->SetResource("gShadowMaps", OEngine::Get()->GetRenderGroupStartAddress(ERenderGroup::ShadowTextures), PSO);
 
-	CommandQueue->SetResource("gSsaoMap", OEngine::Get()->GetSSAORT()->GetAmbientMap0SRV().GPUHandle, PSO);
-	CommandQueue->SetResource("gNormalMap", OEngine::Get()->GetSSAORT()->GetNormalMapSRV().GPUHandle, PSO);
-	CommandQueue->SetResource("gDepthMap", ssao->GetDepthMapSRV().GPUHandle, PSO);
+	CommandQueue->SetResource("gSsaoMap", OEngine::Get()->GetSSAORT()->GetAmbientMap0SRV().GPUHandle, pso);
+	CommandQueue->SetResource("gNormalMap", OEngine::Get()->GetSSAORT()->GetNormalMapSRV().GPUHandle, pso);
+	CommandQueue->SetResource("gDepthMap", ssao->GetDepthMapSRV().GPUHandle, pso);
 }
 
 ORenderTargetBase* OShadowDebugNode::Execute(ORenderTargetBase* RenderTarget)
 {
 	PROFILE_SCOPE();
 
-	OEngine::Get()->DrawRenderItems(FindPSOInfo(SPSOType::ShadowDebug), SRenderLayers::ShadowDebug);
+	OEngine::Get()->DrawRenderItems(FindPSOInfo(SPSOTypes::ShadowDebug), SRenderLayers::ShadowDebug);
 	return RenderTarget;
 }

@@ -58,9 +58,9 @@ void OCubeMapTest::BuildRenderItems()
 	params2.Pickable = false;
 	params2.Displayable = false;
 
-	CreateRenderItem("Sponza", GetResourcePath(L"Resources/Models/sponza/sponza.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
+	//CreateRenderItem("Sponza", GetResourcePath(L"Resources/Models/sponza/sponza.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
 	//CreateRenderItem("bistro_int", GetResourcePath(L"Resources/Models/bistro/interior.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
-	//CreateRenderItem("bistro_ext", GetResourcePath(L"Resources/Models/bistro/exterior.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
+	CreateRenderItem("bistro_ext", GetResourcePath(L"Resources/Models/bistro/exterior.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
 
 	SSpotLightPayload light;
 	light.Strength = { 0.5f, 0.5f, 0.5f };
@@ -69,7 +69,7 @@ void OCubeMapTest::BuildRenderItems()
 	Translate(spot->Instances[0].World, { -3, 3, 0 });
 
 	SDirectionalLightPayload dir;
-	dir.Strength = { 0.5f, 0.5f, 0.5f };
+	dir.Intensity = { 0.5f, 0.5f, 0.5f };
 	dir.Direction = { 0.01, -1, 0.01 };
 
 	auto dirlight = CreateLightSource(dir);

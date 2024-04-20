@@ -28,7 +28,7 @@ void SFrameResource::SetMaterials(UINT MaterialCount)
 {
 	if (MaterialCount > 0)
 	{
-		MaterialBuffer = make_unique<OUploadBuffer<SMaterialData>>(Device, MaterialCount, false, Owner, L"_MaterialBuffer");
+		MaterialBuffer = make_unique<OUploadBuffer<HLSL::MaterialData>>(Device, MaterialCount, false, Owner, L"_MaterialBuffer");
 	}
 	else
 	{
@@ -39,7 +39,7 @@ void SFrameResource::SetDirectionalLight(UINT LightCount)
 {
 	if (LightCount > 0)
 	{
-		DirectionalLightBuffer = make_unique<OUploadBuffer<SDirectionalLight>>(Device, LightCount, false, Owner, L"_DirectionalLightBuffer");
+		DirectionalLightBuffer = make_unique<OUploadBuffer<HLSL::DirectionalLight>>(Device, LightCount, false, Owner, L"_DirectionalLightBuffer");
 	}
 	else
 	{
@@ -51,7 +51,7 @@ void SFrameResource::SetPointLight(UINT LightCount)
 {
 	if (LightCount > 0)
 	{
-		PointLightBuffer = make_unique<OUploadBuffer<SPointLight>>(Device, LightCount, false, Owner, L"_PointLightBuffer");
+		PointLightBuffer = make_unique<OUploadBuffer<HLSL::PointLight>>(Device, LightCount, false, Owner, L"_PointLightBuffer");
 	}
 	else
 	{
@@ -63,7 +63,7 @@ void SFrameResource::SetSpotLight(UINT LightCount)
 {
 	if (LightCount > 0)
 	{
-		SpotLightBuffer = make_unique<OUploadBuffer<SSpotLight>>(Device, LightCount, false, Owner, L"_SpotLightBuffer");
+		SpotLightBuffer = make_unique<OUploadBuffer<HLSL::SpotLight>>(Device, LightCount, false, Owner, L"_SpotLightBuffer");
 	}
 	else
 	{

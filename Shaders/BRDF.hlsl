@@ -1,6 +1,5 @@
 #include "Types.hlsl"
 
-
 //Specular term D, aka NDF
 float D_GGX(float NoH, float Roughness, float3 N, float3 H)
 {
@@ -21,9 +20,9 @@ float D_GGX(float NoH, float Roughness)
 //Geometric shadowing aka specular G
 float V_SmithGGXCorrelated(float NoV, float NoL, float Roughness)
 {
-	float a = Roughness * Roughness;
-	float GGXV = NoV * sqrt(NoL * NoL * (1.0f - a) + a);
-	float GGXL = NoL * sqrt(NoV * NoV * (1.0f - a) + a);
+	float a2 = Roughness * Roughness;
+	float GGXL = NoV * sqrt((-NoL * a2 + NoL) * NoL + a2);
+    float GGXV = NoL * sqrt((-NoV * a2 + NoV) * NoV + a2);
 	return 0.5f / (GGXV + GGXL);
 }
 
@@ -34,8 +33,7 @@ float3 F_Schlick(float U, float3 F0, float f90)
 
 float3 F_Schlick(float U, float3 F0)
 {
-	float f = pow(1.0 - U, 5.0);
-	return f + F0 * (1.0 - f);
+	  return F0 + (FLOAT3(1.0) - F0) * pow(1.0 - U, 5.0);
 }
 
 float F_Schlick(float U, float F0, float F90)

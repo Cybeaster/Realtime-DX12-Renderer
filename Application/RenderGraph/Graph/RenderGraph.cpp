@@ -33,7 +33,7 @@ void ORenderGraph::Initialize(OGraphicsPipelineManager* PipelineManager, OComman
 		{
 			Head = newNode.get();
 		}
-		newNode->Initialize(node, OtherCommandQueue, this, PipelineManager->FindPSO(node.PSOType));
+		newNode->Initialize(node, OtherCommandQueue, this, node.PSOType);
 		Graph[node.Name] = newNode.get();
 		Nodes.push_back(move(newNode));
 	}
@@ -47,6 +47,11 @@ ORenderNode* ORenderGraph::GetHead() const
 ORenderNode* ORenderGraph::GetNext(const ORenderNode* Other)
 {
 	return Graph[Other->GetNextNode()];
+}
+
+void ORenderGraph::ReloadShaders()
+{
+	PipelineManager->ReloadShaders();
 }
 
 void ORenderGraph::Execute()

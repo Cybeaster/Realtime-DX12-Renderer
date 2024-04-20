@@ -130,11 +130,11 @@ float4 PS(VertexOut pin)
 	pin.NormalW = normalize(pin.NormalW);
 
 
-	BumpedData data = ComputeNormalMap(pin.NormalW, pin.TangentW, matData, pin.TexC);
+	BumpedData data = SampleNormalMap(pin.NormalW, pin.TangentW, matData, pin.TexC);
 	float3 bumpedNormalW = data.BumpedNormalW;
 	float4 normalMapSample = data.NormalMapSample;
 
-	diffuseAlbedo *= ComputeDiffuseMap(matData, pin.WaveNormalTex0);
+	diffuseAlbedo *= SampleDiffuseMap(matData, pin.WaveNormalTex0);
 
 	// Vector from point being lit to eye.
 	float3 toEyeW = gEyePosW - pin.PosW;
@@ -145,7 +145,7 @@ float4 PS(VertexOut pin)
 	float4 ambient = gAmbientLight * diffuseAlbedo;
 
 	const float shininess = (1.0f - roughness) * normalMapSample.a;
-	Material mat = { diffuseAlbedo, fresnelR0, shininess, roughness};
+	Material mat = { diffuseAlbedo.rgb, fresnelR0, shininess, roughness};
 	float3 shadowFactor = 1.0f;
 
 	float3 light = {0.0f, 0.0f, 0.0f};
