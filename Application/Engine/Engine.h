@@ -80,7 +80,7 @@ public:
 
 	void FlushGPU() const;
 
-	int InitTests(shared_ptr<class OTest> Test);
+	int InitScene();
 	void PostTestInit();
 	void DestroyWindow();
 	void OnWindowDestroyed();
@@ -89,7 +89,7 @@ public:
 	OCommandQueue* GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type = D3D12_COMMAND_LIST_TYPE_DIRECT);
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GetRenderGroupStartAddress(ERenderGroup Group);
 
-	void OnEnd(shared_ptr<OTest> Test) const;
+	void OnEnd() const;
 
 	void TryRebuildFrameResource();
 	void UpdateBoundingSphere();
@@ -240,7 +240,6 @@ protected:
 	template<typename T, typename... Args>
 	T* BuildRenderObjectImpl(ERenderGroup Group, Args&&... Params);
 
-	shared_ptr<OTest> GetTestByHWND(HWND Handler);
 	OWindow* GetWindowByHWND(HWND Handler);
 	void Destroy();
 
@@ -281,7 +280,6 @@ private:
 	bool Msaa4xState = false;
 	UINT Msaa4xQuality = 0;
 
-	map<HWND, shared_ptr<OTest>> Tests;
 	ComPtr<IDXGIFactory4> Factory;
 
 	TRenderLayer RenderLayers;

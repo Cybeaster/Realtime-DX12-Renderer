@@ -89,7 +89,7 @@ float4 PS(VertexOut pin)
 	pin.TangentW = normalize(pin.TangentW);
 
 	float reflectance = CalcFresnelR0(matData.IndexOfRefraction); //TODO fix if IndexOfRefraction == 0
-    float3 f0 = lerp(F0_COEFF * SQUARE(reflectance) ,specularAlbedo, matData.Metalness);
+    float3 f0 = lerp(F0_COEFF * SQUARE(reflectance), diffuseAlbedo,  matData.Metalness);
 
 	// Vector from point being lit to eye.
 	float3 toEyeW = normalize(gEyePosW - pin.PosW);
@@ -115,7 +115,7 @@ float4 PS(VertexOut pin)
 	for (uint i = 0; i < gNumDirLights; i++)
 	{
 		DirectionalLight curLight = gDirectionalLights[i];
-        directLighting += shadowFactor[idx] * ComputeDirectionalLight_BlinnPhong(curLight, mat, bumpedNormalW, toEyeW) * curLight.Intensity;
+        directLighting += shadowFactor[idx] * ComputeDirectionalLight_BRDF(curLight, mat, bumpedNormalW, toEyeW) * curLight.Intensity;
         idx++;
     }
 

@@ -28,7 +28,6 @@ struct SRenderConstants
 	inline static constexpr uint32_t NumFrameResources = 3;
 	inline static constexpr uint32_t MaxLights = 16;
 	inline static constexpr uint32_t RenderBuffersCount = 2;
-	inline static constexpr uint32_t Max2DTextures = 256;
 	inline static constexpr DirectX::XMUINT2 CubeMapDefaultResolution = { 1024, 1024 };
 
 	inline static constexpr uint32_t MaxDiffuseMapsPerMaterial = 3;

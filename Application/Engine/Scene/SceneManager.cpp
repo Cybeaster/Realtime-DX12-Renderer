@@ -27,10 +27,14 @@ void OSceneManager::LoadScenes()
 	}
 	if (CurrentScene)
 	{
-		//	CurrentScene->Load();
+		CurrentScene->Load();
 	}
 	else
 	{
 		LOG(Engine, Error, "Current scene not found")
 	}
+}
+
+void OSceneManager::Update(UpdateEventArgs& Args)
+{
 }

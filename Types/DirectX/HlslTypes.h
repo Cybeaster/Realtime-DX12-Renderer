@@ -6,10 +6,33 @@
 #define float2 DirectX::XMFLOAT2
 #define float4x4 DirectX::XMFLOAT4X4
 #define uint unsigned int
+
 #include "DirectX/DXHelper.h"
 namespace HLSL
 {
 #endif
+
+#ifndef MAX_DIFFUSE_MAPS
+#define MAX_DIFFUSE_MAPS 3
+#endif
+
+#ifndef MAX_NORMAL_MAPS
+#define MAX_NORMAL_MAPS 3
+#endif
+
+#ifndef MAX_HEIGHT_MAPS
+#define MAX_HEIGHT_MAPS 3
+#endif
+
+#ifndef MAX_SHADOW_MAPS
+#define MAX_SHADOW_MAPS 2
+#endif
+
+#define TEXTURE_MAPS_NUM 312
+#define SHADOW_MAPS_NUM 2
+
+#define EPSILON 0.0001f
+#define F0_COEFF 0.16f
 
 struct TextureData
 {

@@ -1,6 +1,6 @@
 {
   "Scene": {
-    "CurrentScene": "BistroExterior"
+    "CurrentScene": "Sponza"
   },
   "Scenes": [
     {
@@ -131,6 +131,52 @@
           }
         }
       ]
+    },
+    {
+      "Name": "Sponza",
+      "Sky": "grasscube1024",
+      "Objects": [
+        {
+          "ObjectName": "Resources/Models/sponza/sponza.obj"
+        }
+      ],
+      "Lights": [
+        {
+          "Type": "Directional",
+          "Direction": {
+            "X": 0.0,
+            "Y": -1.0,
+            "Z": 0.0
+          },
+          "Color": {
+            "R": 1.0,
+            "G": 1.0,
+            "B": 1.0
+          }
+        },
+        {
+          "Type": "Spot",
+          "Position": {
+            "X": 0.0,
+            "Y": 0.0,
+            "Z": 0.0
+          },
+          "Direction": {
+            "X": 0.0,
+            "Y": -1.0,
+            "Z": 0.0
+          },
+          "Color": {
+            "R": 1.0,
+            "G": 1.0,
+            "B": 1.0
+          }
+        }
+      ]
     }
   ]
 }
+
+
+
+

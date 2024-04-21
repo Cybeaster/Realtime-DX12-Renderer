@@ -160,7 +160,7 @@ STexture* OTextureManager::CreateTexture(const string& Name, wstring FileName)
 	texture->FileName = FileName;
 	texture->HeapIdx = Textures.size();
 	CWIN_LOG(TexturesHeapIndicesTable.contains(texture->HeapIdx), Engine, Error, "Texture heap index already exists! {}", texture->HeapIdx);
-	CWIN_LOG(texture->HeapIdx > SRenderConstants::Max2DTextures, Engine, Error, "Texture index is out of range!");
+	CWIN_LOG(texture->HeapIdx > TEXTURE_MAPS_NUM, Engine, Error, "Texture index is out of range!");
 	TexturesHeapIndicesTable.insert(texture->HeapIdx);
 
 	auto res = DirectX::LoadTexture(FileName, Device, CommandQueue->GetCommandList().Get(), texture->Resource.Resource, texture->UploadHeap.Resource, path.extension() == ".dds");

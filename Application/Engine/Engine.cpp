@@ -94,7 +94,6 @@ void OEngine::InitManagers()
 	MaterialManager->LoadMaterialsFromCache();
 	MaterialManager->MaterialsRebuld.AddMember(this, &OEngine::TryRebuildFrameResource);
 	SceneManager = make_unique<OSceneManager>();
-	SceneManager->LoadScenes();
 }
 
 void OEngine::PostInitialize()
@@ -209,7 +208,7 @@ void OEngine::UpdateMaterialCB() const
 				setTexIdx(matConstants.NormalMap, material->NormalMap);
 				setTexIdx(matConstants.HeightMap, material->HeightMap);
 
-				CWIN_LOG(material->MaterialCBIndex < 0 || material->MaterialCBIndex >= SRenderConstants::Max2DTextures, Material, Error, "Material index out of bounds!")
+				CWIN_LOG(material->MaterialCBIndex < 0 || material->MaterialCBIndex >= TEXTURE_MAPS_NUM, Material, Error, "Material index out of bounds!")
 				Put(matConstants.MatTransform, Transpose(matTransform));
 				LOG(Material, Log, "Updated material: {} Index :{}", TEXT(material->Name), TEXT(material->MaterialCBIndex));
 				updatedIndices.insert(material->MaterialCBIndex);
@@ -368,13 +367,12 @@ void OEngine::FlushGPU() const
 	CopyCommandQueue->Flush();
 }
 
-int OEngine::InitTests(shared_ptr<OTest> Test)
+int OEngine::InitScene()
 {
 	LOG(Engine, Log, "Engine::Run")
 
-	Tests[Test->GetWindow()->GetHWND()] = Test;
 	GetCommandQueue()->TryResetCommandList();
-	Test->Initialize();
+	SceneManager->LoadScenes();
 	GetCommandQueue()->ExecuteCommandListAndWait();
 	PostTestInit();
 
@@ -393,7 +391,7 @@ void OEngine::BuildDescriptorHeaps()
 		SetObjectDescriptor(heap);
 	};
 
-	build(DefaultGlobalHeap, EResourceHeapType::Default, L"GlobalHeap", UIManager->GetNumSRVRequired() + SRenderConstants::Max2DTextures + 2);
+	build(DefaultGlobalHeap, EResourceHeapType::Default, L"GlobalHeap", UIManager->GetNumSRVRequired() + TEXTURE_MAPS_NUM + 2);
 }
 
 void OEngine::PostTestInit()
@@ -428,11 +426,9 @@ OCommandQueue* OEngine::GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type)
 	return nullptr;
 }
 
-void OEngine::OnEnd(shared_ptr<OTest> Test) const
+void OEngine::OnEnd() const
 {
 	FlushGPU();
-	Test->UnloadContent();
-	Test->Destroy();
 }
 
 void OEngine::TryRebuildFrameResource()
@@ -518,10 +514,7 @@ void OEngine::Update(UpdateEventArgs& Args)
 	PROFILE_SCOPE()
 	Args.IsUIInfocus = UIManager->IsInFocus();
 	OnUpdate(Args);
-	for (const auto val : Tests | std::views::values)
-	{
-		val->OnUpdate(Args);
-	}
+	SceneManager->Update(Args);
 }
 
 void OEngine::UpdateFrameResource()
@@ -695,10 +688,6 @@ void OEngine::OnMouseMoved(MouseMotionEventArgs& Args)
 	Args.IsUIInfocus = UIManager->IsInFocus();
 	if (const auto window = GetWindowByHWND(Args.WindowHandle))
 	{
-		if (const auto test = GetTestByHWND(Args.WindowHandle))
-		{
-			test->OnMouseMoved(Args);
-		}
 		window->OnMouseMoved(Args);
 	}
 }
@@ -709,10 +698,6 @@ void OEngine::OnMouseButtonPressed(MouseButtonEventArgs& Args)
 	UIManager->OnMouseButtonPressed(Args);
 	if (const auto window = GetWindowByHWND(Args.WindowHandle))
 	{
-		if (const auto test = GetTestByHWND(Args.WindowHandle))
-		{
-			test->OnMouseButtonPressed(Args);
-		}
 		window->OnMouseButtonPressed(Args);
 	}
 }
@@ -723,10 +708,6 @@ void OEngine::OnMouseButtonReleased(MouseButtonEventArgs& Args)
 	UIManager->OnMouseButtonReleased(Args);
 	if (const auto window = GetWindowByHWND(Args.WindowHandle))
 	{
-		if (const auto test = GetTestByHWND(Args.WindowHandle))
-		{
-			test->OnMouseButtonReleased(Args);
-		}
 		window->OnMouseButtonReleased(Args);
 	}
 }
@@ -737,10 +718,6 @@ void OEngine::OnMouseWheel(MouseWheelEventArgs& Args)
 	UIManager->OnMouseWheel(Args);
 	if (const auto window = GetWindowByHWND(Args.WindowHandle))
 	{
-		if (const auto test = GetTestByHWND(Args.WindowHandle))
-		{
-			test->OnMouseWheel(Args);
-		}
 		window->OnMouseWheel(Args);
 	}
 }
@@ -753,11 +730,6 @@ void OEngine::OnResizeRequest(HWND& WindowHandle)
 	ResizeEventArgs args = { window->GetWidth(), window->GetHeight(), WindowHandle };
 
 	window->OnResize(args);
-
-	if (const auto test = GetTestByHWND(WindowHandle))
-	{
-		test->OnResize(args);
-	}
 
 	if (UIManager) // TODO pass all the render targets through automatically
 	{
@@ -851,7 +823,6 @@ void OEngine::FillDescriptorHeaps()
 		auto resourceSRV = Texture->GetSRVDesc();
 		Device->CreateShaderResourceView(Texture->Resource.Resource.Get(), &resourceSRV, pair.CPUHandle);
 		Texture->HeapIdx = texturesOffset;
-
 		texturesOffset++;
 	};
 
@@ -865,7 +836,7 @@ void OEngine::FillDescriptorHeaps()
 			buildSRV(texture.get());
 		}
 
-		while (texturesOffset < SRenderConstants::Max2DTextures)
+		while (texturesOffset < TEXTURE_MAPS_NUM)
 		{
 			buildSRV(nullptr);
 		}
@@ -995,21 +966,6 @@ OSobelFilter* OEngine::GetSobelFilter()
 void OEngine::SetObjectDescriptor(SRenderObjectHeap& Heap)
 {
 	Heap.Init(CBVSRVUAVDescriptorSize, RTVDescriptorSize, DSVDescriptorSize);
-}
-
-shared_ptr<OTest> OEngine::GetTestByHWND(HWND Handler)
-{
-	if (Tests.size() > 0)
-	{
-		const auto test = Tests.find(Handler);
-		if (test != Tests.end())
-		{
-			return test->second;
-		}
-		LOG(Engine, Error, "Test not found!");
-		return nullptr;
-	}
-	return nullptr;
 }
 
 OWindow* OEngine::GetWindowByHWND(HWND Handler)

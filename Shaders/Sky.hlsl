@@ -28,5 +28,5 @@ VertexOut VS(VertexIn vin, uint InstanceID
 float4 PS(VertexOut pin)
     : SV_Target
 {
-	return gCubeMap.Sample(gsamLinearWrap, pin.PositionL);
+	return gCubeMap.Sample(gsamLinearWrap, pin.PositionL) * gAmbientLight;
 }

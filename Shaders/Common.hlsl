@@ -1,28 +1,5 @@
 
 
-#ifndef MAX_DIFFUSE_MAPS
-#define MAX_DIFFUSE_MAPS 3
-#endif
-
-#ifndef MAX_NORMAL_MAPS
-#define MAX_NORMAL_MAPS 3
-#endif
-
-#ifndef MAX_HEIGHT_MAPS
-#define MAX_HEIGHT_MAPS 3
-#endif
-
-#ifndef MAX_SHADOW_MAPS
-#define MAX_SHADOW_MAPS 2
-#endif
-
-#define TEXTURE_MAPS_NUM 256
-#define SHADOW_MAPS_NUM 2
-
-#define EPSILON 0.0001f
-#define F0_COEFF 0.16f
-
-
 // Include structures and functions for lighting.
 #include "LightingUtils.hlsl"
 #include "Samplers.hlsl"
@@ -38,11 +15,11 @@ struct InstanceData
 };
 
 
-Texture2D gTextureMaps[TEXTURE_MAPS_NUM] : register(t0);
-Texture2D gShadowMaps[SHADOW_MAPS_NUM] : register(t1,space2);
+Texture2D gTextureMaps[TEXTURE_MAPS_NUM] : register(t0,space0);
+Texture2D gShadowMaps[SHADOW_MAPS_NUM] : register(t1,space1);
 
-TextureCube gCubeMap : register(t1,space3);
-Texture2D gSsaoMap   : register(t2,space3);
+TextureCube gCubeMap : register(t1,space2);
+Texture2D gSsaoMap   : register(t2,space2);
 
 StructuredBuffer<InstanceData> gInstanceData : register(t0, space4);
 StructuredBuffer<MaterialData> gMaterialData : register(t1, space4);
@@ -50,6 +27,7 @@ StructuredBuffer<MaterialData> gMaterialData : register(t1, space4);
 StructuredBuffer<SpotLight> gSpotLights : register(t2, space4);
 StructuredBuffer<PointLight> gPointLights : register(t3, space4);
 StructuredBuffer<DirectionalLight> gDirectionalLights : register(t4, space4);
+
 
 cbuffer cbPass : register(b0)
 {

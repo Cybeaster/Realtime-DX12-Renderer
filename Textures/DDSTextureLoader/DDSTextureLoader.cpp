@@ -2547,6 +2547,29 @@ HRESULT DirectX::LoadTextureFromNonDDS(const std::filesystem::path& FilePath, ID
 		return E_FAIL;
 	}
 
+	DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN;
+	if (channels == 1)
+	{
+		format = DXGI_FORMAT_R8_UNORM;
+	}
+	else if (channels == 2)
+	{
+		format = DXGI_FORMAT_R8G8_UNORM;
+	}
+	else if (channels == 3)
+	{
+		format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	}
+	else if (channels == 4)
+	{
+		format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	}
+	else
+	{
+		stbi_image_free(data);
+		return E_FAIL;
+	}
+
 	// Prepare subresource data
 	D3D12_SUBRESOURCE_DATA initData = {};
 	initData.pData = data;

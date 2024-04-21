@@ -28,7 +28,7 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 	const auto application = OApplication::Get();
 	application->InitApplication(hInstance);
 
-	returnCode = application->Run<OCubeMapTest>();
+	returnCode = application->Run();
 	application->Destory();
 	DUMP_PROFILE_TO_FILE(ProfilerResult.prof);
 	return returnCode;

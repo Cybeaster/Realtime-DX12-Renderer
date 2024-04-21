@@ -14,9 +14,9 @@ SSceneSettings OSceneReader::LoadScene()
 		payload.Name = scene.get<string>("Name");
 		payload.Skybox = scene.get<string>("Sky");
 
-		for (auto obj : scene.get_child("Objects"))
+		for (auto obj : scene.get_child("Objects") | std::views::values)
 		{
-			payload.Objects.push_back(obj.second.get_value<string>());
+			payload.Objects.push_back(obj.get<string>("ObjectName"));
 		}
 
 		for (auto light : scene.get_child("Lights"))

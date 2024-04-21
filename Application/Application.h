@@ -24,7 +24,6 @@ public:
 	void Quit(int ExitCode);
 	void InitApplication(HINSTANCE hInstance);
 
-	template<typename TestType = OTest>
 	int Run();
 
 	inline static wchar_t WindowClassName[] = L"DXRendererClass";
@@ -64,11 +63,9 @@ private:
 	unique_ptr<OConfigReader> ConfigReader;
 };
 
-template<typename TestType>
-int OApplication::Run()
+inline int OApplication::Run()
 {
-	auto test = make_shared<TestType>(Engine->GetWindow());
-	Engine->InitTests(test);
+	Engine->InitScene();
 
 	Timer.Reset();
 	MSG msg = { 0 };
@@ -94,6 +91,6 @@ int OApplication::Run()
 			}
 		}
 	}
-	Engine->OnEnd(test);
+	Engine->OnEnd();
 	return static_cast<int>(msg.wParam);
 }
