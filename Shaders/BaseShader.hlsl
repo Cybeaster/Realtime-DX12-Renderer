@@ -115,16 +115,10 @@ float4 PS(VertexOut pin)
 	for (uint i = 0; i < gNumDirLights; i++)
 	{
 		DirectionalLight curLight = gDirectionalLights[i];
-        directLighting += shadowFactor[idx] * ComputeDirectionalLight_BRDF(curLight, mat, bumpedNormalW, toEyeW) * curLight.Intensity;
+        directLighting += shadowFactor[idx] * ComputeDirectionalLight_BlinnPhong(curLight, mat, bumpedNormalW, toEyeW) * curLight.Intensity;
         idx++;
     }
-
-    for (uint k = 0; k < gNumSpotLights; k++)
-    {
-       SpotLight light = gSpotLights[k];
-       directLighting += shadowFactor[idx] * ComputeSpotLight_BRDF(gSpotLights[k], mat, pin.PosW, bumpedNormalW, toEyeW) * light.Intensity;
-       idx++;
-    }
+	directLighting *= 5;
 
 	// Light terms.
 	float4 ambient =  ambientAccess * gAmbientLight * float4(diffuseAlbedo,1.0);
@@ -137,6 +131,7 @@ float4 PS(VertexOut pin)
 
 	// Common convention to take alpha from diffuse albedo.
 	litColor.a = alpha;
+	litColor.rgb = AcesFitted(litColor.rgb);
 	litColor.rgb = GammaCorrect(litColor.rgb);
 	return litColor;
 }

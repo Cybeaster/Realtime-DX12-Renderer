@@ -1,6 +1,6 @@
 {
   "Scene": {
-    "CurrentScene": "Sponza"
+    "CurrentScene": "BistroExterior"
   },
   "Scenes": [
     {
@@ -18,14 +18,14 @@
         {
           "Type": "Directional",
           "Direction": {
-            "X": 0.0,
+            "X": 0.1,
             "Y": -1.0,
-            "Z": 0.0
+            "Z": 6.8
           },
           "Color": {
             "R": 1.0,
-            "G": 1.0,
-            "B": 1.0
+            "G": 0.9,
+            "B": 0.5
           }
         },
         {
@@ -60,14 +60,14 @@
         {
           "Type": "Directional",
           "Direction": {
-            "X": 0.0,
+            "X": 0.1,
             "Y": -1.0,
-            "Z": 0.0
+            "Z": 6.8
           },
           "Color": {
             "R": 1.0,
-            "G": 1.0,
-            "B": 1.0
+            "G": 0.9,
+            "B": 0.5
           }
         },
         {
@@ -102,14 +102,14 @@
         {
           "Type": "Directional",
           "Direction": {
-            "X": 0.0,
+            "X": 0.1,
             "Y": -1.0,
-            "Z": 0.0
+            "Z": 6.8
           },
           "Color": {
             "R": 1.0,
-            "G": 1.0,
-            "B": 1.0
+            "G": 0.9,
+            "B": 0.5
           }
         },
         {
@@ -144,14 +144,14 @@
         {
           "Type": "Directional",
           "Direction": {
-            "X": 0.0,
+            "X": 0.1,
             "Y": -1.0,
-            "Z": 0.0
+            "Z": 6.8
           },
           "Color": {
             "R": 1.0,
-            "G": 1.0,
-            "B": 1.0
+            "G": 0.9,
+            "B": 0.5
           }
         },
         {

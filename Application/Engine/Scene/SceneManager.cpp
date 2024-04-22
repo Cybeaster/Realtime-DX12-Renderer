@@ -8,7 +8,7 @@ void OSceneManager::LoadScenes()
 	{
 		Reader = make_unique<OSceneReader>(OApplication::Get()->GetConfigPath("SceneConfigPath"));
 	}
-	auto scene = Reader->LoadScene();
+	const auto scene = Reader->LoadScene();
 	for (const auto& scenePayload : scene.Scenes)
 	{
 		unique_ptr<OScene> newScene = make_unique<OScene>();

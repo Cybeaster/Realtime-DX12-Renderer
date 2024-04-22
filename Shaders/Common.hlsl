@@ -15,11 +15,12 @@ struct InstanceData
 };
 
 
-Texture2D gTextureMaps[TEXTURE_MAPS_NUM] : register(t0,space0);
-Texture2D gShadowMaps[SHADOW_MAPS_NUM] : register(t1,space1);
 
-TextureCube gCubeMap : register(t1,space2);
-Texture2D gSsaoMap   : register(t2,space2);
+Texture2D gTextureMaps[TEXTURE_MAPS_NUM] : register(t0);
+Texture2D gShadowMaps[SHADOW_MAPS_NUM] : register(t1,space2);
+
+TextureCube gCubeMap : register(t1,space3);
+Texture2D gSsaoMap   : register(t2,space3);
 
 StructuredBuffer<InstanceData> gInstanceData : register(t0, space4);
 StructuredBuffer<MaterialData> gMaterialData : register(t1, space4);
@@ -266,4 +267,34 @@ float3 GammaCorrect(float3 Color)
 float CalcFresnelR0(float Ior)
 {
     return pow((1.0 - Ior) / (1.0 + Ior), 2.0);
+}
+
+float3 ReinhardToneMapping(float3 Color)
+{
+	return Color / (Color + 1.0);
+}
+
+float3 ReinhardExtendedToneMapping(float3 Color, float MaxWhite)
+{
+	float3 num = Color * (1.0f + (Color / FLOAT3(MaxWhite * MaxWhite)));
+	return num / (1.0f + Color);
+}
+
+float Luminance(float3 Color)
+{
+	return dot(Color, float3(0.2126, 0.7152, 0.0722));
+}
+
+float3 ChangeLuminance(float3 Color, float NewLuminance)
+{
+	float currentLuminance = Luminance(Color);
+	return Color * (NewLuminance / currentLuminance);
+}
+
+float3 ReinhardExtendedLuminance(float3 Color, float MaxWhite)
+{
+	float luminance = Luminance(Color);
+	float num = luminance * (1.0  + ( luminance / (MaxWhite * MaxWhite)));
+	float lNew = num / (1.0 + luminance);
+	return ChangeLuminance(Color, lNew);
 }

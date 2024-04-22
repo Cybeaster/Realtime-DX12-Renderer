@@ -29,7 +29,7 @@ namespace HLSL
 #endif
 
 #define TEXTURE_MAPS_NUM 312
-#define SHADOW_MAPS_NUM 2
+#define SHADOW_MAPS_NUM 1
 
 #define EPSILON 0.0001f
 #define F0_COEFF 0.16f
