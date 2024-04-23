@@ -30,6 +30,8 @@ public:
 	void LoadLocalTextures();
 	void SaveLocalTextures();
 	wstring GetName() override;
+	const uint32_t MaxNumberOf2DTextures = 50;
+
 private:
 	void AddTexture(unique_ptr<STexture> Texture);
 	void RemoveAllTextures();
