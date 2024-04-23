@@ -134,7 +134,9 @@ float3 ComputeDirectionalLight_BlinnPhong(DirectionalLight L, Material mat, floa
 
 float3 ComputeDirectionalLight_BRDF(DirectionalLight L, Material Mat, float3 Normal, float3 ToEye)
 {
-	return BRDF(ToEye, -L.Direction, Normal, Mat);
+
+	float3 lightStrength = L.Intensity * max(dot(-L.Direction, Normal), 0.0f);
+	return BRDF(ToEye, -L.Direction, Normal, Mat) * lightStrength;
 }
 
 float3 ComputeSpotLight_BRDF(SpotLight L, Material Mat,float3 Position, float3 Normal, float3 ToEye)

@@ -115,10 +115,11 @@ float4 PS(VertexOut pin)
 	for (uint i = 0; i < gNumDirLights; i++)
 	{
 		DirectionalLight curLight = gDirectionalLights[i];
-        directLighting += shadowFactor[idx] * ComputeDirectionalLight_BlinnPhong(curLight, mat, bumpedNormalW, toEyeW) * curLight.Intensity;
+        directLighting += shadowFactor[idx] * ComputeDirectionalLight_BRDF(curLight, mat, bumpedNormalW, toEyeW);
         idx++;
     }
-	directLighting *= 5;
+	directLighting *= 10;
+    return float4(directLighting,1);
 
 	// Light terms.
 	float4 ambient =  ambientAccess * gAmbientLight * float4(diffuseAlbedo,1.0);
