@@ -91,6 +91,10 @@ private:
 	DirectX::XMFLOAT4X4 ViewMatrix;
 	DirectX::XMFLOAT4X4 ProjectionMatrix;
 
+	DirectX::XMFLOAT4X4 NearProjectionMatrix;
+	DirectX::XMFLOAT4X4 MidProjectionMatrix;
+	DirectX::XMFLOAT4X4 FarProjectionMatrix;
+
 	bool bViewDirty = true;
 	OWindow* Window;
 

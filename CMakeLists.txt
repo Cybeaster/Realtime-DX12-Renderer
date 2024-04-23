@@ -240,6 +240,8 @@ set(SRC_FILES
         Application/UI/Engine/ShaderSettings.cpp
         Application/UI/Engine/ShaderSettings.h
         Types/DirectX/HlslTypes.h
+        Application/Engine/RenderTarget/CSM/Csm.cpp
+        Application/Engine/RenderTarget/CSM/Csm.h
 )
 
 
