@@ -45,6 +45,7 @@ void OLightComponent::SetPointLight(const SPointLightPayload& Light)
 	PointLight.FalloffEnd = Light.FallOffEnd;
 	PointLight.Position = Light.Position;
 	PointLight.Intensity = Light.Intensity;
+	UpdateLightData();
 }
 
 void OLightComponent::SetSpotLight(const SSpotLightPayload& Light)
@@ -56,6 +57,7 @@ void OLightComponent::SetSpotLight(const SSpotLightPayload& Light)
 	SpotLight.FalloffStart = Light.FallOffStart;
 	SpotLight.SpotPower = Light.SpotPower;
 	SpotLight.Intensity = Light.Strength;
+	UpdateLightData();
 }
 
 void OLightComponent::Init(ORenderItem* Other)
@@ -84,6 +86,11 @@ void OLightComponent::InitFrameResource(const TUploadBufferData<HLSL::Directiona
 	DirLightBufferInfo = Dir;
 	PointLightBufferInfo = Point;
 	SpotLightBufferInfo = Spot;
+}
+
+DirectX::XMVECTOR OLightComponent::GetGlobalPosition() const
+{
+	return GlobalPosition;
 }
 
 bool OLightComponent::TryUpdate()
@@ -138,95 +145,10 @@ void OLightComponent::MarkDirty()
 	OnLightChanged.Broadcast();
 }
 
-void OLightComponent::SetPassConstant(SPassConstants& OutConstant)
-{
-	using namespace DirectX;
-
-	const auto view = XMLoadFloat4x4(&View);
-	const auto proj = XMLoadFloat4x4(&Proj);
-	const auto shadowTransform = XMLoadFloat4x4(&ShadowTransform);
-
-	XMFLOAT4X4 transposed{};
-	Put(transposed, Transpose(shadowTransform));
-	DirectionalLight.Transform = transposed;
-	PointLight.Transform = transposed;
-	SpotLight.Transform = transposed;
-
-	const XMMATRIX viewProj = XMMatrixMultiply(view, proj);
-	const XMMATRIX invView = Inverse(view);
-	const XMMATRIX invProj = Inverse(proj);
-	const XMMATRIX invViewProj = Inverse(viewProj);
-
-	XMStoreFloat4x4(&OutConstant.View, XMMatrixTranspose(view));
-	XMStoreFloat4x4(&OutConstant.InvView, XMMatrixTranspose(invView));
-	XMStoreFloat4x4(&OutConstant.Proj, XMMatrixTranspose(proj));
-	XMStoreFloat4x4(&OutConstant.InvProj, XMMatrixTranspose(invProj));
-	XMStoreFloat4x4(&OutConstant.ViewProj, XMMatrixTranspose(viewProj));
-	XMStoreFloat4x4(&OutConstant.InvViewProj, XMMatrixTranspose(invViewProj));
-
-	OutConstant.EyePosW = LightPos;
-	OutConstant.NearZ = NearZ;
-	OutConstant.FarZ = FarZ;
-}
-
 void OLightComponent::UpdateLightData()
 {
-	using namespace DirectX;
 	PROFILE_SCOPE();
-	auto lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-	const auto& bounds = OEngine::Get()->GetSceneBounds();
-	XMVECTOR lightDir;
-	XMVECTOR lightTarget; // Calculate target point using direction
-	XMMATRIX T(
-	    0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f);
-	XMVECTOR lightPos;
-	if (LightType == ELightType::Directional)
-	{
-		lightDir = XMVector3Normalize(XMLoadFloat3(&DirectionalLight.Direction));
-		lightPos = -2.0f * bounds.Radius * lightDir;
-		lightTarget = Load(bounds.Center); // Calculate target point using direction
-
-		// Assuming lightDir is already normalized
-		auto view = XMMatrixLookAtLH(lightPos, lightTarget, lightUp);
-
-		// Transform bounding sphere to light space.
-		XMFLOAT3 sphereCenterLS;
-		XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(lightTarget, view));
-		// Ortho frustum in light space encloses scene.
-		float l = sphereCenterLS.x - bounds.Radius;
-		float b = sphereCenterLS.y - bounds.Radius;
-		float n = sphereCenterLS.z - bounds.Radius;
-		float r = sphereCenterLS.x + bounds.Radius;
-		float t = sphereCenterLS.y + bounds.Radius;
-		float f = sphereCenterLS.z + bounds.Radius;
-
-		NearZ = n;
-		FarZ = f;
-		XMMATRIX lightProj = XMMatrixOrthographicOffCenterLH(l, r, b, t, n, f);
-		// Transform NDC space [-1,+1]^2 to texture space [0,1]^2
-
-		XMMATRIX S = view * lightProj * T;
-		XMStoreFloat4x4(&View, view);
-		XMStoreFloat4x4(&Proj, lightProj);
-		XMStoreFloat4x4(&ShadowTransform, S);
-	}
-	else if (LightType == ELightType::Spot)
-	{
-		lightPos = GlobalPosition;
-		lightDir = XMVector3Normalize(XMLoadFloat3(&SpotLight.Direction));
-		lightTarget = XMVectorAdd(lightPos, lightDir); // Calculate target point using direction
-		NearZ = SpotLight.FalloffStart;
-		FarZ = SpotLight.FalloffEnd;
-
-		// Create the view matrix for the spotlight
-		auto view = XMMatrixLookAtLH(lightPos, lightTarget, lightUp);
-		auto projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(SpotLight.ConeAngle * 2), 1.0f, NearZ, FarZ);
-		XMMATRIX S = view * projection * T;
-		XMStoreFloat4x4(&View, view);
-		XMStoreFloat4x4(&Proj, projection);
-		XMStoreFloat4x4(&ShadowTransform, S);
-	}
-	XMStoreFloat3(&LightPos, lightPos);
+	bIsDirty = true;
 }
 
 void OLightComponent::SetShadowMapIndex(UINT Index)

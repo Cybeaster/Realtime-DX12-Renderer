@@ -118,9 +118,11 @@ void OCamera::SetLens(float _FovY, float _Aspect, float Zn, float Zf)
 
 	NearWindowHeight = 2.0f * NearZ * tanf(0.5f * FovY);
 	const DirectX::XMMATRIX projection = XMMatrixPerspectiveFovLH(FovY, Aspect, NearZ, FarZ);
+
 	Put(NearProjectionMatrix, XMMatrixPerspectiveFovLH(FovY, Aspect, NearZ, FarZ / 5));
 	Put(MidProjectionMatrix, XMMatrixPerspectiveFovLH(FovY, Aspect, FarZ / 5, FarZ / 2));
 	Put(FarProjectionMatrix, XMMatrixPerspectiveFovLH(FovY, Aspect, FarZ / 2, FarZ));
+
 	DirectX::XMStoreFloat4x4(&ProjectionMatrix, projection);
 	BoundingFrustum::CreateFromMatrix(Frustum, projection);
 }
@@ -244,6 +246,12 @@ void OCamera::FillPassConstant(SPassConstants& OutOther) const
 	Put(OutOther.ViewProj, Transpose(viewProj));
 	Put(OutOther.InvViewProj, Transpose(invViewProj));
 	OutOther.EyePosW = GetPosition3f();
+}
+
+DirectX::XMFLOAT4X4 OCamera::GetProjectionByIndex(int32_t Index) const
+{
+	return Index == 0 ? NearProjectionMatrix : Index == 1 ? MidProjectionMatrix :
+                                                            FarProjectionMatrix;
 }
 
 DirectX::XMVECTOR OCamera::GetUp() const

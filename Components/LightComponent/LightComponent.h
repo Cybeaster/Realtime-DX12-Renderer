@@ -45,7 +45,7 @@ public:
 	void InitFrameResource(const TUploadBufferData<HLSL::DirectionalLight>& Dir,
 	                       const TUploadBufferData<HLSL::PointLight>& Point,
 	                       const TUploadBufferData<HLSL::SpotLight>& Spot);
-
+	DirectX::XMVECTOR GetGlobalPosition() const;
 	int NumFramesDirty = SRenderConstants::NumFrameResources;
 	bool TryUpdate();
 	ELightType GetLightType() const;
@@ -59,7 +59,18 @@ public:
 	void SetShadowMapIndex(UINT Index);
 	SDelegate<void> OnLightChanged;
 
+	bool UseDirty()
+	{
+		if (bIsDirty)
+		{
+			bIsDirty = false;
+			return true;
+		}
+		return false;
+	}
+
 private:
+	bool bIsDirty = true;
 	ELightType LightType = ELightType::Spot;
 	TUploadBufferData<HLSL::DirectionalLight> DirLightBufferInfo;
 	TUploadBufferData<HLSL::PointLight> PointLightBufferInfo;
@@ -70,10 +81,4 @@ private:
 	HLSL::PointLight PointLight;
 	HLSL::SpotLight SpotLight;
 
-	DirectX::XMFLOAT3 LightPos;
-	DirectX::XMFLOAT4X4 View;
-	DirectX::XMFLOAT4X4 Proj;
-	DirectX::XMFLOAT4X4 ShadowTransform;
-	float NearZ;
-	float FarZ;
 };

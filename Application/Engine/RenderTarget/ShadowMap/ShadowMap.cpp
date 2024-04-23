@@ -1,6 +1,7 @@
 
 #include "ShadowMap.h"
 
+#include "Engine/Engine.h"
 #include "LightComponent/LightComponent.h"
 void OShadowMap::BuildResource()
 {
@@ -122,6 +123,104 @@ bool OShadowMap::ConsumeUpdate()
 	return false;
 }
 
+void OShadowMap::UpdateLightSourceData()
+{
+	using namespace DirectX;
+	auto lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	const auto& bounds = OEngine::Get()->GetSceneBounds();
+	XMVECTOR lightDir;
+	XMVECTOR lightTarget; // Calculate target point using direction
+	XMMATRIX T(
+	    0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f);
+	XMVECTOR lightPos;
+
+	auto lightType = LightComponent->GetLightType();
+
+	if (lightType == ELightType::Directional)
+	{
+		auto dirLight = LightComponent->GetDirectionalLight();
+		lightDir = XMVector3Normalize(XMLoadFloat3(&dirLight.Direction));
+		lightPos = -2.0f * bounds.Radius * lightDir;
+		lightTarget = Load(bounds.Center); // Calculate target point using direction
+
+		// Assuming lightDir is already normalized
+		auto view = XMMatrixLookAtLH(lightPos, lightTarget, lightUp);
+
+		// Transform bounding sphere to light space.
+		XMFLOAT3 sphereCenterLS;
+		XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(lightTarget, view));
+		// Ortho frustum in light space encloses scene.
+		float l = sphereCenterLS.x - bounds.Radius;
+		float b = sphereCenterLS.y - bounds.Radius;
+		float n = sphereCenterLS.z - bounds.Radius;
+		float r = sphereCenterLS.x + bounds.Radius;
+		float t = sphereCenterLS.y + bounds.Radius;
+		float f = sphereCenterLS.z + bounds.Radius;
+
+		NearZ = n;
+		FarZ = f;
+		XMMATRIX lightProj = XMMatrixOrthographicOffCenterLH(l, r, b, t, n, f);
+		// Transform NDC space [-1,+1]^2 to texture space [0,1]^2
+
+		XMMATRIX S = view * lightProj * T;
+		XMStoreFloat4x4(&View, view);
+		XMStoreFloat4x4(&Proj, lightProj);
+		XMStoreFloat4x4(&ShadowTransform, S);
+	}
+	else if (lightType == ELightType::Spot)
+	{
+		auto globalPos = LightComponent->GetGlobalPosition();
+		auto spotLight = LightComponent->GetSpotLight();
+		lightPos = globalPos;
+		lightDir = XMVector3Normalize(XMLoadFloat3(&spotLight.Direction));
+		lightTarget = XMVectorAdd(lightPos, lightDir); // Calculate target point using direction
+		NearZ = spotLight.FalloffStart;
+		FarZ = spotLight.FalloffEnd;
+
+		// Create the view matrix for the spotlight
+		auto view = XMMatrixLookAtLH(lightPos, lightTarget, lightUp);
+		auto projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(spotLight.ConeAngle * 2), 1.0f, NearZ, FarZ);
+		XMMATRIX S = view * projection * T;
+		XMStoreFloat4x4(&View, view);
+		XMStoreFloat4x4(&Proj, projection);
+		XMStoreFloat4x4(&ShadowTransform, S);
+	}
+	XMStoreFloat3(&LightPos, lightPos);
+}
+
+void OShadowMap::SetPassConstants()
+{
+	using namespace DirectX;
+
+	const auto view = XMLoadFloat4x4(&View);
+	const auto proj = XMLoadFloat4x4(&Proj);
+	const auto shadowTransform = XMLoadFloat4x4(&ShadowTransform);
+
+	XMFLOAT4X4 transposed{};
+	Put(transposed, Transpose(shadowTransform));
+	Light
+	    DirectionalLight.Transform
+	    = transposed;
+	PointLight.Transform = transposed;
+	SpotLight.Transform = transposed;
+
+	const XMMATRIX viewProj = XMMatrixMultiply(view, proj);
+	const XMMATRIX invView = Inverse(view);
+	const XMMATRIX invProj = Inverse(proj);
+	const XMMATRIX invViewProj = Inverse(viewProj);
+
+	XMStoreFloat4x4(&PassConstant.View, XMMatrixTranspose(view));
+	XMStoreFloat4x4(&PassConstant.InvView, XMMatrixTranspose(invView));
+	XMStoreFloat4x4(&PassConstant.Proj, XMMatrixTranspose(proj));
+	XMStoreFloat4x4(&PassConstant.InvProj, XMMatrixTranspose(invProj));
+	XMStoreFloat4x4(&PassConstant.ViewProj, XMMatrixTranspose(viewProj));
+	XMStoreFloat4x4(&PassConstant.InvViewProj, XMMatrixTranspose(invViewProj));
+
+	PassConstant.EyePosW = LightPos;
+	PassConstant.NearZ = NearZ;
+	PassConstant.FarZ = FarZ;
+}
+
 uint32_t OShadowMap::GetNumDSVRequired() const
 {
 	return 1;
@@ -140,4 +239,9 @@ uint32_t OShadowMap::GetNumPassesRequired() const
 void OShadowMap::SetLightIndex(uint32_t Idx)
 {
 	LightComponent->SetShadowMapIndex(Idx);
+}
+
+D3D12_GPU_VIRTUAL_ADDRESS OShadowMap::GetPassConstantAddresss() const
+{
+	return PassConstantBuffer.Buffer->GetGPUAddress() + PassConstantBuffer.StartIndex * Utils::CalcBufferByteSize(sizeof(SPassConstants));
 }

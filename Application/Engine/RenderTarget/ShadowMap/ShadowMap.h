@@ -19,13 +19,11 @@ public:
 	void PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList, uint32_t SubtargetIdx = 0) override;
 	void UpdatePass(const TUploadBufferData<SPassConstants>& Data) override;
 	void SetLightIndex(uint32_t Idx);
-	D3D12_GPU_VIRTUAL_ADDRESS GetPassConstantAddresss() const // TODO propagate to base class
-	{
-		return PassConstantBuffer.Buffer->GetGPUAddress() + PassConstantBuffer.StartIndex * Utils::CalcBufferByteSize(sizeof(SPassConstants));
-	}
+	D3D12_GPU_VIRTUAL_ADDRESS GetPassConstantAddresss() const; // TODO propagate to base class
 	void SetPassConstant();
 	bool ConsumeUpdate();
-
+	void UpdateLightSourceData();
+	void SetPassConstants();
 private:
 	bool bNeedToUpdate = true;
 	OLightComponent* LightComponent;
@@ -34,4 +32,11 @@ private:
 	SDescriptorPair DSV;
 	SResourceInfo RenderTarget;
 	TUploadBufferData<SPassConstants> PassConstantBuffer;
+
+	DirectX::XMFLOAT4X4 ShadowTransform;
+	float NearZ;
+	float FarZ;
+	DirectX::XMFLOAT4X4 View;
+	DirectX::XMFLOAT4X4 Proj;
+	DirectX::XMFLOAT3 LightPos;
 };
