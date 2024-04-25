@@ -117,11 +117,11 @@ void OCamera::SetLens(float _FovY, float _Aspect, float Zn, float Zf)
 	FarZ = Zf;
 
 	NearWindowHeight = 2.0f * NearZ * tanf(0.5f * FovY);
-	const DirectX::XMMATRIX projection = XMMatrixPerspectiveFovLH(FovY, Aspect, NearZ, FarZ);
+	const DirectX::XMMATRIX projection = MatrixPerspective(FovY, Aspect, NearZ, FarZ);
 
-	Put(NearProjectionMatrix, XMMatrixPerspectiveFovLH(FovY, Aspect, NearZ, FarZ / 5));
-	Put(MidProjectionMatrix, XMMatrixPerspectiveFovLH(FovY, Aspect, FarZ / 5, FarZ / 2));
-	Put(FarProjectionMatrix, XMMatrixPerspectiveFovLH(FovY, Aspect, FarZ / 2, FarZ));
+	Put(NearProjectionMatrix, MatrixPerspective(FovY, Aspect, NearZ, FarZ / 5));
+	Put(MidProjectionMatrix, MatrixPerspective(FovY, Aspect, FarZ / 5, FarZ / 2));
+	Put(FarProjectionMatrix, MatrixPerspective(FovY, Aspect, FarZ / 2, FarZ));
 
 	DirectX::XMStoreFloat4x4(&ProjectionMatrix, projection);
 	BoundingFrustum::CreateFromMatrix(Frustum, projection);

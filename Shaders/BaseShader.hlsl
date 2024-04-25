@@ -119,7 +119,7 @@ float4 PS(VertexOut pin)
         idx++;
     }
 	directLighting *= 10;
-    return float4(directLighting,1);
+    return float4(bumpedNormalW,1);
 
 	// Light terms.
 	float4 ambient =  ambientAccess * gAmbientLight * float4(diffuseAlbedo,1.0);

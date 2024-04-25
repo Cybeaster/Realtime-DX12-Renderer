@@ -7,6 +7,7 @@
 #include "MeshGenerator/MeshPayload.h"
 #include "Profiler.h"
 #include "tinyobjloader/tiny_obj_loader.h"
+
 bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, ETextureMapType Type)
 {
 	PROFILE_SCOPE();
@@ -63,11 +64,11 @@ bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, 
 					tinyobj::TinyObjPoint point = { attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 0],
 						                            attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 1],
 						                            attrib.vertices[3 * static_cast<size_t>(idx.vertex_index) + 2] };
-					vertex.Position = { point.x, point.y, point.z };
+					vertex.Position = { -point.x, point.y, point.z };
 					// Check if `normal_index` is zero or positive. negative = no normal data
 					if (idx.normal_index >= 0)
 					{
-						vertex.Normal.x = attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 0];
+						vertex.Normal.x = -attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 0];
 						vertex.Normal.y = attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 1];
 						vertex.Normal.z = attrib.normals[3 * static_cast<size_t>(idx.normal_index) + 2];
 					}
@@ -110,9 +111,9 @@ bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, 
 					LOG(TinyObjLoader, Error, "Couldn't compute tangent frame for mesh: {}", TEXT(data.Name));
 				}
 
-				data.Vertices[last].TangentU = { tangent[2].x, tangent[2].y, tangent[2].z };
-				data.Vertices[last - 1].TangentU = { tangent[1].x, tangent[1].y, tangent[1].z };
-				data.Vertices[last - 2].TangentU = { tangent[0].x, tangent[0].y, tangent[0].z };
+				data.Vertices[last].TangentU = { -tangent[2].x, tangent[2].y, tangent[2].z };
+				data.Vertices[last - 1].TangentU = { -tangent[1].x, tangent[1].y, tangent[1].z };
+				data.Vertices[last - 2].TangentU = { -tangent[0].x, tangent[0].y, tangent[0].z };
 				index_offset += fv;
 			}
 

@@ -79,11 +79,11 @@ float3 NormalSampleToWorldSpace(float3 NormalMapSample, float3 UnitNormalW, floa
 	*  This code makes sure T is orthonormal to N by subtracting off any
 	    component of T along the direction N
 	*/
-	float3 T = normalize(TangentW - dot(TangentW, N) * N);
+	float3 T = normalize(TangentW - dot(TangentW, N) * N); //gramm shmidt
 	float3 B = cross(N, T);
 	float3x3 TBN = float3x3(T, B, N);
 	float3 bumpedNormal = mul(normalT, TBN);
-	return bumpedNormal;
+	return normalize(bumpedNormal);
 }
 
 struct BumpedData
@@ -92,29 +92,6 @@ struct BumpedData
 	float3 BumpedNormalW;
 };
 
-
-
-/*
-float3 SampleNormalMap(float3 NormalW, float3 TangentW, MaterialData matData, float2 TexC, out float NormalMapSampleA)
-{
-	float3 bumpedNormalW = NormalW;
-	float4 normalMapSample = float4(0.f, 0.f, 1.0f, 1.0f);
-	NormalMapSampleA = 1.0f;
-	if(IsTangentValid(TangentW))
-	{
-	  uint numNormalMaps = matData.NormalMapCount;
-		for (uint i = 0; i < numNormalMaps; ++i)
-		{
-			int normalMapIndex = matData.NormalMapIndex[i];
-			normalMapSample = gTextureMaps[normalMapIndex].Sample(gsamAnisotropicWrap, TexC);
-			bumpedNormalW += NormalSampleToWorldSpace(normalMapSample.rgb, normalize(NormalW), TangentW);
-			NormalMapSampleA += normalMapSample.a;
-		}
-		NormalMapSampleA = NormalMapSampleA / numNormalMaps;
-	}
-	return normalize(bumpedNormalW);
-}
- */
 
 float3 ComputeHeightMap(MaterialData matData, float3 NormalW, float3 TangentW, float2 TexC,float Offset )
 {
@@ -254,7 +231,6 @@ BumpedData SampleNormalMap(float3 NormalW, float3 TangentW, MaterialData MatData
   	{
 		data.NormalMapSample = gTextureMaps[MatData.NormalMap.TextureIndex].Sample(gsamAnisotropicWrap, TexC);
 		data.BumpedNormalW = NormalSampleToWorldSpace(data.NormalMapSample.rgb, NormalW, TangentW);
-  		data.BumpedNormalW = normalize(data.BumpedNormalW);
   	}
   	return data;
 }

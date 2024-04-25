@@ -38,7 +38,7 @@
         ]
       },
       "RasterizerState": {
-        "FrontCounterClockwise": false,
+        "FrontCounterClockwise": true,
         "FillMode": "Solid",
         "CullMode": "Back",
         "DepthBias": 0,
@@ -109,7 +109,7 @@
         ]
       },
       "RasterizerState": {
-        "FrontCounterClockwise": false,
+        "FrontCounterClockwise": true,
         "FillMode": "Solid",
         "CullMode": "Back",
         "DepthBias": 0,
@@ -180,7 +180,7 @@
         ]
       },
       "RasterizerState": {
-        "FrontCounterClockwise": false,
+        "FrontCounterClockwise": true,
         "FillMode": "Solid",
         "CullMode": "Back",
         "DepthBias": 0,
@@ -251,7 +251,7 @@
         ]
       },
       "RasterizerState": {
-        "FrontCounterClockwise": false,
+        "FrontCounterClockwise": true,
         "FillMode": "Solid",
         "CullMode": "Back",
         "DepthBias": 0,
@@ -322,7 +322,7 @@
         ]
       },
       "RasterizerState": {
-        "FrontCounterClockwise": false,
+        "FrontCounterClockwise": true,
         "FillMode": "Solid",
         "CullMode": "None",
         "DepthBias": 0,
@@ -426,7 +426,7 @@
         ]
       },
       "RasterizerState": {
-        "FrontCounterClockwise": false,
+        "FrontCounterClockwise": true,
         "FillMode": "Solid",
         "CullMode": "None",
         "DepthBias": 0,
@@ -508,7 +508,7 @@
         ]
       },
       "RasterizerState": {
-        "FrontCounterClockwise": false,
+        "FrontCounterClockwise": true,
         "FillMode": "Solid",
         "CullMode": "Back",
         "DepthBias": 0,
@@ -579,7 +579,7 @@
         ]
       },
       "RasterizerState": {
-        "FrontCounterClockwise": false,
+        "FrontCounterClockwise": true,
         "FillMode": "Wireframe",
         "CullMode": "Back",
         "DepthBias": 0,
@@ -650,7 +650,7 @@
         ]
       },
       "RasterizerState": {
-        "FrontCounterClockwise": false,
+        "FrontCounterClockwise": true,
         "FillMode": "Solid",
         "CullMode": "Back",
         "DepthBias": 0,
@@ -792,7 +792,7 @@
         ]
       },
       "RasterizerState": {
-        "FrontCounterClockwise": false,
+        "FrontCounterClockwise": true,
         "FillMode": "Solid",
         "CullMode": "Back",
         "DepthBias": 0,
@@ -863,7 +863,7 @@
         ]
       },
       "RasterizerState": {
-        "FrontCounterClockwise": false,
+        "FrontCounterClockwise": true,
         "FillMode": "Solid",
         "CullMode": "Back",
         "DepthBias": 100000,
@@ -934,7 +934,7 @@
         ]
       },
       "RasterizerState": {
-        "FrontCounterClockwise": false,
+        "FrontCounterClockwise": true,
         "FillMode": "Solid",
         "CullMode": "Back",
         "DepthBias": 0,
@@ -1005,7 +1005,7 @@
         ]
       },
       "RasterizerState": {
-        "FrontCounterClockwise": false,
+        "FrontCounterClockwise": true,
         "FillMode": "Solid",
         "CullMode": "Back",
         "DepthBias": 0,
@@ -1076,7 +1076,7 @@
         ]
       },
       "RasterizerState": {
-        "FrontCounterClockwise": false,
+        "FrontCounterClockwise": true,
         "FillMode": "Solid",
         "CullMode": "Back",
         "DepthBias": 0,
@@ -1147,7 +1147,7 @@
         ]
       },
       "RasterizerState": {
-        "FrontCounterClockwise": false,
+        "FrontCounterClockwise": true,
         "FillMode": "Solid",
         "CullMode": "Back",
         "DepthBias": 0,
@@ -1219,7 +1219,7 @@
         ]
       },
       "RasterizerState": {
-        "FrontCounterClockwise": false,
+        "FrontCounterClockwise": true,
         "FillMode": "Solid",
         "CullMode": "Back",
         "DepthBias": 0,

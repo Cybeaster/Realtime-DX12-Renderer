@@ -5,7 +5,7 @@
 #include <corecrt_math.h>
 
 #include <random>
-
+#define LEFT_HANDED true
 namespace Utils::Math
 {
 using namespace DirectX;
@@ -238,4 +238,64 @@ inline DirectX::XMFLOAT4X4 MatCast(const DirectX::XMMATRIX& Mat)
 	DirectX::XMFLOAT4X4 other;
 	XMStoreFloat4x4(&other, Mat);
 	return other;
+}
+
+inline DirectX::XMMATRIX MatrixPerspective(float Fov, float Aspect, float NearZ, float FarZ)
+{
+	if (LEFT_HANDED)
+	{
+		return DirectX::XMMatrixPerspectiveFovLH(Fov, Aspect, NearZ, FarZ);
+	}
+	else
+	{
+		return DirectX::XMMatrixPerspectiveFovRH(Fov, Aspect, NearZ, FarZ);
+	}
+}
+
+inline auto MatrixLookAt(const DirectX::XMFLOAT3& Eye, const DirectX::XMFLOAT3& Target, const DirectX::XMFLOAT3& Up)
+{
+	if (LEFT_HANDED)
+	{
+		return DirectX::XMMatrixLookAtLH(Load(Eye), Load(Target), Load(Up));
+	}
+	else
+	{
+		return DirectX::XMMatrixLookAtRH(Load(Eye), Load(Target), Load(Up));
+	}
+}
+
+inline auto MatrixLookAt(const DirectX::XMVECTOR& Eye, const DirectX::XMVECTOR& Target, const DirectX::XMVECTOR& Up)
+{
+	if (LEFT_HANDED)
+	{
+		return DirectX::XMMatrixLookAtLH(Eye, Target, Up);
+	}
+	else
+	{
+		return DirectX::XMMatrixLookAtRH(Eye, Target, Up);
+	}
+}
+
+inline auto MatrixOrthographic(float Width, float Height, float NearZ, float FarZ)
+{
+	if (LEFT_HANDED)
+	{
+		return DirectX::XMMatrixOrthographicLH(Width, Height, NearZ, FarZ);
+	}
+	else
+	{
+		return DirectX::XMMatrixOrthographicRH(Width, Height, NearZ, FarZ);
+	}
+}
+
+inline auto MatrixOrthographicOffCenter(float Left, float Right, float Bottom, float Top, float NearZ, float FarZ)
+{
+	if (LEFT_HANDED)
+	{
+		return DirectX::XMMatrixOrthographicOffCenterLH(Left, Right, Bottom, Top, NearZ, FarZ);
+	}
+	else
+	{
+		return DirectX::XMMatrixOrthographicOffCenterRH(Left, Right, Bottom, Top, NearZ, FarZ);
+	}
 }
