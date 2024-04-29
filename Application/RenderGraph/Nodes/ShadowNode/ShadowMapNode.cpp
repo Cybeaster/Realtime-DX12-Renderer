@@ -10,7 +10,7 @@ ORenderTargetBase* OShadowMapNode::Execute(ORenderTargetBase* RenderTarget)
 	auto pso = FindPSOInfo(PSO);
 	for (auto map : OEngine::Get()->GetShadowMaps())
 	{
-		if (map->ConsumeUpdate())
+		if (map->ConsumeUpdate() && map->IsValid())
 		{
 			CommandQueue->SetRenderTarget(map);
 			CommandQueue->ResourceBarrier(map, D3D12_RESOURCE_STATE_DEPTH_WRITE);

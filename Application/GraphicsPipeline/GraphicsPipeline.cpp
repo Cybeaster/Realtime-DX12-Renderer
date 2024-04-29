@@ -10,8 +10,9 @@ void SPSOGraphicsDescription::BuildPipelineState(ID3D12Device* Device)
 		.NumElements = static_cast<uint32_t>(RootSignature->InputElementDescs.size())
 	};
 	RootSignature->Type = EPSOType::Graphics;
-
 	THROW_IF_FAILED(Device->CreateGraphicsPipelineState(&PSODesc, IID_PPV_ARGS(&PSO)));
+	auto signature = UTF8ToWString(Name) + L"_PipelineStateObject";
+	PSO->SetName(signature.c_str());
 }
 
 void SPSOComputeDescription::BuildPipelineState(ID3D12Device* Device)
@@ -19,6 +20,8 @@ void SPSOComputeDescription::BuildPipelineState(ID3D12Device* Device)
 	PSODesc.pRootSignature = RootSignature->RootSignatureParams.RootSignature.Get();
 	RootSignature->Type = EPSOType::Compute;
 	THROW_IF_FAILED(Device->CreateComputePipelineState(&PSODesc, IID_PPV_ARGS(&PSO)));
+	auto signature = UTF8ToWString(Name) + L"_PipelineStateObject";
+	PSO->SetName(signature.c_str());
 }
 
 void SShaderPipelineDesc::AddRootParameter(const D3D12_ROOT_PARAMETER1& RootParameter, const wstring& Name)

@@ -9,7 +9,6 @@
 void OShadowDebugNode::SetupCommonResources()
 {
 	PROFILE_SCOPE();
-	auto resource = OEngine::Get()->CurrentFrameResource;
 	OEngine::Get()->SetDescriptorHeap(EResourceHeapType::Default);
 	auto ssao = OEngine::Get()->GetSSAORT();
 	auto pso = FindPSOInfo(PSO);
@@ -18,8 +17,7 @@ void OShadowDebugNode::SetupCommonResources()
 	//CommandQueue->SetResource("gDirectionalLights", resource->DirectionalLightBuffer->GetGPUAddress(), PSO);
 	//CommandQueue->SetResource("gPointLights", resource->PointLightBuffer->GetGPUAddress(), PSO);
 	//CommandQueue->SetResource("gSpotLights", resource->SpotLightBuffer->GetGPUAddress(), PSO);
-	//CommandQueue->SetResource("gShadowMaps", OEngine::Get()->GetRenderGroupStartAddress(ERenderGroup::ShadowTextures), PSO);
-
+	CommandQueue->SetResource("gShadowMaps", OEngine::Get()->GetRenderGroupStartAddress(ShadowTextures), pso);
 	CommandQueue->SetResource("gSsaoMap", OEngine::Get()->GetSSAORT()->GetAmbientMap0SRV().GPUHandle, pso);
 	CommandQueue->SetResource("gNormalMap", OEngine::Get()->GetSSAORT()->GetNormalMapSRV().GPUHandle, pso);
 	CommandQueue->SetResource("gDepthMap", ssao->GetDepthMapSRV().GPUHandle, pso);

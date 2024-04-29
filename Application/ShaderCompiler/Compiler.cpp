@@ -31,7 +31,9 @@ bool OShaderCompiler::CompileShaders(vector<SPipelineStage>& OutPipelines, SShad
 		shader.Shader = temp.get();
 		OutResult.push_back(std::move(temp));
 	}
-	OutShadersPipeline.RootSignatureParams.RootSignature = BuildRootSignature(OutShadersPipeline.BuildParameterArray(), Utils::GetStaticSamplers(), OutShadersPipeline.RootSignatureParams.RootSignatureDesc);
+	auto rootSig = BuildRootSignature(OutShadersPipeline.BuildParameterArray(), Utils::GetStaticSamplers(), OutShadersPipeline.RootSignatureParams.RootSignatureDesc);
+	OutShadersPipeline.RootSignatureParams.RootSignature = rootSig;
+
 	return true;
 }
 

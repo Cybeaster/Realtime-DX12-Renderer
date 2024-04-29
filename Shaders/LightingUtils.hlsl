@@ -80,16 +80,6 @@ float3 BlinnPhong(float3 lightStrength, float3 lightVec, float3 normal, float3 t
 	return (mat.DiffuseAlbedo.rgb + specAlbedo) * lightStrength;
 }
 
-
-//
-
-//struct Material
-///	float4 DiffuseAlbedo;
-	//float3 FresnelR0;
-	//float Shininess;
-	//float Roughness;
-//};
-
 float3 BRDF(float3 View, float3 Light, float3 Normal, Material Mat)
 {
 	float3 h = normalize(View + Light);

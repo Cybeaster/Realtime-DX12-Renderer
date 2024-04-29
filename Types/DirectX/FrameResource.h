@@ -49,6 +49,7 @@ struct SFrameResource
 	void SetPointLight(UINT LightCount);
 	void SetSpotLight(UINT LightCount);
 	void SetSSAO();
+	void SetFrusturmCorners();
 	TUploadBuffer<SPassConstants> PassCB = nullptr;
 	TUploadBuffer<HLSL::MaterialData> MaterialBuffer = nullptr;
 	TUploadBuffer<SInstanceData> InstanceBuffer = nullptr;
@@ -56,7 +57,7 @@ struct SFrameResource
 	TUploadBuffer<HLSL::DirectionalLight> DirectionalLightBuffer;
 	TUploadBuffer<HLSL::PointLight> PointLightBuffer;
 	TUploadBuffer<HLSL::SpotLight> SpotLightBuffer;
-
+	TUploadBuffer<HLSL::FrustrumCorners> FrusturmCornersBuffer;
 	// Fence value to mark commands up to this fence point. This lets us
 	// check if these frame resources are still in use by the GPU.
 	UINT64 Fence = 0;

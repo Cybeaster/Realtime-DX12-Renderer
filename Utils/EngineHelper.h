@@ -131,7 +131,7 @@ inline auto CreateLightSource(const SSpotLightPayload& Params)
 	SRenderItemParams params;
 	params.MaterialParams.Material = FindMaterial("White");
 	auto ri = engine->BuildRenderItemFromMesh(std::move(mesh), params);
-	auto component = engine->AddLightingComponent(ri, ELightType::Spot);
+	auto component = engine->AddSpotLightComponent(ri);
 	component->SetSpotLight(Params);
 	return ri;
 }
@@ -144,7 +144,7 @@ inline auto CreateLightSource(const SDirectionalLightPayload& Params)
 	SRenderItemParams params;
 	params.MaterialParams.Material = FindMaterial("White");
 	auto ri = engine->BuildRenderItemFromMesh(std::move(mesh), params);
-	auto component = engine->AddLightingComponent(ri, ELightType::Directional);
+	auto component = engine->AddDirectionalLightComponent(ri);
 	component->SetDirectionalLight(Params);
 	return ri;
 }
@@ -157,7 +157,7 @@ inline auto CreateLightSource(const string& Category, const SPointLightPayload& 
 	SRenderItemParams params;
 	params.MaterialParams.Material = FindMaterial("White");
 	auto ri = engine->BuildRenderItemFromMesh(std::move(mesh), params);
-	auto component = engine->AddLightingComponent(ri, ELightType::Point);
+	auto component = engine->AddPointLightComponent(ri);
 	component->SetPointLight(Params);
 	return ri;
 }

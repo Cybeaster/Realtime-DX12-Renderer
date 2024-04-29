@@ -124,10 +124,17 @@ inline void ComputeTangent(
 }
 } // namespace Utils::Math
 
-inline DirectX::XMMATRIX Inverse(const DirectX::XMMATRIX& Mat)
+inline DirectX::XMMATRIX Inverse(const DirectX::XMMATRIX& Mat, bool WithDet = true)
 {
-	auto det = XMMatrixDeterminant(Mat);
-	return XMMatrixInverse(&det, Mat);
+	if (WithDet)
+	{
+		auto det = XMMatrixDeterminant(Mat);
+		return XMMatrixInverse(&det, Mat);
+	}
+	else
+	{
+		return XMMatrixInverse(nullptr, Mat);
+	}
 }
 
 inline void Inverse(DirectX::XMMATRIX& OutMat)
@@ -149,6 +156,11 @@ inline DirectX::XMMATRIX Transpose(const DirectX::XMMATRIX& Mat)
 inline void Put(DirectX::XMFLOAT4X4& OutOther, const DirectX::XMMATRIX& Mat)
 {
 	XMStoreFloat4x4(&OutOther, Mat);
+}
+
+inline void Put(DirectX::XMFLOAT4& OutOther, const DirectX::XMVECTOR& Vec)
+{
+	XMStoreFloat4(&OutOther, Vec);
 }
 
 inline void Put(DirectX::XMFLOAT3& OutOther, const DirectX::XMVECTOR& Vec)
@@ -298,4 +310,97 @@ inline auto MatrixOrthographicOffCenter(float Left, float Right, float Bottom, f
 	{
 		return DirectX::XMMatrixOrthographicOffCenterRH(Left, Right, Bottom, Top, NearZ, FarZ);
 	}
+}
+
+static DirectX::XMFLOAT3 TransformTransposed(const DirectX::XMFLOAT3& point, const DirectX::XMFLOAT4X4& matrix)
+{
+	DirectX::XMFLOAT3 result = {};
+	DirectX::XMFLOAT4 temp(point.x, point.y, point.z, 1); //need a 4-part vector in order to multiply by a 4x4 matrix
+	DirectX::XMFLOAT4 temp2 = {};
+
+	temp2.x = temp.x * matrix._11 + temp.y * matrix._12 + temp.z * matrix._13 + temp.w * matrix._14;
+	temp2.y = temp.x * matrix._21 + temp.y * matrix._22 + temp.z * matrix._23 + temp.w * matrix._24;
+	temp2.z = temp.x * matrix._31 + temp.y * matrix._32 + temp.z * matrix._33 + temp.w * matrix._34;
+	temp2.w = temp.x * matrix._41 + temp.y * matrix._42 + temp.z * matrix._43 + temp.w * matrix._44;
+
+	result.x = temp2.x / temp2.w; //view projection matrices make use of the W component
+	result.y = temp2.y / temp2.w;
+	result.z = temp2.z / temp2.w;
+
+	return result;
+}
+
+inline auto GetX(const DirectX::XMFLOAT3& Vec)
+{
+	return Vec.x;
+}
+
+inline auto GetY(const DirectX::XMFLOAT3& Vec)
+{
+	return Vec.y;
+}
+
+inline auto GetZ(const DirectX::XMFLOAT3& Vec)
+{
+	return Vec.z;
+}
+
+inline auto GetX(const DirectX::XMFLOAT2& Vec)
+{
+	return Vec.x;
+}
+
+inline auto GetY(const DirectX::XMFLOAT2& Vec)
+{
+	return Vec.y;
+}
+
+inline auto GetX(const DirectX::XMFLOAT4& Vec)
+{
+	return Vec.x;
+}
+
+inline auto GetY(const DirectX::XMFLOAT4& Vec)
+{
+	return Vec.y;
+}
+
+inline auto GetZ(const DirectX::XMFLOAT4& Vec)
+{
+	return Vec.z;
+}
+
+inline auto GetW(const DirectX::XMFLOAT4& Vec)
+{
+	return Vec.w;
+}
+
+inline auto GetW(const DirectX::XMFLOAT3& Vec)
+{
+	return 1.0f;
+}
+
+inline auto GetW(const DirectX::XMFLOAT2& Vec)
+{
+	return 1.0f;
+}
+
+inline auto GetX(const DirectX::XMVECTOR& Vec)
+{
+	return DirectX::XMVectorGetX(Vec);
+}
+
+inline auto GetY(const DirectX::XMVECTOR& Vec)
+{
+	return DirectX::XMVectorGetY(Vec);
+}
+
+inline auto GetZ(const DirectX::XMVECTOR& Vec)
+{
+	return DirectX::XMVectorGetZ(Vec);
+}
+
+inline auto GetW(const DirectX::XMVECTOR& Vec)
+{
+	return DirectX::XMVectorGetW(Vec);
 }

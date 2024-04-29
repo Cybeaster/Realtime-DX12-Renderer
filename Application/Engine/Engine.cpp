@@ -245,13 +245,13 @@ void OEngine::UpdateLightCB(const UpdateEventArgs& Args) const
 				switch (component->GetLightType())
 				{
 				case ELightType::Directional:
-					cb->DirectionalLightBuffer->CopyData(dirIndex, component->GetDirectionalLight());
+					cb->DirectionalLightBuffer->CopyData(dirIndex, Cast<ODirectionalLightComponent>(component)->GetDirectionalLight());
 					break;
 				case ELightType::Point:
-					cb->PointLightBuffer->CopyData(pointIndex, component->GetPointLight());
+					cb->PointLightBuffer->CopyData(pointIndex, Cast<OPointLightComponent>(component)->GetPointLight());
 					break;
 				case ELightType::Spot:
-					cb->SpotLightBuffer->CopyData(spotIndex, component->GetSpotLight());
+					cb->SpotLightBuffer->CopyData(spotIndex, Cast<OSpotLightComponent>(component)->GetSpotLight());
 					break;
 				}
 			}
@@ -316,6 +316,15 @@ void OEngine::DrawFullScreenQuad()
 	commandList->IASetIndexBuffer(nullptr);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	commandList->DrawInstanced(6, 1, 0, 0);
+}
+
+void OEngine::DrawOnePoint()
+{
+	const auto commandList = GetCommandQueue()->GetCommandList();
+	commandList->IASetVertexBuffers(0, 0, nullptr);
+	commandList->IASetIndexBuffer(nullptr);
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+	commandList->DrawInstanced(1, 1, 0, 0);
 }
 
 void OEngine::InitUIManager()
@@ -449,6 +458,7 @@ void OEngine::BuildDescriptorHeaps()
 void OEngine::PostTestInit()
 {
 	PROFILE_SCOPE()
+	FillExpectedShadowMaps();
 	BuildDescriptorHeaps();
 	Window->InitRenderObject();
 	BuildFrameResource(GetPassCountRequired());
@@ -519,6 +529,7 @@ void OEngine::BuildFrameResource(uint32_t Count)
 		frameResource->SetPointLight(GetLightComponentsCount());
 		frameResource->SetSpotLight(GetLightComponentsCount());
 		frameResource->SetSSAO();
+		frameResource->SetFrusturmCorners();
 		FrameResources.push_back(std::move(frameResource));
 	}
 	OnFrameResourceChanged.Broadcast();
@@ -863,6 +874,17 @@ bool OEngine::GetMSAAState(UINT& Quality) const
 	return Msaa4xState;
 }
 
+void OEngine::FillExpectedShadowMaps()
+{
+	PROFILE_SCOPE();
+	int32_t currSize = MAX_SHADOW_MAPS - ShadowMaps.size();
+	while (currSize > 0)
+	{
+		BuildRenderObject<OShadowMap>(ShadowTextures, Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), DXGI_FORMAT_R24G8_TYPELESS);
+		currSize--;
+	}
+}
+
 void OEngine::FillDescriptorHeaps()
 {
 	PROFILE_SCOPE();
@@ -908,7 +930,11 @@ void OEngine::FillDescriptorHeaps()
 	build2DTextures();
 	build3DTextures();
 
-	std::for_each(RenderGroups.begin(), RenderGroups.end(), [&](const auto& objects) {
+	std::ranges::for_each(RenderGroups, [&](const auto& objects) {
+		if (objects.first == ERenderGroup::None)
+		{
+			return;
+		}
 		std::for_each(objects.second.begin(), objects.second.end(), [&](const auto& id) {
 			GetObjectByUUID<IRenderObject>(id)->BuildDescriptors(&DefaultGlobalHeap);
 		});
@@ -1582,15 +1608,43 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(SMeshGeometry* Mesh, const string&
 	return res;
 }
 
-OLightComponent* OEngine::AddLightingComponent(ORenderItem* Item, const ELightType& Type)
+OShadowMap* OEngine::CreateShadowMap()
+{
+	uint32_t componentNum = ShadowMaps.size();
+	auto newMap = BuildRenderObject<OShadowMap>(ShadowTextures, Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), DXGI_FORMAT_R24G8_TYPELESS);
+	ShadowMaps.push_back(newMap);
+	newMap->SetShadowMapIndex(componentNum);
+	return newMap;
+}
+
+OSpotLightComponent* OEngine::AddSpotLightComponent(ORenderItem* Item)
 {
 	uint32_t componentNum = LightComponents.size();
-	const auto res = Item->AddComponent<OLightComponent>(componentNum, componentNum, componentNum, Type);
+	const auto res = Item->AddComponent<OSpotLightComponent>(componentNum);
 	LightComponents.push_back(res);
-	auto newShadow = BuildRenderObject<OShadowMap>(ERenderGroup::ShadowTextures, Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), DXGI_FORMAT_R24G8_TYPELESS, res);
-	ShadowMaps.push_back(newShadow);
-	newShadow->SetLightIndex(componentNum);
+	res->SetShadowMap(CreateShadowMap());
 	return res;
+}
+
+OPointLightComponent* OEngine::AddPointLightComponent(ORenderItem* Item)
+{
+	uint32_t componentNum = LightComponents.size();
+	const auto res = Item->AddComponent<OPointLightComponent>(componentNum);
+	LightComponents.push_back(res);
+	auto newShadow = BuildRenderObject<OShadowMap>(ShadowTextures, Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), DXGI_FORMAT_R24G8_TYPELESS);
+	ShadowMaps.push_back(newShadow);
+	newShadow->SetShadowMapIndex(componentNum);
+	return res;
+}
+
+ODirectionalLightComponent* OEngine::AddDirectionalLightComponent(ORenderItem* Item)
+{
+	uint32_t componentNum = LightComponents.size();
+	auto light = Item->AddComponent<ODirectionalLightComponent>(componentNum);
+	LightComponents.push_back(light);
+	auto csm = BuildRenderObject<OCSM>(None, Device.Get(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), DXGI_FORMAT_R24G8_TYPELESS);
+	light->SetCSM(csm);
+	return light;
 }
 
 void OEngine::BuildPickRenderItem()

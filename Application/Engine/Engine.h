@@ -11,6 +11,7 @@
 #include "MaterialManager/MaterialManager.h"
 #include "MeshGenerator/MeshGenerator.h"
 #include "RenderGraph/Graph/RenderGraph.h"
+#include "RenderTarget/CSM/Csm.h"
 #include "RenderTarget/CubeMap/DynamicCubeMap/DynamicCubeMapTarget.h"
 #include "RenderTarget/NormalTangetDebugTarget/NormalTangentDebugTarget.h"
 #include "RenderTarget/RenderTarget.h"
@@ -26,6 +27,7 @@
 class OSSAORenderTarget;
 enum ERenderGroup
 {
+	None,
 	Textures2D,
 	Textures3D,
 	RenderTargets,
@@ -110,7 +112,7 @@ public:
 	OSSAORenderTarget* GetSSAORT() const;
 	void CreateWindow();
 	bool GetMSAAState(UINT& Quality) const;
-
+	void FillExpectedShadowMaps();
 	vector<ORenderItem*>& GetRenderItems(const SRenderLayer& Type);
 	D3D12_RENDER_TARGET_BLEND_DESC GetTransparentBlendState();
 	D3D12_SHADER_BYTECODE GetShaderByteCode(const string& ShaderName);
@@ -134,7 +136,10 @@ public:
 	ORenderItem* BuildRenderItemFromMesh(SMeshGeometry* Mesh, const SRenderItemParams& Params);
 	ORenderItem* BuildRenderItemFromMesh(SMeshGeometry* Mesh, const string& Submesh, const SRenderItemParams& Params);
 
-	OLightComponent* AddLightingComponent(ORenderItem* Item, const ELightType& Type);
+	OSpotLightComponent* AddSpotLightComponent(ORenderItem* Item);
+	OPointLightComponent* AddPointLightComponent(ORenderItem* Item);
+	ODirectionalLightComponent* AddDirectionalLightComponent(ORenderItem* Item);
+
 	void BuildPickRenderItem();
 
 	SMeshGeometry* FindSceneGeometry(const string& Name) const;
@@ -174,7 +179,7 @@ public:
 	void BuildOffscreenRT();
 	OOffscreenTexture* GetOffscreenRT() const;
 	void DrawFullScreenQuad();
-
+	void DrawOnePoint();
 	template<typename T>
 	TUUID AddFilter();
 
@@ -344,6 +349,7 @@ public:
 	ORenderGraph* GetRenderGraph() const;
 	ONormalTangentDebugTarget* GetNormalTangentDebugTarget() const;
 	void ReloadShaders();
+	OShadowMap* CreateShadowMap();
 };
 
 template<typename T, typename... Args>

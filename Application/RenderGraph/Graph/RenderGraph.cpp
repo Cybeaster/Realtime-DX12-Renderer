@@ -6,6 +6,7 @@
 #include "Profiler.h"
 #include "RenderGraph/Nodes/CopyNode/CopyRenderNode.h"
 #include "RenderGraph/Nodes/DefaultNode/DefaultRenderNode.h"
+#include "RenderGraph/Nodes/FrustrumDebugNode/FrustumDebugNode.h"
 #include "RenderGraph/Nodes/PostProcessNode/PostProcessNode.h"
 #include "RenderGraph/Nodes/PresentNode/PresentNode.h"
 #include "RenderGraph/Nodes/ReflectionNode/ReflectionNode.h"
@@ -137,6 +138,11 @@ unique_ptr<ORenderNode> ORenderGraph::ResolveNodeType(const string& Type)
 	{
 		return make_unique<TangentNormalDebugNode>();
 	}
+	else if (Type == "FrustumDebug")
+	{
+		return make_unique<OFrustumDebugNode>();
+	}
+
 	LOG(Render, Warning, "Node type not found: {}", TEXT(Type));
 	return make_unique<ODefaultRenderNode>();
 }

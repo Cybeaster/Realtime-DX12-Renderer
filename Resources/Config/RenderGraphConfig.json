@@ -26,16 +26,9 @@
       {
         "Name": "Opaque",
         "PSO": "Opaque",
-        "NextNode": "ShadowDebug",
+        "NextNode": "TangentNormalDebug",
         "RenderLayer": "Opaque",
         "Enabled": true
-      },
-      {
-        "Name": "ShadowDebug",
-        "PSO": "ShadowDebug",
-        "NextNode": "TangentNormalDebug",
-        "RenderLayer": "ShadowDebug",
-        "Enabled": false
       },
       {
         "Name": "TangentNormalDebug",
@@ -82,8 +75,22 @@
       {
         "Name": "CopyTarget",
         "PSO": "None",
-        "NextNode": "PostProcess",
+        "NextNode": "ShadowDebug",
         "RenderLayer": "None",
+        "Enabled": true
+      },
+      {
+        "Name": "ShadowDebug",
+        "PSO": "ShadowDebug",
+        "NextNode": "FrustumDebug",
+        "RenderLayer": "ShadowDebug",
+        "Enabled": false
+      },
+      {
+        "Name": "FrustumDebug",
+        "PSO": "FrustumDebug",
+        "NextNode": "PostProcess",
+        "RenderLayer": "ShadowDebug",
         "Enabled": true
       },
       {

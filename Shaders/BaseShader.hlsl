@@ -16,8 +16,8 @@ struct VertexOut
 	float3 NormalW : NORMAL;
 	float3 TangentW : TANGENT;
 	float2 TexC : TEXCOORD;
-	float4 ShadowPositionsH[MAX_SHADOW_MAPS] : TEXCOORD3;
-	nointerpolation uint LightIndices[MAX_SHADOW_MAPS] : TEXCOORD1;
+	float4 ShadowPositionsH[SHADOW_MAPS_NUM] : TEXCOORD3;
+	nointerpolation uint LightIndices[SHADOW_MAPS_NUM] : TEXCOORD1;
 	nointerpolation uint MaterialIndex : MATERIALINDEX;
 };
 
@@ -88,6 +88,7 @@ float4 PS(VertexOut pin)
 	pin.NormalW = normalize(pin.NormalW);
 	pin.TangentW = normalize(pin.TangentW);
 
+
 	float reflectance = CalcFresnelR0(matData.IndexOfRefraction); //TODO fix if IndexOfRefraction == 0
     float3 f0 = lerp(F0_COEFF * SQUARE(reflectance), diffuseAlbedo,  matData.Metalness);
 
@@ -102,7 +103,7 @@ float4 PS(VertexOut pin)
 		ambientAccess = gSsaoMap.Sample(gsamLinearWrap, pin.SsaoPosH.xy, 0.0f).r;
 	}
 
-    float shadowFactor[MAX_SHADOW_MAPS];
+    float shadowFactor[SHADOW_MAPS_NUM];
     GetShadowFactor(shadowFactor,  pin.LightIndices,pin.ShadowPositionsH);
 
 	//diffuse incorporating metalness
@@ -119,7 +120,7 @@ float4 PS(VertexOut pin)
         idx++;
     }
 	directLighting *= 10;
-    return float4(bumpedNormalW,1);
+    //return float4(bumpedNormalW,1);
 
 	// Light terms.
 	float4 ambient =  ambientAccess * gAmbientLight * float4(diffuseAlbedo,1.0);

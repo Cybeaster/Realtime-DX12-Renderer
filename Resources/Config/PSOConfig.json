@@ -936,7 +936,7 @@
       "RasterizerState": {
         "FrontCounterClockwise": true,
         "FillMode": "Solid",
-        "CullMode": "Back",
+        "CullMode": "None",
         "DepthBias": 0,
         "DepthBiasClamp": 0,
         "SlopeScaledDepthBias": 0,
@@ -948,8 +948,8 @@
       },
       "DepthStencilState": {
         "DepthEnable": true,
-        "DepthWriteMask": "All",
-        "DepthFunc": "Less",
+        "DepthWriteMask": "Zero",
+        "DepthFunc": "Always",
         "StencilEnable": false,
         "StencilReadMask": 255,
         "StencilWriteMask": 255,
@@ -1188,6 +1188,77 @@
         "VertexShader": "TangentNormalDebug",
         "GeometryShader": "TangentNormalDebug",
         "PixelShader": "TangentNormalDebug"
+      },
+      "SampleMask": "0xffffffff",
+      "PrimitiveTopologyType": "Triangle",
+      "RenderTargetFormats": [
+        "R8G8B8A8_UNORM"
+      ],
+      "DepthStencilFormat": "D24_UNORM_S8_UINT",
+      "NumRenderTargets": 1,
+      "SampleDesc": {
+        "Count": 1,
+        "Quality": 0
+      },
+      "BlendState": {
+        "AlphaToCoverageEnable": false,
+        "IndependentBlendEnable": false,
+        "RenderTarget": [
+          {
+            "BlendEnable": false,
+            "LogicOpEnable": false,
+            "SrcBlend": "One",
+            "DestBlend": "Zero",
+            "BlendOp": "Add",
+            "SrcBlendAlpha": "One",
+            "DestBlendAlpha": "Zero",
+            "BlendOpAlpha": "Add",
+            "LogicOp": "NoOp",
+            "RenderTargetWriteMask": "All"
+          }
+        ]
+      },
+      "RasterizerState": {
+        "FrontCounterClockwise": true,
+        "FillMode": "Solid",
+        "CullMode": "Back",
+        "DepthBias": 0,
+        "DepthBiasClamp": 0,
+        "SlopeScaledDepthBias": 0,
+        "DepthClipEnable": true,
+        "MultisampleEnable": false,
+        "AntialiasedLineEnable": false,
+        "ForcedSampleCount": 0,
+        "ConservativeRaster": "Off"
+      },
+      "DepthStencilState": {
+        "DepthEnable": true,
+        "DepthWriteMask": "All",
+        "DepthFunc": "Less",
+        "StencilEnable": false,
+        "StencilReadMask": 255,
+        "StencilWriteMask": 255,
+        "FrontFace": {
+          "StencilFailOp": "Keep",
+          "StencilDepthFailOp": "Keep",
+          "StencilPassOp": "Keep",
+          "StencilFunc": "Always"
+        },
+        "BackFace": {
+          "StencilFailOp": "Keep",
+          "StencilDepthFailOp": "Keep",
+          "StencilPassOp": "Keep",
+          "StencilFunc": "Always"
+        }
+      }
+    },
+    {
+      "Name": "FrustumDebug",
+      "Type": "Graphics",
+      "RootSignature": "BaseShader",
+      "ShaderPipeline": {
+        "VertexShader": "BaseShader",
+        "PixelShader": "BaseShader"
       },
       "SampleMask": "0xffffffff",
       "PrimitiveTopologyType": "Triangle",

@@ -125,6 +125,7 @@ void OCamera::SetLens(float _FovY, float _Aspect, float Zn, float Zf)
 
 	DirectX::XMStoreFloat4x4(&ProjectionMatrix, projection);
 	BoundingFrustum::CreateFromMatrix(Frustum, projection);
+	UpdateViewMatrix();
 }
 
 void OCamera::Strafe(float D)

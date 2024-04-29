@@ -73,6 +73,11 @@ public:
 	void FillPassConstant(SPassConstants& OutOther) const;
 
 	DirectX::XMFLOAT4X4 GetProjectionByIndex(int32_t Index) const;
+
+	DirectX::XMFLOAT4X4 NearProjectionMatrix;
+	DirectX::XMFLOAT4X4 MidProjectionMatrix;
+	DirectX::XMFLOAT4X4 FarProjectionMatrix;
+
 private:
 	DirectX::XMFLOAT3 Position = { 0.0f, 0.0f, 0.0f };
 	DirectX::XMFLOAT3 Target = { 0.0f, 0.0f, 1.0f };
@@ -91,10 +96,6 @@ private:
 
 	DirectX::XMFLOAT4X4 ViewMatrix;
 	DirectX::XMFLOAT4X4 ProjectionMatrix;
-
-	DirectX::XMFLOAT4X4 NearProjectionMatrix;
-	DirectX::XMFLOAT4X4 MidProjectionMatrix;
-	DirectX::XMFLOAT4X4 FarProjectionMatrix;
 
 	bool bViewDirty = true;
 	OWindow* Window;

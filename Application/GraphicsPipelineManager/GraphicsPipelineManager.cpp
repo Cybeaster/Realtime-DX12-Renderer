@@ -122,6 +122,8 @@ void OGraphicsPipelineManager::LoadShaders()
 		}
 
 		newSignature->PipelineName = pipeline.first;
+		auto signatureName = UTF8ToWString(newSignature->PipelineName) + L"_RootSignature";
+		newSignature->RootSignatureParams.RootSignature->SetName(signatureName.c_str());
 
 		SShadersPipeline shadersPipeline;
 		shadersPipeline.BuildFromStages(pipeline.second);

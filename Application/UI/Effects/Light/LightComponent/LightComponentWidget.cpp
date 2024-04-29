@@ -14,14 +14,14 @@ void OLightComponentWidget::Draw()
 		{
 		case ELightType::Directional:
 		{
-			auto& dirLight = LightComponent->GetDirectionalLight();
+			auto& dirLight = Cast<ODirectionalLightComponent>(LightComponent)->GetDirectionalLight();
 			dirty |= ImGui::DragFloat3("Direction", &dirLight.Direction.x, 0.01, -1.0, 1.0);
 			dirty |= ImGui::ColorEdit3("Color", &dirLight.Intensity.x);
 			break;
 		}
 		case ELightType::Point:
 		{
-			auto& pointLight = LightComponent->GetPointLight();
+			auto& pointLight = Cast<OPointLightComponent>(LightComponent)->GetPointLight();
 			dirty |= ImGui::ColorEdit3("Color", &pointLight.Intensity.x);
 			dirty |= ImGui::InputFloat("Falloff Start", &pointLight.FalloffStart, 0.1f);
 			dirty |= ImGui::InputFloat("Falloff End", &pointLight.FalloffEnd, 0.1f);
@@ -29,7 +29,7 @@ void OLightComponentWidget::Draw()
 		}
 		case ELightType::Spot:
 		{
-			auto& spotLight = LightComponent->GetSpotLight();
+			auto& spotLight = Cast<OSpotLightComponent>(LightComponent)->GetSpotLight();
 			dirty |= ImGui::DragFloat3("Direction", &spotLight.Direction.x, 0.01, -1.0, 1.0);
 			dirty |= ImGui::ColorEdit3("Color", &spotLight.Intensity.x);
 			dirty |= ImGui::DragFloat("Falloff Start", &spotLight.FalloffStart, 0.1f, 0.1f, spotLight.FalloffEnd - 0.1f);

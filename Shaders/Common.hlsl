@@ -1,5 +1,3 @@
-
-
 // Include structures and functions for lighting.
 #include "LightingUtils.hlsl"
 #include "Samplers.hlsl"
@@ -14,10 +12,8 @@ struct InstanceData
 	float GridSpatialStep;
 };
 
-
-
-Texture2D gTextureMaps[TEXTURE_MAPS_NUM] : register(t0);
-Texture2D gShadowMaps[SHADOW_MAPS_NUM] : register(t1,space2);
+Texture2D gTextureMaps[TEXTURE_MAPS_NUM] : register(t0,space0);
+Texture2D gShadowMaps[MAX_SHADOW_MAPS] : register(t1,space2);
 
 TextureCube gCubeMap : register(t1,space3);
 Texture2D gSsaoMap   : register(t2,space3);
@@ -30,7 +26,7 @@ StructuredBuffer<PointLight> gPointLights : register(t3, space4);
 StructuredBuffer<DirectionalLight> gDirectionalLights : register(t4, space4);
 
 
-cbuffer cbPass : register(b0)
+cbuffer CB_PASS : register(b0)
 {
 	float4x4 gView;
 	float4x4 gInvView;
@@ -103,15 +99,33 @@ float3 ComputeHeightMap(MaterialData matData, float3 NormalW, float3 TangentW, f
 }
 
 
-void FindShadowPosition(out float4 ShadowPositions[MAX_SHADOW_MAPS], float4 PosW, out uint LightIndices[MAX_SHADOW_MAPS])
+void FindShadowPosition(out float4 ShadowPositions[SHADOW_MAPS_NUM], float4 PosW, out uint LightIndices[SHADOW_MAPS_NUM])
 {
     uint indx = 0;
     if(gNumDirLights > 0)
     {
-        LightIndices[indx] = gDirectionalLights[0].ShadowMapIndex;
-        ShadowPositions[indx] = mul(PosW,  gDirectionalLights[0].Transform);
-        indx++;
-    }
+        float distFromEyeToCenter = length(PosW.rgb - gEyePosW);
+        DirectionalLight light = gDirectionalLights[0];
+        if(light.ShadowMapDataNear.MaxDistance < distFromEyeToCenter)
+		{
+			LightIndices[indx] = light.ShadowMapDataNear.ShadowMapIndex;
+			ShadowPositions[indx] = mul(PosW, light.ShadowMapDataNear.Transform);
+			indx++;
+		}
+		else if (light.ShadowMapDataMid.MaxDistance < distFromEyeToCenter)
+		{
+			LightIndices[indx] = light.ShadowMapDataMid.ShadowMapIndex;
+			ShadowPositions[indx] = mul(PosW, light.ShadowMapDataMid.Transform);
+			indx++;
+		}
+		else
+		{
+			LightIndices[indx] = light.ShadowMapDataFar.ShadowMapIndex;
+			ShadowPositions[indx] = mul(PosW, light.ShadowMapDataFar.Transform);
+			indx++;
+		}
+	}
+
 
     if(gNumSpotLights > 0)
     {
@@ -153,7 +167,7 @@ float CalcShadowFactor(float4 ShadowPosH,uint ShadowMapIndex)
     return percentLit / 9.0f;
 }
 
-void GetShadowFactor(out float ShadowFactors[MAX_SHADOW_MAPS],uint ShadowMapIndices[MAX_SHADOW_MAPS] ,float4 ShadowPositions[MAX_SHADOW_MAPS])
+void GetShadowFactor(out float ShadowFactors[SHADOW_MAPS_NUM],uint ShadowMapIndices[SHADOW_MAPS_NUM] ,float4 ShadowPositions[SHADOW_MAPS_NUM])
 {
         for (uint i = 0; i < MAX_SHADOW_MAPS; ++i)
         {

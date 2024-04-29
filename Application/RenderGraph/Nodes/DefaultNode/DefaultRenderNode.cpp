@@ -14,7 +14,7 @@ void ODefaultRenderNode::SetupCommonResources()
 	OEngine::Get()->SetDescriptorHeap(EResourceHeapType::Default);
 	auto pso = FindPSOInfo(PSO);
 	CommandQueue->SetPipelineState(pso);
-	CommandQueue->SetResource("cbPass", resource->PassCB->GetGPUAddress(), pso);
+	CommandQueue->SetResource(STRINGIFY_MACRO(CB_PASS), resource->PassCB->GetGPUAddress(), pso);
 	CommandQueue->SetResource("gMaterialData", resource->MaterialBuffer->GetGPUAddress(), pso);
 	CommandQueue->SetResource("gTextureMaps", OEngine::Get()->GetDescriptorHeap()->GetGPUDescriptorHandleForHeapStart(), pso);
 	CommandQueue->SetResource("gCubeMap", GetSkyTextureSRV(), pso);

@@ -242,6 +242,8 @@ set(SRC_FILES
         Types/DirectX/HlslTypes.h
         Application/Engine/RenderTarget/CSM/Csm.cpp
         Application/Engine/RenderTarget/CSM/Csm.h
+        Application/RenderGraph/Nodes/FrustrumDebugNode/FrustumDebugNode.cpp
+        Application/RenderGraph/Nodes/FrustrumDebugNode/FrustumDebugNode.h
 )
 
 

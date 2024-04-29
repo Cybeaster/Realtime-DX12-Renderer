@@ -53,10 +53,13 @@ void OScene::Load() const
 	}
 
 	SRenderItemParams params;
-	params.MaterialParams = FindMaterial("Bricks");
+	params.MaterialParams = FindMaterial("White");
 	params.NumberOfInstances = 1;
 	params.bFrustrumCoolingEnabled = false;
 	params.OverrideLayer = SRenderLayers::ShadowDebug;
+	params.Pickable = false;
+	params.Displayable = false;
+
 	CreateQuadRenderItem("Quad",
 	                     -1.0f,
 	                     1.0f,

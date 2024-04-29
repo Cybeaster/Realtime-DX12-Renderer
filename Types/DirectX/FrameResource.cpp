@@ -74,3 +74,8 @@ void SFrameResource::SetSSAO()
 {
 	SsaoCB = make_unique<OUploadBuffer<SSsaoConstants>>(Device, 1, true, Owner, L"_SsaoBuffer");
 }
+
+void SFrameResource::SetFrusturmCorners()
+{
+	FrusturmCornersBuffer = make_unique<OUploadBuffer<HLSL::FrustrumCorners>>(Device, 1, true, Owner, L"_FrusturmCornersBuffer");
+}
