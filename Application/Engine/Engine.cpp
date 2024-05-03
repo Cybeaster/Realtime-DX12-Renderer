@@ -291,7 +291,7 @@ void OEngine::DrawRenderItemsImpl(SPSODescriptionBase* Description, const vector
 		{
 			renderItem->BindResources(cmd.Get(), Engine->CurrentFrameResource);
 			auto instanceBuffer = Engine->CurrentFrameResource->InstanceBuffer->GetResource();
-			auto location = instanceBuffer->Resource->GetGPUVirtualAddress() + renderItem->StartInstanceLocation * sizeof(SInstanceData);
+			auto location = instanceBuffer->Resource->GetGPUVirtualAddress() + renderItem->StartInstanceLocation * sizeof(HLSL::InstanceData);
 			GetCommandQueue()->SetResource("gInstanceData", location, Description);
 			cmd->DrawIndexedInstanced(
 			    renderItem->ChosenSubmesh->IndexCount,
@@ -312,6 +312,7 @@ OOffscreenTexture* OEngine::GetOffscreenRT() const
 void OEngine::DrawFullScreenQuad()
 {
 	const auto commandList = GetCommandQueue()->GetCommandList();
+	//const auto view = QuadItem->Geometry->VertexBufferView();
 	commandList->IASetVertexBuffers(0, 0, nullptr);
 	commandList->IASetIndexBuffer(nullptr);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -381,60 +382,10 @@ int OEngine::InitScene()
 	LOG(Engine, Log, "Engine::Run")
 
 	GetCommandQueue()->TryResetCommandList();
-
 	SceneManager->LoadScenes();
-
-	/*SRenderItemParams skyParams;
-	skyParams.MaterialParams = FindMaterial("GrassSky");
-	skyParams.NumberOfInstances = 1;
-	skyParams.bFrustrumCoolingEnabled = false;
-	skyParams.OverrideLayer = SRenderLayers::Sky;
-	auto sky = CreateSphereRenderItem("Sky",
-	                                  0.5f,
-	                                  20,
-	                                  20,
-	                                  skyParams);
-	Scale(sky->Instances[0].World, { 5000.0f, 5000.0f, 5000.0f });
-
-	//auto dragon = CreateRenderItem(SRenderLayer::Opaque, "Dragon", GetResourcePath(L"Resources/Models/dragon/dragon.obj"), EParserType::TinyObjLoader, ETextureMapType::None, SRenderItemParams{ FindMaterial("Bricks") });
-	//Scale(dragon->GetDefaultInstance()->World, { 5.f, 5.f, 5.f });
-	SRenderItemParams params;
-	params.MaterialParams = FindMaterial("Bricks");
-	params.NumberOfInstances = 1;
-	params.bFrustrumCoolingEnabled = false;
-	params.OverrideLayer = SRenderLayers::ShadowDebug;
-	auto newQuad = CreateQuadRenderItem("Quad",
-	                                    -1.0f,
-	                                    1.0f,
-	                                    2.0f,
-	                                    2.0f,
-	                                    0.0f,
-	                                    params);
-
-	SRenderItemParams params2;
-	params2.MaterialParams = FindMaterial("White");
-	params2.NumberOfInstances = 1;
-	params2.bFrustrumCoolingEnabled = true;
-	params2.Pickable = false;
-	params2.Displayable = false;
-
-	CreateRenderItem("Sponza", GetResourcePath(L"Resources/Models/sponza/sponza.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
-	//CreateRenderItem("bistro_int", GetResourcePath(L"Resources/Models/bistro/interior.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
-	//CreateRenderItem("bistro_ext", GetResourcePath(L"Resources/Models/bistro/exterior.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
-
-	SSpotLightPayload light;
-	light.Strength = { 0.5f, 0.5f, 0.5f };
-	light.Direction = { 0.55, -1, 0.055 };
-	auto spot = CreateLightSource(light);
-	Translate(spot->Instances[0].World, { -3, 3, 0 });
-
-	SDirectionalLightPayload dir;
-	dir.Intensity = { 0.5f, 0.5f, 0.5f };
-	dir.Direction = { 0.01, -1, 0.01 };
-
-	CreateLightSource(dir);*/
-
+	//QuadItem = CreateQuadRenderItem("Quad", -1.0f, 1.0f, 2.0f, 2.0f, 0.0f, SRenderItemParams{});
 	GetCommandQueue()->ExecuteCommandListAndWait();
+
 	PostTestInit();
 
 	return 0;
@@ -606,6 +557,21 @@ uint32_t OEngine::GetLightComponentsCount() const
 	return 10; // todo fix
 }
 
+void OEngine::UpdateCameraCB()
+{
+	for (auto& frame : FrameResources)
+	{
+		HLSL::CameraMatrixBuffer cb;
+		const auto view = Window->GetCamera()->GetView();
+		const auto proj = Window->GetCamera()->GetProj();
+		const auto viewProj = XMMatrixMultiply(view, proj);
+		const auto invViewProj = Inverse(viewProj);
+		Put(cb.gCamViewProj, Transpose(viewProj));
+		Put(cb.gCamInvViewProj, Transpose(invViewProj));
+		frame->CameraMatrixBuffer->CopyData(0, cb);
+	}
+}
+
 OUIManager* OEngine::GetUIManager() const
 {
 	return UIManager;
@@ -663,6 +629,7 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 		UpdateObjectCB();
 		UpdateLightCB(Args);
 		UpdateSSAOCB();
+		UpdateCameraCB();
 	}
 
 	for (const auto& val : RenderObjects | std::views::values)
@@ -1323,12 +1290,10 @@ void OEngine::PerformFrustrumCulling()
 
 			if (localSpaceFrustum.Contains(e->Bounds) != DirectX::DISJOINT || !bFrustrumCullingEnabled)
 			{
-				SInstanceData data;
+				HLSL::InstanceData data;
 				XMStoreFloat4x4(&data.World, XMMatrixTranspose(world));
 				XMStoreFloat4x4(&data.TexTransform, XMMatrixTranspose(textTransform));
 				data.MaterialIndex = instData[i].MaterialIndex;
-				data.GridSpatialStep = instData[i].GridSpatialStep;
-				data.DisplacementMapTexelSize = instData[i].DisplacementMapTexelSize;
 				currentInstanceBuffer->CopyData(counter++, data);
 				visibleInstanceCount++;
 				RenderedItems.insert(e.get());
@@ -1566,17 +1531,14 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(SMeshGeometry* Mesh, const string&
 		matIdx = mat->MaterialCBIndex;
 		layer = Params.OverrideLayer.value_or(mat->RenderLayer);
 	}
-	else
+	else if (Params.MaterialParams.Material != nullptr)
 	{
 		matIdx = Params.MaterialParams.Material->MaterialCBIndex;
 		layer = Params.OverrideLayer.value_or(SRenderLayers::Opaque);
 	}
 
-	SInstanceData defaultInstance;
+	HLSL::InstanceData defaultInstance;
 	defaultInstance.MaterialIndex = matIdx;
-	CWIN_LOG(defaultInstance.MaterialIndex < 0, Geometry, Error, "Material not found!");
-	defaultInstance.GridSpatialStep = Params.MaterialParams.GridSpatialStep;
-	defaultInstance.DisplacementMapTexelSize = Params.MaterialParams.DisplacementMapTexelSize;
 	Scale(defaultInstance.World, Params.Scale.value_or(XMFLOAT3{ 1, 1, 1 }));
 	Translate(defaultInstance.World, Params.Position.value_or(XMFLOAT3{ 0, 0, 0 }));
 
@@ -1655,7 +1617,7 @@ void OEngine::BuildPickRenderItem()
 	newItem->RenderLayer = SRenderLayers::Highlight;
 	newItem->bTraceable = false;
 
-	SInstanceData defaultInstance;
+	HLSL::InstanceData defaultInstance;
 	defaultInstance.MaterialIndex = newItem->DefaultMaterial->MaterialCBIndex;
 
 	newItem->Instances.push_back(defaultInstance);

@@ -9,7 +9,9 @@ public:
 	DECLARE_DELEGATE(SGeometryUpdate, void);
 
 	OGeometryTransformWidget(DirectX::XMFLOAT3* OutPosition, DirectX::XMFLOAT3* OutRotation, DirectX::XMFLOAT3* OutScale)
-	    : Position(OutPosition), Rotation(OutRotation), Scale(OutScale){};
+	{
+		SetInstanceParameters(OutPosition, OutRotation, OutScale);
+	};
 
 	void Draw() override;
 
@@ -18,6 +20,10 @@ public:
 		Position = OutPosition;
 		Rotation = OutRotation;
 		Scale = OutScale;
+
+		NewPosition = *Position;
+		NewRotation = *Rotation;
+		NewScale = *Scale;
 	}
 
 	SGeometryUpdate& GetOnTransformUpdate()
@@ -27,6 +33,10 @@ public:
 
 private:
 	SGeometryUpdate OnTransformUpdate;
+
+	DirectX::XMFLOAT3 NewPosition;
+	DirectX::XMFLOAT3 NewRotation;
+	DirectX::XMFLOAT3 NewScale;
 
 	DirectX::XMFLOAT3* Position = nullptr;
 	DirectX::XMFLOAT3* Rotation = nullptr;

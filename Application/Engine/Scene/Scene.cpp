@@ -52,6 +52,11 @@ void OScene::Load() const
 		CreateLightSource(dirLight);
 	}
 
+	for (const auto& spotLights : Info.SpotLights)
+	{
+		CreateLightSource(spotLights);
+	}
+
 	SRenderItemParams params;
 	params.MaterialParams = FindMaterial("White");
 	params.NumberOfInstances = 1;

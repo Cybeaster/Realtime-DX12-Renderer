@@ -31,7 +31,7 @@ bool ORenderItem::IsValidChecked() const
 	CWIN_LOG(!bIsValid, Geometry, Error, "RenderLayer is NONE");
 	return bIsValid;
 }
-SInstanceData* ORenderItem::GetDefaultInstance()
+HLSL::InstanceData* ORenderItem::GetDefaultInstance()
 {
 	return &Instances[0];
 }

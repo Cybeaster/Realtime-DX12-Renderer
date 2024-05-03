@@ -58,7 +58,7 @@ public:
 private:
 	bool bIsDirty = true;
 
-	DirectX::XMVECTOR GlobalPosition;
+	DirectX::XMVECTOR Position = {};
 };
 
 //Directional Light component
@@ -76,6 +76,7 @@ public:
 	void InitFrameResource(const TUploadBufferData<HLSL::DirectionalLight>& Spot);
 	void SetPassConstant(SPassConstants& OutConstant) override;
 	void SetCSM(OCSM* InCSM);
+	array<float, 3> CascadeSplits;
 
 private:
 	array<HLSL::ShadowMapData*, 3> MakeShadowMapDataArray();

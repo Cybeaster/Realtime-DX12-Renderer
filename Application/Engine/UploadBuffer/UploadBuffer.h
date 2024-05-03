@@ -8,9 +8,9 @@ class OUploadBuffer
 {
 public:
 	OUploadBuffer(ID3D12Device* Device, UINT ElementCount, bool IsConstantBuffer, IRenderObject* Owner = nullptr, wstring InName = L"");
-	static unique_ptr<OUploadBuffer> Create(ID3D12Device* Device, UINT ElementCount, bool IsConstantBuffer, IRenderObject* Owner)
+	static unique_ptr<OUploadBuffer> Create(ID3D12Device* Device, UINT ElementCount, bool IsConstantBuffer, IRenderObject* Owner, wstring InName = L"")
 	{
-		return make_unique<OUploadBuffer>(Device, ElementCount, IsConstantBuffer, Owner);
+		return make_unique<OUploadBuffer>(Device, ElementCount, IsConstantBuffer, Owner, InName);
 	}
 
 	OUploadBuffer(const OUploadBuffer&) = delete;

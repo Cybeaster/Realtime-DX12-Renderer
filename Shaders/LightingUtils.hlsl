@@ -159,7 +159,7 @@ float3 ComputeSpotLight_BRDF(SpotLight L, Material Mat,float3 Position, float3 N
 //---------------------------------------------------------------------------------------
 // Evaluates the lighting equation for spot lights.
 //---------------------------------------------------------------------------------------
-float3 ComputeSpotLight(SpotLight L, Material mat, float3 pos, float3 normal, float3 toEye)
+float3 ComputeSpotLight_BlinnPhong(SpotLight L, Material mat, float3 pos, float3 normal, float3 toEye)
 {
 	// The vector from the surface to the light.
 	float3 lightVec = L.Position - pos;

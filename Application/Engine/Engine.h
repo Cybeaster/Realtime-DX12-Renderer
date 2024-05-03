@@ -257,6 +257,7 @@ protected:
 	uint32_t GetLightComponentsCount() const;
 
 private:
+	void UpdateCameraCB();
 	void UpdateSSAOCB();
 	void BuildSSAO();
 	void BuildNormalTangentDebugTarget();
@@ -340,6 +341,7 @@ private:
 	ONormalTangentDebugTarget* NormalTangentDebugTarget = nullptr;
 	unordered_set<ORenderItem*> RenderedItems;
 	unique_ptr<OSceneManager> SceneManager;
+	ORenderItem* QuadItem = nullptr;
 
 public:
 	bool bFrustrumCullingEnabled = true;

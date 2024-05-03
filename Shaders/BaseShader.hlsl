@@ -110,6 +110,7 @@ float4 PS(VertexOut pin)
 	Material mat = { diffuseAlbedo * (1.0f - matData.Metalness), f0.rgb, matData.Shininess, 1 -  (matData.Shininess / 100) };
 	BumpedData data = SampleNormalMap(pin.NormalW, pin.TangentW, matData, pin.TexC);
 	float3 bumpedNormalW = data.BumpedNormalW;
+	float4 normalMapSample = data.NormalMapSample;
 
     uint idx = 0;
 	float3 directLighting = {0.0f, 0.0f, 0.0f};
@@ -119,8 +120,19 @@ float4 PS(VertexOut pin)
         directLighting += shadowFactor[idx] * ComputeDirectionalLight_BRDF(curLight, mat, bumpedNormalW, toEyeW);
         idx++;
     }
+
+	for (uint k = 0; k < gNumSpotLights; k++)
+	{
+		SpotLight light = gSpotLights[k];
+		//TODO fix brdf for spotlights
+		directLighting += shadowFactor[idx] * ComputeSpotLight_BlinnPhong(gSpotLights[k], mat, pin.PosW, bumpedNormalW, toEyeW) * light.Intensity;
+		idx++;
+	}
+
 	directLighting *= 10;
-    //return float4(bumpedNormalW,1);
+	//return float4(pin.NormalW.rgb, 1.0f);
+   // return float4(pin.TangentW.rgb,1.0);
+	//return float4(bumpedNormalW.rgb, 1.0);
 
 	// Light terms.
 	float4 ambient =  ambientAccess * gAmbientLight * float4(diffuseAlbedo,1.0);

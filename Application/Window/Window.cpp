@@ -11,12 +11,12 @@ using namespace Microsoft::WRL;
 OWindow::OWindow(HWND hWnd, const SWindowInfo& _WindowInfo)
     : ORenderTargetBase(WindowInfo.ClientWidth, WindowInfo.ClientHeight, EResourceHeapType::Default), Hwnd(hWnd), WindowInfo{ _WindowInfo }
 {
+	Camera = make_shared<OCamera>(this);
 	Name = WindowInfo.Name;
 }
 
 void OWindow::InitRenderObject()
 {
-	Camera = make_shared<OCamera>(this);
 	SetCameraLens();
 	BuildEssentials();
 }

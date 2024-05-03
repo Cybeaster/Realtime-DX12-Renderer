@@ -1,7 +1,6 @@
 #pragma once
 #include "../../../Components/RenderItemComponentBase.h"
 #include "../../Materials/Material.h"
-#include "DirectX/InstanceData.h"
 #include "DirectX/MeshGeometry.h"
 #include "LightComponent/LightComponent.h"
 #include "Logger.h"
@@ -40,13 +39,13 @@ struct ORenderItem
 	SSubmeshGeometry* ChosenSubmesh = nullptr;
 
 	DirectX::BoundingBox Bounds;
-	vector<SInstanceData> Instances;
+	vector<HLSL::InstanceData> Instances;
 
 	UINT VisibleInstanceCount = 0;
 	int32_t StartInstanceLocation = 0;
 	/*UI*/
 	bool bIsDisplayable = true;
-	SInstanceData* GetDefaultInstance();
+	HLSL::InstanceData* GetDefaultInstance();
 	const vector<unique_ptr<OComponentBase>>& GetComponents() const;
 	void OnMaterialChanged();
 

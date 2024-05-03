@@ -63,7 +63,7 @@ void OCubeMapTest::BuildRenderItems()
 	CreateRenderItem("bistro_ext", GetResourcePath(L"Resources/Models/bistro/exterior.obj"), EParserType::TinyObjLoader, ETextureMapType::None, params2);
 
 	SSpotLightPayload light;
-	light.Strength = { 0.5f, 0.5f, 0.5f };
+	light.Intensity = { 0.5f, 0.5f, 0.5f };
 	light.Direction = { 0.55, -1, 0.055 };
 	auto spot = CreateLightSource(light);
 	Translate(spot->Instances[0].World, { -3, 3, 0 });

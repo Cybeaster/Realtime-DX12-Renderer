@@ -82,44 +82,46 @@ bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, 
 					data.Vertices.push_back(vertex);
 					data.Indices32.push_back(static_cast<uint32_t>(data.Indices32.size()));
 				}
+				auto size = data.Vertices.size();
+				auto firstVertex = data.Vertices[size - 3];
+				auto secondVertex = data.Vertices[size - 2];
+				auto thirdVertex = data.Vertices[size - 1];
 
-				// Calculate Tangent if we have a full triangle
-				auto last = data.Vertices.size() - 1;
-				const auto& v0 = data.Vertices[last - 2];
-				const auto& v1 = data.Vertices[last - 1];
-				const auto& v2 = data.Vertices[last];
+				auto v1 = DirectX::XMLoadFloat3(&firstVertex.Position);
+				auto v2 = DirectX::XMLoadFloat3(&secondVertex.Position);
+				auto v3 = DirectX::XMLoadFloat3(&thirdVertex.Position);
 
-				DirectX::XMFLOAT4 tangent[3];
+				auto uv0 = DirectX::XMLoadFloat2(&firstVertex.TexC);
+				auto uv1 = DirectX::XMLoadFloat2(&secondVertex.TexC);
+				auto uv2 = DirectX::XMLoadFloat2(&thirdVertex.TexC);
 
-				auto indices = std::array<uint16_t, 3>{
-					0, 1, 2
-				};
+				DirectX::XMVECTOR deltaUV1 = DirectX::XMVectorSubtract(uv1, uv0);
+				DirectX::XMVECTOR deltaUV2 = DirectX::XMVectorSubtract(uv2, uv0);
 
-				const auto positions = std::array{
-					v0.Position, v1.Position, v2.Position
-				};
-				const auto texcoords = std::array{
-					v0.TexC, v1.TexC, v2.TexC
-				};
+				auto deltaPos1 = DirectX::XMVectorSubtract(v2, v1);
+				auto deltaPos2 = DirectX::XMVectorSubtract(v3, v1);
 
-				const auto normals = std::array{
-					v0.Normal, v1.Normal, v2.Normal
-				};
+				float r = 1.0f / (DirectX::XMVectorGetX(deltaUV1) * DirectX::XMVectorGetY(deltaUV2) - DirectX::XMVectorGetY(deltaUV1) * DirectX::XMVectorGetX(deltaUV2));
+				auto mult = DirectX::XMVectorMultiply(DirectX::XMVectorReplicate(r),
+				                                      DirectX::XMVectorSubtract(
+				                                          DirectX::XMVectorMultiply(DirectX::XMVectorReplicate(DirectX::XMVectorGetY(deltaUV2)), deltaPos1),
+				                                          DirectX::XMVectorMultiply(DirectX::XMVectorReplicate(DirectX::XMVectorGetY(deltaUV1)), deltaPos2)));
 
-				if (!SUCCEEDED(DirectX::ComputeTangentFrame(indices.data(), 1, positions.data(), normals.data(), texcoords.data(), 3, tangent)))
-				{
-					LOG(TinyObjLoader, Error, "Couldn't compute tangent frame for mesh: {}", TEXT(data.Name));
-				}
+				auto cross = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMLoadFloat3(&firstVertex.Normal), deltaPos1));
 
-				data.Vertices[last].TangentU = { -tangent[2].x, tangent[2].y, tangent[2].z };
-				data.Vertices[last - 1].TangentU = { -tangent[1].x, tangent[1].y, tangent[1].z };
-				data.Vertices[last - 2].TangentU = { -tangent[0].x, tangent[0].y, tangent[0].z };
+				// Orthogonalize relative to normal
+				const DirectX::XMVECTOR tangent = DirectX::XMVector4Normalize(DirectX::XMVectorSubtract(mult, cross));
+				DirectX::XMFLOAT3 t;
+				Put(t, tangent);
+				data.Vertices[size - 3].TangentU = t;
+				data.Vertices[size - 2].TangentU = t;
+				data.Vertices[size - 1].TangentU = t;
+
 				index_offset += fv;
 			}
 
 			// per-face material
 			const auto id = shapes[s].mesh.material_ids[0];
-
 			const auto& material = materials[id];
 
 			auto diff = OApplication::GetTexturesPath(Path, UTF8ToWString(material.diffuse_texname));

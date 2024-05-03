@@ -13,6 +13,14 @@ ORenderTargetBase* OFrustumDebugNode::Execute(ORenderTargetBase* RenderTarget)
 	auto pso = FindPSOInfo(PSO);
 	SetPSO(PSO);
 	CommandQueue->SetResource(STRINGIFY_MACRO(CB_PASS), resource->PassCB->GetGPUAddress(), pso);
+	CommandQueue->SetResource(STRINGIFY_MACRO(CAMERA_MATRIX), resource->CameraMatrixBuffer->GetGPUAddress(), pso);
 	OEngine::Get()->DrawFullScreenQuad();
+
+	auto shadowMaps = OEngine::Get()->GetShadowMaps();
+	for (auto shadow : shadowMaps)
+	{
+		CommandQueue->SetResource(STRINGIFY_MACRO(CB_PASS), shadow->GetPassConstantAddresss(), pso);
+		OEngine::Get()->DrawFullScreenQuad();
+	}
 	return RenderTarget;
 }

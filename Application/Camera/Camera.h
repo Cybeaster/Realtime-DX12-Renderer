@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Events.h"
+
 #include <DirectXMath.h>
 #include <directxcollision.h>
 
@@ -9,6 +11,8 @@ struct SPassConstants;
 class OWindow;
 class OCamera
 {
+	DECLARE_DELEGATE(FOnCameraUpdate);
+
 public:
 	OCamera(OWindow* _Window);
 	OCamera();
@@ -63,10 +67,10 @@ public:
 	void UpdateViewMatrix();
 	void UpdateCameraSpeed(float Delta);
 
-	void SetCameraSpeed(float Speed) { CameraSpeed = std::max(Speed, 5.f); }
-	void SetCameraSensivity(float Sensetivity) { CameraSensivity = Sensetivity; }
-	float GetCameraSpeed() const { return CameraSpeed; }
-	float GetCameraSensivity() const { return CameraSensivity; }
+	void SetCameraSpeed(float Speed);
+	void SetCameraSensivity(float Sensetivity);
+	float GetCameraSpeed() const;
+	float GetCameraSensivity() const;
 	DirectX::BoundingFrustum& GetFrustrum() { return Frustum; };
 
 	std::tuple<DirectX::XMVECTOR /*ray_origin*/, DirectX::XMVECTOR /*ray dir*/, DirectX::XMMATRIX /*invView*/> Pick(int32_t Sx, int32_t Sy) const;
@@ -77,6 +81,7 @@ public:
 	DirectX::XMFLOAT4X4 NearProjectionMatrix;
 	DirectX::XMFLOAT4X4 MidProjectionMatrix;
 	DirectX::XMFLOAT4X4 FarProjectionMatrix;
+	FOnCameraUpdate OnCameraUpdate;
 
 private:
 	DirectX::XMFLOAT3 Position = { 0.0f, 0.0f, 0.0f };

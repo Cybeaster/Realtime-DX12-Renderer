@@ -1,7 +1,6 @@
 #pragma once
 #include "Engine/UploadBuffer/UploadBuffer.h"
 #include "HlslTypes.h"
-#include "InstanceData.h"
 #include "Logger.h"
 #include "ObjectConstants.h"
 #include "Vertex.h"
@@ -52,12 +51,13 @@ struct SFrameResource
 	void SetFrusturmCorners();
 	TUploadBuffer<SPassConstants> PassCB = nullptr;
 	TUploadBuffer<HLSL::MaterialData> MaterialBuffer = nullptr;
-	TUploadBuffer<SInstanceData> InstanceBuffer = nullptr;
+	TUploadBuffer<HLSL::InstanceData> InstanceBuffer = nullptr;
 	TUploadBuffer<SSsaoConstants> SsaoCB = nullptr;
 	TUploadBuffer<HLSL::DirectionalLight> DirectionalLightBuffer;
 	TUploadBuffer<HLSL::PointLight> PointLightBuffer;
 	TUploadBuffer<HLSL::SpotLight> SpotLightBuffer;
 	TUploadBuffer<HLSL::FrustrumCorners> FrusturmCornersBuffer;
+	TUploadBuffer<HLSL::CameraMatrixBuffer> CameraMatrixBuffer;
 	// Fence value to mark commands up to this fence point. This lets us
 	// check if these frame resources are still in use by the GPU.
 	UINT64 Fence = 0;

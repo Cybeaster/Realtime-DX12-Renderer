@@ -22,7 +22,7 @@ class OSceneComponent : public OComponentBase
 public:
 	OSceneComponent(){Name = "SceneComponent";}
 protected:
-	DirectX::XMFLOAT4X4 Position ={};
+	DirectX::XMFLOAT4X4 WorldMatrix ={};
 };
 
 

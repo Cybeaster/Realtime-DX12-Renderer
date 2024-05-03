@@ -13,7 +13,7 @@ namespace HLSL
 #endif
 
 #ifndef MAX_SHADOW_MAPS
-#define MAX_SHADOW_MAPS 3
+#define MAX_SHADOW_MAPS 4
 #endif
 
 #define TEXTURE_MAPS_NUM 312
@@ -26,10 +26,17 @@ namespace HLSL
 #define STRINGIFY(x) #x
 #define STRINGIFY_MACRO(x) STRINGIFY(x)
 
-#define MAKE_SHADER_LITERAL(Name)
-
 #define CB_PASS cbPass
-#define FRUSTRUM_CORNERS_BUFFER gFrustrumCorners
+#define CUBE_MAP gCubeMap
+#define TEXTURE_MAPS gTextureMaps
+#define MATERIAL_DATA gMaterialData
+#define DIRECTIONAL_LIGHTS gDirectionalLights
+#define POINT_LIGHTS gPointLights
+#define SPOT_LIGHTS gSpotLights
+#define SHADOW_MAPS gShadowMaps
+#define SSAO_MAP gSsaoMap
+#define FRUSTRUM_CORNERS gFrustrumCorners
+#define CAMERA_MATRIX cbCameraMatrix
 
 struct TextureData
 {
@@ -62,6 +69,23 @@ struct MaterialData
 	TextureData AmbientMap;
 };
 
+struct InstanceData
+{
+#ifndef HLSL
+	InstanceData()
+	{
+		DirectX::XMStoreFloat4x4(&World, DirectX::XMMatrixIdentity());
+		DirectX::XMStoreFloat4x4(&TexTransform, DirectX::XMMatrixIdentity());
+		MaterialIndex = 0;
+	}
+#endif
+
+	float4x4 World;
+	float4x4 TexTransform;
+	uint MaterialIndex;
+	float3 dum1;
+};
+
 struct SpotLight
 {
 	float3 Position;
@@ -87,6 +111,12 @@ struct PointLight
 	uint ShadowMapIndex; // Index to the shadow map texture array
 	float2 pad2; // Padding to align with HLSL's float4
 	float4x4 Transform;
+};
+
+struct CameraMatrixBuffer
+{
+	float4x4 gCamViewProj;
+	float4x4 gCamInvViewProj;
 };
 
 //supposed to use cascade shadow mapping

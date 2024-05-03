@@ -1255,10 +1255,11 @@
     {
       "Name": "FrustumDebug",
       "Type": "Graphics",
-      "RootSignature": "BaseShader",
+      "RootSignature": "FrustumDebug",
       "ShaderPipeline": {
-        "VertexShader": "BaseShader",
-        "PixelShader": "BaseShader"
+        "VertexShader": "FrustumDebug",
+        "GeometryShader": "FrustumDebug",
+        "PixelShader": "FrustumDebug"
       },
       "SampleMask": "0xffffffff",
       "PrimitiveTopologyType": "Triangle",

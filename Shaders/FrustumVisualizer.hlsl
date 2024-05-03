@@ -13,6 +13,12 @@ VertexOut VS()
     return output;
 }
 
+cbuffer cbCameraMatrix : register(b2)
+{
+    float4x4 gCamViewProj;
+    float4x4 gCamInvViewProj;
+};
+
 struct GsOut
 {
     float4 posH : SV_POSITION;  // Clip space position for rasterization
@@ -20,48 +26,46 @@ struct GsOut
 };
 
 [maxvertexcount(24)]
-void GS(point VertexOut input[1], inout LineStream<GsOut> OutputStream)
+void GS(triangle VertexOut input[3], inout LineStream<GsOut> OutputStream)
 {
     GsOut output;
     // Define frustum corners in NDC
     float3 ndcCorners[8] = {
-        float3(-1.0f, 1.0f, -1.0f),
-        float3(1.0f, 1.0f, -1.0f),
-        float3(1.0f, -1.0f, -1.0f),
-        float3(-1.0f, -1.0f, -1.0f),
-        float3(-1.0f, 1.0f, 1.0f),
-        float3(1.0f, 1.0f, 1.0f),
-        float3(1.0f, -1.0f, 1.0f),
-        float3(-1.0f, -1.0f, 1.0f)
+        {-1.0f, 1.0f, -1.0f},  // Top-left-far
+        {1.0f, 1.0f, -1.0f},   // Top-right-far
+        {1.0f, -1.0f, -1.0f},  // Bottom-right-far
+        {-1.0f, -1.0f, -1.0f}, // Bottom-left-far
+        {-1.0f, 1.0f, 1.0f},   // Top-left-near
+        {1.0f, 1.0f, 1.0f},    // Top-right-near
+        {1.0f, -1.0f, 1.0f},   // Bottom-right-near
+        {-1.0f, -1.0f, 1.0f}   // Bottom-left-near
     };
 
-    // Indices for drawing lines
-    int lineIndices[24] = {
-        0, 1, 1, 2, 2, 3, 3, 0, // Near plane
-        4, 5, 5, 6, 6, 7, 7, 4, // Far plane
-        0, 4, 1, 5, 2, 6, 3, 7  // Connecting lines between near and far planes
-    };
-
-    // Transform NDC corners to world space using the inverse view-projection matrix
-    float4x4 invVP = gInvViewProj;
+    // Transform NDC corners to world space using the inverse view-projection matrix of the light
     float4 worldPos[8];
     for (int i = 0; i < 8; ++i) {
-        worldPos[i] = mul(float4(ndcCorners[i], 1.0f), invVP);
+        worldPos[i] = mul(float4(ndcCorners[i], 1.0f), gInvViewProj); // Transform from light's NDC to world space
     }
+
+    // Indices for drawing lines to form the frustum
+    int lineIndices[24] = {
+        0, 1, 1, 2, 2, 3, 3, 0, // Connect far plane corners
+        4, 5, 5, 6, 6, 7, 7, 4, // Connect near plane corners
+        0, 4, 1, 5, 2, 6, 3, 7  // Connect corresponding near and far plane corners
+    };
 
     // Draw lines between the corners
     for (int i = 0; i < 24; i += 2) {
-        output.posW = worldPos[lineIndices[i]].xyz;
-        output.posH = mul(worldPos[lineIndices[i]], gViewProj);
+        output.posW = worldPos[lineIndices[i]].xyz;   // World space position for debugging
+        output.posH = mul(worldPos[lineIndices[i]], gCamViewProj); // Transform to camera clip space
         OutputStream.Append(output);
 
-        output.posW = worldPos[lineIndices[i + 1]].xyz;
-        output.posH = mul(worldPos[lineIndices[i + 1]], gViewProj);
+        output.posW = worldPos[lineIndices[i + 1]].xyz; // World space position for debugging
+        output.posH = mul(worldPos[lineIndices[i + 1]], gCamViewProj); // Transform to camera clip space
         OutputStream.Append(output);
         OutputStream.RestartStrip();
     }
 }
-
 
 float4 PS(GsOut input) : SV_TARGET
 {

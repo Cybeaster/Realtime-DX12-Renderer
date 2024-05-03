@@ -2,16 +2,6 @@
 #include "LightingUtils.hlsl"
 #include "Samplers.hlsl"
 
-
-struct InstanceData
-{
-	float4x4 World;
-	float4x4 TexTransform;
-	uint MaterialIndex;
-	float2 DisplacementMapTexelSize;
-	float GridSpatialStep;
-};
-
 Texture2D gTextureMaps[TEXTURE_MAPS_NUM] : register(t0,space0);
 Texture2D gShadowMaps[MAX_SHADOW_MAPS] : register(t1,space2);
 
@@ -106,28 +96,26 @@ void FindShadowPosition(out float4 ShadowPositions[SHADOW_MAPS_NUM], float4 PosW
     {
         float distFromEyeToCenter = length(PosW.rgb - gEyePosW);
         DirectionalLight light = gDirectionalLights[0];
-        if(light.ShadowMapDataNear.MaxDistance < distFromEyeToCenter)
-		{
+      //  if(light.ShadowMapDataNear.MaxDistance > distFromEyeToCenter)
+	//	{
 			LightIndices[indx] = light.ShadowMapDataNear.ShadowMapIndex;
-			ShadowPositions[indx] = mul(PosW, light.ShadowMapDataNear.Transform);
-			indx++;
-		}
-		else if (light.ShadowMapDataMid.MaxDistance < distFromEyeToCenter)
-		{
+	//		ShadowPositions[indx] = mul(PosW, light.ShadowMapDataNear.Transform);
+		//}
+		//else if (light.ShadowMapDataMid.MaxDistance > distFromEyeToCenter)
+	//{
 			LightIndices[indx] = light.ShadowMapDataMid.ShadowMapIndex;
 			ShadowPositions[indx] = mul(PosW, light.ShadowMapDataMid.Transform);
-			indx++;
-		}
-		else
-		{
-			LightIndices[indx] = light.ShadowMapDataFar.ShadowMapIndex;
-			ShadowPositions[indx] = mul(PosW, light.ShadowMapDataFar.Transform);
-			indx++;
-		}
+		//}
+		//else if (light.ShadowMapDataFar.MaxDistance > distFromEyeToCenter)
+		//{
+			//LightIndices[indx] = light.ShadowMapDataFar.ShadowMapIndex;
+			//ShadowPositions[indx] = mul(PosW, light.ShadowMapDataFar.Transform);
+		//}
+		indx++;
 	}
 
 
-    if(gNumSpotLights > 0)
+    if(gNumSpotLights > 0 && indx < SHADOW_MAPS_NUM)
     {
         LightIndices[indx] = gSpotLights[0].ShadowMapIndex;
         ShadowPositions[indx] = mul(PosW,  gSpotLights[0].Transform);
@@ -169,7 +157,7 @@ float CalcShadowFactor(float4 ShadowPosH,uint ShadowMapIndex)
 
 void GetShadowFactor(out float ShadowFactors[SHADOW_MAPS_NUM],uint ShadowMapIndices[SHADOW_MAPS_NUM] ,float4 ShadowPositions[SHADOW_MAPS_NUM])
 {
-        for (uint i = 0; i < MAX_SHADOW_MAPS; ++i)
+        for (uint i = 0; i < SHADOW_MAPS_NUM; ++i)
         {
             ShadowFactors[i] = CalcShadowFactor(ShadowPositions[i],ShadowMapIndices[i]);;
         }
@@ -240,7 +228,7 @@ BumpedData SampleNormalMap(float3 NormalW, float3 TangentW, MaterialData MatData
 {
 	BumpedData data = (BumpedData)0.0;
 	data.BumpedNormalW = NormalW;
-	data.NormalMapSample = float4(0.f, 0.f, 1.0f, 1.0f);
+	data.NormalMapSample = float4(0.f, 0.f, 0.0f, 1.0f);
   	if(MatData.NormalMap.bIsEnabled == 1)
   	{
 		data.NormalMapSample = gTextureMaps[MatData.NormalMap.TextureIndex].Sample(gsamAnisotropicWrap, TexC);

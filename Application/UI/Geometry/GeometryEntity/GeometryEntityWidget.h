@@ -1,5 +1,4 @@
 #pragma once
-#include "DirectX/InstanceData.h"
 #include "DirectX/RenderItem/RenderItem.h"
 #include "GeometryTransform.h"
 #include "UI/Material/MaterialPicker.h"
@@ -41,7 +40,7 @@ private:
 	string SelectedSubmesh = "";
 	string SelectedInstance = "";
 
-	SInstanceData* SelectedInstanceData = nullptr;
+	HLSL::InstanceData* SelectedInstanceData = nullptr;
 
 	DirectX::XMFLOAT3 Position;
 	DirectX::XMFLOAT3 Rotation;

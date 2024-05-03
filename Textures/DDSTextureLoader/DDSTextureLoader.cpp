@@ -2586,7 +2586,7 @@ HRESULT DirectX::LoadTextureFromNonDDS(const std::filesystem::path& FilePath, ID
 	    1, // depth
 	    1, // mipLevels
 	    1, // arraySize
-	    DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+	    DXGI_FORMAT_R8G8B8A8_UNORM,
 	    false, // isCubeMap
 	    false, // forceSRGB
 	    &initData,

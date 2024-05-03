@@ -68,13 +68,13 @@
       {
         "Name": "LightObjects",
         "PSO": "Opaque",
-        "NextNode": "CopyTarget",
+        "NextNode": "FrustumDebug",
         "RenderLayer": "LightObjects",
         "Enabled": true
       },
       {
-        "Name": "CopyTarget",
-        "PSO": "None",
+        "Name": "FrustumDebug",
+        "PSO": "FrustumDebug",
         "NextNode": "ShadowDebug",
         "RenderLayer": "None",
         "Enabled": true
@@ -82,15 +82,15 @@
       {
         "Name": "ShadowDebug",
         "PSO": "ShadowDebug",
-        "NextNode": "FrustumDebug",
+        "NextNode": "CopyTarget",
         "RenderLayer": "ShadowDebug",
         "Enabled": false
       },
       {
-        "Name": "FrustumDebug",
-        "PSO": "FrustumDebug",
+        "Name": "CopyTarget",
+        "PSO": "None",
         "NextNode": "PostProcess",
-        "RenderLayer": "ShadowDebug",
+        "RenderLayer": "None",
         "Enabled": true
       },
       {

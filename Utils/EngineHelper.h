@@ -128,6 +128,7 @@ inline auto CreateLightSource(const SSpotLightPayload& Params)
 	auto engine = OEngine::Get();
 	auto generator = engine->GetMeshGenerator();
 	auto mesh = generator->CreateSphereMesh("Spot Light Source", 0.5f, 20, 20);
+
 	SRenderItemParams params;
 	params.MaterialParams.Material = FindMaterial("White");
 	auto ri = engine->BuildRenderItemFromMesh(std::move(mesh), params);

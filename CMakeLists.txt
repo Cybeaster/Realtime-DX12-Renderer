@@ -110,7 +110,6 @@ set(SRC_FILES
         Application/UI/Filters/FilterManager.h
         Application/UI/Engine/Camera.h
         Application/UI/Engine/Camera.cpp
-        Types/DirectX/InstanceData.h
         Types/DirectX/Vertex.h
         Objects/MeshGenerator/MeshGenerator.cpp
         Objects/MeshGenerator/MeshGenerator.h
@@ -124,12 +123,12 @@ set(SRC_FILES
         Utils/EngineHelper.h
         Application/UI/Material/MaterialPicker.cpp
         Application/UI/Material/MaterialPicker.h
-        Config/ConfigReader.cpp
-        Config/ConfigReader.h
-        Config/MaterialsReader/MaterialsReader.h
+        ConfigReader/ConfigReader.cpp
+        ConfigReader/ConfigReader.h
+        ConfigReader/MaterialsReader/MaterialsReader.h
         Application/UI/Material/MaterialManager/MaterialManager.cpp
         Application/UI/Material/MaterialManager/MaterialManager.h
-        Config/MaterialsReader/MaterialsReader.cpp
+        ConfigReader/MaterialsReader/MaterialsReader.cpp
         Types/Async.h
         Application/UI/Geometry/GeometryEntity/PickedRenderItem.cpp
         Application/UI/Geometry/GeometryEntity/PickedRenderItem.h
@@ -141,8 +140,8 @@ set(SRC_FILES
         Application/Engine/RenderTarget/CubeMap/DynamicCubeMap/DynamicCubeMapTarget.h
         Application/Test/CubeMap/CubeMapTest.cpp
         Application/Test/CubeMap/CubeMapTest.h
-        Config/TexturesReader/TexturesParser.cpp
-        Config/TexturesReader/TexturesParser.h
+        ConfigReader/TexturesReader/TexturesParser.cpp
+        ConfigReader/TexturesReader/TexturesParser.h
         Application/UI/Material/TextureManager/TextureManager.cpp
         Application/UI/Material/TextureManager/TextureManager.h
         Application/UI/Material/TexturePicker.h
@@ -161,14 +160,14 @@ set(SRC_FILES
         Application/ShaderCompiler/Compiler.h
         Application/GraphicsPipeline/GraphicsPipeline.cpp
         Application/GraphicsPipeline/GraphicsPipeline.h
-        Config/ShaderReader/ShaderReader.cpp
-        Config/ShaderReader/ShaderReader.h
+        ConfigReader/ShaderReader/ShaderReader.cpp
+        ConfigReader/ShaderReader/ShaderReader.h
         Application/GraphicsPipelineManager/GraphicsPipelineManager.cpp
         Application/GraphicsPipelineManager/GraphicsPipelineManager.h
-        Config/PSOReader/PsoReader.cpp
-        Config/PSOReader/PsoReader.h
-        Config/RenderGraphReader/RenderGraphReader.cpp
-        Config/RenderGraphReader/RenderGraphReader.h
+        ConfigReader/PSOReader/PsoReader.cpp
+        ConfigReader/PSOReader/PsoReader.h
+        ConfigReader/RenderGraphReader/RenderGraphReader.cpp
+        ConfigReader/RenderGraphReader/RenderGraphReader.h
         Types/RenderNodeInfo.h
         Types/DirectX/RenderItem/RenderItem.cpp
         Types/DirectX/ShaderTypes.cpp
@@ -231,8 +230,8 @@ set(SRC_FILES
         Application/Engine/RenderTarget/NormalTangetDebugTarget/NormalTangentDebugTarget.h
         Application/RenderGraph/Nodes/TangentNormalDebugNode/TangentNormalDebugNode.cpp
         Application/RenderGraph/Nodes/TangentNormalDebugNode/TangentNormalDebugNode.h
-        Config/SceneReader/SceneReader.cpp
-        Config/SceneReader/SceneReader.h
+        ConfigReader/SceneReader/SceneReader.cpp
+        ConfigReader/SceneReader/SceneReader.h
         Application/Engine/Scene/SceneManager.cpp
         Application/Engine/Scene/SceneManager.h
         Application/Engine/Scene/Scene.cpp
@@ -286,7 +285,7 @@ target_include_directories(DXRenderer PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Objects
         ${CMAKE_CURRENT_SOURCE_DIR}/Materials
         ${CMAKE_CURRENT_SOURCE_DIR}/Textures
-        ${CMAKE_CURRENT_SOURCE_DIR}/Config
+        ${CMAKE_CURRENT_SOURCE_DIR}/ConfigReader
         ${CMAKE_CURRENT_SOURCE_DIR}/Components
 
 )

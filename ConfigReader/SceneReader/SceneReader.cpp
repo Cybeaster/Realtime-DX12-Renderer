@@ -31,11 +31,27 @@ SSceneSettings OSceneReader::LoadScene()
 					light.second.get_child("Direction").get<float>("Z")
 				};
 				dirLight.Intensity = {
-					light.second.get_child("Color").get<float>("R"),
-					light.second.get_child("Color").get<float>("G"),
-					light.second.get_child("Color").get<float>("B")
+					light.second.get_child("Intensity").get<float>("R"),
+					light.second.get_child("Intensity").get<float>("G"),
+					light.second.get_child("Intensity").get<float>("B")
 				};
 				payload.DirLights.push_back(dirLight);
+			}
+			else if (type == "Spot")
+			{
+				SSpotLightPayload spotLight;
+				spotLight.Direction = {
+					light.second.get_child("Direction").get<float>("X"),
+					light.second.get_child("Direction").get<float>("Y"),
+					light.second.get_child("Direction").get<float>("Z")
+				};
+				spotLight.Intensity = {
+					light.second.get_child("Intensity").get<float>("R"),
+					light.second.get_child("Intensity").get<float>("G"),
+					light.second.get_child("Intensity").get<float>("B")
+				};
+				//Read position
+				payload.SpotLights.push_back(spotLight);
 			}
 		}
 		res.Scenes.push_back(payload);

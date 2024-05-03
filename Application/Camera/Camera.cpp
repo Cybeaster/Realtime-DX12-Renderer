@@ -211,12 +211,32 @@ void OCamera::UpdateViewMatrix()
 		ViewMatrix(3, 3) = 1.0f;
 
 		bViewDirty = false;
+		OnCameraUpdate.Broadcast();
 	}
 }
 void OCamera::UpdateCameraSpeed(float Delta)
 {
 	CameraSpeed += Delta * 5;
 	CameraSpeed = std::clamp(CameraSpeed, 0.f, MaxCameraSpeed);
+}
+void OCamera::SetCameraSpeed(const float Speed)
+{
+	CameraSpeed = std::max(Speed, 5.f);
+}
+
+void OCamera::SetCameraSensivity(float Sensetivity)
+{
+	CameraSensivity = Sensetivity;
+}
+
+float OCamera::GetCameraSpeed() const
+{
+	return CameraSpeed;
+}
+
+float OCamera::GetCameraSensivity() const
+{
+	return CameraSensivity;
 }
 
 std::tuple<XMVECTOR /*ray_origin*/, XMVECTOR /*ray dir*/, XMMATRIX /*invView*/> OCamera::Pick(int32_t Sx, int32_t Sy) const

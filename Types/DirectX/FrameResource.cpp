@@ -3,6 +3,7 @@
 SFrameResource::SFrameResource(ID3D12Device* Device, IRenderObject* Owner)
     : Owner(Owner), Device(Device)
 {
+	CameraMatrixBuffer = OUploadBuffer<HLSL::CameraMatrixBuffer>::Create(Device, 1, true, Owner, L"_CameraMatrixBuffer");
 }
 
 SFrameResource::~SFrameResource()
@@ -21,7 +22,7 @@ void SFrameResource::SetInstances(UINT InstanceCount)
 		LOG(Engine, Warning, "MaxInstanceCount is 0");
 		return;
 	}
-	InstanceBuffer = make_unique<OUploadBuffer<SInstanceData>>(Device, InstanceCount, false, Owner, L"_InstanceBuffer");
+	InstanceBuffer = make_unique<OUploadBuffer<HLSL::InstanceData>>(Device, InstanceCount, false, Owner, L"_InstanceBuffer");
 }
 
 void SFrameResource::SetMaterials(UINT MaterialCount)

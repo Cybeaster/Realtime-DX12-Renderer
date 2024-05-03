@@ -4,7 +4,7 @@
 struct SSpotLightPayload
 {
 	DirectX::XMFLOAT3 Direction = { 0.0f, -1.0f, 0.0f };
-	DirectX::XMFLOAT3 Strength = { 0.5f, 0.5f, 0.5f };
+	DirectX::XMFLOAT3 Intensity = { 0.5f, 0.5f, 0.5f };
 	float FallOffStart = 1.0f;
 	float FallOffEnd = 10.0f;
 	float SpotPower = 64.0f;

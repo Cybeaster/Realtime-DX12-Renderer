@@ -19,16 +19,14 @@ OLightComponent::OLightComponent()
 void OLightComponent::Tick(UpdateEventArgs Arg)
 {
 	PROFILE_SCOPE();
-	if (!Utils::MatricesEqual(Owner->GetDefaultInstance()->World, Position)) // make delegate based
+	if (!Utils::MatricesEqual(Owner->GetDefaultInstance()->World, WorldMatrix)) // make delegate based
 	{
 		DirectX::XMVECTOR scale, rotation, translation;
-		DirectX::XMMatrixDecompose(&scale, &rotation, &translation, DirectX::XMLoadFloat4x4(&Owner->GetDefaultInstance()->World));
-		Position = Owner->GetDefaultInstance()->World;
+		XMMatrixDecompose(&scale, &rotation, &translation, Load(Owner->GetDefaultInstance()->World));
+		WorldMatrix = Owner->GetDefaultInstance()->World;
 		DirectX::XMFLOAT4 pos{};
-		DirectX::XMStoreFloat4(&pos, translation);
-		GlobalPosition = translation;
-
-		OnLightChanged.Broadcast();
+		Put(pos, translation);
+		Position = translation;
 		MarkDirty();
 	}
 }
@@ -40,7 +38,7 @@ void OLightComponent::Init(ORenderItem* Other)
 
 DirectX::XMVECTOR OLightComponent::GetGlobalPosition() const
 {
-	return GlobalPosition;
+	return Position;
 }
 
 bool OLightComponent::TryUpdate()
@@ -178,7 +176,7 @@ void OSpotLightComponent::SetSpotLight(const SSpotLightPayload& Light)
 	SpotLight.FalloffEnd = Light.FallOffEnd;
 	SpotLight.FalloffStart = Light.FallOffStart;
 	SpotLight.SpotPower = Light.SpotPower;
-	SpotLight.Intensity = Light.Strength;
+	SpotLight.Intensity = Light.Intensity;
 	UpdateLightData();
 }
 
@@ -214,25 +212,52 @@ void OSpotLightComponent::SetPassConstant(SPassConstants& OutConstant)
 ODirectionalLightComponent::ODirectionalLightComponent(uint32_t InIdx)
     : DirLightBufferInfo(InIdx)
 {
+	const auto camera = OEngine::Get()->GetWindow()->GetCamera();
+	camera->OnCameraUpdate.Add([this]() {
+		static auto currentTime = 0.f;
+		constexpr auto UpdatePeriod = 0.5f;
+
+		if (currentTime + UpdatePeriod < OEngine::Get()->GetTime())
+		{
+			currentTime = OEngine::Get()->GetTime();
+			//MarkDirty();
+		}
+	});
+
+	const float nearClip = camera->GetNearZ();
+	const float farClip = camera->GetFarZ();
+	const float clipRange = farClip - nearClip;
+	const float minZ = nearClip;
+	const float maxZ = nearClip + clipRange;
+	const float range = maxZ - minZ;
+	const float ratio = maxZ / minZ;
+
+	// Calculate splits based on nvidia paper (https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch10.html)
+	for (uint8_t it = 0; it < MAX_CSM_PER_FRAME; it++)
+	{
+		float cascadeSplitLambda = 0.3f;
+		float p = (it + 1) / static_cast<float>(MAX_CSM_PER_FRAME);
+		float log = minZ * std::pow(ratio, p);
+		float uniform = minZ + range * p;
+		float d = cascadeSplitLambda * (log - uniform) + uniform;
+		CascadeSplits[it] = (d - nearClip) / clipRange;
+	}
 }
 
 void ODirectionalLightComponent::SetLightSourceData()
 {
+	PROFILE_SCOPE()
+
 	if (CSM == nullptr)
 	{
 		LOG(Render, Error, "CSM is nullptr");
 	}
 
 	using namespace DirectX;
-	const XMMATRIX T{
-		0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f
-	};
+
 	auto zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 	auto lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	auto camera = OEngine::Get()->GetWindow()->GetCamera();
-	auto view = camera->GetView();
-	auto frustrumCorners = HLSL::FrustumCornens;
-	array<XMVECTOR, 8> corners = {};
 
 	auto shadowTransforms = array{
 		&DirectionalLight.ShadowMapDataNear,
@@ -240,40 +265,29 @@ void ODirectionalLightComponent::SetLightSourceData()
 		&DirectionalLight.ShadowMapDataFar
 	};
 
-	const auto bounds = OEngine::Get()->GetSceneBounds();
 	auto lightDir = XMVector3Normalize(XMLoadFloat3(&DirectionalLight.Direction));
-	auto lightPos = lightDir;
+	auto lightPos = lightDir; //* -2.0f * bounds.Radius;
+
 	const auto cameraView = camera->GetView();
 	const auto cameraProj = camera->GetProj();
 	const auto viewProj = cameraView * cameraProj;
 
-	array<float, 3> cascadeSplits;
-
-	float nearClip = camera->GetNearZ();
-	float farClip = camera->GetFarZ();
-
-	float clipRange = farClip - nearClip;
-	float minZ = nearClip;
-	float maxZ = nearClip + clipRange;
-	float range = maxZ - minZ;
-	float ratio = maxZ / minZ;
-
-	for (uint8_t it = 0; it < MAX_CSM_PER_FRAME; it++)
+	array<XMFLOAT3, 8> arrayedCorners;
+	for (int i = 0; i < 8; i++)
 	{
-		float cascadeSplitLambda = 0.95f;
-		float p = (it + 1) / static_cast<float>(MAX_CSM_PER_FRAME);
-		float log = minZ * std::pow(ratio, p);
-		float uniform = minZ + range * p;
-		float d = cascadeSplitLambda * (log - uniform) + uniform;
-		cascadeSplits[it] = (d - nearClip) / clipRange;
+		arrayedCorners[i] = HLSL::FrustumCornens[i];
 	}
 
+	//Calculate shadow matrices, view and proj for light based on the splits
 	float lastSplitDist = 0.0f;
 	for (int i = 0; i < MAX_CSM_PER_FRAME; i++)
 	{
-		float splitDist = cascadeSplits[i];
+		auto frustrumCorners = arrayedCorners;
+		float splitDist = CascadeSplits[i];
+
 		//project frustrum corners into world space
-		auto invViewProj = Inverse(viewProj, false);
+		auto invViewProj = Inverse(viewProj);
+
 		for (int j = 0; j < 8; j++)
 		{
 			XMVECTOR vec = XMVectorSet(frustrumCorners[j].x, frustrumCorners[j].y, frustrumCorners[j].z, 1.0f); // Set w = 1.0f
@@ -281,6 +295,7 @@ void ODirectionalLightComponent::SetLightSourceData()
 			const auto splat = XMVectorSplatW(invCorner);
 			Put(frustrumCorners[j], XMVectorDivide(invCorner, splat));
 		}
+
 		for (int j = 0; j < 4; j++)
 		{
 			auto dist = frustrumCorners[j + 4] - frustrumCorners[j];
@@ -304,7 +319,6 @@ void ODirectionalLightComponent::SetLightSourceData()
 		radius = std::ceil(radius * 16.0f) / 16.0f;
 		const auto maxExtents = XMVectorSet(radius, radius, radius, 0.0f);
 		const auto minExtents = -maxExtents;
-		lightDir = XMVector3Normalize(-lightDir);
 		const auto eye = center - (lightDir * -XMVectorGetZ(minExtents));
 		const auto lightView = MatrixLookAt(eye, center, lightUp);
 		const auto orthoMat = MatrixOrthographicOffCenter(GetX(minExtents),
@@ -313,40 +327,100 @@ void ODirectionalLightComponent::SetLightSourceData()
 		                                                  GetY(maxExtents),
 		                                                  0,
 		                                                  GetZ(maxExtents) - GetZ(minExtents));
+		const XMMATRIX T{
+			0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f
+		};
+
 		const auto lightOrthoMat = lightView * orthoMat;
-
+		const auto invOrthoMat = Inverse(orthoMat);
 		SPassConstants passConstants;
-		Put(passConstants.View, lightView);
-		Put(passConstants.Proj, orthoMat);
-		Put(passConstants.ViewProj, lightOrthoMat);
-		Put(passConstants.InvView, Inverse(lightView));
+		Put(passConstants.View, Transpose(lightView));
+		Put(passConstants.Proj, Transpose(orthoMat));
+		Put(passConstants.ViewProj, Transpose(lightOrthoMat));
+		Put(passConstants.InvView, Transpose(Inverse(lightView)));
+		Put(passConstants.InvProj, Transpose(Inverse(orthoMat)));
+		Put(passConstants.InvViewProj, Transpose(invOrthoMat));
+		Put(passConstants.EyePosW, lightPos);
 
+		const XMMATRIX S = lightOrthoMat * T;
+		Put(shadowTransforms[i]->Transform, Transpose(S));
+		shadowTransforms[i]->MaxDistance = radius;
 		CSM->GetShadowMap(i)->SetPassConstants(passConstants);
-		lastSplitDist = cascadeSplits[i];
+		lastSplitDist = CascadeSplits[i];
 	}
 }
 
 void OSpotLightComponent::SetLightSourceData()
 {
 	using namespace DirectX;
-	/*auto lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-	const auto& bounds = OEngine::Get()->GetSceneBounds();
-	// Calculate target point using direction
 
+	const XMMATRIX T{
+		0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f
+	};
+
+	auto lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+	// Calculate target point using direction
 	auto globalPos = GetGlobalPosition();
 	XMVECTOR lightPos = globalPos;
 	XMVECTOR lightDir = XMVector3Normalize(XMLoadFloat3(&SpotLight.Direction));
 	XMVECTOR lightTarget = XMVectorAdd(lightPos, lightDir); // Calculate target point using direction
-	NearZ = SpotLight.FalloffStart;
-	FarZ = SpotLight.FalloffEnd;
+	auto nearZ = SpotLight.FalloffStart;
+	auto farZ = SpotLight.FalloffEnd;
 
 	// Create the view matrix for the spotlight
-	auto view = XMMatrixLookAtLH(lightPos, lightTarget, lightUp);
-	auto projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(spotLight.ConeAngle * 2), 1.0f, NearZ, FarZ);
-	XMMATRIX S = view * projection * T;
-	XMStoreFloat4x4(&View, view);
-	XMStoreFloat4x4(&Proj, projection);
-	XMStoreFloat4x4(&ShadowTransform, S);*/
+	const auto view = XMMatrixLookAtLH(lightPos, lightTarget, lightUp);
+	const auto projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(SpotLight.ConeAngle * 2), 1.0f, nearZ, farZ);
+	SPassConstants passConstants;
+	const XMMATRIX S = view * projection * T;
+	const auto invView = Inverse(view);
+	const auto invProj = Inverse(projection);
+	const auto viewProj = view * projection;
+	const auto invViewProj = Inverse(viewProj);
+	Put(passConstants.View, Transpose(view));
+	Put(passConstants.Proj, Transpose(projection));
+	Put(SpotLight.Transform, Transpose(S));
+	Put(passConstants.View, Transpose(view));
+	Put(passConstants.InvView, Transpose(invView));
+	Put(passConstants.Proj, Transpose(projection));
+	Put(passConstants.InvProj, Transpose(invProj));
+	Put(passConstants.ViewProj, Transpose(viewProj));
+	Put(passConstants.InvViewProj, Transpose(invViewProj));
+	Put(passConstants.EyePosW, lightPos);
+	passConstants.NearZ = nearZ;
+	passConstants.FarZ = farZ;
+
+	ShadowMap->SetPassConstants(passConstants);
+
+	/*
+	const auto view = XMLoadFloat4x4(&View);
+	const auto proj = XMLoadFloat4x4(&Proj);
+	const auto shadowTransform = XMLoadFloat4x4(&ShadowTransform);
+
+	XMFLOAT4X4 transposed{};
+	Put(transposed, Transpose(shadowTransform));
+	Light
+		DirectionalLight.Transform
+		= transposed;
+	PointLight.Transform = transposed;
+	SpotLight.Transform = transposed;
+
+	const XMMATRIX viewProj = XMMatrixMultiply(view, proj);
+	const XMMATRIX invView = Inverse(view);
+	const XMMATRIX invProj = Inverse(proj);
+	const XMMATRIX invViewProj = Inverse(viewProj);
+
+	XMStoreFloat4x4(&PassConstant.View, XMMatrixTranspose(view));
+	XMStoreFloat4x4(&PassConstant.InvView, XMMatrixTranspose(invView));
+	XMStoreFloat4x4(&PassConstant.Proj, XMMatrixTranspose(proj));
+	XMStoreFloat4x4(&PassConstant.InvProj, XMMatrixTranspose(invProj));
+	XMStoreFloat4x4(&PassConstant.ViewProj, XMMatrixTranspose(viewProj));
+	XMStoreFloat4x4(&PassConstant.InvViewProj, XMMatrixTranspose(invViewProj));
+
+	PassConstant.EyePosW = LightPos;
+	PassConstant.NearZ = NearZ;
+	PassConstant.FarZ = FarZ;
+	 */
 }
 
 HLSL::SpotLight& OSpotLightComponent::GetSpotLight()
