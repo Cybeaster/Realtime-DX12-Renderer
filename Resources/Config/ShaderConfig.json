@@ -279,6 +279,39 @@
           "TargetProfile": "ps_6_0"
         }
       ]
+    },
+    {
+      "Path": "Shaders/Raytracing/Hit.hlsl",
+      "Name": "RTHit",
+      "Pipeline": [
+        {
+          "Type": "ClosestHit",
+          "EntryPoint": "ClosestHit",
+          "TargetProfile": "lib_6_3"
+        }
+      ]
+    },
+    {
+      "Path": "Shaders/Raytracing/Miss.hlsl",
+      "Name": "RTMiss",
+      "Pipeline": [
+        {
+          "Type": "Miss",
+          "EntryPoint": "Miss",
+          "TargetProfile": "lib_6_3"
+        }
+      ]
+    },
+    {
+      "Path": "Shaders/Raytracing/RayGen.hlsl",
+      "Name": "RTRayGen",
+      "Pipeline": [
+        {
+          "Type": "RayGen",
+          "EntryPoint": "RayGen",
+          "TargetProfile": "lib_6_3"
+        }
+      ]
     }
   ]
 }

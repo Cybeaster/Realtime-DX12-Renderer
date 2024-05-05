@@ -12,7 +12,7 @@
 #define SQUARE(x) (x * x)
 
 #define HLSL
-#include "../Types/DirectX/HlslTypes.h"
+#include "../Core/Types/DirectX/HlslTypes.h"
 
 void Swap(inout float A, inout float B)
 {

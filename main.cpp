@@ -5,8 +5,6 @@
 #endif
 
 #include "Profiler.h"
-#include "Test/CubeMap/CubeMapTest.h"
-#include "Test/TextureTest/TextureWaves.h"
 
 #include <Application.h>
 #include <Shlwapi.h>
