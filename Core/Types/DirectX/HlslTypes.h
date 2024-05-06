@@ -125,8 +125,7 @@ struct ShadowMapData
 {
 	float4x4 Transform;
 	uint ShadowMapIndex; // Index to the shadow map texture array
-	float MaxDistance;
-	float2 pad; // Padding to align with HLSL's float4
+	float3 pad; // Padding to align with HLSL's float4
 };
 
 struct DirectionalLight
@@ -135,9 +134,7 @@ struct DirectionalLight
 	float pad1; // Padding to align with HLSL's float4
 	float3 Intensity;
 	float pad2;
-	ShadowMapData ShadowMapDataNear;
-	ShadowMapData ShadowMapDataMid;
-	ShadowMapData ShadowMapDataFar;
+	ShadowMapData ShadowMapData[MAX_CSM_PER_FRAME];
 };
 
 struct FrustrumCorners

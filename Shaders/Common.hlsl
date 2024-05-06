@@ -88,45 +88,55 @@ float3 ComputeHeightMap(MaterialData matData, float3 NormalW, float3 TangentW, f
 	return float3(0.0f,0.0f,0.0f);
 }
 
-
-void FindShadowPosition(out float4 ShadowPositions[SHADOW_MAPS_NUM], float4 PosW, out uint LightIndices[SHADOW_MAPS_NUM])
+bool IsShadowCoordsWithinRange(float3 ShadowCoords)
 {
-    uint indx = 0;
-    if(gNumDirLights > 0)
-    {
-        float distFromEyeToCenter = length(PosW.rgb - gEyePosW);
-        DirectionalLight light = gDirectionalLights[0];
-      //  if(light.ShadowMapDataNear.MaxDistance > distFromEyeToCenter)
-	//	{
-			LightIndices[indx] = light.ShadowMapDataNear.ShadowMapIndex;
-	//		ShadowPositions[indx] = mul(PosW, light.ShadowMapDataNear.Transform);
-		//}
-		//else if (light.ShadowMapDataMid.MaxDistance > distFromEyeToCenter)
-	//{
-			LightIndices[indx] = light.ShadowMapDataMid.ShadowMapIndex;
-			ShadowPositions[indx] = mul(PosW, light.ShadowMapDataMid.Transform);
-		//}
-		//else if (light.ShadowMapDataFar.MaxDistance > distFromEyeToCenter)
-		//{
-			//LightIndices[indx] = light.ShadowMapDataFar.ShadowMapIndex;
-			//ShadowPositions[indx] = mul(PosW, light.ShadowMapDataFar.Transform);
-		//}
-		indx++;
-	}
-
-
-    if(gNumSpotLights > 0 && indx < SHADOW_MAPS_NUM)
-    {
-        LightIndices[indx] = gSpotLights[0].ShadowMapIndex;
-        ShadowPositions[indx] = mul(PosW,  gSpotLights[0].Transform);
-        indx++;
-    }
+	 return all(ShadowCoords.xy >= 0) && all(ShadowCoords.xy <= 1);
 }
 
-float CalcShadowFactor(float4 ShadowPosH,uint ShadowMapIndex)
+bool FindDirLightShadowPosition(float4 PosW, out float3 ShadowPosition, out uint LightIndex)
 {
-    //Perform projection
-    ShadowPosH.xyz /= ShadowPosH.w;
+	LightIndex = 0;
+	ShadowPosition = float3(0.0f,0.0f,0.0f);
+    if(gNumDirLights > 0)
+    {
+        DirectionalLight light = gDirectionalLights[0];
+        for (uint i = 0; i < MAX_CSM_PER_FRAME; ++i)
+		{
+			LightIndex = light.ShadowMapData[i].ShadowMapIndex;
+			ShadowPosition = mul(PosW, light.ShadowMapData[i].Transform).xyz;
+			if(IsShadowCoordsWithinRange(ShadowPosition))
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool FindSpotLightShadowPosition(float4 PosW, out float3 ShadowPosition, out uint LightIndex)
+{
+	LightIndex = 0;
+	ShadowPosition = float3(0.0f,0.0f,0.0f);
+    if(gNumSpotLights > 0)
+    {
+        for (uint i = 0; i < gNumSpotLights; ++i)
+        {
+            SpotLight light = gSpotLights[i];
+            LightIndex = i;
+            ShadowPosition = mul(PosW, light.Transform).xyz;
+            if(IsShadowCoordsWithinRange(ShadowPosition))
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+
+
+float CalcShadowFactor(float3 ShadowPosH,uint ShadowMapIndex)
+{
 
     //depth in NDC space
     float depth = ShadowPosH.z;
@@ -157,11 +167,10 @@ float CalcShadowFactor(float4 ShadowPosH,uint ShadowMapIndex)
 
 void GetShadowFactor(out float ShadowFactors[SHADOW_MAPS_NUM],uint ShadowMapIndices[SHADOW_MAPS_NUM] ,float4 ShadowPositions[SHADOW_MAPS_NUM])
 {
-        for (uint i = 0; i < SHADOW_MAPS_NUM; ++i)
-        {
-            ShadowFactors[i] = CalcShadowFactor(ShadowPositions[i],ShadowMapIndices[i]);;
-        }
-
+   // for (uint i = 0; i < SHADOW_MAPS_NUM; ++i)
+    //{
+    //    ShadowFactors[i] = CalcShadowFactor(ShadowPositions[i],ShadowMapIndices[i]);;
+   // }
 }
 
 bool IsNormalized(float3 vector)

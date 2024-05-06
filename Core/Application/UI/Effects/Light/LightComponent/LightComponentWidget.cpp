@@ -14,9 +14,17 @@ void OLightComponentWidget::Draw()
 		{
 		case ELightType::Directional:
 		{
-			auto& dirLight = Cast<ODirectionalLightComponent>(LightComponent)->GetDirectionalLight();
+			auto component = Cast<ODirectionalLightComponent>(LightComponent);
+			auto& dirLight = component->GetDirectionalLight();
 			dirty |= ImGui::DragFloat3("Direction", &dirLight.Direction.x, 0.01, -1.0, 1.0);
 			dirty |= ImGui::ColorEdit3("Color", &dirLight.Intensity.x);
+			auto lambda = component->GetCascadeLambda();
+			if (ImGui::DragFloat("Cascade Lambda", &lambda, 0.01f, 0.0f, 1.0f))
+			{
+				component->SetCascadeLambda(lambda);
+			}
+			ImGui::DragFloat("Cascade update period", &component->CascadeUpdatePeriod, 0.01f, 0.0f, 1.0f);
+
 			break;
 		}
 		case ELightType::Point:

@@ -113,16 +113,44 @@ void ODirectionalLightComponent::SetPassConstant(SPassConstants& OutConstant)
 void ODirectionalLightComponent::SetCSM(OCSM* InCSM)
 {
 	CSM = InCSM;
-	auto array = MakeShadowMapDataArray();
 	for (size_t i = 0; i < 3; i++)
 	{
-		array[i]->ShadowMapIndex = CSM->GetShadowMap(i)->GetShadowMapIndex();
+		DirectionalLight.ShadowMapData[i].ShadowMapIndex = CSM->GetShadowMap(i)->GetShadowMapIndex();
 	}
 }
 
-array<HLSL::ShadowMapData*, 3> ODirectionalLightComponent::MakeShadowMapDataArray()
+void ODirectionalLightComponent::SetCascadeLambda(float InLambda)
 {
-	return { &DirectionalLight.ShadowMapDataNear, &DirectionalLight.ShadowMapDataMid, &DirectionalLight.ShadowMapDataFar };
+	CascadeSplitLambda = InLambda;
+	UpdateCascadeSplits();
+	MarkDirty();
+}
+
+float ODirectionalLightComponent::GetCascadeLambda() const
+{
+	return CascadeSplitLambda;
+}
+
+void ODirectionalLightComponent::UpdateCascadeSplits()
+{
+	const auto camera = OEngine::Get()->GetWindow()->GetCamera();
+	const float nearClip = camera->GetNearZ();
+	const float farClip = camera->GetFarZ();
+	const float clipRange = farClip - nearClip;
+	const float minZ = nearClip;
+	const float maxZ = nearClip + clipRange;
+	const float range = maxZ - minZ;
+	const float ratio = maxZ / minZ;
+
+	// Calculate splits based on nvidia paper (https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch10.html)
+	for (uint8_t it = 0; it < MAX_CSM_PER_FRAME; it++)
+	{
+		float p = (it + 1) / static_cast<float>(MAX_CSM_PER_FRAME);
+		float log = minZ * std::pow(ratio, p);
+		float uniform = minZ + range * p;
+		float d = CascadeSplitLambda * (log - uniform) + uniform;
+		CascadeSplits[it] = (d - nearClip) / clipRange;
+	}
 }
 
 OPointLightComponent::OPointLightComponent(uint32_t InIdx)
@@ -215,33 +243,15 @@ ODirectionalLightComponent::ODirectionalLightComponent(uint32_t InIdx)
 	const auto camera = OEngine::Get()->GetWindow()->GetCamera();
 	camera->OnCameraUpdate.Add([this]() {
 		static auto currentTime = 0.f;
-		constexpr auto UpdatePeriod = 0.5f;
 
-		if (currentTime + UpdatePeriod < OEngine::Get()->GetTime())
+		if (currentTime + CascadeUpdatePeriod < OEngine::Get()->GetTime())
 		{
 			currentTime = OEngine::Get()->GetTime();
-			//MarkDirty();
+			MarkDirty();
 		}
 	});
 
-	const float nearClip = camera->GetNearZ();
-	const float farClip = camera->GetFarZ();
-	const float clipRange = farClip - nearClip;
-	const float minZ = nearClip;
-	const float maxZ = nearClip + clipRange;
-	const float range = maxZ - minZ;
-	const float ratio = maxZ / minZ;
-
-	// Calculate splits based on nvidia paper (https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch10.html)
-	for (uint8_t it = 0; it < MAX_CSM_PER_FRAME; it++)
-	{
-		float cascadeSplitLambda = 0.3f;
-		float p = (it + 1) / static_cast<float>(MAX_CSM_PER_FRAME);
-		float log = minZ * std::pow(ratio, p);
-		float uniform = minZ + range * p;
-		float d = cascadeSplitLambda * (log - uniform) + uniform;
-		CascadeSplits[it] = (d - nearClip) / clipRange;
-	}
+	UpdateCascadeSplits();
 }
 
 void ODirectionalLightComponent::SetLightSourceData()
@@ -258,12 +268,6 @@ void ODirectionalLightComponent::SetLightSourceData()
 	auto zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 	auto lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	auto camera = OEngine::Get()->GetWindow()->GetCamera();
-
-	auto shadowTransforms = array{
-		&DirectionalLight.ShadowMapDataNear,
-		&DirectionalLight.ShadowMapDataMid,
-		&DirectionalLight.ShadowMapDataFar
-	};
 
 	auto lightDir = XMVector3Normalize(XMLoadFloat3(&DirectionalLight.Direction));
 	auto lightPos = lightDir; //* -2.0f * bounds.Radius;
@@ -319,32 +323,31 @@ void ODirectionalLightComponent::SetLightSourceData()
 		radius = std::ceil(radius * 16.0f) / 16.0f;
 		const auto maxExtents = XMVectorSet(radius, radius, radius, 0.0f);
 		const auto minExtents = -maxExtents;
-		const auto eye = center - (lightDir * -XMVectorGetZ(minExtents));
+		const auto eye = center + (lightDir * -radius);
 		const auto lightView = MatrixLookAt(eye, center, lightUp);
-		const auto orthoMat = MatrixOrthographicOffCenter(GetX(minExtents),
-		                                                  GetX(maxExtents),
-		                                                  GetY(minExtents),
-		                                                  GetY(maxExtents),
-		                                                  0,
-		                                                  GetZ(maxExtents) - GetZ(minExtents));
+		const auto lightProj = MatrixOrthographicOffCenter(GetX(minExtents),
+		                                                   GetX(maxExtents),
+		                                                   GetY(minExtents),
+		                                                   GetY(maxExtents),
+		                                                   -5000,
+		                                                   5000);
 		const XMMATRIX T{
 			0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f
 		};
 
-		const auto lightOrthoMat = lightView * orthoMat;
-		const auto invOrthoMat = Inverse(orthoMat);
+		const auto lightViewProj = lightView * lightProj;
+		const auto invLightViewProj = Inverse(lightViewProj);
 		SPassConstants passConstants;
 		Put(passConstants.View, Transpose(lightView));
-		Put(passConstants.Proj, Transpose(orthoMat));
-		Put(passConstants.ViewProj, Transpose(lightOrthoMat));
+		Put(passConstants.Proj, Transpose(lightProj));
+		Put(passConstants.ViewProj, Transpose(lightViewProj));
 		Put(passConstants.InvView, Transpose(Inverse(lightView)));
-		Put(passConstants.InvProj, Transpose(Inverse(orthoMat)));
-		Put(passConstants.InvViewProj, Transpose(invOrthoMat));
+		Put(passConstants.InvProj, Transpose(Inverse(lightProj)));
+		Put(passConstants.InvViewProj, Transpose(invLightViewProj));
 		Put(passConstants.EyePosW, lightPos);
 
-		const XMMATRIX S = lightOrthoMat * T;
-		Put(shadowTransforms[i]->Transform, Transpose(S));
-		shadowTransforms[i]->MaxDistance = radius;
+		const XMMATRIX S = lightViewProj * T;
+		Put(DirectionalLight.ShadowMapData[i].Transform, Transpose(S));
 		CSM->GetShadowMap(i)->SetPassConstants(passConstants);
 		lastSplitDist = CascadeSplits[i];
 	}

@@ -78,8 +78,14 @@ public:
 	void SetCSM(OCSM* InCSM);
 	array<float, 3> CascadeSplits;
 
+	void SetCascadeLambda(float InLambda);
+	float GetCascadeLambda() const;
+	void UpdateCascadeSplits();
+
+	float CascadeUpdatePeriod = 0.1f;
+
 private:
-	array<HLSL::ShadowMapData*, 3> MakeShadowMapDataArray();
+	float CascadeSplitLambda = 0.65;
 	TUploadBufferData<HLSL::DirectionalLight> DirLightBufferInfo;
 	HLSL::DirectionalLight DirectionalLight;
 	OCSM* CSM = nullptr;

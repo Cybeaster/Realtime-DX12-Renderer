@@ -16,8 +16,6 @@ struct VertexOut
 	float3 NormalW : NORMAL;
 	float3 TangentW : TANGENT;
 	float2 TexC : TEXCOORD;
-	float4 ShadowPositionsH[SHADOW_MAPS_NUM] : TEXCOORD3;
-	nointerpolation uint LightIndices[SHADOW_MAPS_NUM] : TEXCOORD1;
 	nointerpolation uint MaterialIndex : MATERIALINDEX;
 };
 
@@ -64,7 +62,6 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	// Output vertex attributes for interpolation across triangle.
 	float4 texC = mul(float4(Vin.TexC, 0.0f, 1.0f), texTransform);
 	vout.TexC = mul(texC, matData.MatTransform).xy;
-    FindShadowPosition(vout.ShadowPositionsH, posW, vout.LightIndices);
     vout.SsaoPosH = mul(posW, gViewProjTex);
 
 	return vout;
@@ -89,6 +86,7 @@ float4 PS(VertexOut pin)
 	pin.TangentW = normalize(pin.TangentW);
 
 
+
 	float reflectance = CalcFresnelR0(matData.IndexOfRefraction); //TODO fix if IndexOfRefraction == 0
     float3 f0 = lerp(F0_COEFF * SQUARE(reflectance), diffuseAlbedo,  matData.Metalness);
 
@@ -96,6 +94,8 @@ float4 PS(VertexOut pin)
 	float3 toEyeW = normalize(gEyePosW - pin.PosW);
 	float distToEye = length(toEyeW);
 
+
+	//SSAO
 	float ambientAccess = 1;
 	if (gSSAOEnabled)
 	{
@@ -103,31 +103,44 @@ float4 PS(VertexOut pin)
 		ambientAccess = gSsaoMap.Sample(gsamLinearWrap, pin.SsaoPosH.xy, 0.0f).r;
 	}
 
-    float shadowFactor[SHADOW_MAPS_NUM];
-    GetShadowFactor(shadowFactor,  pin.LightIndices,pin.ShadowPositionsH);
-
 	//diffuse incorporating metalness
 	Material mat = { diffuseAlbedo * (1.0f - matData.Metalness), f0.rgb, matData.Shininess, 1 -  (matData.Shininess / 100) };
 	BumpedData data = SampleNormalMap(pin.NormalW, pin.TangentW, matData, pin.TexC);
 	float3 bumpedNormalW = data.BumpedNormalW;
 	float4 normalMapSample = data.NormalMapSample;
 
+
+	float3 shadowPositionH;
+	uint lightIndex;
+
+	if(!FindDirLightShadowPosition(float4(pin.PosW, 1.0f), shadowPositionH, lightIndex))
+	{
+		return float4(0.0f, 0.0f, 0.0f, 1.0f);
+	}
+	else
+	{
+		//return float4(shadowPositionH, 1.0f);
+	}
+
+	float directionalShadowFactor = CalcShadowFactor(shadowPositionH, lightIndex);
+
     uint idx = 0;
 	float3 directLighting = {0.0f, 0.0f, 0.0f};
-	for (uint i = 0; i < gNumDirLights; i++)
+	if(gNumDirLights > 0)
 	{
-		DirectionalLight curLight = gDirectionalLights[i];
-        directLighting += shadowFactor[idx] * ComputeDirectionalLight_BRDF(curLight, mat, bumpedNormalW, toEyeW);
+		DirectionalLight curLight = gDirectionalLights[0];
+        directLighting += directionalShadowFactor * ComputeDirectionalLight_BRDF(curLight, mat, bumpedNormalW, toEyeW);
         idx++;
     }
 
-	for (uint k = 0; k < gNumSpotLights; k++)
-	{
-		SpotLight light = gSpotLights[k];
-		//TODO fix brdf for spotlights
-		directLighting += shadowFactor[idx] * ComputeSpotLight_BlinnPhong(gSpotLights[k], mat, pin.PosW, bumpedNormalW, toEyeW) * light.Intensity;
-		idx++;
-	}
+	//FindSpotLightShadowPosition(float4(pin.PosW, 1.0f), shadowPositionH, lightIndex);
+	//for (uint k = 0; k < gNumSpotLights; k++)
+	//{
+	//	SpotLight light = gSpotLights[k];
+	//	//TODO fix brdf for spotlights
+	//	directLighting += shadowFactor[idx] * ComputeSpotLight_BlinnPhong(gSpotLights[k], mat, pin.PosW, bumpedNormalW, toEyeW) * light.Intensity;
+	//	idx++;
+	//}
 
 	directLighting *= 10;
 	//return float4(pin.NormalW.rgb, 1.0f);
