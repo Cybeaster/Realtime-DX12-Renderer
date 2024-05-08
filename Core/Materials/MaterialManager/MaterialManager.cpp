@@ -7,7 +7,7 @@
 #include "TextureConstants.h"
 
 #include <future>
-constexpr auto eps = 1 - Utils::Math::Epsilon;
+constexpr auto eps = 1 - EPSILON;
 
 void OMaterialManager::CreateMaterial(const string& Name, STexture* Texture, const HLSL::MaterialData& Surface, bool Notify /*= false*/)
 {

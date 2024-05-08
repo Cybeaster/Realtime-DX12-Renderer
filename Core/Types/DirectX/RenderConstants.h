@@ -27,6 +27,8 @@ struct SRenderConstants
 		D3D12_HEAP_TYPE_UPLOAD, D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_MEMORY_POOL_UNKNOWN, 0, 0
 	};
 
+	static constexpr UINT ShadowMapSize = 2048;
+
 	static const DXGI_FORMAT AmbientMapFormat = DXGI_FORMAT_R16_UNORM;
 	static const DXGI_FORMAT NormalMapFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
 

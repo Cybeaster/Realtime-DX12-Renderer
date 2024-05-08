@@ -156,7 +156,17 @@ void OEngine::DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLay
 	}
 
 	auto renderItems = GetRenderItems(RenderLayer);
-	DrawRenderItemsImpl(Desc, renderItems, ForceDrawAll);
+	DrawRenderItemsImpl(Desc, renderItems, ForceDrawAll, CameraRenderedItems);
+}
+
+void OEngine::DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, SCulledInstancesInfo& InstanceBuffer)
+{
+	if (Desc == nullptr)
+	{
+		LOG(Engine, Warning, "PSO is nullptr!")
+		return;
+	}
+	DrawRenderItemsImpl(Desc, GetRenderItems(RenderLayer), false, InstanceBuffer);
 }
 
 void OEngine::UpdateMaterialCB() const
@@ -260,7 +270,11 @@ void OEngine::UpdateLightCB(const UpdateEventArgs& Args) const
 	}
 }
 
-void OEngine::DrawRenderItemsImpl(SPSODescriptionBase* Description, const vector<ORenderItem*>& RenderItems, bool bIgnoreVisibility)
+void OEngine::DrawRenderItemsImpl(
+    SPSODescriptionBase* Description,
+    const vector<ORenderItem*>& RenderItems,
+    bool bIgnoreVisibility,
+    SCulledInstancesInfo& Info)
 {
 	PROFILE_SCOPE();
 
@@ -269,7 +283,7 @@ void OEngine::DrawRenderItemsImpl(SPSODescriptionBase* Description, const vector
 	{
 		const auto renderItem = RenderItems[i];
 
-		auto visibleInstances = bIgnoreVisibility ? renderItem->Instances.size() : renderItem->VisibleInstanceCount;
+		auto visibleInstances = bIgnoreVisibility ? renderItem->Instances.size() : Info.Items[renderItem].VisibleInstanceCount;
 		if (!renderItem->IsValidChecked() || visibleInstances == 0)
 		{
 			continue;
@@ -279,8 +293,8 @@ void OEngine::DrawRenderItemsImpl(SPSODescriptionBase* Description, const vector
 		if (!renderItem->Instances.empty() && renderItem->Geometry)
 		{
 			renderItem->BindResources(cmd.Get(), Engine->CurrentFrameResource);
-			auto instanceBuffer = Engine->CurrentFrameResource->InstanceBuffer->GetResource();
-			auto location = instanceBuffer->Resource->GetGPUVirtualAddress() + renderItem->StartInstanceLocation * sizeof(HLSL::InstanceData);
+			auto instanceBuffer = Info.Instances->get()->GetResource();
+			auto location = instanceBuffer->Resource->GetGPUVirtualAddress() + Info.Items[renderItem].StartInstanceLocation * sizeof(HLSL::InstanceData);
 			GetCommandQueue()->SetResource("gInstanceData", location, Description);
 			cmd->DrawIndexedInstanced(
 			    renderItem->ChosenSubmesh->IndexCount,
@@ -372,7 +386,6 @@ int OEngine::InitScene()
 
 	GetCommandQueue()->TryResetCommandList();
 	SceneManager->LoadScenes();
-	//QuadItem = CreateQuadRenderItem("Quad", -1.0f, 1.0f, 2.0f, 2.0f, 0.0f, SRenderItemParams{});
 	GetCommandQueue()->ExecuteCommandListAndWait();
 
 	PostTestInit();
@@ -463,7 +476,7 @@ void OEngine::BuildFrameResource(uint32_t Count)
 	{
 		auto frameResource = make_unique<SFrameResource>(Device->GetDevice(), GetWindow());
 		frameResource->SetPass(PassCount);
-		frameResource->SetInstances(CurrentNumInstances);
+		frameResource->SetCameraInstances(CurrentNumInstances);
 		frameResource->SetMaterials(CurrentNumMaterials);
 		frameResource->SetDirectionalLight(GetLightComponentsCount());
 		frameResource->SetPointLight(GetLightComponentsCount());
@@ -622,9 +635,10 @@ void OEngine::UpdateObjectCB() const
 void OEngine::OnUpdate(UpdateEventArgs& Args)
 {
 	PROFILE_SCOPE();
+
 	UpdateBoundingSphere();
 	UpdateFrameResource();
-	PerformFrustrumCulling();
+	CameraRenderedItems = PerformFrustumCulling(Window->GetCamera()->GetFrustrum(), Window->GetCamera()->GetView(), CurrentFrameResource->CameraInstancesBuffer);
 
 	for (auto& item : AllRenderItems)
 	{
@@ -842,7 +856,7 @@ void OEngine::FillExpectedShadowMaps()
 	int32_t currSize = MAX_SHADOW_MAPS - ShadowMaps.size();
 	while (currSize > 0)
 	{
-		BuildRenderObject<OShadowMap>(ShadowTextures, Device->GetDevice(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), DXGI_FORMAT_R24G8_TYPELESS);
+		BuildRenderObject<OShadowMap>(ShadowTextures, Device->GetDevice(), SRenderConstants::ShadowMapSize, DXGI_FORMAT_R24G8_TYPELESS);
 		currSize--;
 	}
 }
@@ -1109,8 +1123,13 @@ ODynamicCubeMapRenderTarget* OEngine::GetCubeRenderTarget() const
 
 D3D12_GPU_DESCRIPTOR_HANDLE OEngine::GetSRVDescHandleForTexture(STexture* Texture) const
 {
+	return GetSRVDescHandle(Texture->HeapIdx);
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE OEngine::GetSRVDescHandle(int64_t Index) const
+{
 	auto desc = DefaultGlobalHeap.SRVHeap->GetGPUDescriptorHandleForHeapStart();
-	desc.ptr += Texture->HeapIdx * CBVSRVUAVDescriptorSize;
+	desc.ptr += Index * CBVSRVUAVDescriptorSize;
 	return desc;
 }
 
@@ -1148,22 +1167,15 @@ OEngine::TRenderLayer& OEngine::GetRenderLayers()
 	return RenderLayers;
 }
 
-void OEngine::PerformFrustrumCulling()
+SCulledInstancesInfo OEngine::PerformFrustumCulling(const BoundingFrustum& Frustum, const XMMATRIX& ViewMatrix, TUploadBuffer<HLSL::InstanceData>& Buffer) const
 {
 	PROFILE_SCOPE();
-	RenderedItems.clear();
-	RenderedItems.reserve(AllRenderItems.size());
+	SCulledInstancesInfo result;
+	result.Instances = &Buffer;
+	result.Items.reserve(AllRenderItems.size());
 
-	if (CurrentFrameResource == nullptr)
-	{
-		return;
-	}
-
-	const auto view = Window->GetCamera()->GetView();
-	auto det = XMMatrixDeterminant(view);
-	const auto invView = XMMatrixInverse(&det, view);
-	const auto camera = Window->GetCamera();
-	auto currentInstanceBuffer = CurrentFrameResource->InstanceBuffer.get();
+	auto det = XMMatrixDeterminant(ViewMatrix);
+	const auto invView = XMMatrixInverse(&det, ViewMatrix);
 	int32_t counter = 0;
 	for (auto& e : AllRenderItems)
 	{
@@ -1172,37 +1184,39 @@ void OEngine::PerformFrustrumCulling()
 		{
 			continue;
 		}
+		SCulledRenderItem item;
 
 		size_t visibleInstanceCount = 0;
 		for (size_t i = 0; i < instData.size(); i++)
 		{
 			if (visibleInstanceCount == 0)
 			{
-				e->StartInstanceLocation = counter;
+				item.StartInstanceLocation = counter;
 			}
 
-			auto world = XMLoadFloat4x4(&instData[i].World);
-			auto textTransform = XMLoadFloat4x4(&instData[i].TexTransform);
-			det = XMMatrixDeterminant(world);
-			auto invWorld = XMMatrixInverse(&det, world);
-
-			auto viewToLocal = XMMatrixMultiply(invView, invWorld);
+			const auto world = Load(instData[i].World);
+			const auto invWorld = Inverse(world);
+			const auto viewToLocal = XMMatrixMultiply(invWorld, invView);
 			BoundingFrustum localSpaceFrustum;
-			camera->GetFrustrum().Transform(localSpaceFrustum, viewToLocal);
-
-			if (localSpaceFrustum.Contains(e->Bounds) != DirectX::DISJOINT || !bFrustrumCullingEnabled)
+			Frustum.Transform(localSpaceFrustum, viewToLocal);
+			if (!bFrustrumCullingEnabled || localSpaceFrustum.Contains(e->Bounds) != DISJOINT)
 			{
 				HLSL::InstanceData data;
-				XMStoreFloat4x4(&data.World, XMMatrixTranspose(world));
-				XMStoreFloat4x4(&data.TexTransform, XMMatrixTranspose(textTransform));
+				Put(data.World, Transpose(world));
+				Put(data.TexTransform, Transpose(Load(instData[i].TexTransform)));
 				data.MaterialIndex = instData[i].MaterialIndex;
-				currentInstanceBuffer->CopyData(counter++, data);
+				Buffer->CopyData(counter++, data);
 				visibleInstanceCount++;
-				RenderedItems.insert(e.get());
 			}
 		}
-		e->VisibleInstanceCount = visibleInstanceCount;
+		if (visibleInstanceCount > 0)
+		{
+			item.VisibleInstanceCount = visibleInstanceCount;
+			item.Item = e.get();
+			result.Items[e.get()] = item;
+		}
 	}
+	return result;
 }
 
 uint32_t OEngine::GetTotalNumberOfInstances() const
@@ -1441,8 +1455,12 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(SMeshGeometry* Mesh, const string&
 
 	HLSL::InstanceData defaultInstance;
 	defaultInstance.MaterialIndex = matIdx;
-	Scale(defaultInstance.World, Params.Scale.value_or(XMFLOAT3{ 1, 1, 1 }));
-	Translate(defaultInstance.World, Params.Position.value_or(XMFLOAT3{ 0, 0, 0 }));
+
+	defaultInstance.Scale = Params.Scale.value_or(XMFLOAT3{ 1, 1, 1 });
+	defaultInstance.Position = Params.Position.value_or(XMFLOAT3{ 0, 0, 0 });
+
+	Scale(defaultInstance.World, defaultInstance.Scale);
+	Translate(defaultInstance.World, defaultInstance.Position);
 
 	newItem->Instances.resize(Params.NumberOfInstances, defaultInstance);
 	newItem->RenderLayer = layer;
@@ -1475,7 +1493,7 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(SMeshGeometry* Mesh, const string&
 OShadowMap* OEngine::CreateShadowMap()
 {
 	uint32_t componentNum = ShadowMaps.size();
-	auto newMap = BuildRenderObject<OShadowMap>(ShadowTextures, Device->GetDevice(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), DXGI_FORMAT_R24G8_TYPELESS);
+	auto newMap = BuildRenderObject<OShadowMap>(ShadowTextures, Device->GetDevice(), SRenderConstants::ShadowMapSize, DXGI_FORMAT_R24G8_TYPELESS);
 	ShadowMaps.push_back(newMap);
 	newMap->SetShadowMapIndex(componentNum);
 	return newMap;
@@ -1495,7 +1513,7 @@ OPointLightComponent* OEngine::AddPointLightComponent(ORenderItem* Item)
 	uint32_t componentNum = LightComponents.size();
 	const auto res = Item->AddComponent<OPointLightComponent>(componentNum);
 	LightComponents.push_back(res);
-	auto newShadow = BuildRenderObject<OShadowMap>(ShadowTextures, Device->GetDevice(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), DXGI_FORMAT_R24G8_TYPELESS);
+	auto newShadow = BuildRenderObject<OShadowMap>(ShadowTextures, Device->GetDevice(), SRenderConstants::ShadowMapSize, DXGI_FORMAT_R24G8_TYPELESS);
 	ShadowMaps.push_back(newShadow);
 	newShadow->SetShadowMapIndex(componentNum);
 	return res;
@@ -1506,7 +1524,7 @@ ODirectionalLightComponent* OEngine::AddDirectionalLightComponent(ORenderItem* I
 	uint32_t componentNum = LightComponents.size();
 	auto light = Item->AddComponent<ODirectionalLightComponent>(componentNum);
 	LightComponents.push_back(light);
-	auto csm = BuildRenderObject<OCSM>(None, Device->GetDevice(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), DXGI_FORMAT_R24G8_TYPELESS);
+	auto csm = BuildRenderObject<OCSM>(None, Device->GetDevice(), DXGI_FORMAT_R24G8_TYPELESS);
 	light->SetCSM(csm);
 	return light;
 }

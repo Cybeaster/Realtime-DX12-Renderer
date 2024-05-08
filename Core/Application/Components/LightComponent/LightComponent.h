@@ -57,8 +57,6 @@ public:
 
 private:
 	bool bIsDirty = true;
-
-	DirectX::XMVECTOR Position = {};
 };
 
 //Directional Light component
@@ -66,16 +64,20 @@ class ODirectionalLightComponent final : public OLightComponent
 {
 public:
 	ODirectionalLightComponent(uint32_t InIdx);
+
 	void SetLightSourceData() override;
-	void SetShadowMapIndices(array<UINT, MAX_CSM_PER_FRAME> Maps);
-	HLSL::DirectionalLight& GetDirectionalLight();
 	ELightType GetLightType() const override;
-	void SetDirectionalLight(const SDirectionalLightPayload& Light);
 	int32_t GetLightIndex() const override;
 	void UpdateFrameResource(const SFrameResource* FrameResource) override;
-	void InitFrameResource(const TUploadBufferData<HLSL::DirectionalLight>& Spot);
 	void SetPassConstant(SPassConstants& OutConstant) override;
+	void Tick(UpdateEventArgs Arg) override;
+	void SetDirectionalLight(const SDirectionalLightPayload& Light);
+	void InitFrameResource(const TUploadBufferData<HLSL::DirectionalLight>& Spot);
 	void SetCSM(OCSM* InCSM);
+	OCSM* GetCSM() const;
+	void SetShadowMapIndices(array<UINT, MAX_CSM_PER_FRAME> Maps);
+
+	HLSL::DirectionalLight& GetDirectionalLight();
 	array<float, 3> CascadeSplits;
 
 	void SetCascadeLambda(float InLambda);

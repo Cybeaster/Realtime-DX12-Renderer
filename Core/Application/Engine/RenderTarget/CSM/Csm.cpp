@@ -2,8 +2,8 @@
 
 #include "Engine/Engine.h"
 
-OCSM::OCSM(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format)
-    : ORenderTargetBase(Device, Width, Height, Format, Default)
+OCSM::OCSM(ID3D12Device* Device, DXGI_FORMAT Format)
+    : ORenderTargetBase(Device, SRenderConstants::ShadowMapSize, SRenderConstants::ShadowMapSize, Format, Default)
 {
 	for (uint32_t i = 0; i < 3; i++)
 	{

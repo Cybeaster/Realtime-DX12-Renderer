@@ -8,6 +8,7 @@
 #define uint unsigned int
 
 #include "DirectX/DXHelper.h"
+#include "MathUtils.h"
 namespace HLSL
 {
 #endif
@@ -76,14 +77,27 @@ struct InstanceData
 	{
 		DirectX::XMStoreFloat4x4(&World, DirectX::XMMatrixIdentity());
 		DirectX::XMStoreFloat4x4(&TexTransform, DirectX::XMMatrixIdentity());
+		Position = { 0.0f, 0.0f, 0.0f };
+		Rotation = { 0.0f, 0.0f, 0.0f };
+		Scale = { 1.0f, 1.0f, 1.0f };
 		MaterialIndex = 0;
+	}
+
+	bool IsTransformEqual(const InstanceData& Other) const
+	{
+		return Other.Position == Position && Other.Rotation == Rotation && Other.Scale == Scale;
 	}
 #endif
 
 	float4x4 World;
 	float4x4 TexTransform;
 	uint MaterialIndex;
-	float3 dum1;
+	float3 Position;
+	float pad;
+	float3 Rotation;
+	float pad2;
+	float3 Scale;
+	float pad3;
 };
 
 struct SpotLight

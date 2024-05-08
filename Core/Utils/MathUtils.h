@@ -6,11 +6,12 @@
 
 #include <random>
 #define LEFT_HANDED true
+constexpr float Infinity = FLT_MAX;
+constexpr float EPSILON = 1e-6f;
+
 namespace Utils::Math
 {
 using namespace DirectX;
-constexpr float Infinity = FLT_MAX;
-constexpr float Epsilon = 1e-6f;
 
 template<typename T>
 T Clamp(const T& x, const T& Low, const T& High)
@@ -35,9 +36,9 @@ inline auto Lerp(float T, const Type& A, const Type& B)
 }
 
 template<typename Type>
-inline auto IsNormalized(const Type& A, float Epsilon = 1e-6f)
+inline auto IsNormalized(const Type& A, float EPSILON = 1e-6f)
 {
-	return abs(1.0f - Length(A)) < Epsilon; // Return true if the vector is normalized
+	return abs(1.0f - Length(A)) < EPSILON; // Return true if the vector is normalized
 }
 
 template<typename T>
@@ -328,6 +329,36 @@ static DirectX::XMFLOAT3 TransformTransposed(const DirectX::XMFLOAT3& point, con
 	result.z = temp2.z / temp2.w;
 
 	return result;
+}
+
+inline bool operator==(const DirectX::XMFLOAT3 A, const DirectX::XMFLOAT3 B)
+{
+	return abs(A.x - B.x) < EPSILON && abs(A.y - B.y) < EPSILON && abs(A.z - B.z) < EPSILON;
+}
+
+inline bool operator==(const DirectX::XMFLOAT2 A, const DirectX::XMFLOAT2 B)
+{
+	return abs(A.x - B.x) < EPSILON && abs(A.y - B.y) < EPSILON;
+}
+
+inline bool operator==(const DirectX::XMFLOAT4 A, const DirectX::XMFLOAT4 B)
+{
+	return abs(A.x - B.x) < EPSILON && abs(A.y - B.y) < EPSILON && abs(A.z - B.z) < EPSILON && abs(A.w - B.w) < EPSILON;
+}
+
+inline bool operator!=(const DirectX::XMFLOAT3 A, const DirectX::XMFLOAT3 B)
+{
+	return !(operator==(A, B));
+}
+
+inline bool operator!=(const DirectX::XMFLOAT2 A, const DirectX::XMFLOAT2 B)
+{
+	return !(operator==(A, B));
+}
+
+inline bool operator!=(const DirectX::XMFLOAT4 A, const DirectX::XMFLOAT4 B)
+{
+	return !(operator==(A, B));
 }
 
 inline auto GetX(const DirectX::XMFLOAT3& Vec)

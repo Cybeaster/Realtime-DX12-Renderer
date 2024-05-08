@@ -42,7 +42,7 @@ struct SFrameResource
 	// commands that reference it. So each frame needs their own cbuffers.
 
 	void SetPass(UINT PassCount);
-	void SetInstances(UINT InstanceCount);
+	void SetCameraInstances(UINT InstanceCount);
 	void SetMaterials(UINT MaterialCount);
 	void SetDirectionalLight(UINT LightCount);
 	void SetPointLight(UINT LightCount);
@@ -51,7 +51,7 @@ struct SFrameResource
 	void SetFrusturmCorners();
 	TUploadBuffer<SPassConstants> PassCB = nullptr;
 	TUploadBuffer<HLSL::MaterialData> MaterialBuffer = nullptr;
-	TUploadBuffer<HLSL::InstanceData> InstanceBuffer = nullptr;
+	TUploadBuffer<HLSL::InstanceData> CameraInstancesBuffer = nullptr;
 	TUploadBuffer<SSsaoConstants> SsaoCB = nullptr;
 	TUploadBuffer<HLSL::DirectionalLight> DirectionalLightBuffer;
 	TUploadBuffer<HLSL::PointLight> PointLightBuffer;

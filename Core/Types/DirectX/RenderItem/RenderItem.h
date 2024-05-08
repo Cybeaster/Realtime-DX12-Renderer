@@ -41,8 +41,6 @@ struct ORenderItem
 	DirectX::BoundingBox Bounds;
 	vector<HLSL::InstanceData> Instances;
 
-	UINT VisibleInstanceCount = 0;
-	int32_t StartInstanceLocation = 0;
 	/*UI*/
 	bool bIsDisplayable = true;
 	HLSL::InstanceData* GetDefaultInstance();
@@ -51,6 +49,19 @@ struct ORenderItem
 
 private:
 	vector<unique_ptr<OComponentBase>> Components;
+};
+
+struct SCulledRenderItem
+{
+	ORenderItem* Item = nullptr;
+	UINT StartInstanceLocation = 0;
+	UINT VisibleInstanceCount = 0;
+};
+
+struct SCulledInstancesInfo
+{
+	unordered_map<ORenderItem*, SCulledRenderItem> Items;
+	TUploadBuffer<HLSL::InstanceData>* Instances;
 };
 
 template<typename T, typename... Args>

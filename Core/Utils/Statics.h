@@ -29,6 +29,11 @@ T SCast(auto Ptr)
 	return static_cast<T>(Ptr);
 }
 
+inline void* PtrCast(uint64_t Ptr)
+{
+	return reinterpret_cast<void*>(Ptr);
+}
+
 using TUUID = boost::uuids::uuid;
 inline TUUID GenerateUUID()
 {

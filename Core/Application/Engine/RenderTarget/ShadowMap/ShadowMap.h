@@ -1,10 +1,12 @@
 #pragma once
+#include "DirectX/HlslTypes.h"
+#include "DirectX/RenderItem/RenderItem.h"
 #include "Engine/RenderTarget/RenderTarget.h"
 class OLightComponent;
 class OShadowMap : public ORenderTargetBase
 {
 public:
-	OShadowMap(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format);
+	OShadowMap(ID3D12Device* Device, UINT ShadowMapSize, DXGI_FORMAT Format);
 
 	void BuildDescriptors() override;
 	void BuildResource() override;
@@ -26,8 +28,13 @@ public:
 	void SetPassConstants(const SPassConstants&);
 	uint32_t GetShadowMapIndex() const;
 	bool IsValid();
+	UINT GetMapSize() const;
+	void UpdateFrustum(const DirectX::BoundingFrustum& Frustum, const DirectX::XMMATRIX& LightViewProj);
+	SCulledInstancesInfo& GetCulledInstancesInfo();
 
 private:
+	TUploadBuffer<HLSL::InstanceData> ShadowMapInstancesBuffer = nullptr;
+	SCulledInstancesInfo InstancesInfo;
 	bool bNeedToUpdate = true;
 	SPassConstants PassConstant;
 	SDescriptorPair SRV;
@@ -35,9 +42,7 @@ private:
 	SResourceInfo RenderTarget;
 	TUploadBufferData<SPassConstants> PassConstantBuffer;
 	std::optional<uint32_t> ShadowMapIndex;
-	float NearZ;
-	float FarZ;
-	DirectX::XMFLOAT4X4 ShadowTransform;
-	DirectX::XMFLOAT4X4 View;
-	DirectX::XMFLOAT4X4 Proj;
+	UINT MapSize = 0;
+	DirectX::XMMATRIX LightView;
+	DirectX::BoundingFrustum Frustum;
 };

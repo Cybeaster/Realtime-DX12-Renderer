@@ -27,10 +27,11 @@ void OShadowMap::BuildResource()
 	RenderTarget = Utils::CreateResource(this, L"ShadowMap_RenderTarget", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_GENERIC_READ, &optClear);
 }
 
-OShadowMap::OShadowMap(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format)
-    : ORenderTargetBase(Device, Width, Height, Format, EResourceHeapType::Default)
+OShadowMap::OShadowMap(ID3D12Device* Device, UINT ShadowMapSize, DXGI_FORMAT Format)
+    : ORenderTargetBase(Device, ShadowMapSize, ShadowMapSize, Format, EResourceHeapType::Default), MapSize(ShadowMapSize)
 {
 	Name = L"ShadowMap";
+	ShadowMapInstancesBuffer = OUploadBuffer<HLSL::InstanceData>::Create(Device, OEngine::Get()->GetAllRenderItems().size(), false, this, L"_ShadowMapInstancesBuffer");
 }
 
 void OShadowMap::BuildDescriptors()
@@ -120,6 +121,7 @@ void OShadowMap::SetPassConstants(const SPassConstants& Pass)
 	PassConstant = Pass;
 	PassConstant.RenderTargetSize = DirectX::XMFLOAT2(static_cast<float>(Width), static_cast<float>(Height));
 	PassConstant.InvRenderTargetSize = DirectX::XMFLOAT2(1.0f / Width, 1.0f / Height);
+	InstancesInfo = OEngine::Get()->PerformFrustumCulling(Frustum, LightView, ShadowMapInstancesBuffer);
 	bNeedToUpdate = true;
 }
 
@@ -131,6 +133,22 @@ uint32_t OShadowMap::GetShadowMapIndex() const
 bool OShadowMap::IsValid()
 {
 	return ShadowMapIndex.has_value();
+}
+
+UINT OShadowMap::GetMapSize() const
+{
+	return MapSize;
+}
+
+void OShadowMap::UpdateFrustum(const DirectX::BoundingFrustum& InFrustum, const DirectX::XMMATRIX& InLightView)
+{
+	Frustum = InFrustum;
+	LightView = InLightView;
+}
+
+SCulledInstancesInfo& OShadowMap::GetCulledInstancesInfo()
+{
+	return InstancesInfo;
 }
 
 uint32_t OShadowMap::GetNumDSVRequired() const

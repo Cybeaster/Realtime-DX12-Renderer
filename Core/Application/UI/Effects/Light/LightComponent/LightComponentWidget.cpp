@@ -1,7 +1,10 @@
 
 #include "LightComponentWidget.h"
 
+#include "Engine/RenderTarget/CSM/Csm.h"
 #include "LightComponent/LightComponent.h"
+
+#include <numeric>
 
 void OLightComponentWidget::Draw()
 {
@@ -23,8 +26,26 @@ void OLightComponentWidget::Draw()
 			{
 				component->SetCascadeLambda(lambda);
 			}
-			ImGui::DragFloat("Cascade update period", &component->CascadeUpdatePeriod, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Cascade update period", &component->CascadeUpdatePeriod, 0.01f, 0.0f, 10.0f);
+			if (ImGui::Begin("Shadow Maps"))
+			{
+				for (auto& map : component->GetCSM()->GetShadowMaps())
+				{
+					auto format = std::format("Shadow Map {}", map->GetShadowMapIndex());
+					ImGui::SeparatorText(format.c_str());
 
+					auto numRenderObjects = map->GetCulledInstancesInfo().Items.size();
+					auto numTriangles = std::accumulate(map->GetCulledInstancesInfo().Items.begin(),
+					                                    map->GetCulledInstancesInfo().Items.end(),
+					                                    0,
+					                                    [](int32_t acc, auto pair) { return acc + pair.first->ChosenSubmesh->Vertices->size() / 3; });
+
+					ImGui::Text("Number of rendered meshes: %d", numRenderObjects);
+					ImGui::Text("Number of rendered triangles: %d", numTriangles);
+					ImGui::Image(PtrCast(map->GetSRV().GPUHandle.ptr), ImVec2(300, 300));
+				}
+				ImGui::End();
+			}
 			break;
 		}
 		case ELightType::Point:

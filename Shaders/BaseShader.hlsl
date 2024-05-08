@@ -117,10 +117,7 @@ float4 PS(VertexOut pin)
 	{
 		return float4(0.0f, 0.0f, 0.0f, 1.0f);
 	}
-	else
-	{
-		//return float4(shadowPositionH, 1.0f);
-	}
+
 
 	float directionalShadowFactor = CalcShadowFactor(shadowPositionH, lightIndex);
 

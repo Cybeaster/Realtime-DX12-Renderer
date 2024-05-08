@@ -76,11 +76,6 @@ public:
 	std::tuple<DirectX::XMVECTOR /*ray_origin*/, DirectX::XMVECTOR /*ray dir*/, DirectX::XMMATRIX /*invView*/> Pick(int32_t Sx, int32_t Sy) const;
 	void FillPassConstant(SPassConstants& OutOther) const;
 
-	DirectX::XMFLOAT4X4 GetProjectionByIndex(int32_t Index) const;
-
-	DirectX::XMFLOAT4X4 NearProjectionMatrix;
-	DirectX::XMFLOAT4X4 MidProjectionMatrix;
-	DirectX::XMFLOAT4X4 FarProjectionMatrix;
 	FOnCameraUpdate OnCameraUpdate;
 
 private:

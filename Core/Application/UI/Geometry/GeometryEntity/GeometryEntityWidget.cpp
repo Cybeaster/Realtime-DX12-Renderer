@@ -141,19 +141,11 @@ void OGeometryEntityWidget::InitWidget()
 {
 	IWidget::InitWidget();
 	using namespace DirectX;
-	// Variables to store the decomposed components
-	DirectX::XMVECTOR scale, rotation, translation;
-	if (DirectX::XMMatrixDecompose(&scale, &rotation, &translation, DirectX::XMLoadFloat4x4(&RenderItem->GetDefaultInstance()->World)))
-	{
-		// If the decompose fails, set the default values
-		Position = { 0, 0, 0 };
-		Rotation = { 0, 0, 0 };
-		Scale = { 1, 1, 1 };
-	}
 
-	DirectX::XMStoreFloat3(&Position, translation);
-	DirectX::XMStoreFloat3(&Rotation, rotation);
-	DirectX::XMStoreFloat3(&Scale, scale);
+	// If the decompose fails, set the default values
+	Position = RenderItem->GetDefaultInstance()->Position;
+	Rotation = RenderItem->GetDefaultInstance()->Rotation;
+	Scale = RenderItem->GetDefaultInstance()->Scale;
 
 	TransformWidget = MakeWidget<OGeometryTransformWidget>(&Position, &Rotation, &Scale);
 	MaterialPickerWidget = MakeWidget<OMaterialPickerWidget>(Engine->GetMaterialManager());
@@ -172,6 +164,9 @@ void OGeometryEntityWidget::InitWidget()
 		// Combine into a single transform matrix
 		const XMMATRIX transformMatrix = matScale * matRotation * matTranslation;
 		XMStoreFloat4x4(&SelectedInstanceData->World, transformMatrix);
+		SelectedInstanceData->Position = Position;
+		SelectedInstanceData->Rotation = Rotation;
+		SelectedInstanceData->Scale = Scale;
 	});
 
 	MaterialPickerWidget->GetOnMaterialUpdateDelegate().Add([this](const SMaterial* Material) {

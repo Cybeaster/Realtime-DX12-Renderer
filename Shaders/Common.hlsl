@@ -93,6 +93,13 @@ bool IsShadowCoordsWithinRange(float3 ShadowCoords)
 	 return all(ShadowCoords.xy >= 0) && all(ShadowCoords.xy <= 1);
 }
 
+float2 GetShadowMapResolution(uint TexID)
+{
+	uint width, height, numMips;
+    gShadowMaps[TexID].GetDimensions(0, width, height, numMips);
+    return float2(width, height);
+
+}
 bool FindDirLightShadowPosition(float4 PosW, out float3 ShadowPosition, out uint LightIndex)
 {
 	LightIndex = 0;
@@ -112,6 +119,7 @@ bool FindDirLightShadowPosition(float4 PosW, out float3 ShadowPosition, out uint
 	}
 	return false;
 }
+
 
 bool FindSpotLightShadowPosition(float4 PosW, out float3 ShadowPosition, out uint LightIndex)
 {

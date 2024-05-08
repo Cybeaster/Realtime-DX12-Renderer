@@ -15,7 +15,7 @@ ORenderTargetBase* OShadowMapNode::Execute(ORenderTargetBase* RenderTarget)
 			CommandQueue->SetRenderTarget(map);
 			CommandQueue->ResourceBarrier(map, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 			CommandQueue->SetResource("cbPass", map->GetPassConstantAddresss(), pso);
-			OEngine::Get()->DrawRenderItems(pso, SRenderLayers::Opaque, true);
+			OEngine::Get()->DrawRenderItems(pso, SRenderLayers::Opaque, map->GetCulledInstancesInfo());
 			CommandQueue->ResourceBarrier(map, D3D12_RESOURCE_STATE_GENERIC_READ);
 		}
 	}

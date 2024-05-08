@@ -15,14 +15,14 @@ void SFrameResource::SetPass(UINT PassCount)
 	PassCB = make_unique<OUploadBuffer<SPassConstants>>(Device, PassCount, true, Owner, L"_PassBuffer");
 }
 
-void SFrameResource::SetInstances(UINT InstanceCount)
+void SFrameResource::SetCameraInstances(UINT InstanceCount)
 {
 	if (InstanceCount == 0)
 	{
 		LOG(Engine, Warning, "MaxInstanceCount is 0");
 		return;
 	}
-	InstanceBuffer = make_unique<OUploadBuffer<HLSL::InstanceData>>(Device, InstanceCount, false, Owner, L"_InstanceBuffer");
+	CameraInstancesBuffer = make_unique<OUploadBuffer<HLSL::InstanceData>>(Device, InstanceCount, false, Owner, L"_InstanceBuffer");
 }
 
 void SFrameResource::SetMaterials(UINT MaterialCount)

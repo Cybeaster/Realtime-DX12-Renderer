@@ -178,6 +178,7 @@ public:
 	void SetObjectDescriptor(SRenderObjectHeap& Heap);
 	void BuildDescriptorHeaps();
 	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVDescHandleForTexture(STexture* Texture) const;
+	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVDescHandle(int64_t Index) const;
 	void SetAmbientLight(const DirectX::XMFLOAT4& Color);
 
 	uint32_t GetPassCountRequired() const;
@@ -190,7 +191,7 @@ public:
 	float GetTime() const;
 	TRenderLayer& GetRenderLayers();
 
-	void PerformFrustrumCulling();
+	SCulledInstancesInfo PerformFrustumCulling(const DirectX::BoundingFrustum& Frustum, const DirectX::XMMATRIX& ViewMatrix, TUploadBuffer<HLSL::InstanceData>& Buffer) const;
 	uint32_t GetTotalNumberOfInstances() const;
 
 	OMaterialManager* GetMaterialManager() const
@@ -212,7 +213,8 @@ public:
 	ODynamicCubeMapRenderTarget* GetCubeRenderTarget() const;
 	ODynamicCubeMapRenderTarget* BuildCubeRenderTarget(DirectX::XMFLOAT3 Center);
 	void DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, bool ForceDrawAll = false);
-	void DrawRenderItems(SPSODescriptionBase* Desc, EMaterialType Type);
+	void DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, SCulledInstancesInfo& InstanceBuffer);
+
 	void UpdateMaterialCB() const;
 	void UpdateLightCB(const UpdateEventArgs& Args) const;
 	void UpdateObjectCB() const;
@@ -226,12 +228,12 @@ public:
 
 	const auto& GetRenderedItems()
 	{
-		return RenderedItems;
+		return CameraRenderedItems;
 	}
 	IDXGIFactory4* GetFactory();
 
 protected:
-	void DrawRenderItemsImpl(SPSODescriptionBase* Description, const vector<ORenderItem*>& RenderItems, bool bIgnoreVisibility);
+	void DrawRenderItemsImpl(SPSODescriptionBase* Description, const vector<ORenderItem*>& RenderItems, bool bIgnoreVisibility, SCulledInstancesInfo& Info);
 	template<typename T, typename... Args>
 	T* BuildRenderObjectImpl(ERenderGroup Group, Args&&... Params);
 
@@ -317,7 +319,7 @@ private:
 	DirectX::BoundingSphere SceneBounds;
 	OSSAORenderTarget* SSAORT = nullptr;
 	ONormalTangentDebugTarget* NormalTangentDebugTarget = nullptr;
-	unordered_set<ORenderItem*> RenderedItems;
+	SCulledInstancesInfo CameraRenderedItems;
 	unique_ptr<OSceneManager> SceneManager;
 	ORenderItem* QuadItem = nullptr;
 
