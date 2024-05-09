@@ -1,6 +1,6 @@
 #pragma once
 #include "Engine/UploadBuffer/UploadBuffer.h"
-#include "HlslTypes.h"
+#include "HLSL/HlslTypes.h"
 #include "Logger.h"
 #include "ObjectConstants.h"
 #include "Vertex.h"

@@ -121,7 +121,7 @@ void OShadowMap::SetPassConstants(const SPassConstants& Pass)
 	PassConstant = Pass;
 	PassConstant.RenderTargetSize = DirectX::XMFLOAT2(static_cast<float>(Width), static_cast<float>(Height));
 	PassConstant.InvRenderTargetSize = DirectX::XMFLOAT2(1.0f / Width, 1.0f / Height);
-	InstancesInfo = OEngine::Get()->PerformFrustumCulling(Frustum, LightView, ShadowMapInstancesBuffer);
+	InstancesInfo = OEngine::Get()->PerformFrustumCulling(BoundingGeometry.get(), LightView, ShadowMapInstancesBuffer);
 	bNeedToUpdate = true;
 }
 
@@ -140,10 +140,15 @@ UINT OShadowMap::GetMapSize() const
 	return MapSize;
 }
 
-void OShadowMap::UpdateFrustum(const DirectX::BoundingFrustum& InFrustum, const DirectX::XMMATRIX& InLightView)
+void OShadowMap::UpdateBoundingGeometry(IBoundingGeometry* InGeo, const DirectX::XMMATRIX& InLightView)
 {
-	Frustum = InFrustum;
+	BoundingGeometry = InGeo->Clone();
 	LightView = InLightView;
+}
+
+IBoundingGeometry* OShadowMap::GetBoundingGeometry() const
+{
+	return BoundingGeometry.get();
 }
 
 SCulledInstancesInfo& OShadowMap::GetCulledInstancesInfo()

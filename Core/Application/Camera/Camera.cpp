@@ -120,7 +120,9 @@ void OCamera::SetLens(float _FovY, float _Aspect, float Zn, float Zf)
 	const DirectX::XMMATRIX projection = MatrixPerspective(FovY, Aspect, NearZ, FarZ);
 
 	DirectX::XMStoreFloat4x4(&ProjectionMatrix, projection);
-	BoundingFrustum::CreateFromMatrix(Frustum, projection);
+	BoundingFrustum frustum;
+	BoundingFrustum::CreateFromMatrix(frustum, projection);
+	Frustum.ConstructFromGeometry(frustum);
 	UpdateViewMatrix();
 }
 

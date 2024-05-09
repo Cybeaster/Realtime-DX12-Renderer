@@ -13,6 +13,12 @@ namespace HLSL
 {
 #endif
 
+#ifndef HLSL
+#define MAKE_CBUFFER(Name, Register, ...) struct Name
+#else
+#define MAKE_CBUFFER(Name, Register) cbuffer Name : register(Register)
+#endif
+
 #ifndef MAX_SHADOW_MAPS
 #define MAX_SHADOW_MAPS 4
 #endif
@@ -38,6 +44,8 @@ namespace HLSL
 #define SSAO_MAP gSsaoMap
 #define FRUSTRUM_CORNERS gFrustrumCorners
 #define CAMERA_MATRIX cbCameraMatrix
+#define AABBData gAABBData
+#define INSTANCE_DATA gInstanceData
 
 struct TextureData
 {
@@ -81,6 +89,8 @@ struct InstanceData
 		Rotation = { 0.0f, 0.0f, 0.0f };
 		Scale = { 1.0f, 1.0f, 1.0f };
 		MaterialIndex = 0;
+		BoundingBoxCenter = { 0.0f, 0.0f, 0.0f };
+		BoundingBoxExtents = { 0.0f, 0.0f, 0.0f };
 	}
 
 	bool IsTransformEqual(const InstanceData& Other) const
@@ -98,6 +108,10 @@ struct InstanceData
 	float pad2;
 	float3 Scale;
 	float pad3;
+	float3 BoundingBoxCenter;
+	float pad4;
+	float3 BoundingBoxExtents;
+	float pad5;
 };
 
 struct SpotLight
@@ -177,7 +191,9 @@ inline float3 FrustumCornens[8] = {
 	float3(1.0f, -1.0f, 1.0f),
 	float3(-1.0f, -1.0f, 1.0f)
 };
+
 #endif
+
 #ifndef HLSL
 }
 #endif

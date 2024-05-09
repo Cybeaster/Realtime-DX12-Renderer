@@ -26,7 +26,7 @@ void OLightComponentWidget::Draw()
 			{
 				component->SetCascadeLambda(lambda);
 			}
-			ImGui::DragFloat("Cascade update period", &component->CascadeUpdatePeriod, 0.01f, 0.0f, 10.0f);
+			ImGui::DragFloat("Radius Scale", &component->RadiusScale, 0.01f, 0.1f, 10.0f);
 			if (ImGui::Begin("Shadow Maps"))
 			{
 				for (auto& map : component->GetCSM()->GetShadowMaps())
@@ -42,7 +42,9 @@ void OLightComponentWidget::Draw()
 
 					ImGui::Text("Number of rendered meshes: %d", numRenderObjects);
 					ImGui::Text("Number of rendered triangles: %d", numTriangles);
-					ImGui::Image(PtrCast(map->GetSRV().GPUHandle.ptr), ImVec2(300, 300));
+					auto typeName = std::format("Bouding volume type: [{}]", WStringToUTF8(TEXT(map->GetBoundingGeometry()->GetType())));
+					ImGui::Text(typeName.c_str());
+					ImGui::Image(PtrCast(map->GetSRV().GPUHandle.ptr), ImVec2(250, 250));
 				}
 				ImGui::End();
 			}

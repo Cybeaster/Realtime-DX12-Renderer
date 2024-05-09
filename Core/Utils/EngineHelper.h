@@ -97,6 +97,14 @@ inline auto CreateSphereRenderItem(string Name, const SRenderItemParams& Params)
 	return engine->BuildRenderItemFromMesh(generator->CreateSphereMesh(Name, constants.Radius, constants.SliceCount, constants.StackCount), Params);
 }
 
+inline auto CreateBoxRenderItem(string Name, const SRenderItemParams& Params)
+{
+	auto engine = OEngine::Get();
+	auto generator = engine->GetMeshGenerator();
+	auto& constants = SRenderConstants::Box;
+	return engine->BuildRenderItemFromMesh(generator->CreateBoxMesh(Name, constants.Width, constants.Height, constants.Depth, constants.NumSubdivisions), Params);
+}
+
 inline auto CreateGeosphereRenderItem(string Name, float Radius, uint32_t NumSubdivisions, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();

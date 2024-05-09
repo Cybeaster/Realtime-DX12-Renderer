@@ -19,6 +19,14 @@ struct SRenderConstants
 		const uint32_t StackCount = 20;
 	};
 
+	struct SBox
+	{
+		const float Width = 1.0f;
+		const float Height = 1.0f;
+		const float Depth = 1.0f;
+		const uint32_t NumSubdivisions = 1;
+	};
+
 	inline static constexpr D3D12_HEAP_PROPERTIES DefaultHeapProperties = {
 		D3D12_HEAP_TYPE_DEFAULT, D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_MEMORY_POOL_UNKNOWN, 0, 0
 	};
@@ -46,6 +54,7 @@ struct SRenderConstants
 
 	inline static constexpr SSphere Sphere;
 	inline static constexpr SCylinder Cylinder;
+	inline static constexpr SBox Box;
 	inline static const string DefaultSkyTexture = "grasscube1024";
 
 	static D3D12_SHADER_RESOURCE_VIEW_DESC GetNullSRV();

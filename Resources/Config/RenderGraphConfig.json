@@ -82,9 +82,16 @@
       {
         "Name": "ShadowDebug",
         "PSO": "ShadowDebug",
-        "NextNode": "CopyTarget",
+        "NextNode": "AABBVisualizer",
         "RenderLayer": "ShadowDebug",
         "Enabled": false
+      },
+      {
+        "Name": "AABBVisualizer",
+        "PSO": "AABBVisualizer",
+        "NextNode": "CopyTarget",
+        "RenderLayer": "Opaque",
+        "Enabled": true
       },
       {
         "Name": "CopyTarget",

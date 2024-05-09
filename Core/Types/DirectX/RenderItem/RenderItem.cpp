@@ -2,15 +2,6 @@
 #include "RenderItem.h"
 
 #include "Engine/Engine.h"
-void ORenderItem::BindResources(ID3D12GraphicsCommandList* CmdList, SFrameResource* Frame) const
-{
-	auto idxBufferView = Geometry->IndexBufferView();
-	auto vertexBufferView = Geometry->VertexBufferView();
-
-	CmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	CmdList->IASetIndexBuffer(&idxBufferView);
-	CmdList->IASetVertexBuffers(0, 1, &vertexBufferView);
-}
 
 void ORenderItem::Update(const UpdateEventArgs& Arg) const
 {

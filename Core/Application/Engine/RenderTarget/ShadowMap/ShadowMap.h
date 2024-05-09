@@ -1,5 +1,6 @@
 #pragma once
-#include "DirectX/HlslTypes.h"
+#include "DirectX/BoundingGeometry.h"
+#include "DirectX/HLSL/HlslTypes.h"
 #include "DirectX/RenderItem/RenderItem.h"
 #include "Engine/RenderTarget/RenderTarget.h"
 class OLightComponent;
@@ -29,7 +30,9 @@ public:
 	uint32_t GetShadowMapIndex() const;
 	bool IsValid();
 	UINT GetMapSize() const;
-	void UpdateFrustum(const DirectX::BoundingFrustum& Frustum, const DirectX::XMMATRIX& LightViewProj);
+
+	void UpdateBoundingGeometry(IBoundingGeometry* Geometry, const DirectX::XMMATRIX& LightViewProj);
+	IBoundingGeometry* GetBoundingGeometry() const;
 	SCulledInstancesInfo& GetCulledInstancesInfo();
 
 private:
@@ -44,5 +47,5 @@ private:
 	std::optional<uint32_t> ShadowMapIndex;
 	UINT MapSize = 0;
 	DirectX::XMMATRIX LightView;
-	DirectX::BoundingFrustum Frustum;
+	unique_ptr<IBoundingGeometry> BoundingGeometry;
 };

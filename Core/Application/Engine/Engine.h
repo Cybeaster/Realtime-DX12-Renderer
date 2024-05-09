@@ -1,6 +1,8 @@
 #pragma once
 #include "Device/Device.h"
+#include "DirectX/BoundingGeometry.h"
 #include "DirectX/FrameResource.h"
+#include "DirectX/HLSL/HlslTypes.h"
 #include "DirectX/RenderItem/RenderItem.h"
 #include "DirectX/ShaderTypes.h"
 #include "Engine/RenderTarget/Filters/BilateralBlur/BilateralBlurFilter.h"
@@ -11,6 +13,7 @@
 #include "GraphicsPipelineManager/GraphicsPipelineManager.h"
 #include "MaterialManager/MaterialManager.h"
 #include "MeshGenerator/MeshGenerator.h"
+#include "Profiler.h"
 #include "RenderGraph/Graph/RenderGraph.h"
 #include "RenderTarget/CSM/Csm.h"
 #include "RenderTarget/CubeMap/DynamicCubeMap/DynamicCubeMapTarget.h"
@@ -34,6 +37,25 @@ enum ERenderGroup
 	RenderTargets,
 	ShadowTextures,
 	UI
+};
+
+struct SDrawPayload
+{
+	SDrawPayload() = default;
+	SDrawPayload(SPSODescriptionBase* Desc, const string& Layer, bool bForceDrawAll = false)
+	    : Description(Desc)
+	    , RenderLayer(Layer)
+	    , bForceDrawAll(bForceDrawAll)
+	{
+	}
+
+	SPSODescriptionBase* Description = nullptr;
+	string RenderLayer;
+	SCulledInstancesInfo* InstanceBuffer;
+	bool bForceDrawAll = false;
+
+	SMeshGeometry* OverrideGeometry = nullptr;
+	SSubmeshGeometry* OverrideSubmesh = nullptr;
 };
 
 class OEngine : public std::enable_shared_from_this<OEngine>
@@ -73,6 +95,7 @@ private:
 	void InitUIManager();
 	void InitCompiler();
 	void InitPipelineManager();
+	void BuildCustomGeometry();
 
 public:
 	void SetFogColor(DirectX::XMFLOAT4 Color);
@@ -129,7 +152,7 @@ public:
 	std::unordered_map<string, unique_ptr<SMeshGeometry>>& GetSceneGeometry();
 	SMeshGeometry* SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry);
 	ORenderItem* BuildRenderItemFromMesh(const string& Name, string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params);
-
+	void BindMesh(const SMeshGeometry* Mesh);
 	ORenderItem* BuildRenderItemFromMesh(unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params);
 	ORenderItem* BuildRenderItemFromMesh(SMeshGeometry* Mesh, const SRenderItemParams& Params);
 	ORenderItem* BuildRenderItemFromMesh(SMeshGeometry* Mesh, const string& Submesh, const SRenderItemParams& Params);
@@ -167,8 +190,11 @@ public:
 
 	void BuildOffscreenRT();
 	OOffscreenTexture* GetOffscreenRT() const;
+
 	void DrawFullScreenQuad();
 	void DrawOnePoint();
+	void DrawBox(SPSODescriptionBase* Desc);
+	void DrawAABBOfRenderItems(SPSODescriptionBase* Desc);
 	template<typename T>
 	TUUID AddFilter();
 
@@ -191,7 +217,8 @@ public:
 	float GetTime() const;
 	TRenderLayer& GetRenderLayers();
 
-	SCulledInstancesInfo PerformFrustumCulling(const DirectX::BoundingFrustum& Frustum, const DirectX::XMMATRIX& ViewMatrix, TUploadBuffer<HLSL::InstanceData>& Buffer) const;
+	SCulledInstancesInfo PerformFrustumCulling(IBoundingGeometry* Frustum, const DirectX::XMMATRIX& ViewMatrix, TUploadBuffer<HLSL::InstanceData>& Buffer) const;
+
 	uint32_t GetTotalNumberOfInstances() const;
 
 	OMaterialManager* GetMaterialManager() const
@@ -212,9 +239,14 @@ public:
 	SOnFrameResourceChanged OnFrameResourceChanged;
 	ODynamicCubeMapRenderTarget* GetCubeRenderTarget() const;
 	ODynamicCubeMapRenderTarget* BuildCubeRenderTarget(DirectX::XMFLOAT3 Center);
+
 	void DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, bool ForceDrawAll = false);
 	void DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, SCulledInstancesInfo& InstanceBuffer);
 
+private:
+	void DrawRenderItemsImpl(const SDrawPayload& Payload);
+
+public:
 	void UpdateMaterialCB() const;
 	void UpdateLightCB(const UpdateEventArgs& Args) const;
 	void UpdateObjectCB() const;
@@ -233,7 +265,6 @@ public:
 	IDXGIFactory4* GetFactory();
 
 protected:
-	void DrawRenderItemsImpl(SPSODescriptionBase* Description, const vector<ORenderItem*>& RenderItems, bool bIgnoreVisibility, SCulledInstancesInfo& Info);
 	template<typename T, typename... Args>
 	T* BuildRenderObjectImpl(ERenderGroup Group, Args&&... Params);
 
@@ -321,7 +352,8 @@ private:
 	ONormalTangentDebugTarget* NormalTangentDebugTarget = nullptr;
 	SCulledInstancesInfo CameraRenderedItems;
 	unique_ptr<OSceneManager> SceneManager;
-	ORenderItem* QuadItem = nullptr;
+
+	ORenderItem* BoxRenderItem = nullptr;
 
 public:
 	bool bFrustrumCullingEnabled = true;

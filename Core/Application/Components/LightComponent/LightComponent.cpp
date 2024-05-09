@@ -251,15 +251,6 @@ ODirectionalLightComponent::ODirectionalLightComponent(uint32_t InIdx)
     : DirLightBufferInfo(InIdx)
 {
 	const auto camera = OEngine::Get()->GetWindow()->GetCamera();
-	camera->OnCameraUpdate.Add([this]() {
-		static auto currentTime = 0.f;
-
-		if (currentTime + CascadeUpdatePeriod < OEngine::Get()->GetTime())
-		{
-			currentTime = OEngine::Get()->GetTime();
-			MarkDirty();
-		}
-	});
 
 	UpdateCascadeSplits();
 }
@@ -337,18 +328,26 @@ void ODirectionalLightComponent::SetLightSourceData()
 		scale /= texelSize;
 		scale = std::ceil(scale);
 		radius = scale * texelSize / 2.0f;
-		auto bounds = OEngine::Get()->GetSceneBounds();
 		const auto eye = center + (lightDir * -radius);
 		const auto lightView = MatrixLookAt(eye, center, lightUp);
-		const auto lightProj = MatrixOrthographicOffCenter(-radius,
-		                                                   radius,
-		                                                   -radius,
-		                                                   radius,
-		                                                   -radius,
-		                                                   radius);
-		BoundingFrustum frustum;
-		BoundingFrustum::CreateFromMatrix(frustum, lightProj);
-		CSM->GetShadowMap(i)->UpdateFrustum(frustum, lightView);
+
+		float width = radius * 2;
+		float height = radius * 2;
+		float depth = radius * 2;
+
+		// Expand the frustum dimensions slightly to ensure coverage
+		width *= RadiusScale;
+		height *= RadiusScale;
+		depth *= RadiusScale;
+
+		const auto lightProj = MatrixOrthographicOffCenter(-width / 2, width / 2, -height / 2, height / 2, -depth / 2, depth / 2);
+
+		BoundingBox box;
+		BoundingBox::CreateFromPoints(box, 8, frustrumCorners.data(), sizeof(XMFLOAT3));
+
+		OBoundingBox boundingBox;
+		boundingBox.ConstructFromGeometry(box);
+		CSM->GetShadowMap(i)->UpdateBoundingGeometry(&boundingBox, lightView);
 
 		const XMMATRIX T{
 			0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f
@@ -414,7 +413,8 @@ void OSpotLightComponent::SetLightSourceData()
 	passConstants.FarZ = farZ;
 	BoundingFrustum frustum;
 	BoundingFrustum::CreateFromMatrix(frustum, projection);
-	ShadowMap->UpdateFrustum(frustum, view);
+	OBoundingFrustum boundingFrustum{ frustum };
+	ShadowMap->UpdateBoundingGeometry(&boundingFrustum, view);
 	ShadowMap->SetPassConstants(passConstants);
 }
 

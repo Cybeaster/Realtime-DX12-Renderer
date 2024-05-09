@@ -69,5 +69,5 @@ void GS(triangle VertexOut input[3], inout LineStream<GsOut> OutputStream)
 
 float4 PS(GsOut input) : SV_TARGET
 {
-    return float4(1.0, 0.0, 0.0, 1.0); // Simple red color for visibility
+    return float4(1.0, 1.0, 0.0, 1.0); // Simple red color for visibility
 }

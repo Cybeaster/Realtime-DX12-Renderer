@@ -4,6 +4,7 @@
 #include "Application.h"
 #include "Camera/Camera.h"
 #include "DirectX/FrameResource.h"
+#include "DirectX/HLSL/HlslTypes.h"
 #include "Engine/RenderTarget/Filters/BilateralBlur/BilateralBlurFilter.h"
 #include "Engine/RenderTarget/SSAORenderTarget/Ssao.h"
 #include "Engine/RenderTarget/ShadowMap/ShadowMap.h"
@@ -155,8 +156,12 @@ void OEngine::DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLay
 		return;
 	}
 
-	auto renderItems = GetRenderItems(RenderLayer);
-	DrawRenderItemsImpl(Desc, renderItems, ForceDrawAll, CameraRenderedItems);
+	SDrawPayload payload;
+	payload.RenderLayer = RenderLayer;
+	payload.Description = Desc;
+	payload.bForceDrawAll = ForceDrawAll;
+	payload.InstanceBuffer = &CameraRenderedItems;
+	DrawRenderItemsImpl(payload);
 }
 
 void OEngine::DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, SCulledInstancesInfo& InstanceBuffer)
@@ -166,7 +171,12 @@ void OEngine::DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLay
 		LOG(Engine, Warning, "PSO is nullptr!")
 		return;
 	}
-	DrawRenderItemsImpl(Desc, GetRenderItems(RenderLayer), false, InstanceBuffer);
+	SDrawPayload payload;
+	payload.RenderLayer = RenderLayer;
+	payload.Description = Desc;
+	payload.bForceDrawAll = false;
+	payload.InstanceBuffer = &InstanceBuffer;
+	DrawRenderItemsImpl(payload);
 }
 
 void OEngine::UpdateMaterialCB() const
@@ -270,20 +280,19 @@ void OEngine::UpdateLightCB(const UpdateEventArgs& Args) const
 	}
 }
 
-void OEngine::DrawRenderItemsImpl(
-    SPSODescriptionBase* Description,
-    const vector<ORenderItem*>& RenderItems,
-    bool bIgnoreVisibility,
-    SCulledInstancesInfo& Info)
+void OEngine::DrawRenderItemsImpl(const SDrawPayload& Payload)
 {
 	PROFILE_SCOPE();
-
+	const auto& renderItems = GetRenderItems(Payload.RenderLayer);
 	auto cmd = GetCommandQueue()->GetCommandList();
-	for (size_t i = 0; i < RenderItems.size(); i++)
+	for (size_t i = 0; i < renderItems.size(); i++)
 	{
-		const auto renderItem = RenderItems[i];
+		const auto renderItem = renderItems[i];
+		const auto& item = Payload.InstanceBuffer->Items[renderItem];
+		const auto geometry = Payload.OverrideGeometry ? Payload.OverrideGeometry : renderItem->Geometry;
+		const auto submesh = Payload.OverrideSubmesh ? Payload.OverrideSubmesh : renderItem->ChosenSubmesh;
 
-		auto visibleInstances = bIgnoreVisibility ? renderItem->Instances.size() : Info.Items[renderItem].VisibleInstanceCount;
+		auto visibleInstances = Payload.bForceDrawAll ? renderItem->Instances.size() : item.VisibleInstanceCount;
 		if (!renderItem->IsValidChecked() || visibleInstances == 0)
 		{
 			continue;
@@ -292,19 +301,31 @@ void OEngine::DrawRenderItemsImpl(
 		PROFILE_BLOCK_START(renderItem->Name.c_str());
 		if (!renderItem->Instances.empty() && renderItem->Geometry)
 		{
-			renderItem->BindResources(cmd.Get(), Engine->CurrentFrameResource);
-			auto instanceBuffer = Info.Instances->get()->GetResource();
-			auto location = instanceBuffer->Resource->GetGPUVirtualAddress() + Info.Items[renderItem].StartInstanceLocation * sizeof(HLSL::InstanceData);
-			GetCommandQueue()->SetResource("gInstanceData", location, Description);
+			BindMesh(geometry);
+			auto instanceBuffer = Payload.InstanceBuffer->Instances->get()->GetResource();
+			auto location = instanceBuffer->Resource->GetGPUVirtualAddress() + item.StartInstanceLocation * sizeof(HLSL::InstanceData);
+			GetCommandQueue()->SetResource(STRINGIFY_MACRO(INSTANCE_DATA), location, Payload.Description);
 			cmd->DrawIndexedInstanced(
-			    renderItem->ChosenSubmesh->IndexCount,
+			    submesh->IndexCount,
 			    visibleInstances,
-			    renderItem->ChosenSubmesh->StartIndexLocation,
-			    renderItem->ChosenSubmesh->BaseVertexLocation,
+			    submesh->StartIndexLocation,
+			    submesh->BaseVertexLocation,
 			    0);
 		}
 		PROFILE_BLOCK_END();
 	}
+}
+
+void OEngine::DrawAABBOfRenderItems(SPSODescriptionBase* Desc)
+{
+	const auto commandList = GetCommandQueue()->GetCommandList();
+	commandList->IASetVertexBuffers(0, 0, nullptr);
+	commandList->IASetIndexBuffer(nullptr);
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+	auto instanceBuffer = CameraRenderedItems.Instances->get()->GetResource();
+	auto location = instanceBuffer->Resource->GetGPUVirtualAddress();
+	GetCommandQueue()->SetResource(STRINGIFY_MACRO(INSTANCE_DATA), location, Desc);
+	commandList->DrawInstanced(1, CameraRenderedItems.InstanceCount, 0, 0);
 }
 
 OOffscreenTexture* OEngine::GetOffscreenRT() const
@@ -331,6 +352,18 @@ void OEngine::DrawOnePoint()
 	commandList->DrawInstanced(1, 1, 0, 0);
 }
 
+void OEngine::DrawBox(SPSODescriptionBase* Desc)
+{
+	SDrawPayload payload;
+	payload.Description = Desc;
+	payload.RenderLayer = SRenderLayers::Opaque;
+	payload.bForceDrawAll = true;
+	payload.InstanceBuffer = &CameraRenderedItems;
+	payload.OverrideGeometry = BoxRenderItem->Geometry;
+
+	DrawRenderItemsImpl(payload);
+}
+
 void OEngine::InitUIManager()
 {
 	UIManager->InitContext(Device->GetDevice(), Window->GetHWND(), SRenderConstants::NumFrameResources, GetDescriptorHeap().Get(), DefaultGlobalHeap, this);
@@ -346,6 +379,11 @@ void OEngine::InitPipelineManager()
 {
 	PipelineManager = make_unique<OGraphicsPipelineManager>();
 	PipelineManager->Init();
+}
+
+void OEngine::BuildCustomGeometry()
+{
+	BoxRenderItem = CreateBoxRenderItem("DefaultBoxRI", {});
 }
 
 void OEngine::SetFogColor(DirectX::XMFLOAT4 Color)
@@ -638,7 +676,7 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 
 	UpdateBoundingSphere();
 	UpdateFrameResource();
-	CameraRenderedItems = PerformFrustumCulling(Window->GetCamera()->GetFrustrum(), Window->GetCamera()->GetView(), CurrentFrameResource->CameraInstancesBuffer);
+	CameraRenderedItems = PerformFrustumCulling(&Window->GetCamera()->GetFrustrum(), Window->GetCamera()->GetView(), CurrentFrameResource->CameraInstancesBuffer);
 
 	for (auto& item : AllRenderItems)
 	{
@@ -1167,15 +1205,14 @@ OEngine::TRenderLayer& OEngine::GetRenderLayers()
 	return RenderLayers;
 }
 
-SCulledInstancesInfo OEngine::PerformFrustumCulling(const BoundingFrustum& Frustum, const XMMATRIX& ViewMatrix, TUploadBuffer<HLSL::InstanceData>& Buffer) const
+SCulledInstancesInfo OEngine::PerformFrustumCulling(IBoundingGeometry* Frustum, const DirectX::XMMATRIX& ViewMatrix, TUploadBuffer<HLSL::InstanceData>& Buffer) const
 {
 	PROFILE_SCOPE();
 	SCulledInstancesInfo result;
 	result.Instances = &Buffer;
 	result.Items.reserve(AllRenderItems.size());
 
-	auto det = XMMatrixDeterminant(ViewMatrix);
-	const auto invView = XMMatrixInverse(&det, ViewMatrix);
+	const auto invView = Inverse(ViewMatrix);
 	int32_t counter = 0;
 	for (auto& e : AllRenderItems)
 	{
@@ -1197,14 +1234,14 @@ SCulledInstancesInfo OEngine::PerformFrustumCulling(const BoundingFrustum& Frust
 			const auto world = Load(instData[i].World);
 			const auto invWorld = Inverse(world);
 			const auto viewToLocal = XMMatrixMultiply(invWorld, invView);
-			BoundingFrustum localSpaceFrustum;
-			Frustum.Transform(localSpaceFrustum, viewToLocal);
-			if (!bFrustrumCullingEnabled || localSpaceFrustum.Contains(e->Bounds) != DISJOINT)
+
+			if (!bFrustrumCullingEnabled || Frustum->Contains(viewToLocal, e->Bounds) != DISJOINT)
 			{
-				HLSL::InstanceData data;
+				HLSL::InstanceData data = e->Instances[i];
 				Put(data.World, Transpose(world));
 				Put(data.TexTransform, Transpose(Load(instData[i].TexTransform)));
 				data.MaterialIndex = instData[i].MaterialIndex;
+				result.InstanceCount++;
 				Buffer->CopyData(counter++, data);
 				visibleInstanceCount++;
 			}
@@ -1458,7 +1495,8 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(SMeshGeometry* Mesh, const string&
 
 	defaultInstance.Scale = Params.Scale.value_or(XMFLOAT3{ 1, 1, 1 });
 	defaultInstance.Position = Params.Position.value_or(XMFLOAT3{ 0, 0, 0 });
-
+	defaultInstance.BoundingBoxCenter = submesh->Bounds.Center;
+	defaultInstance.BoundingBoxExtents = submesh->Bounds.Extents;
 	Scale(defaultInstance.World, defaultInstance.Scale);
 	Translate(defaultInstance.World, defaultInstance.Position);
 
@@ -1582,6 +1620,17 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Name, string Categor
 	auto ri = BuildRenderItemFromMesh(std::move(Mesh), Params);
 	ri->Name = Name + std::to_string(AllRenderItems.size());
 	return ri;
+}
+
+void OEngine::BindMesh(const SMeshGeometry* Mesh)
+{
+	auto idxBufferView = Mesh->IndexBufferView();
+	auto vertexBufferView = Mesh->VertexBufferView();
+
+	auto list = GetCommandQueue()->GetCommandList().Get();
+	list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	list->IASetIndexBuffer(&idxBufferView);
+	list->IASetVertexBuffers(0, 1, &vertexBufferView);
 }
 
 vector<OShadowMap*>& OEngine::GetShadowMaps()

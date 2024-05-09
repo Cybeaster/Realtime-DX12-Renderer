@@ -22,7 +22,6 @@ struct ORenderItem
 	ORenderItem(ORenderItem&&) = default;
 	ORenderItem(const ORenderItem&) = default;
 
-	void BindResources(ID3D12GraphicsCommandList* CmdList, SFrameResource* Frame) const;
 	void Update(const UpdateEventArgs& Arg) const;
 	bool IsValid() const;
 	bool IsValidChecked() const;
@@ -61,7 +60,8 @@ struct SCulledRenderItem
 struct SCulledInstancesInfo
 {
 	unordered_map<ORenderItem*, SCulledRenderItem> Items;
-	TUploadBuffer<HLSL::InstanceData>* Instances;
+	TUploadBuffer<HLSL::InstanceData>* Instances = nullptr;
+	uint32_t InstanceCount = 0;
 };
 
 template<typename T, typename... Args>

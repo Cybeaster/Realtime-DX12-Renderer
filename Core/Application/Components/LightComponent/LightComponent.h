@@ -1,6 +1,6 @@
 
 #pragma once
-#include "DirectX/HlslTypes.h"
+#include "DirectX/HLSL/HlslTypes.h"
 #include "DirectX/Light/Light.h"
 #include "Engine/RenderTarget/RenderObject/RenderObject.h"
 #include "RenderItemComponentBase.h"
@@ -84,7 +84,7 @@ public:
 	float GetCascadeLambda() const;
 	void UpdateCascadeSplits();
 
-	float CascadeUpdatePeriod = 0.1f;
+	float RadiusScale = 1.f;
 
 private:
 	float CascadeSplitLambda = 0.65;

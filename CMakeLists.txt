@@ -232,7 +232,7 @@ set(SRC_FILES
         Core/Application/Engine/Scene/Scene.h
         Core/Application/UI/Engine/ShaderSettings.cpp
         Core/Application/UI/Engine/ShaderSettings.h
-        Core/Types/DirectX/HlslTypes.h
+        Core/Types/DirectX/HLSL/HlslTypes.h
         Core/Application/Engine/RenderTarget/CSM/Csm.cpp
         Core/Application/Engine/RenderTarget/CSM/Csm.h
         Core/Application/RenderGraph/Nodes/FrustrumDebugNode/FrustumDebugNode.cpp
@@ -252,6 +252,9 @@ set(SRC_FILES
         Core/Application/Engine/Device/Device.h
         Core/Application/Engine/Device/Device.cpp
         Externals/DXR/DXRHelper.h
+        Core/Application/RenderGraph/Nodes/AABBVisualizer/AabbVisNode.cpp
+        Core/Application/RenderGraph/Nodes/AABBVisualizer/AabbVisNode.h
+        Core/Types/DirectX/BoundingGeometry.h
 )
 
 

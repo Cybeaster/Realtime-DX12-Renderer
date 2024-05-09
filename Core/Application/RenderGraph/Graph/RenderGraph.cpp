@@ -4,6 +4,7 @@
 #include "Application.h"
 #include "Engine/RenderTarget/NormalTangetDebugTarget/NormalTangentDebugTarget.h"
 #include "Profiler.h"
+#include "RenderGraph/Nodes/AABBVisualizer/AabbVisNode.h"
 #include "RenderGraph/Nodes/CopyNode/CopyRenderNode.h"
 #include "RenderGraph/Nodes/DefaultNode/DefaultRenderNode.h"
 #include "RenderGraph/Nodes/FrustrumDebugNode/FrustumDebugNode.h"
@@ -141,6 +142,10 @@ unique_ptr<ORenderNode> ORenderGraph::ResolveNodeType(const string& Type)
 	else if (Type == "FrustumDebug")
 	{
 		return make_unique<OFrustumDebugNode>();
+	}
+	else if (Type == "AABBVisualizer")
+	{
+		return make_unique<OAABBVisNode>();
 	}
 
 	LOG(Render, Warning, "Node type not found: {}", TEXT(Type));

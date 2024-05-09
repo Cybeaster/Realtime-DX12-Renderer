@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DirectX/BoundingGeometry.h"
 #include "Events.h"
 
 #include <DirectXMath.h>
@@ -71,7 +72,7 @@ public:
 	void SetCameraSensivity(float Sensetivity);
 	float GetCameraSpeed() const;
 	float GetCameraSensivity() const;
-	DirectX::BoundingFrustum& GetFrustrum() { return Frustum; };
+	OBoundingFrustum& GetFrustrum() { return Frustum; };
 
 	std::tuple<DirectX::XMVECTOR /*ray_origin*/, DirectX::XMVECTOR /*ray dir*/, DirectX::XMMATRIX /*invView*/> Pick(int32_t Sx, int32_t Sy) const;
 	void FillPassConstant(SPassConstants& OutOther) const;
@@ -100,5 +101,5 @@ private:
 	bool bViewDirty = true;
 	OWindow* Window;
 
-	DirectX::BoundingFrustum Frustum;
+	OBoundingFrustum Frustum;
 };
