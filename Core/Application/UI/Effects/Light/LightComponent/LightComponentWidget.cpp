@@ -34,9 +34,9 @@ void OLightComponentWidget::Draw()
 					auto format = std::format("Shadow Map {}", map->GetShadowMapIndex());
 					ImGui::SeparatorText(format.c_str());
 
-					auto numRenderObjects = map->GetCulledInstancesInfo().Items.size();
-					auto numTriangles = std::accumulate(map->GetCulledInstancesInfo().Items.begin(),
-					                                    map->GetCulledInstancesInfo().Items.end(),
+					auto numRenderObjects = map->GetCulledInstancesInfo()->InstanceCount;
+					auto numTriangles = std::accumulate(map->GetCulledInstancesInfo()->Items.begin(),
+					                                    map->GetCulledInstancesInfo()->Items.end(),
 					                                    0,
 					                                    [](int32_t acc, auto pair) { return acc + pair.first->ChosenSubmesh->Vertices->size() / 3; });
 

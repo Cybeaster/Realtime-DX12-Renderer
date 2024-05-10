@@ -31,7 +31,6 @@ OShadowMap::OShadowMap(ID3D12Device* Device, UINT ShadowMapSize, DXGI_FORMAT For
     : ORenderTargetBase(Device, ShadowMapSize, ShadowMapSize, Format, EResourceHeapType::Default), MapSize(ShadowMapSize)
 {
 	Name = L"ShadowMap";
-	ShadowMapInstancesBuffer = OUploadBuffer<HLSL::InstanceData>::Create(Device, OEngine::Get()->GetAllRenderItems().size(), false, this, L"_ShadowMapInstancesBuffer");
 }
 
 void OShadowMap::BuildDescriptors()
@@ -121,7 +120,14 @@ void OShadowMap::SetPassConstants(const SPassConstants& Pass)
 	PassConstant = Pass;
 	PassConstant.RenderTargetSize = DirectX::XMFLOAT2(static_cast<float>(Width), static_cast<float>(Height));
 	PassConstant.InvRenderTargetSize = DirectX::XMFLOAT2(1.0f / Width, 1.0f / Height);
-	InstancesInfo = OEngine::Get()->PerformFrustumCulling(BoundingGeometry.get(), LightView, ShadowMapInstancesBuffer);
+	if (ShadowMapInstancesBufferId.has_value())
+	{
+		InstancesInfo = OEngine::Get()->PerformFrustumCulling(BoundingGeometry.get(), LightView, ShadowMapInstancesBufferId.value());
+	}
+	else
+	{
+		LOG(Engine, Error, "ShadowMapInstancesBufferId is not set for shadow map %d", ShadowMapIndex.value_or(-1));
+	}
 	bNeedToUpdate = true;
 }
 
@@ -139,6 +145,10 @@ UINT OShadowMap::GetMapSize() const
 {
 	return MapSize;
 }
+void OShadowMap::InitRenderObject()
+{
+	ORenderTargetBase::InitRenderObject();
+}
 
 void OShadowMap::UpdateBoundingGeometry(IBoundingGeometry* InGeo, const DirectX::XMMATRIX& InLightView)
 {
@@ -151,9 +161,9 @@ IBoundingGeometry* OShadowMap::GetBoundingGeometry() const
 	return BoundingGeometry.get();
 }
 
-SCulledInstancesInfo& OShadowMap::GetCulledInstancesInfo()
+const SCulledInstancesInfo* OShadowMap::GetCulledInstancesInfo() const
 {
-	return InstancesInfo;
+	return &InstancesInfo;
 }
 
 uint32_t OShadowMap::GetNumDSVRequired() const
@@ -174,6 +184,7 @@ uint32_t OShadowMap::GetNumPassesRequired() const
 void OShadowMap::SetShadowMapIndex(uint32_t Idx)
 {
 	ShadowMapIndex = Idx;
+	ShadowMapInstancesBufferId = OEngine::Get()->AddInstanceBuffer(L"ShadowMapInstancesBuffer_" + std::to_wstring(ShadowMapIndex.value_or(-1)));
 }
 
 D3D12_GPU_VIRTUAL_ADDRESS OShadowMap::GetPassConstantAddresss() const

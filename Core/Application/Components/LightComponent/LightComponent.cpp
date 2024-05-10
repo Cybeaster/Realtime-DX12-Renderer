@@ -20,7 +20,7 @@ void OLightComponent::Tick(UpdateEventArgs Arg)
 {
 	PROFILE_SCOPE();
 	auto instance = Owner->GetDefaultInstance();
-	if (instance->Position != Position || instance->Rotation != Rotation || instance->Scale != Scale) // make delegate based
+	if (instance->Position != Position || DirectX::XMQuaternionEqual(Load(instance->Rotation), Load(Rotation)) || instance->Scale != Scale) // make delegate based
 	{
 		WorldMatrix = Owner->GetDefaultInstance()->World;
 		DirectX::XMFLOAT4 pos{};
@@ -331,23 +331,20 @@ void ODirectionalLightComponent::SetLightSourceData()
 		const auto eye = center + (lightDir * -radius);
 		const auto lightView = MatrixLookAt(eye, center, lightUp);
 
-		float width = radius * 2;
-		float height = radius * 2;
-		float depth = radius * 2;
+		float depth = radius * RadiusScale;
 
-		// Expand the frustum dimensions slightly to ensure coverage
-		width *= RadiusScale;
-		height *= RadiusScale;
-		depth *= RadiusScale;
+		const auto lightProj = MatrixOrthographicOffCenter(-radius, radius, -radius, radius, -depth, depth);
 
-		const auto lightProj = MatrixOrthographicOffCenter(-width / 2, width / 2, -height / 2, height / 2, -depth / 2, depth / 2);
+		BoundingOrientedBox obj;
+		Put(obj.Center, center);
+		obj.Extents = XMFLOAT3{ radius, radius, depth }; // draw debug geometry
+		Put(obj.Orientation, XMQuaternionRotationMatrix(lightView));
 
-		BoundingBox box;
-		BoundingBox::CreateFromPoints(box, 8, frustrumCorners.data(), sizeof(XMFLOAT3));
+		OEngine::Get()->DrawDebugBox(obj.Center, obj.Extents, obj.Orientation, SColor::Blue, 0.1);
 
-		OBoundingBox boundingBox;
-		boundingBox.ConstructFromGeometry(box);
-		CSM->GetShadowMap(i)->UpdateBoundingGeometry(&boundingBox, lightView);
+		OBoundingOrientedBox bound;
+		bound.ConstructFromGeometry(obj);
+		CSM->GetShadowMap(i)->UpdateBoundingGeometry(&bound, lightView);
 
 		const XMMATRIX T{
 			0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f

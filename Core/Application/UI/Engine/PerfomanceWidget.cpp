@@ -15,5 +15,6 @@ void OPerfomanceWidget::Draw()
 		}
 		ImGui::Text("Number of rendered triangles: %d", numTriangles);
 		ImGui::Checkbox("Enable Frustum Cooling", &OEngine::Get()->bFrustrumCullingEnabled);
+		ImGui::Checkbox("Enable Logs", &SLogUtils::bLogToConsole);
 	}
 }

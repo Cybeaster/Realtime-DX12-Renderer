@@ -3,6 +3,7 @@
 #include "HLSL/HlslTypes.h"
 #include "Logger.h"
 #include "ObjectConstants.h"
+#include "Statics.h"
 #include "Vertex.h"
 
 #include <Types.h>
@@ -49,9 +50,11 @@ struct SFrameResource
 	void SetSpotLight(UINT LightCount);
 	void SetSSAO();
 	void SetFrusturmCorners();
+	void RebuildInstanceBuffers(UINT InstanceCount) const;
+	OUploadBuffer<HLSL::InstanceData>* AddNewInstanceBuffer(const wstring& Name, UINT InstanceCount, TUUID Id);
 	TUploadBuffer<SPassConstants> PassCB = nullptr;
 	TUploadBuffer<HLSL::MaterialData> MaterialBuffer = nullptr;
-	TUploadBuffer<HLSL::InstanceData> CameraInstancesBuffer = nullptr;
+	unordered_map<TUUID, TUploadBuffer<HLSL::InstanceData>> InstanceBuffers;
 	TUploadBuffer<SSsaoConstants> SsaoCB = nullptr;
 	TUploadBuffer<HLSL::DirectionalLight> DirectionalLightBuffer;
 	TUploadBuffer<HLSL::PointLight> PointLightBuffer;
@@ -63,4 +66,5 @@ struct SFrameResource
 	UINT64 Fence = 0;
 	IRenderObject* Owner = nullptr;
 	ID3D12Device* Device = nullptr;
+	UUID CameraBufferId;
 };

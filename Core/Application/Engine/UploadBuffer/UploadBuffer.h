@@ -7,7 +7,7 @@ template<typename Type>
 class OUploadBuffer
 {
 public:
-	OUploadBuffer(ID3D12Device* Device, UINT ElementCount, bool IsConstantBuffer, IRenderObject* Owner = nullptr, wstring InName = L"");
+	OUploadBuffer(ID3D12Device* Device, UINT ElementCount, bool IsConstantBuffer, IRenderObject* Owner = nullptr, const wstring& InName = L"");
 	static unique_ptr<OUploadBuffer> Create(ID3D12Device* Device, UINT ElementCount, bool IsConstantBuffer, IRenderObject* Owner, wstring InName = L"")
 	{
 		return make_unique<OUploadBuffer>(Device, ElementCount, IsConstantBuffer, Owner, InName);
@@ -26,7 +26,7 @@ public:
 		MappedData = nullptr;
 	}
 
-	SResourceInfo* GetResource()
+	SResourceInfo* GetUploadResource()
 	{
 		return &UploadBuffer;
 	}
@@ -43,10 +43,14 @@ public:
 		return old;
 	}
 
+	void RebuildBuffer(UINT ElementCount);
+
 	auto GetGPUAddress() const
 	{
 		return UploadBuffer.Resource->GetGPUVirtualAddress();
 	}
+
+	void ClearResource();
 
 public:
 	SResourceInfo UploadBuffer;
@@ -57,11 +61,15 @@ public:
 	uint32_t MaxOffset = 0;
 	BYTE* MappedData = nullptr;
 	wstring Name = L"";
+	ID3D12Device* Device = nullptr;
+
+private:
+	void BuildResource(UINT ElementCount);
 };
 
 template<typename Type>
-OUploadBuffer<Type>::OUploadBuffer(ID3D12Device* Device, UINT ElementCount, bool IsConstantBuffer, IRenderObject* Owner, wstring InName)
-    : bIsConstantBuffer(IsConstantBuffer), Owner(Owner), MaxOffset(ElementCount), Name(InName)
+OUploadBuffer<Type>::OUploadBuffer(ID3D12Device* InDevice, UINT ElementCount, bool IsConstantBuffer, IRenderObject* Owner, const wstring& InName)
+    : bIsConstantBuffer(IsConstantBuffer), Owner(Owner), MaxOffset(ElementCount), Name(InName), Device(InDevice)
 {
 	ElementByteSize = sizeof(Type);
 
@@ -77,9 +85,33 @@ OUploadBuffer<Type>::OUploadBuffer(ID3D12Device* Device, UINT ElementCount, bool
 	{
 		ElementByteSize = Utils::CalcBufferByteSize(sizeof(Type));
 	}
-	const auto uploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(ElementByteSize * ElementCount);
+	BuildResource(ElementCount);
+}
 
-	UploadBuffer = Utils::CreateResource(Owner, L"UploadBuffer" + InName, Device, D3D12_HEAP_TYPE_UPLOAD, uploadBufferDesc, D3D12_RESOURCE_STATE_GENERIC_READ);
+template<typename Type>
+void OUploadBuffer<Type>::RebuildBuffer(UINT ElementCount)
+{
+	ClearResource();
+	BuildResource(ElementCount);
+}
+
+template<typename Type>
+void OUploadBuffer<Type>::ClearResource()
+{
+	if (UploadBuffer.Resource != nullptr)
+	{
+		UploadBuffer.Resource->Unmap(0, nullptr);
+	}
+	MappedData = nullptr;
+	UploadBuffer.Resource.Reset();
+}
+
+template<typename Type>
+void OUploadBuffer<Type>::BuildResource(UINT ElementCount)
+{
+	MaxOffset = ElementCount;
+	const auto uploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(ElementByteSize * ElementCount);
+	UploadBuffer = Utils::CreateResource(Owner, L"UploadBuffer" + Name, Device, D3D12_HEAP_TYPE_UPLOAD, uploadBufferDesc, D3D12_RESOURCE_STATE_GENERIC_READ);
 	THROW_IF_FAILED(UploadBuffer.Resource->Map(0, nullptr, reinterpret_cast<void**>(&MappedData)));
 }
 

@@ -1,4 +1,5 @@
 #pragma once
+#include "Color.h"
 #include "Device/Device.h"
 #include "DirectX/BoundingGeometry.h"
 #include "DirectX/FrameResource.h"
@@ -27,6 +28,7 @@
 #include <dxgi1_6.h>
 
 #include <map>
+#include <utility>
 
 class OSSAORenderTarget;
 enum ERenderGroup
@@ -42,16 +44,17 @@ enum ERenderGroup
 struct SDrawPayload
 {
 	SDrawPayload() = default;
-	SDrawPayload(SPSODescriptionBase* Desc, const string& Layer, bool bForceDrawAll = false)
+	SDrawPayload(SPSODescriptionBase* Desc, string Layer, const SCulledInstancesInfo* InConstant, bool bForceDrawAll = false)
 	    : Description(Desc)
-	    , RenderLayer(Layer)
+	    , RenderLayer(std::move(Layer))
 	    , bForceDrawAll(bForceDrawAll)
+	    , InstanceBuffer(InConstant)
 	{
 	}
 
 	SPSODescriptionBase* Description = nullptr;
 	string RenderLayer;
-	SCulledInstancesInfo* InstanceBuffer;
+	const SCulledInstancesInfo* InstanceBuffer;
 	bool bForceDrawAll = false;
 
 	SMeshGeometry* OverrideGeometry = nullptr;
@@ -96,8 +99,10 @@ private:
 	void InitCompiler();
 	void InitPipelineManager();
 	void BuildCustomGeometry();
+	void TryCreateFrameResources();
 
 public:
+	vector<OUploadBuffer<HLSL::InstanceData>*> GetInstanceBuffersByUUID(TUUID Id) const;
 	void SetFogColor(DirectX::XMFLOAT4 Color);
 	void SetFogStart(float Start);
 	void SetFogRange(float Range);
@@ -105,18 +110,20 @@ public:
 	ComPtr<ID3D12Device2> GetDevice() const;
 
 	void FlushGPU() const;
-
+	TUUID AddInstanceBuffer(const wstring& Name);
 	int InitScene();
 	void PostTestInit();
 	void DestroyWindow();
 	void OnWindowDestroyed();
+
+	void DrawDebugBox(DirectX::XMFLOAT3 Center, DirectX::XMFLOAT3 Extents, DirectX::XMFLOAT4 Orientation, SColor Color, float Duration);
 
 	ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(UINT NumDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE Type, const wstring& Name, D3D12_DESCRIPTOR_HEAP_FLAGS Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE) const;
 	OCommandQueue* GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type = D3D12_COMMAND_LIST_TYPE_DIRECT);
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GetRenderGroupStartAddress(ERenderGroup Group);
 
 	void OnEnd() const;
-
+	void RemoveRenderItems();
 	void TryRebuildFrameResource();
 	void UpdateBoundingSphere();
 	void Draw(UpdateEventArgs& Args);
@@ -136,7 +143,7 @@ public:
 	void CreateWindow();
 	bool GetMSAAState(UINT& Quality) const;
 	void FillExpectedShadowMaps();
-
+	OUploadBuffer<HLSL::InstanceData>* GetCurrentFrameInstBuffer(TUUID Id);
 	vector<ORenderItem*>& GetRenderItems(const SRenderLayer& Type);
 	D3D12_RENDER_TARGET_BLEND_DESC GetTransparentBlendState();
 	void FillDescriptorHeaps();
@@ -168,7 +175,7 @@ public:
 	void AddRenderItem(string Category, shared_ptr<ORenderItem> RenderItem);
 	void AddRenderItem(const vector<string>& Categories, shared_ptr<ORenderItem> RenderItem);
 	void MoveRIToNewLayer(ORenderItem* Item, const SRenderLayer& NewLayer, const SRenderLayer& OldLayer);
-	const vector<shared_ptr<ORenderItem>>& GetAllRenderItems();
+	const unordered_set<shared_ptr<ORenderItem>>& GetAllRenderItems();
 	void SetPipelineState(string PSOName);
 	void SetPipelineState(SPSODescriptionBase* PSOInfo);
 
@@ -217,7 +224,7 @@ public:
 	float GetTime() const;
 	TRenderLayer& GetRenderLayers();
 
-	SCulledInstancesInfo PerformFrustumCulling(IBoundingGeometry* Frustum, const DirectX::XMMATRIX& ViewMatrix, TUploadBuffer<HLSL::InstanceData>& Buffer) const;
+	SCulledInstancesInfo PerformFrustumCulling(IBoundingGeometry* Frustum, const DirectX::XMMATRIX& ViewMatrix, TUUID BufferId);
 
 	uint32_t GetTotalNumberOfInstances() const;
 
@@ -241,7 +248,7 @@ public:
 	ODynamicCubeMapRenderTarget* BuildCubeRenderTarget(DirectX::XMFLOAT3 Center);
 
 	void DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, bool ForceDrawAll = false);
-	void DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, SCulledInstancesInfo& InstanceBuffer);
+	void DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, const SCulledInstancesInfo* InstanceBuffer);
 
 private:
 	void DrawRenderItemsImpl(const SDrawPayload& Payload);
@@ -286,8 +293,9 @@ private:
 	void BuildSSAO();
 	void BuildNormalTangentDebugTarget();
 	void RemoveRenderObject(TUUID UUID);
-	void BuildFrameResource(uint32_t Count = 1);
+	void RebuildFrameResource(uint32_t Count = 1);
 
+	uint32_t InstanceBufferMultiplier = 3;
 	uint32_t PassCount = 1;
 	uint32_t CurrentPass = 0;
 	uint32_t CurrentNumMaterials = 0;
@@ -309,7 +317,7 @@ private:
 	UINT Msaa4xQuality = 0;
 
 	TRenderLayer RenderLayers;
-	vector<shared_ptr<ORenderItem>> AllRenderItems;
+	unordered_set<shared_ptr<ORenderItem>> AllRenderItems;
 
 	TSceneGeometryMap SceneGeometry;
 
@@ -354,8 +362,10 @@ private:
 	unique_ptr<OSceneManager> SceneManager;
 
 	ORenderItem* BoxRenderItem = nullptr;
+	uint32_t GarbageMaxItems = 100;
 
 public:
+	TUUID CameraInstanceBufferID;
 	bool bFrustrumCullingEnabled = true;
 	bool ReloadShadersRequested = false;
 	SDescriptorPair NullCubeSRV;
@@ -364,6 +374,7 @@ public:
 	ONormalTangentDebugTarget* GetNormalTangentDebugTarget() const;
 	void ReloadShaders();
 	OShadowMap* CreateShadowMap();
+	unordered_set<shared_ptr<ORenderItem>> PendingRemoveItems;
 };
 
 template<typename T, typename... Args>

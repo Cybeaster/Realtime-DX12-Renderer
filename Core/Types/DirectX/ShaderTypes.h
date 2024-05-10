@@ -101,7 +101,7 @@ struct SRootSignatureParams
 	friend SShaderPipelineDesc;
 	unordered_set<wstring> RootParamNames{};
 	unordered_map<wstring, SRootParameter> RootParamMap{};
-	std::unordered_map<wstring, uint32_t> RootParamIndexMap{};
+	unordered_map<wstring, uint32_t> RootParamIndexMap{};
 	vector<D3D12_DESCRIPTOR_RANGE1> DescriptorRanges{};
 	D3D12_VERSIONED_ROOT_SIGNATURE_DESC RootSignatureDesc{};
 	ComPtr<ID3D12RootSignature> RootSignature;

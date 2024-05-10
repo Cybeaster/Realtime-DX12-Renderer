@@ -97,7 +97,7 @@ void OGaussianBlurFilter::Execute(
 	auto rootSig = VerticalBlurPSO->RootSignature;
 	auto cmdList = Queue->GetCommandList().Get();
 	rootSig->ActivateRootSignature(Queue->GetCommandList().Get());
-	rootSig->SetResource("cbSettings", Buffer->GetResource()->Resource->GetGPUVirtualAddress(), cmdList);
+	rootSig->SetResource("cbSettings", Buffer->GetUploadResource()->Resource->GetGPUVirtualAddress(), cmdList);
 
 	ResourceBarrier(cmdList, Input, D3D12_RESOURCE_STATE_COPY_SOURCE);
 	ResourceBarrier(cmdList, &BlurMap0, D3D12_RESOURCE_STATE_COPY_DEST);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DirectX/DXHelper.h"
+#include "Profiler.h"
 
 #include <boost/uuid/uuid.hpp>
 #include <fstream>
@@ -68,6 +69,8 @@ struct SLogCategories
 
 struct SLogUtils
 {
+	static bool bLogToConsole;
+
 	static inline map<wstring, bool> LogCategories = {
 		{ SLogCategories::Default, true },
 		{ SLogCategories::Render, true },
@@ -86,6 +89,12 @@ struct SLogUtils
 
 	static void Log(wstring Category, const wstring& String, ELogType Type = ELogType::Log, const bool Debug = false) noexcept
 	{
+		PROFILE_SCOPE();
+		if (!bLogToConsole)
+		{
+			return;
+		}
+
 		if (!LogCategories.contains(Category))
 		{
 			LogCategories.insert({ Category, true });
@@ -95,7 +104,6 @@ struct SLogUtils
 		{
 			return;
 		}
-		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 		switch (Type)
 		{
 		case ELogType::Log:
@@ -146,6 +154,8 @@ struct SLogUtils
 		std::printf(Str.c_str(), ToCString(Args)...);
 	}
 };
+
+inline bool SLogUtils::bLogToConsole = true;
 
 inline std::wstring ToString(int Argument) noexcept
 {

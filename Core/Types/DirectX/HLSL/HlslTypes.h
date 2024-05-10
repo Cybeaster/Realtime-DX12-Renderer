@@ -86,7 +86,7 @@ struct InstanceData
 		DirectX::XMStoreFloat4x4(&World, DirectX::XMMatrixIdentity());
 		DirectX::XMStoreFloat4x4(&TexTransform, DirectX::XMMatrixIdentity());
 		Position = { 0.0f, 0.0f, 0.0f };
-		Rotation = { 0.0f, 0.0f, 0.0f };
+		Rotation = { 0.0f, 0.0f, 0.0f, 1.0f };
 		Scale = { 1.0f, 1.0f, 1.0f };
 		MaterialIndex = 0;
 		BoundingBoxCenter = { 0.0f, 0.0f, 0.0f };
@@ -104,14 +104,14 @@ struct InstanceData
 	uint MaterialIndex;
 	float3 Position;
 	float pad;
-	float3 Rotation;
-	float pad2;
+	float4 Rotation;
 	float3 Scale;
 	float pad3;
 	float3 BoundingBoxCenter;
 	float pad4;
 	float3 BoundingBoxExtents;
 	float pad5;
+	float3 OverrideColor;
 };
 
 struct SpotLight

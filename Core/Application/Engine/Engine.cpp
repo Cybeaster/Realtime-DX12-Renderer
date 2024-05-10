@@ -164,18 +164,14 @@ void OEngine::DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLay
 	DrawRenderItemsImpl(payload);
 }
 
-void OEngine::DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, SCulledInstancesInfo& InstanceBuffer)
+void OEngine::DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, const SCulledInstancesInfo* InstanceBuffer)
 {
 	if (Desc == nullptr)
 	{
 		LOG(Engine, Warning, "PSO is nullptr!")
 		return;
 	}
-	SDrawPayload payload;
-	payload.RenderLayer = RenderLayer;
-	payload.Description = Desc;
-	payload.bForceDrawAll = false;
-	payload.InstanceBuffer = &InstanceBuffer;
+	SDrawPayload payload(Desc, RenderLayer, InstanceBuffer, false);
 	DrawRenderItemsImpl(payload);
 }
 
@@ -288,11 +284,15 @@ void OEngine::DrawRenderItemsImpl(const SDrawPayload& Payload)
 	for (size_t i = 0; i < renderItems.size(); i++)
 	{
 		const auto renderItem = renderItems[i];
-		const auto& item = Payload.InstanceBuffer->Items[renderItem];
+		if (!Payload.InstanceBuffer->Items.contains(renderItem))
+		{
+			continue;
+		}
+		const auto& [Item, StartInstanceLocation, VisibleInstanceCount] = Payload.InstanceBuffer->Items.at(renderItem);
 		const auto geometry = Payload.OverrideGeometry ? Payload.OverrideGeometry : renderItem->Geometry;
 		const auto submesh = Payload.OverrideSubmesh ? Payload.OverrideSubmesh : renderItem->ChosenSubmesh;
 
-		auto visibleInstances = Payload.bForceDrawAll ? renderItem->Instances.size() : item.VisibleInstanceCount;
+		auto visibleInstances = Payload.bForceDrawAll ? renderItem->Instances.size() : VisibleInstanceCount;
 		if (!renderItem->IsValidChecked() || visibleInstances == 0)
 		{
 			continue;
@@ -302,9 +302,10 @@ void OEngine::DrawRenderItemsImpl(const SDrawPayload& Payload)
 		if (!renderItem->Instances.empty() && renderItem->Geometry)
 		{
 			BindMesh(geometry);
-			auto instanceBuffer = Payload.InstanceBuffer->Instances->get()->GetResource();
-			auto location = instanceBuffer->Resource->GetGPUVirtualAddress() + item.StartInstanceLocation * sizeof(HLSL::InstanceData);
+			auto instanceBuffer = GetCurrentFrameInstBuffer(Payload.InstanceBuffer->BufferId);
+			auto location = instanceBuffer->GetGPUAddress() + StartInstanceLocation * sizeof(HLSL::InstanceData);
 			GetCommandQueue()->SetResource(STRINGIFY_MACRO(INSTANCE_DATA), location, Payload.Description);
+			LOG(Render, Log, "Drawing item: {}, Material ID: {}, Instance ID: {}, Buffer name: {}", TEXT(renderItem->Name), renderItem->GetDefaultInstance()->MaterialIndex, StartInstanceLocation, instanceBuffer->Name);
 			cmd->DrawIndexedInstanced(
 			    submesh->IndexCount,
 			    visibleInstances,
@@ -322,8 +323,8 @@ void OEngine::DrawAABBOfRenderItems(SPSODescriptionBase* Desc)
 	commandList->IASetVertexBuffers(0, 0, nullptr);
 	commandList->IASetIndexBuffer(nullptr);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
-	auto instanceBuffer = CameraRenderedItems.Instances->get()->GetResource();
-	auto location = instanceBuffer->Resource->GetGPUVirtualAddress();
+	auto instanceBuffer = GetCurrentFrameInstBuffer(CameraInstanceBufferID);
+	auto location = instanceBuffer->GetGPUAddress();
 	GetCommandQueue()->SetResource(STRINGIFY_MACRO(INSTANCE_DATA), location, Desc);
 	commandList->DrawInstanced(1, CameraRenderedItems.InstanceCount, 0, 0);
 }
@@ -386,6 +387,31 @@ void OEngine::BuildCustomGeometry()
 	BoxRenderItem = CreateBoxRenderItem("DefaultBoxRI", {});
 }
 
+void OEngine::TryCreateFrameResources()
+{
+	if (FrameResources.empty())
+	{
+		for (int i = 0; i < SRenderConstants::NumFrameResources; ++i)
+		{
+			auto frameResource = make_unique<SFrameResource>(Device->GetDevice(), GetWindow());
+			FrameResources.push_back(std::move(frameResource));
+		}
+	}
+}
+
+vector<OUploadBuffer<HLSL::InstanceData>*> OEngine::GetInstanceBuffersByUUID(TUUID Id) const
+{
+	vector<OUploadBuffer<HLSL::InstanceData>*> result;
+	for (const auto& frame : FrameResources)
+	{
+		if (frame->InstanceBuffers.contains(Id))
+		{
+			result.push_back(frame->InstanceBuffers.at(Id).get());
+		}
+	}
+	return result;
+}
+
 void OEngine::SetFogColor(DirectX::XMFLOAT4 Color)
 {
 	MainPassCB.FogColor = Color;
@@ -416,6 +442,17 @@ void OEngine::FlushGPU() const
 	DirectCommandQueue->Flush();
 	ComputeCommandQueue->Flush();
 	CopyCommandQueue->Flush();
+}
+
+TUUID OEngine::AddInstanceBuffer(const wstring& Name)
+{
+	auto newid = GenerateUUID();
+	TryCreateFrameResources();
+	for (auto& frame : FrameResources)
+	{
+		frame->AddNewInstanceBuffer(Name, GetTotalNumberOfInstances(), newid);
+	}
+	return newid;
 }
 
 int OEngine::InitScene()
@@ -449,10 +486,13 @@ void OEngine::BuildDescriptorHeaps()
 void OEngine::PostTestInit()
 {
 	PROFILE_SCOPE()
+	CameraInstanceBufferID = AddInstanceBuffer(L"DefaultInstanceBuffer");
+	TryCreateFrameResources();
+
 	FillExpectedShadowMaps();
 	BuildDescriptorHeaps();
 	Window->InitRenderObject();
-	BuildFrameResource(GetPassCountRequired());
+	RebuildFrameResource(GetPassCountRequired());
 	GetCommandQueue()->TryResetCommandList();
 	FillDescriptorHeaps();
 	InitUIManager();
@@ -484,13 +524,31 @@ void OEngine::OnEnd() const
 	FlushGPU();
 }
 
+void OEngine::RemoveRenderItems()
+{
+	PROFILE_SCOPE()
+	if (PendingRemoveItems.size() >= GarbageMaxItems)
+	{
+		for (auto& item : PendingRemoveItems)
+		{
+			erase_if(AllRenderItems, [&item](const auto& val) { return val.get() == item.get(); });
+			for (auto& array : RenderLayers | std::views::values)
+			{
+				std::erase_if(array, [&item](const auto& val) { return val == item.get(); });
+			}
+			SceneGeometry.erase(item->Geometry->Name);
+			LOG(Render, Log, "Removed item: {}", TEXT(item->Name)); // todo optimize
+		}
+		PendingRemoveItems.clear();
+	}
+}
+
 void OEngine::TryRebuildFrameResource()
 {
 	LOG(Engine, Log, "Engine::RebuildFrameResource")
-	if (CurrentNumMaterials != MaterialManager->GetNumMaterials() || CurrentNumInstances != GetTotalNumberOfInstances())
+	if (CurrentNumMaterials != MaterialManager->GetNumMaterials() || CurrentNumInstances * InstanceBufferMultiplier < GetTotalNumberOfInstances())
 	{
-		FrameResources.clear();
-		BuildFrameResource(PassCount);
+		RebuildFrameResource(PassCount);
 	}
 }
 
@@ -503,25 +561,23 @@ void OEngine::UpdateBoundingSphere()
 	}
 }
 
-void OEngine::BuildFrameResource(uint32_t Count)
+void OEngine::RebuildFrameResource(uint32_t Count)
 {
 	PassCount = Count;
 
 	CurrentNumInstances = GetTotalNumberOfInstances();
 	CurrentNumMaterials = MaterialManager->GetNumMaterials();
 
-	for (int i = 0; i < SRenderConstants::NumFrameResources; ++i)
+	for (const auto& frame : FrameResources)
 	{
-		auto frameResource = make_unique<SFrameResource>(Device->GetDevice(), GetWindow());
-		frameResource->SetPass(PassCount);
-		frameResource->SetCameraInstances(CurrentNumInstances);
-		frameResource->SetMaterials(CurrentNumMaterials);
-		frameResource->SetDirectionalLight(GetLightComponentsCount());
-		frameResource->SetPointLight(GetLightComponentsCount());
-		frameResource->SetSpotLight(GetLightComponentsCount());
-		frameResource->SetSSAO();
-		frameResource->SetFrusturmCorners();
-		FrameResources.push_back(std::move(frameResource));
+		frame->SetPass(PassCount);
+		frame->RebuildInstanceBuffers(CurrentNumInstances * InstanceBufferMultiplier);
+		frame->SetMaterials(CurrentNumMaterials);
+		frame->SetDirectionalLight(GetLightComponentsCount());
+		frame->SetPointLight(GetLightComponentsCount());
+		frame->SetSpotLight(GetLightComponentsCount());
+		frame->SetSSAO();
+		frame->SetFrusturmCorners();
 	}
 	OnFrameResourceChanged.Broadcast();
 }
@@ -546,6 +602,7 @@ void OEngine::Draw(UpdateEventArgs& Args)
 	PROFILE_SCOPE()
 	if (HasInitializedTests)
 	{
+		RemoveRenderItems();
 		DirectCommandQueue->TryResetCommandList();
 		SetDescriptorHeap(EResourceHeapType::Default);
 		Update(Args);
@@ -675,12 +732,21 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 	PROFILE_SCOPE();
 
 	UpdateBoundingSphere();
+	TryRebuildFrameResource();
 	UpdateFrameResource();
-	CameraRenderedItems = PerformFrustumCulling(&Window->GetCamera()->GetFrustrum(), Window->GetCamera()->GetView(), CurrentFrameResource->CameraInstancesBuffer);
+	CameraRenderedItems = PerformFrustumCulling(&Window->GetCamera()->GetFrustrum(), Window->GetCamera()->GetView(), CameraInstanceBufferID);
 
-	for (auto& item : AllRenderItems)
+	for (const auto& item : AllRenderItems)
 	{
 		item->Update(Args);
+		if (item->Lifetime.has_value())
+		{
+			item->Lifetime.value() -= Args.Timer.GetDeltaTime();
+			if (item->Lifetime <= 0)
+			{
+				PendingRemoveItems.insert(item);
+			}
+		}
 	}
 
 	if (CurrentFrameResource)
@@ -744,6 +810,19 @@ void OEngine::DestroyWindow()
 
 void OEngine::OnWindowDestroyed()
 {
+}
+
+void OEngine::DrawDebugBox(DirectX::XMFLOAT3 Center, DirectX::XMFLOAT3 Extents, DirectX::XMFLOAT4 Orientation, SColor Color, float Duration)
+{
+	SRenderItemParams params;
+	params.Position = Center;
+	params.Scale = Extents;
+	params.OverrideLayer = SRenderLayers::Debug;
+	params.OverrideColor = Color;
+	params.Rotation = Orientation;
+	params.Lifetime = Duration;
+	auto name = std::format("DebugBox {}", RenderLayers[SRenderLayers::Debug].size());
+	CreateBoxRenderItem(name, params);
 }
 
 void OEngine::OnKeyPressed(KeyEventArgs& Args)
@@ -899,6 +978,11 @@ void OEngine::FillExpectedShadowMaps()
 	}
 }
 
+OUploadBuffer<HLSL::InstanceData>* OEngine::GetCurrentFrameInstBuffer(TUUID Id)
+{
+	return CurrentFrameResource->InstanceBuffers.at(Id).get();
+}
+
 void OEngine::FillDescriptorHeaps()
 {
 	PROFILE_SCOPE();
@@ -994,7 +1078,7 @@ vector<ORenderItem*>& OEngine::GetRenderItems(const string& Type)
 void OEngine::AddRenderItem(string Category, shared_ptr<ORenderItem> RenderItem)
 {
 	RenderLayers[Category].push_back(RenderItem.get());
-	AllRenderItems.push_back(move(RenderItem));
+	AllRenderItems.insert(move(RenderItem));
 }
 
 void OEngine::AddRenderItem(const vector<string>& Categories, shared_ptr<ORenderItem> RenderItem)
@@ -1003,7 +1087,7 @@ void OEngine::AddRenderItem(const vector<string>& Categories, shared_ptr<ORender
 	{
 		RenderLayers[category].push_back(RenderItem.get());
 	}
-	AllRenderItems.push_back(move(RenderItem));
+	AllRenderItems.insert(move(RenderItem));
 }
 
 void OEngine::MoveRIToNewLayer(ORenderItem* Item, const SRenderLayer& NewLayer, const SRenderLayer& OldLayer)
@@ -1015,7 +1099,7 @@ void OEngine::MoveRIToNewLayer(ORenderItem* Item, const SRenderLayer& NewLayer, 
 	RenderLayers[NewLayer].push_back(Item);
 }
 
-const vector<shared_ptr<ORenderItem>>& OEngine::GetAllRenderItems()
+const unordered_set<shared_ptr<ORenderItem>>& OEngine::GetAllRenderItems()
 {
 	return AllRenderItems;
 }
@@ -1205,13 +1289,12 @@ OEngine::TRenderLayer& OEngine::GetRenderLayers()
 	return RenderLayers;
 }
 
-SCulledInstancesInfo OEngine::PerformFrustumCulling(IBoundingGeometry* Frustum, const DirectX::XMMATRIX& ViewMatrix, TUploadBuffer<HLSL::InstanceData>& Buffer) const
+SCulledInstancesInfo OEngine::PerformFrustumCulling(IBoundingGeometry* Frustum, const DirectX::XMMATRIX& ViewMatrix, TUUID BufferId)
 {
 	PROFILE_SCOPE();
 	SCulledInstancesInfo result;
-	result.Instances = &Buffer;
-	result.Items.reserve(AllRenderItems.size());
-
+	result.BufferId = BufferId;
+	const auto& buffers = GetInstanceBuffersByUUID(BufferId);
 	const auto invView = Inverse(ViewMatrix);
 	int32_t counter = 0;
 	for (auto& e : AllRenderItems)
@@ -1228,6 +1311,11 @@ SCulledInstancesInfo OEngine::PerformFrustumCulling(IBoundingGeometry* Frustum, 
 		{
 			if (visibleInstanceCount == 0)
 			{
+				if (counter >= GetCurrentFrameInstBuffer(BufferId)->MaxOffset)
+				{
+					LOG(Engine, Error, "Buffer size exceeded!")
+					break;
+				}
 				item.StartInstanceLocation = counter;
 			}
 
@@ -1242,7 +1330,12 @@ SCulledInstancesInfo OEngine::PerformFrustumCulling(IBoundingGeometry* Frustum, 
 				Put(data.TexTransform, Transpose(Load(instData[i].TexTransform)));
 				data.MaterialIndex = instData[i].MaterialIndex;
 				result.InstanceCount++;
-				Buffer->CopyData(counter++, data);
+				for (auto* buffer : buffers)
+				{
+					buffer->CopyData(counter, data);
+				}
+				counter++;
+
 				visibleInstanceCount++;
 			}
 		}
@@ -1439,6 +1532,7 @@ std::unordered_map<string, unique_ptr<SMeshGeometry>>& OEngine::GetSceneGeometry
 SMeshGeometry* OEngine::SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry)
 {
 	auto geo = Geometry.get();
+	Geometry->Name += " " + GenerateUUID();
 	SceneGeometry[Geometry->Name] = move(Geometry);
 	return geo;
 }
@@ -1489,16 +1583,21 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(SMeshGeometry* Mesh, const string&
 		matIdx = Params.MaterialParams.Material->MaterialCBIndex;
 		layer = Params.OverrideLayer.value_or(SRenderLayers::Opaque);
 	}
-
+	layer = Params.OverrideLayer.value_or(layer);
 	HLSL::InstanceData defaultInstance;
 	defaultInstance.MaterialIndex = matIdx;
 
 	defaultInstance.Scale = Params.Scale.value_or(XMFLOAT3{ 1, 1, 1 });
 	defaultInstance.Position = Params.Position.value_or(XMFLOAT3{ 0, 0, 0 });
+	defaultInstance.Rotation = Params.Rotation.value_or(XMFLOAT4{ 0, 0, 0, 1 });
+
+	defaultInstance.OverrideColor = (Params.OverrideColor.value_or(SColor::White)).ToFloat3();
 	defaultInstance.BoundingBoxCenter = submesh->Bounds.Center;
 	defaultInstance.BoundingBoxExtents = submesh->Bounds.Extents;
+
 	Scale(defaultInstance.World, defaultInstance.Scale);
 	Translate(defaultInstance.World, defaultInstance.Position);
+	Rotate(defaultInstance.World, defaultInstance.Rotation);
 
 	newItem->Instances.resize(Params.NumberOfInstances, defaultInstance);
 	newItem->RenderLayer = layer;
@@ -1508,7 +1607,7 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(SMeshGeometry* Mesh, const string&
 	newItem->bTraceable = Params.Pickable;
 	newItem->ChosenSubmesh = Mesh->FindSubmeshGeomentry(Submesh);
 	newItem->Name = Mesh->Name + "_" + Submesh + "_" + std::to_string(AllRenderItems.size());
-
+	newItem->Lifetime = Params.Lifetime;
 	const auto res = newItem.get();
 	if (mat)
 	{

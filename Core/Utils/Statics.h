@@ -34,9 +34,12 @@ inline void* PtrCast(uint64_t Ptr)
 	return reinterpret_cast<void*>(Ptr);
 }
 
-using TUUID = boost::uuids::uuid;
+using TUUID = string;
 inline TUUID GenerateUUID()
 {
+	// Generate a new UUID
 	const boost::uuids::uuid uuid = boost::uuids::random_generator()();
-	return uuid;
+
+	// Convert UUID to string
+	return to_string(uuid);
 }

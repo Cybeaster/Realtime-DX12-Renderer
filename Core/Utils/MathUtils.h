@@ -214,6 +214,11 @@ inline DirectX::XMVECTOR Load(const DirectX::XMFLOAT3& Source)
 	return DirectX::XMLoadFloat3(&Source);
 }
 
+inline DirectX::XMVECTOR Load(const DirectX::XMFLOAT4& Source)
+{
+	return DirectX::XMLoadFloat4(&Source);
+}
+
 inline DirectX::XMVECTOR Load(const DirectX::XMFLOAT2& Source)
 {
 	return DirectX::XMLoadFloat2(&Source);
@@ -239,6 +244,41 @@ inline DirectX::XMFLOAT4X4 Translate(DirectX::XMFLOAT4X4& OutOther, DirectX::XMF
 	return OutOther;
 }
 
+inline DirectX::XMFLOAT4 Rotate(const DirectX::XMFLOAT4& OutOther, float Angle, DirectX::XMFLOAT3 Axis)
+{
+	auto other = OutOther;
+	Put(other, DirectX::XMVector4Transform(DirectX::XMLoadFloat4(&OutOther), DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&Axis), Angle)));
+	return other;
+}
+
+inline DirectX::XMFLOAT4X4 Rotate(const DirectX::XMFLOAT4X4& OutOther, DirectX::XMFLOAT3 QuatRotation)
+{
+	auto other = OutOther;
+	DirectX::XMMATRIX RotationMatrix = DirectX::XMMatrixRotationQuaternion(Load(QuatRotation));
+	Put(other, DirectX::XMMatrixMultiply(Load(other), RotationMatrix));
+	return other;
+}
+
+inline DirectX::XMFLOAT4X4 Rotate(const DirectX::XMFLOAT4X4& OutOther, DirectX::XMFLOAT4 QuatRotation)
+{
+	auto other = OutOther;
+	DirectX::XMMATRIX RotationMatrix = DirectX::XMMatrixRotationQuaternion(Load(QuatRotation));
+	Put(other, DirectX::XMMatrixMultiply(Load(other), RotationMatrix));
+	return other;
+}
+
+inline void Rotate(DirectX::XMFLOAT4X4& OutOther, DirectX::XMFLOAT3 QuatRotation)
+{
+	DirectX::XMMATRIX RotationMatrix = DirectX::XMMatrixRotationQuaternion(Load(QuatRotation));
+	Put(OutOther, DirectX::XMMatrixMultiply(Load(OutOther), RotationMatrix));
+}
+
+inline void Rotate(DirectX::XMFLOAT4X4& OutOther, DirectX::XMFLOAT4 QuatRotation)
+{
+	DirectX::XMMATRIX RotationMatrix = DirectX::XMMatrixRotationQuaternion(Load(QuatRotation));
+	Put(OutOther, DirectX::XMMatrixMultiply(Load(OutOther), RotationMatrix));
+}
+
 inline DirectX::XMFLOAT4X4 Translate(const DirectX::XMFLOAT4X4& Other, DirectX::XMFLOAT3 TranslationFactor)
 {
 	auto other = Other;
@@ -251,6 +291,36 @@ inline DirectX::XMFLOAT4X4 MatCast(const DirectX::XMMATRIX& Mat)
 	DirectX::XMFLOAT4X4 other;
 	XMStoreFloat4x4(&other, Mat);
 	return other;
+}
+
+inline void QuaternionToEulerAngles(const DirectX::XMFLOAT4& Quat, DirectX::XMFLOAT3& Euler)
+{
+	using namespace DirectX;
+
+	// Roll (x-axis rotation)
+	double sinr_cosp = 2.0 * (Quat.w * Quat.x + Quat.y * Quat.z);
+	double cosr_cosp = 1.0 - 2.0 * (Quat.x * Quat.x + Quat.y * Quat.y);
+	Euler.x = std::atan2(sinr_cosp, cosr_cosp);
+
+	// Pitch (y-axis rotation)
+	double sinp = 2.0 * (Quat.w * Quat.y - Quat.z * Quat.x);
+	if (std::fabs(sinp) >= 1)
+		Euler.y = std::copysign(XM_PI / 2, sinp); // use 90 degrees if out of range
+	else
+		Euler.y = std::asin(sinp);
+
+	// Yaw (z-axis rotation)
+	double siny_cosp = 2.0 * (Quat.w * Quat.z + Quat.x * Quat.y);
+	double cosy_cosp = 1.0 - 2.0 * (Quat.y * Quat.y + Quat.z * Quat.z);
+	Euler.z = std::atan2(siny_cosp, cosy_cosp);
+}
+
+inline void QuaternionToEulerAngles(const DirectX::XMVECTOR& Quat, DirectX::XMFLOAT3& Euler)
+{
+	using namespace DirectX;
+	XMFLOAT4 q;
+	XMStoreFloat4(&q, Quat);
+	QuaternionToEulerAngles(q, Euler);
 }
 
 inline DirectX::XMMATRIX MatrixPerspective(float Fov, float Aspect, float NearZ, float FarZ)

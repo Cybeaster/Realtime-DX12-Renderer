@@ -1,6 +1,8 @@
 #pragma once
 
 #include "boost/signals2.hpp"
+#include "boost/unordered_map.hpp"
+#include "boost/unordered_set.hpp"
 
 #include <algorithm> // For std::min and std::max.
 #include <cassert>
@@ -21,6 +23,8 @@
 #undef max
 #endif
 
+using boost::optional;
+using boost::unordered_map;
 using std::array;
 using std::make_shared;
 using std::make_unique;
@@ -31,12 +35,10 @@ using std::shared_ptr;
 using std::string;
 using std::to_wstring;
 using std::unique_ptr;
-using std::unordered_map;
 using std::unordered_set;
 using std::vector;
 using std::weak_ptr;
 using std::wstring;
-
 #include <algorithm>
 #include <string>
 #include <unordered_map>
@@ -82,4 +84,3 @@ struct SLitEnum
 			return it->second;                                                                      \
 		return static_cast<EnumType>(-1);                                                           \
 	}
-

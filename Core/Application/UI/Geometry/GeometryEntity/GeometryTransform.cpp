@@ -7,7 +7,7 @@
 
 void OGeometryTransformWidget::Draw()
 {
-	ImGui::SeparatorText("Transform");
+	ImGui::Separator();
 	if (ImGui::InputFloat3("Position", &NewPosition.x))
 	{
 		OnTransformUpdate.Broadcast();

@@ -3,7 +3,7 @@
 
 #include "Engine/Engine.h"
 
-void ORenderItem::Update(const UpdateEventArgs& Arg) const
+void ORenderItem::Update(const UpdateEventArgs& Arg)
 {
 	for (auto& Component : Components)
 	{

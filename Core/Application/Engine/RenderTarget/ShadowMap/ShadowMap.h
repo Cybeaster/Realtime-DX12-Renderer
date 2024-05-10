@@ -30,13 +30,13 @@ public:
 	uint32_t GetShadowMapIndex() const;
 	bool IsValid();
 	UINT GetMapSize() const;
-
+	void InitRenderObject() override;
 	void UpdateBoundingGeometry(IBoundingGeometry* Geometry, const DirectX::XMMATRIX& LightViewProj);
 	IBoundingGeometry* GetBoundingGeometry() const;
-	SCulledInstancesInfo& GetCulledInstancesInfo();
+	const SCulledInstancesInfo* GetCulledInstancesInfo() const;
 
 private:
-	TUploadBuffer<HLSL::InstanceData> ShadowMapInstancesBuffer = nullptr;
+	optional<TUUID> ShadowMapInstancesBufferId;
 	SCulledInstancesInfo InstancesInfo;
 	bool bNeedToUpdate = true;
 	SPassConstants PassConstant;

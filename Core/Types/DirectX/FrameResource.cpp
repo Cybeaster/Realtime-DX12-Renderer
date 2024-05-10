@@ -1,5 +1,7 @@
 #include "FrameResource.h"
 
+#include "Statics.h"
+
 SFrameResource::SFrameResource(ID3D12Device* Device, IRenderObject* Owner)
     : Owner(Owner), Device(Device)
 {
@@ -12,24 +14,25 @@ SFrameResource::~SFrameResource()
 
 void SFrameResource::SetPass(UINT PassCount)
 {
-	PassCB = make_unique<OUploadBuffer<SPassConstants>>(Device, PassCount, true, Owner, L"_PassBuffer");
-}
-
-void SFrameResource::SetCameraInstances(UINT InstanceCount)
-{
-	if (InstanceCount == 0)
+	if (PassCB)
 	{
-		LOG(Engine, Warning, "MaxInstanceCount is 0");
-		return;
+		PassCB->RebuildBuffer(PassCount);
 	}
-	CameraInstancesBuffer = make_unique<OUploadBuffer<HLSL::InstanceData>>(Device, InstanceCount, false, Owner, L"_InstanceBuffer");
+	PassCB = make_unique<OUploadBuffer<SPassConstants>>(Device, PassCount, true, Owner, L"_PassBuffer");
 }
 
 void SFrameResource::SetMaterials(UINT MaterialCount)
 {
 	if (MaterialCount > 0)
 	{
-		MaterialBuffer = make_unique<OUploadBuffer<HLSL::MaterialData>>(Device, MaterialCount, false, Owner, L"_MaterialBuffer");
+		if (MaterialBuffer)
+		{
+			MaterialBuffer->RebuildBuffer(MaterialCount);
+		}
+		else
+		{
+			MaterialBuffer = make_unique<OUploadBuffer<HLSL::MaterialData>>(Device, MaterialCount, false, Owner, L"_MaterialBuffer");
+		}
 	}
 	else
 	{
@@ -40,7 +43,14 @@ void SFrameResource::SetDirectionalLight(UINT LightCount)
 {
 	if (LightCount > 0)
 	{
-		DirectionalLightBuffer = make_unique<OUploadBuffer<HLSL::DirectionalLight>>(Device, LightCount, false, Owner, L"_DirectionalLightBuffer");
+		if (DirectionalLightBuffer)
+		{
+			DirectionalLightBuffer->RebuildBuffer(LightCount);
+		}
+		else
+		{
+			DirectionalLightBuffer = make_unique<OUploadBuffer<HLSL::DirectionalLight>>(Device, LightCount, false, Owner, L"_DirectionalLightBuffer");
+		}
 	}
 	else
 	{
@@ -52,7 +62,14 @@ void SFrameResource::SetPointLight(UINT LightCount)
 {
 	if (LightCount > 0)
 	{
-		PointLightBuffer = make_unique<OUploadBuffer<HLSL::PointLight>>(Device, LightCount, false, Owner, L"_PointLightBuffer");
+		if (PointLightBuffer)
+		{
+			PointLightBuffer->RebuildBuffer(LightCount);
+		}
+		else
+		{
+			PointLightBuffer = make_unique<OUploadBuffer<HLSL::PointLight>>(Device, LightCount, false, Owner, L"_PointLightBuffer");
+		}
 	}
 	else
 	{
@@ -64,7 +81,14 @@ void SFrameResource::SetSpotLight(UINT LightCount)
 {
 	if (LightCount > 0)
 	{
-		SpotLightBuffer = make_unique<OUploadBuffer<HLSL::SpotLight>>(Device, LightCount, false, Owner, L"_SpotLightBuffer");
+		if (SpotLightBuffer)
+		{
+			SpotLightBuffer->RebuildBuffer(LightCount);
+		}
+		else
+		{
+			SpotLightBuffer = make_unique<OUploadBuffer<HLSL::SpotLight>>(Device, LightCount, false, Owner, L"_SpotLightBuffer");
+		}
 	}
 	else
 	{
@@ -73,10 +97,38 @@ void SFrameResource::SetSpotLight(UINT LightCount)
 }
 void SFrameResource::SetSSAO()
 {
-	SsaoCB = make_unique<OUploadBuffer<SSsaoConstants>>(Device, 1, true, Owner, L"_SsaoBuffer");
+	if (SsaoCB == nullptr)
+	{
+		SsaoCB = make_unique<OUploadBuffer<SSsaoConstants>>(Device, 1, true, Owner, L"_SsaoBuffer");
+	}
 }
 
 void SFrameResource::SetFrusturmCorners()
 {
-	FrusturmCornersBuffer = make_unique<OUploadBuffer<HLSL::FrustrumCorners>>(Device, 1, true, Owner, L"_FrusturmCornersBuffer");
+	if (FrusturmCornersBuffer == nullptr)
+	{
+		FrusturmCornersBuffer = make_unique<OUploadBuffer<HLSL::FrustrumCorners>>(Device, 1, true, Owner, L"_FrusturmCornersBuffer");
+	}
+}
+
+void SFrameResource::RebuildInstanceBuffers(UINT InstanceCount) const
+{
+	for (const auto& val : InstanceBuffers | std::views::values)
+	{
+		val->RebuildBuffer(InstanceCount);
+	}
+}
+
+OUploadBuffer<HLSL::InstanceData>* SFrameResource::AddNewInstanceBuffer(const wstring& Name, UINT InstanceCount, TUUID Id)
+{
+	if (InstanceCount == 0)
+	{
+		LOG(Engine, Warning, "MaxInstanceCount is 0");
+		return nullptr;
+	}
+
+	InstanceBuffers[Id] = make_unique<OUploadBuffer<HLSL::InstanceData>>(Device, InstanceCount, false, Owner, Name);
+	LOG(Engine, Log, "Adding new instance buffer: {}, New Size: {}", Name, TEXT(InstanceBuffers.size()));
+
+	return InstanceBuffers[Id].get();
 }

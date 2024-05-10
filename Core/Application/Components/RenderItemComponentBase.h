@@ -27,5 +27,5 @@ protected:
 
 	DirectX::XMFLOAT3 Position = {};
 	DirectX::XMFLOAT3 Scale = { 1, 1, 1 };
-	DirectX::XMFLOAT3 Rotation = {};
+	DirectX::XMFLOAT4 Rotation = {};
 };

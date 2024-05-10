@@ -144,7 +144,8 @@ void OGeometryEntityWidget::InitWidget()
 
 	// If the decompose fails, set the default values
 	Position = RenderItem->GetDefaultInstance()->Position;
-	Rotation = RenderItem->GetDefaultInstance()->Rotation;
+	QuaternionToEulerAngles(RenderItem->GetDefaultInstance()->Rotation, Rotation);
+
 	Scale = RenderItem->GetDefaultInstance()->Scale;
 
 	TransformWidget = MakeWidget<OGeometryTransformWidget>(&Position, &Rotation, &Scale);
@@ -165,7 +166,7 @@ void OGeometryEntityWidget::InitWidget()
 		const XMMATRIX transformMatrix = matScale * matRotation * matTranslation;
 		XMStoreFloat4x4(&SelectedInstanceData->World, transformMatrix);
 		SelectedInstanceData->Position = Position;
-		SelectedInstanceData->Rotation = Rotation;
+		Put(SelectedInstanceData->Rotation, XMQuaternionRotationRollPitchYaw(Rotation.x, Rotation.y, Rotation.z));
 		SelectedInstanceData->Scale = Scale;
 	});
 

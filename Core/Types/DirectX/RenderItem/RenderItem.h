@@ -1,5 +1,6 @@
 #pragma once
 #include "../../Materials/Material.h"
+#include "Color.h"
 #include "Components/LightComponent/LightComponent.h"
 #include "Components/RenderItemComponentBase.h"
 #include "DirectX/MeshGeometry.h"
@@ -22,23 +23,26 @@ struct ORenderItem
 	ORenderItem(ORenderItem&&) = default;
 	ORenderItem(const ORenderItem&) = default;
 
-	void Update(const UpdateEventArgs& Arg) const;
+	void Update(const UpdateEventArgs& Arg);
 	bool IsValid() const;
 	bool IsValidChecked() const;
-	SRenderLayer RenderLayer = "NONE";
-	string Name;
 
-	bool bTraceable = true;
-	bool bFrustrumCoolingEnabled = true;
 	template<typename T, typename... Args>
 	T* AddComponent(Args&&... Arg);
+
+	SRenderLayer RenderLayer = "NONE";
+
+	string Name;
+	bool bTraceable = true;
+	bool bFrustrumCoolingEnabled = true;
+
 	SMaterial* DefaultMaterial = nullptr;
 	SMeshGeometry* Geometry = nullptr;
-
 	SSubmeshGeometry* ChosenSubmesh = nullptr;
-
 	DirectX::BoundingBox Bounds;
 	vector<HLSL::InstanceData> Instances;
+
+	std::optional<float> Lifetime;
 
 	/*UI*/
 	bool bIsDisplayable = true;
@@ -59,8 +63,8 @@ struct SCulledRenderItem
 
 struct SCulledInstancesInfo
 {
-	unordered_map<ORenderItem*, SCulledRenderItem> Items;
-	TUploadBuffer<HLSL::InstanceData>* Instances = nullptr;
+	unordered_map<ORenderItem*, SCulledRenderItem> Items = {};
+	TUUID BufferId;
 	uint32_t InstanceCount = 0;
 };
 
@@ -92,7 +96,12 @@ struct SRenderItemParams
 	bool Pickable = false;
 	void SetPosition(DirectX::XMFLOAT3 P);
 	void SetScale(DirectX::XMFLOAT3 S);
+
 	std::optional<DirectX::XMFLOAT3> Position;
 	std::optional<DirectX::XMFLOAT3> Scale;
+	//Quaternion
+	std::optional<DirectX::XMFLOAT4> Rotation;
 	bool Displayable = true;
+	std::optional<SColor> OverrideColor = SColor::White;
+	std::optional<float> Lifetime;
 };
