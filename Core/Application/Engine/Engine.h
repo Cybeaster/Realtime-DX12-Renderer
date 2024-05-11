@@ -57,8 +57,8 @@ struct SDrawPayload
 	const SCulledInstancesInfo* InstanceBuffer;
 	bool bForceDrawAll = false;
 
-	SMeshGeometry* OverrideGeometry = nullptr;
-	SSubmeshGeometry* OverrideSubmesh = nullptr;
+	weak_ptr<SMeshGeometry> OverrideGeometry;
+	weak_ptr<SSubmeshGeometry> OverrideSubmesh;
 };
 
 class OEngine : public std::enable_shared_from_this<OEngine>
@@ -69,8 +69,11 @@ public:
 	using TWindowPtr = OWindow*;
 	using TWindowMap = std::map<HWND, TWindowPtr>;
 	using WindowNameMap = std::map<std::wstring, TWindowPtr>;
-	using TSceneGeometryMap = std::unordered_map<string, unique_ptr<SMeshGeometry>>;
-	using TRenderLayer = map<SRenderLayer, vector<ORenderItem*>>;
+
+	using TSceneGeometryMap = unordered_map<TUUID, shared_ptr<SMeshGeometry>>;
+	using TSceneGeometryItemDependencyMap = unordered_map<weak_ptr<SMeshGeometry>, vector<weak_ptr<ORenderItem>>>;
+
+	using TRenderLayer = map<SRenderLayer, vector<weak_ptr<ORenderItem>>>;
 	vector<unique_ptr<SFrameResource>> FrameResources;
 	SFrameResource* CurrentFrameResource = nullptr;
 	UINT CurrentFrameResourceIndex = 0;
@@ -100,6 +103,7 @@ private:
 	void InitPipelineManager();
 	void BuildCustomGeometry();
 	void TryCreateFrameResources();
+	void BuildDebugGeometry();
 
 public:
 	vector<OUploadBuffer<HLSL::InstanceData>*> GetInstanceBuffersByUUID(TUUID Id) const;
@@ -124,6 +128,7 @@ public:
 
 	void OnEnd() const;
 	void RemoveRenderItems();
+	void RemoveItemInstances(UpdateEventArgs& Args);
 	void TryRebuildFrameResource();
 	void UpdateBoundingSphere();
 	void Draw(UpdateEventArgs& Args);
@@ -144,7 +149,7 @@ public:
 	bool GetMSAAState(UINT& Quality) const;
 	void FillExpectedShadowMaps();
 	OUploadBuffer<HLSL::InstanceData>* GetCurrentFrameInstBuffer(TUUID Id);
-	vector<ORenderItem*>& GetRenderItems(const SRenderLayer& Type);
+	vector<weak_ptr<ORenderItem>>& GetRenderItems(const SRenderLayer& Type);
 	D3D12_RENDER_TARGET_BLEND_DESC GetTransparentBlendState();
 	void FillDescriptorHeaps();
 
@@ -156,13 +161,13 @@ public:
 	uint32_t GetDesiredCountOfDSVs(SResourceHeapBitFlag Flag) const;
 	uint32_t GetDesiredCountOfSRVs(SResourceHeapBitFlag Flag) const;
 
-	std::unordered_map<string, unique_ptr<SMeshGeometry>>& GetSceneGeometry();
-	SMeshGeometry* SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry);
-	ORenderItem* BuildRenderItemFromMesh(const string& Name, string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params);
+	const unordered_map<string, shared_ptr<SMeshGeometry>>& GetSceneGeometry();
+	weak_ptr<SMeshGeometry> SetSceneGeometry(shared_ptr<SMeshGeometry> Geometry);
+	weak_ptr<ORenderItem> BuildRenderItemFromMesh(const string& Name, string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params);
 	void BindMesh(const SMeshGeometry* Mesh);
-	ORenderItem* BuildRenderItemFromMesh(unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params);
-	ORenderItem* BuildRenderItemFromMesh(SMeshGeometry* Mesh, const SRenderItemParams& Params);
-	ORenderItem* BuildRenderItemFromMesh(SMeshGeometry* Mesh, const string& Submesh, const SRenderItemParams& Params);
+	weak_ptr<ORenderItem> BuildRenderItemFromMesh(shared_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params);
+	weak_ptr<ORenderItem> BuildRenderItemFromMesh(weak_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params);
+	weak_ptr<ORenderItem> BuildRenderItemFromMesh(const weak_ptr<SMeshGeometry>& Mesh, const string& Submesh, const SRenderItemParams& Params);
 
 	OSpotLightComponent* AddSpotLightComponent(ORenderItem* Item);
 	OPointLightComponent* AddPointLightComponent(ORenderItem* Item);
@@ -173,8 +178,8 @@ public:
 	SMeshGeometry* FindSceneGeometry(const string& Name) const;
 
 	void AddRenderItem(string Category, shared_ptr<ORenderItem> RenderItem);
-	void AddRenderItem(const vector<string>& Categories, shared_ptr<ORenderItem> RenderItem);
-	void MoveRIToNewLayer(ORenderItem* Item, const SRenderLayer& NewLayer, const SRenderLayer& OldLayer);
+	void AddRenderItem(const vector<string>& Categories, const shared_ptr<ORenderItem>& RenderItem);
+	void MoveRIToNewLayer(weak_ptr<ORenderItem> Item, const SRenderLayer& NewLayer, const SRenderLayer& OldLayer);
 	const unordered_set<shared_ptr<ORenderItem>>& GetAllRenderItems();
 	void SetPipelineState(string PSOName);
 	void SetPipelineState(SPSODescriptionBase* PSOInfo);
@@ -320,7 +325,7 @@ private:
 	unordered_set<shared_ptr<ORenderItem>> AllRenderItems;
 
 	TSceneGeometryMap SceneGeometry;
-
+	TSceneGeometryItemDependencyMap SceneGeometryItemDependency;
 	vector<D3D12_INPUT_ELEMENT_DESC> InputLayout;
 
 	// filters
@@ -361,7 +366,8 @@ private:
 	SCulledInstancesInfo CameraRenderedItems;
 	unique_ptr<OSceneManager> SceneManager;
 
-	ORenderItem* BoxRenderItem = nullptr;
+	weak_ptr<ORenderItem> BoxRenderItem;
+
 	uint32_t GarbageMaxItems = 100;
 
 public:

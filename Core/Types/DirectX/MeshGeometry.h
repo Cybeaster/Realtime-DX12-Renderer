@@ -33,16 +33,16 @@ struct SMeshGeometry
 	DXGI_FORMAT IndexFormat = DXGI_FORMAT_R16_UINT;
 	UINT IndexBufferByteSize = 0;
 
-	SSubmeshGeometry* FindSubmeshGeomentry(const std::string& SubmeshName)
+	weak_ptr<SSubmeshGeometry> FindSubmeshGeomentry(const std::string& SubmeshName)
 	{
 		if (!DrawArgs.contains(SubmeshName))
 		{
 			throw std::runtime_error("Submesh not found!");
 		}
-		return &DrawArgs.at(SubmeshName);
+		return DrawArgs.at(SubmeshName);
 	}
 
-	SSubmeshGeometry& SetGeometry(const std::string& SubmeshName, SSubmeshGeometry& Geometry)
+	weak_ptr<SSubmeshGeometry> SetGeometry(const std::string& SubmeshName, const shared_ptr<SSubmeshGeometry>& Geometry)
 	{
 		string name = SubmeshName;
 		if (DrawArgs.contains(SubmeshName))
@@ -50,11 +50,11 @@ struct SMeshGeometry
 			LOG(Render, Warning, "Submesh already exists!");
 			name += "_" + std::to_string(DrawArgs.size());
 		}
-		DrawArgs[name] = std::move(Geometry);
+		DrawArgs[name] = Geometry;
 		return DrawArgs.at(name);
 	}
 
-	const std::unordered_map<std::string, SSubmeshGeometry>& GetDrawArgs()
+	const std::unordered_map<std::string, shared_ptr<SSubmeshGeometry>>& GetDrawArgs()
 	{
 		return DrawArgs;
 	}
@@ -83,5 +83,5 @@ struct SMeshGeometry
 		IndexBufferUploader = nullptr;
 	}
 
-	std::unordered_map<std::string, SSubmeshGeometry> DrawArgs;
+	std::unordered_map<std::string, shared_ptr<SSubmeshGeometry>> DrawArgs;
 };

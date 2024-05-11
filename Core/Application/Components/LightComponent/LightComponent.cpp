@@ -20,13 +20,13 @@ void OLightComponent::Tick(UpdateEventArgs Arg)
 {
 	PROFILE_SCOPE();
 	auto instance = Owner->GetDefaultInstance();
-	if (instance->Position != Position || DirectX::XMQuaternionEqual(Load(instance->Rotation), Load(Rotation)) || instance->Scale != Scale) // make delegate based
+	if (instance->HlslData.Position != Position || DirectX::XMQuaternionEqual(Load(instance->HlslData.Rotation), Load(Rotation)) || instance->HlslData.Scale != Scale) // make delegate based
 	{
-		WorldMatrix = Owner->GetDefaultInstance()->World;
+		WorldMatrix = Owner->GetDefaultInstance()->HlslData.World;
 		DirectX::XMFLOAT4 pos{};
-		Position = instance->Position;
-		Rotation = instance->Rotation;
-		Scale = instance->Scale;
+		Position = instance->HlslData.Position;
+		Rotation = instance->HlslData.Rotation;
+		Scale = instance->HlslData.Scale;
 		MarkDirty();
 	}
 }
@@ -144,8 +144,8 @@ float ODirectionalLightComponent::GetCascadeLambda() const
 void ODirectionalLightComponent::UpdateCascadeSplits()
 {
 	const auto camera = OEngine::Get()->GetWindow()->GetCamera();
-	const float nearClip = camera->GetNearZ();
-	const float farClip = camera->GetFarZ();
+	const float nearClip = camera.lock()->GetNearZ();
+	const float farClip = camera.lock()->GetFarZ();
 	const float clipRange = farClip - nearClip;
 	const float minZ = nearClip;
 	const float maxZ = nearClip + clipRange;
@@ -273,8 +273,8 @@ void ODirectionalLightComponent::SetLightSourceData()
 	auto lightDir = XMVector3Normalize(XMLoadFloat3(&DirectionalLight.Direction));
 	auto lightPos = lightDir;
 
-	const auto cameraView = camera->GetView();
-	const auto cameraProj = camera->GetProj();
+	const auto cameraView = camera.lock()->GetView();
+	const auto cameraProj = camera.lock()->GetProj();
 	const auto viewProj = cameraView * cameraProj;
 
 	array<XMFLOAT3, 8> arrayedCorners;

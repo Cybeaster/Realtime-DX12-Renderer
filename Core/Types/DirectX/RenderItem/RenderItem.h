@@ -12,6 +12,12 @@ struct SRenderItemGeometry
 {
 };
 
+struct SInstanceData
+{
+	HLSL::InstanceData HlslData;
+	std::optional<float> Lifetime;
+};
+
 /**
  * @brief Object placeable in the world, having geomentry, material and variable number of instances
  */
@@ -29,26 +35,23 @@ struct ORenderItem
 
 	template<typename T, typename... Args>
 	T* AddComponent(Args&&... Arg);
-
+	void AddInstance(const SInstanceData& Instance);
 	SRenderLayer RenderLayer = "NONE";
 
 	string Name;
 	bool bTraceable = true;
 	bool bFrustrumCoolingEnabled = true;
 
-	SMaterial* DefaultMaterial = nullptr;
-	SMeshGeometry* Geometry = nullptr;
-	SSubmeshGeometry* ChosenSubmesh = nullptr;
+	weak_ptr<SMaterial> DefaultMaterial;
+	weak_ptr<SMeshGeometry> Geometry;
+	weak_ptr<SSubmeshGeometry> ChosenSubmesh;
 	DirectX::BoundingBox Bounds;
-	vector<HLSL::InstanceData> Instances;
-
-	std::optional<float> Lifetime;
+	vector<SInstanceData> Instances;
 
 	/*UI*/
 	bool bIsDisplayable = true;
-	HLSL::InstanceData* GetDefaultInstance();
+	SInstanceData* GetDefaultInstance();
 	const vector<unique_ptr<OComponentBase>>& GetComponents() const;
-	void OnMaterialChanged();
 
 private:
 	vector<unique_ptr<OComponentBase>> Components;
@@ -56,14 +59,14 @@ private:
 
 struct SCulledRenderItem
 {
-	ORenderItem* Item = nullptr;
+	weak_ptr<ORenderItem> Item;
 	UINT StartInstanceLocation = 0;
 	UINT VisibleInstanceCount = 0;
 };
 
 struct SCulledInstancesInfo
 {
-	unordered_map<ORenderItem*, SCulledRenderItem> Items = {};
+	unordered_map<weak_ptr<ORenderItem>, SCulledRenderItem> Items = {};
 	TUUID BufferId;
 	uint32_t InstanceCount = 0;
 };
@@ -80,11 +83,11 @@ T* ORenderItem::AddComponent(Args&&... Arg)
 
 struct SRenderItemParams
 {
-	SRenderItemParams(SMaterial* Material)
+	SRenderItemParams(weak_ptr<SMaterial> Material)
 	    : MaterialParams(Material) {}
 	SRenderItemParams() = default;
 
-	SRenderItemParams(SMaterial* Material, size_t Instances)
+	SRenderItemParams(weak_ptr<SMaterial> Material, size_t Instances)
 	    : MaterialParams(Material), NumberOfInstances(Instances) {}
 
 	std::optional<SRenderLayer> OverrideLayer;

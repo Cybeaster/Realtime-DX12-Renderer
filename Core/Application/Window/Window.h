@@ -33,7 +33,7 @@ public:
 
 	OWindow() = default;
 
-	OWindow(HWND hWnd, const SWindowInfo& _WindowInfo);
+	OWindow(HWND hWnd, const SWindowInfo& InWindowInfo);
 	void InitRenderObject();
 	const wstring& GetName() const;
 	uint32_t GetWidth() const;
@@ -111,7 +111,7 @@ public:
 	void OnUpdateWindowSize(ResizeEventArgs& Event);
 	float GetLastXMousePos() const;
 	float GetLastYMousePos() const;
-	shared_ptr<OCamera> GetCamera();
+	weak_ptr<OCamera> GetCamera();
 
 	void ResetBuffers();
 	void SetCameraLens();

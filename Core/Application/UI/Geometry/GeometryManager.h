@@ -26,5 +26,5 @@ private:
 	string SelectedRenderItem = "";
 	string SelectedComponentName = "";
 	OComponentBase* SelectedComponent = nullptr; // todo remove
-	unordered_map<string,ORenderItem*> StringToGeo;
+	unordered_map<string, weak_ptr<ORenderItem>> StringToGeo;
 };

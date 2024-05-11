@@ -38,7 +38,7 @@ void OLightComponentWidget::Draw()
 					auto numTriangles = std::accumulate(map->GetCulledInstancesInfo()->Items.begin(),
 					                                    map->GetCulledInstancesInfo()->Items.end(),
 					                                    0,
-					                                    [](int32_t acc, auto pair) { return acc + pair.first->ChosenSubmesh->Vertices->size() / 3; });
+					                                    [](int32_t acc, auto pair) { return acc + pair.first.lock()->ChosenSubmesh.lock()->Vertices->size() / 3; });
 
 					ImGui::Text("Number of rendered meshes: %d", numRenderObjects);
 					ImGui::Text("Number of rendered triangles: %d", numTriangles);

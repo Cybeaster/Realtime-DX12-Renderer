@@ -1,8 +1,9 @@
 
+#include "OLightEmittingObject.h"
+
 #include "DirectX/RenderItem/RenderItem.h"
 #include "Engine/Engine.h"
-#include "OLightEmittingObject.h"
-OLightEmittingObject::OLightEmittingObject(SMeshGeometry* Mesh, SMaterial* Material)
+OLightEmittingObject::OLightEmittingObject(const weak_ptr<SMeshGeometry>& Mesh, const weak_ptr<SMaterial>& Material)
 {
 	SRenderItemParams params;
 	params.MaterialParams.Material = Material;

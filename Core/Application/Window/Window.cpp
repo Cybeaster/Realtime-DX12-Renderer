@@ -8,10 +8,10 @@
 
 using namespace Microsoft::WRL;
 
-OWindow::OWindow(HWND hWnd, const SWindowInfo& _WindowInfo)
-    : ORenderTargetBase(WindowInfo.ClientWidth, WindowInfo.ClientHeight, EResourceHeapType::Default), Hwnd(hWnd), WindowInfo{ _WindowInfo }
+OWindow::OWindow(HWND hWnd, const SWindowInfo& InWindowInfo)
+    : ORenderTargetBase(WindowInfo.ClientWidth, WindowInfo.ClientHeight, Default), Hwnd(hWnd), WindowInfo{ InWindowInfo }
 {
-	Camera = make_shared<OCamera>(this);
+	Camera = make_shared<OCamera>(OCamera(this));
 	Name = WindowInfo.Name;
 }
 
@@ -390,7 +390,7 @@ float OWindow::GetLastYMousePos() const
 	return LastMouseYPos;
 }
 
-shared_ptr<OCamera> OWindow::GetCamera()
+weak_ptr<OCamera> OWindow::GetCamera()
 {
 	return Camera;
 }

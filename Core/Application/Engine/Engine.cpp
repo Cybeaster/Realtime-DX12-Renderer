@@ -279,18 +279,25 @@ void OEngine::UpdateLightCB(const UpdateEventArgs& Args) const
 void OEngine::DrawRenderItemsImpl(const SDrawPayload& Payload)
 {
 	PROFILE_SCOPE();
-	const auto& renderItems = GetRenderItems(Payload.RenderLayer);
+	auto& renderItems = GetRenderItems(Payload.RenderLayer);
 	auto cmd = GetCommandQueue()->GetCommandList();
-	for (size_t i = 0; i < renderItems.size(); i++)
+	for (auto it = renderItems.begin(); it != renderItems.end(); ++it)
 	{
-		const auto renderItem = renderItems[i];
+		if (it->expired())
+		{
+			renderItems.erase(it);
+			LOG(Render, Log, "Removed expired item from render list")
+			continue;
+		}
+
+		const auto renderItem = it->lock();
 		if (!Payload.InstanceBuffer->Items.contains(renderItem))
 		{
 			continue;
 		}
 		const auto& [Item, StartInstanceLocation, VisibleInstanceCount] = Payload.InstanceBuffer->Items.at(renderItem);
-		const auto geometry = Payload.OverrideGeometry ? Payload.OverrideGeometry : renderItem->Geometry;
-		const auto submesh = Payload.OverrideSubmesh ? Payload.OverrideSubmesh : renderItem->ChosenSubmesh;
+		const auto geometry = !Payload.OverrideGeometry.expired() ? Payload.OverrideGeometry : renderItem->Geometry;
+		const auto submesh = !Payload.OverrideSubmesh.expired() ? Payload.OverrideSubmesh : renderItem->ChosenSubmesh;
 
 		auto visibleInstances = Payload.bForceDrawAll ? renderItem->Instances.size() : VisibleInstanceCount;
 		if (!renderItem->IsValidChecked() || visibleInstances == 0)
@@ -299,18 +306,18 @@ void OEngine::DrawRenderItemsImpl(const SDrawPayload& Payload)
 		}
 
 		PROFILE_BLOCK_START(renderItem->Name.c_str());
-		if (!renderItem->Instances.empty() && renderItem->Geometry)
+		if (!renderItem->Instances.empty() && !renderItem->Geometry.expired())
 		{
-			BindMesh(geometry);
+			BindMesh(geometry.lock().get());
 			auto instanceBuffer = GetCurrentFrameInstBuffer(Payload.InstanceBuffer->BufferId);
 			auto location = instanceBuffer->GetGPUAddress() + StartInstanceLocation * sizeof(HLSL::InstanceData);
 			GetCommandQueue()->SetResource(STRINGIFY_MACRO(INSTANCE_DATA), location, Payload.Description);
-			LOG(Render, Log, "Drawing item: {}, Material ID: {}, Instance ID: {}, Buffer name: {}", TEXT(renderItem->Name), renderItem->GetDefaultInstance()->MaterialIndex, StartInstanceLocation, instanceBuffer->Name);
+			LOG(Render, Log, "Drawing item: {}, Material ID: {}, Instance ID: {}, Buffer name: {}", TEXT(renderItem->Name), renderItem->GetDefaultInstance()->HlslData.MaterialIndex, StartInstanceLocation, instanceBuffer->Name);
 			cmd->DrawIndexedInstanced(
-			    submesh->IndexCount,
+			    submesh.lock()->IndexCount,
 			    visibleInstances,
-			    submesh->StartIndexLocation,
-			    submesh->BaseVertexLocation,
+			    submesh.lock()->StartIndexLocation,
+			    submesh.lock()->BaseVertexLocation,
 			    0);
 		}
 		PROFILE_BLOCK_END();
@@ -360,7 +367,7 @@ void OEngine::DrawBox(SPSODescriptionBase* Desc)
 	payload.RenderLayer = SRenderLayers::Opaque;
 	payload.bForceDrawAll = true;
 	payload.InstanceBuffer = &CameraRenderedItems;
-	payload.OverrideGeometry = BoxRenderItem->Geometry;
+	payload.OverrideGeometry = BoxRenderItem.lock()->Geometry;
 
 	DrawRenderItemsImpl(payload);
 }
@@ -384,7 +391,6 @@ void OEngine::InitPipelineManager()
 
 void OEngine::BuildCustomGeometry()
 {
-	BoxRenderItem = CreateBoxRenderItem("DefaultBoxRI", {});
 }
 
 void OEngine::TryCreateFrameResources()
@@ -397,6 +403,9 @@ void OEngine::TryCreateFrameResources()
 			FrameResources.push_back(std::move(frameResource));
 		}
 	}
+}
+void OEngine::BuildDebugGeometry()
+{
 }
 
 vector<OUploadBuffer<HLSL::InstanceData>*> OEngine::GetInstanceBuffersByUUID(TUUID Id) const
@@ -532,11 +541,7 @@ void OEngine::RemoveRenderItems()
 		for (auto& item : PendingRemoveItems)
 		{
 			erase_if(AllRenderItems, [&item](const auto& val) { return val.get() == item.get(); });
-			for (auto& array : RenderLayers | std::views::values)
-			{
-				std::erase_if(array, [&item](const auto& val) { return val == item.get(); });
-			}
-			SceneGeometry.erase(item->Geometry->Name);
+			SceneGeometry.erase(item->Geometry.lock()->Name);
 			LOG(Render, Log, "Removed item: {}", TEXT(item->Name)); // todo optimize
 		}
 		PendingRemoveItems.clear();
@@ -679,8 +684,9 @@ void OEngine::UpdateCameraCB()
 	for (auto& frame : FrameResources)
 	{
 		HLSL::CameraMatrixBuffer cb;
-		const auto view = Window->GetCamera()->GetView();
-		const auto proj = Window->GetCamera()->GetProj();
+		auto camera = Window->GetCamera().lock();
+		const auto view = camera->GetView();
+		const auto proj = camera->GetProj();
 		const auto viewProj = XMMatrixMultiply(view, proj);
 		const auto invViewProj = Inverse(viewProj);
 		Put(cb.gCamViewProj, Transpose(viewProj));
@@ -727,27 +733,43 @@ void OEngine::UpdateObjectCB() const
 	}
 }
 
-void OEngine::OnUpdate(UpdateEventArgs& Args)
+void OEngine::RemoveItemInstances(UpdateEventArgs& Args)
 {
-	PROFILE_SCOPE();
-
-	UpdateBoundingSphere();
-	TryRebuildFrameResource();
-	UpdateFrameResource();
-	CameraRenderedItems = PerformFrustumCulling(&Window->GetCamera()->GetFrustrum(), Window->GetCamera()->GetView(), CameraInstanceBufferID);
-
 	for (const auto& item : AllRenderItems)
 	{
 		item->Update(Args);
-		if (item->Lifetime.has_value())
+		for (auto it = item->Instances.begin(); it != item->Instances.end();)
 		{
-			item->Lifetime.value() -= Args.Timer.GetDeltaTime();
-			if (item->Lifetime <= 0)
+			if (it->Lifetime.has_value())
 			{
-				PendingRemoveItems.insert(item);
+				it->Lifetime = it->Lifetime.value() - Args.Timer.GetDeltaTime();
+				if (it->Lifetime.value() <= 0)
+				{
+					it = item->Instances.erase(it);
+				}
+				else
+				{
+					++it;
+				}
+
+				if (item->Instances.empty())
+				{
+					PendingRemoveItems.insert(item);
+				}
 			}
 		}
 	}
+}
+
+void OEngine::OnUpdate(UpdateEventArgs& Args)
+{
+	PROFILE_SCOPE();
+	RemoveItemInstances(Args);
+	UpdateBoundingSphere();
+	TryRebuildFrameResource();
+	UpdateFrameResource();
+	auto camera = Window->GetCamera().lock();
+	CameraRenderedItems = PerformFrustumCulling(&camera->GetFrustrum(), camera->GetView(), CameraInstanceBufferID);
 
 	if (CurrentFrameResource)
 	{
@@ -778,7 +800,7 @@ void OEngine::UpdateSSAOCB()
 	XMMATRIX T(
 	    0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f);
 
-	auto proj = Window->GetCamera()->GetProj();
+	auto proj = Window->GetCamera().lock()->GetProj();
 
 	constants.Proj = MainPassCB.Proj;
 	constants.InvProj = MainPassCB.InvProj;
@@ -814,15 +836,18 @@ void OEngine::OnWindowDestroyed()
 
 void OEngine::DrawDebugBox(DirectX::XMFLOAT3 Center, DirectX::XMFLOAT3 Extents, DirectX::XMFLOAT4 Orientation, SColor Color, float Duration)
 {
-	SRenderItemParams params;
-	params.Position = Center;
-	params.Scale = Extents;
-	params.OverrideLayer = SRenderLayers::Debug;
-	params.OverrideColor = Color;
-	params.Rotation = Orientation;
-	params.Lifetime = Duration;
-	auto name = std::format("DebugBox {}", RenderLayers[SRenderLayers::Debug].size());
-	CreateBoxRenderItem(name, params);
+	SInstanceData data;
+	data.HlslData.OverrideColor = Color.ToFloat3();
+	data.HlslData.Position = Center;
+	data.HlslData.Scale = Extents;
+	data.HlslData.Rotation = Orientation;
+	data.Lifetime = Duration;
+	Put(data.HlslData.World, BuildWorldMatrix(data.HlslData.Position, data.HlslData.Scale, data.HlslData.Rotation));
+	if (BoxRenderItem.expired())
+	{
+		BoxRenderItem = CreateBoxRenderItem("Debug_Box", {});
+	}
+	BoxRenderItem.lock()->AddInstance(data);
 }
 
 void OEngine::OnKeyPressed(KeyEventArgs& Args)
@@ -1070,27 +1095,27 @@ D3D12_RENDER_TARGET_BLEND_DESC OEngine::GetTransparentBlendState()
 	return transparencyBlendDesc;
 }
 
-vector<ORenderItem*>& OEngine::GetRenderItems(const string& Type)
+vector<weak_ptr<ORenderItem>>& OEngine::GetRenderItems(const string& Type)
 {
 	return RenderLayers[Type];
 }
 
 void OEngine::AddRenderItem(string Category, shared_ptr<ORenderItem> RenderItem)
 {
-	RenderLayers[Category].push_back(RenderItem.get());
+	RenderLayers[Category].push_back(RenderItem);
 	AllRenderItems.insert(move(RenderItem));
 }
 
-void OEngine::AddRenderItem(const vector<string>& Categories, shared_ptr<ORenderItem> RenderItem)
+void OEngine::AddRenderItem(const vector<string>& Categories, const shared_ptr<ORenderItem>& RenderItem)
 {
 	for (auto category : Categories)
 	{
-		RenderLayers[category].push_back(RenderItem.get());
+		RenderLayers[category].push_back(RenderItem);
 	}
-	AllRenderItems.insert(move(RenderItem));
+	AllRenderItems.insert(RenderItem);
 }
 
-void OEngine::MoveRIToNewLayer(ORenderItem* Item, const SRenderLayer& NewLayer, const SRenderLayer& OldLayer)
+void OEngine::MoveRIToNewLayer(weak_ptr<ORenderItem> Item, const SRenderLayer& NewLayer, const SRenderLayer& OldLayer)
 {
 	if (RenderLayers.contains(OldLayer))
 	{
@@ -1167,18 +1192,18 @@ ComPtr<ID3D12DescriptorHeap> OEngine::CreateDescriptorHeap(UINT NumDescriptors, 
 
 void OEngine::Pick(int32_t SX, int32_t SY)
 {
-	auto camera = Window->GetCamera();
+	auto camera = Window->GetCamera().lock();
 	auto [origin, dir, invView] = camera->Pick(SX, SY);
 
 	for (auto item : RenderLayers | std::views::values | std::views::join)
 	{
-		if (!item->bTraceable)
+		if (!item.lock()->bTraceable)
 		{
 			continue;
 		}
 
-		auto geometry = item->Geometry;
-		auto world = XMLoadFloat4x4(&item->Instances[0].World);
+		auto geometry = item.lock()->Geometry;
+		auto world = XMLoadFloat4x4(&item.lock()->Instances[0].HlslData.World);
 		auto worldDet = XMMatrixDeterminant(world);
 		auto Invworld = XMMatrixInverse(&worldDet, world);
 
@@ -1197,12 +1222,12 @@ void OEngine::Pick(int32_t SX, int32_t SY)
 		// If we did not hit the bounding box, then it is impossible that we hit
 		// the Mesh, so do not waste effort doing ray/triangle tests.
 		float tmin = 0.0f;
-		if (item->Bounds.Intersects(origin, dir, tmin))
+		if (item.lock()->Bounds.Intersects(origin, dir, tmin))
 		{
-			for (auto& submesh : geometry->GetDrawArgs() | std::views::values)
+			for (auto& submesh : geometry.lock()->GetDrawArgs() | std::views::values)
 			{
-				auto indices = submesh.Indices.get();
-				auto vertices = submesh.Vertices.get();
+				auto indices = submesh->Indices.get();
+				auto vertices = submesh->Vertices.get();
 				auto triCount = indices->size() / 3;
 
 				tmin = INFINITE;
@@ -1224,7 +1249,7 @@ void OEngine::Pick(int32_t SX, int32_t SY)
 
 							PickedItem->bTraceable = false;
 							PickedItem->Geometry = geometry;
-							PickedItem->Bounds = item->Bounds;
+							PickedItem->Bounds = item.lock()->Bounds;
 						}
 					}
 				}
@@ -1319,20 +1344,20 @@ SCulledInstancesInfo OEngine::PerformFrustumCulling(IBoundingGeometry* Frustum, 
 				item.StartInstanceLocation = counter;
 			}
 
-			const auto world = Load(instData[i].World);
+			const auto world = Load(instData[i].HlslData.World);
 			const auto invWorld = Inverse(world);
 			const auto viewToLocal = XMMatrixMultiply(invWorld, invView);
 
 			if (!bFrustrumCullingEnabled || Frustum->Contains(viewToLocal, e->Bounds) != DISJOINT)
 			{
-				HLSL::InstanceData data = e->Instances[i];
-				Put(data.World, Transpose(world));
-				Put(data.TexTransform, Transpose(Load(instData[i].TexTransform)));
-				data.MaterialIndex = instData[i].MaterialIndex;
+				auto data = e->Instances[i];
+				Put(data.HlslData.World, Transpose(world));
+				Put(data.HlslData.TexTransform, Transpose(Load(instData[i].HlslData.TexTransform)));
+				data.HlslData.MaterialIndex = instData[i].HlslData.MaterialIndex;
 				result.InstanceCount++;
 				for (auto* buffer : buffers)
 				{
-					buffer->CopyData(counter, data);
+					buffer->CopyData(counter, data.HlslData);
 				}
 				counter++;
 
@@ -1342,8 +1367,8 @@ SCulledInstancesInfo OEngine::PerformFrustumCulling(IBoundingGeometry* Frustum, 
 		if (visibleInstanceCount > 0)
 		{
 			item.VisibleInstanceCount = visibleInstanceCount;
-			item.Item = e.get();
-			result.Items[e.get()] = item;
+			item.Item = e;
+			result.Items[e] = item;
 		}
 	}
 	return result;
@@ -1371,8 +1396,8 @@ void OEngine::RebuildGeometry(string Name)
 
 	for (auto& submesh : mesh->DrawArgs)
 	{
-		vertices.insert(vertices.end(), submesh.second.Vertices.get()->begin(), submesh.second.Vertices.get()->end());
-		indices.insert(indices.end(), submesh.second.Indices.get()->begin(), submesh.second.Indices.get()->end());
+		vertices.insert(vertices.end(), submesh.second->Vertices.get()->begin(), submesh.second->Vertices.get()->end());
+		indices.insert(indices.end(), submesh.second->Indices.get()->begin(), submesh.second->Indices.get()->end());
 	}
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(SVertex);
@@ -1414,8 +1439,9 @@ uint32_t OEngine::GetPassCountRequired() const
 void OEngine::UpdateMainPass(const STimer& Timer)
 {
 	PROFILE_SCOPE();
-	const XMMATRIX view = Window->GetCamera()->GetView();
-	const XMMATRIX proj = Window->GetCamera()->GetProj();
+	auto camera = Window->GetCamera().lock();
+	const XMMATRIX view = camera->GetView();
+	const XMMATRIX proj = camera->GetProj();
 	const XMMATRIX viewProj = XMMatrixMultiply(view, proj);
 
 	auto viewDet = XMMatrixDeterminant(view);
@@ -1441,7 +1467,7 @@ void OEngine::UpdateMainPass(const STimer& Timer)
 	Put(MainPassCB.ViewProj, Transpose(viewProj));
 	Put(MainPassCB.InvViewProj, Transpose(invViewProj));
 
-	MainPassCB.EyePosW = Window->GetCamera()->GetPosition3f();
+	MainPassCB.EyePosW = camera->GetPosition3f();
 	MainPassCB.RenderTargetSize = XMFLOAT2(static_cast<float>(Window->GetWidth()), static_cast<float>(Window->GetHeight()));
 	MainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / Window->GetWidth(), 1.0f / Window->GetHeight());
 	MainPassCB.NearZ = 1.0f;
@@ -1524,49 +1550,48 @@ uint32_t OEngine::GetDesiredCountOfRTVs(SResourceHeapBitFlag Flag) const
 	});
 }
 
-std::unordered_map<string, unique_ptr<SMeshGeometry>>& OEngine::GetSceneGeometry()
+const unordered_map<string, shared_ptr<SMeshGeometry>>& OEngine::GetSceneGeometry()
 {
 	return SceneGeometry;
 }
 
-SMeshGeometry* OEngine::SetSceneGeometry(unique_ptr<SMeshGeometry> Geometry)
+weak_ptr<SMeshGeometry> OEngine::SetSceneGeometry(shared_ptr<SMeshGeometry> Geometry)
 {
-	auto geo = Geometry.get();
 	Geometry->Name += " " + GenerateUUID();
-	SceneGeometry[Geometry->Name] = move(Geometry);
-	return geo;
+	SceneGeometry[Geometry->Name] = Geometry;
+	return Geometry;
 }
 
-ORenderItem* OEngine::BuildRenderItemFromMesh(unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params)
+weak_ptr<ORenderItem> OEngine::BuildRenderItemFromMesh(shared_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params)
 {
 	return BuildRenderItemFromMesh(SetSceneGeometry(move(Mesh)), Params);
 }
 
-ORenderItem* OEngine::BuildRenderItemFromMesh(SMeshGeometry* Mesh, const SRenderItemParams& Params)
+weak_ptr<ORenderItem> OEngine::BuildRenderItemFromMesh(weak_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params)
 {
-	if (Params.MaterialParams.Material == nullptr || Params.MaterialParams.Material->MaterialCBIndex == -1)
+	if (!Params.MaterialParams.Material.expired() || Params.MaterialParams.Material.lock()->MaterialCBIndex == -1)
 	{
 		LOG(Geometry, Error, "Material not specified!");
 	}
-	ORenderItem* item = nullptr;
+	weak_ptr<ORenderItem> item;
 	if (Params.Submesh.empty())
 	{
-		for (const auto& key : Mesh->GetDrawArgs() | std::views::keys)
+		for (const auto& key : Mesh.lock()->GetDrawArgs() | std::views::keys)
 		{
 			item = BuildRenderItemFromMesh(Mesh, key, Params);
 		}
 	}
 	else
 	{
-		item = BuildRenderItemFromMesh(Mesh, Mesh->GetDrawArgs().begin()->first, Params);
+		item = BuildRenderItemFromMesh(Mesh, Mesh.lock()->GetDrawArgs().begin()->first, Params);
 	}
 	return item;
 }
 
-ORenderItem* OEngine::BuildRenderItemFromMesh(SMeshGeometry* Mesh, const string& Submesh, const SRenderItemParams& Params)
+weak_ptr<ORenderItem> OEngine::BuildRenderItemFromMesh(const weak_ptr<SMeshGeometry>& Mesh, const string& Submesh, const SRenderItemParams& Params)
 {
-	const auto submesh = Mesh->FindSubmeshGeomentry(Submesh);
-	const auto mat = submesh->Material;
+	const auto submesh = Mesh.lock()->FindSubmeshGeomentry(Submesh);
+	const auto mat = submesh.lock()->Material;
 	auto newItem = make_shared<ORenderItem>();
 
 	newItem->bFrustrumCoolingEnabled = Params.bFrustrumCoolingEnabled;
@@ -1578,40 +1603,38 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(SMeshGeometry* Mesh, const string&
 		matIdx = mat->MaterialCBIndex;
 		layer = Params.OverrideLayer.value_or(mat->RenderLayer);
 	}
-	else if (Params.MaterialParams.Material != nullptr)
+	else if (!Params.MaterialParams.Material.expired())
 	{
-		matIdx = Params.MaterialParams.Material->MaterialCBIndex;
+		matIdx = Params.MaterialParams.Material.lock()->MaterialCBIndex;
 		layer = Params.OverrideLayer.value_or(SRenderLayers::Opaque);
 	}
+	auto submeshLock = submesh.lock();
 	layer = Params.OverrideLayer.value_or(layer);
-	HLSL::InstanceData defaultInstance;
-	defaultInstance.MaterialIndex = matIdx;
+	SInstanceData defaultInstance;
+	defaultInstance.HlslData.MaterialIndex = matIdx;
 
-	defaultInstance.Scale = Params.Scale.value_or(XMFLOAT3{ 1, 1, 1 });
-	defaultInstance.Position = Params.Position.value_or(XMFLOAT3{ 0, 0, 0 });
-	defaultInstance.Rotation = Params.Rotation.value_or(XMFLOAT4{ 0, 0, 0, 1 });
+	defaultInstance.HlslData.Scale = Params.Scale.value_or(XMFLOAT3{ 1, 1, 1 });
+	defaultInstance.HlslData.Position = Params.Position.value_or(XMFLOAT3{ 0, 0, 0 });
+	defaultInstance.HlslData.Rotation = Params.Rotation.value_or(XMFLOAT4{ 0, 0, 0, 1 });
 
-	defaultInstance.OverrideColor = (Params.OverrideColor.value_or(SColor::White)).ToFloat3();
-	defaultInstance.BoundingBoxCenter = submesh->Bounds.Center;
-	defaultInstance.BoundingBoxExtents = submesh->Bounds.Extents;
-
-	Scale(defaultInstance.World, defaultInstance.Scale);
-	Translate(defaultInstance.World, defaultInstance.Position);
-	Rotate(defaultInstance.World, defaultInstance.Rotation);
+	defaultInstance.HlslData.OverrideColor = (Params.OverrideColor.value_or(SColor::White)).ToFloat3();
+	defaultInstance.HlslData.BoundingBoxCenter = submeshLock->Bounds.Center;
+	defaultInstance.HlslData.BoundingBoxExtents = submeshLock->Bounds.Extents;
+	defaultInstance.Lifetime = Params.Lifetime;
+	Put(defaultInstance.HlslData.World, BuildWorldMatrix(defaultInstance.HlslData.Position, defaultInstance.HlslData.Scale, defaultInstance.HlslData.Rotation));
 
 	newItem->Instances.resize(Params.NumberOfInstances, defaultInstance);
 	newItem->RenderLayer = layer;
 	newItem->bIsDisplayable = Params.Displayable;
 	newItem->Geometry = Mesh;
-	newItem->Bounds = submesh->Bounds;
+	newItem->Bounds = submeshLock->Bounds;
 	newItem->bTraceable = Params.Pickable;
-	newItem->ChosenSubmesh = Mesh->FindSubmeshGeomentry(Submesh);
-	newItem->Name = Mesh->Name + "_" + Submesh + "_" + std::to_string(AllRenderItems.size());
-	newItem->Lifetime = Params.Lifetime;
+	newItem->ChosenSubmesh = Mesh.lock()->FindSubmeshGeomentry(Submesh);
+	newItem->Name = Mesh.lock()->Name + "_" + Submesh + "_" + std::to_string(AllRenderItems.size());
 	const auto res = newItem.get();
 	if (mat)
 	{
-		auto weak = std::weak_ptr(newItem);
+		weak_ptr weak(newItem);
 		mat->OnMaterialChanged.Add([this, weak, mat]() {
 			if (weak.expired())
 			{
@@ -1620,11 +1643,12 @@ ORenderItem* OEngine::BuildRenderItemFromMesh(SMeshGeometry* Mesh, const string&
 			auto res = weak.lock();
 			auto oldLayer = res->RenderLayer;
 			res->RenderLayer = mat->RenderLayer;
-			MoveRIToNewLayer(res.get(), res->RenderLayer, oldLayer);
+			MoveRIToNewLayer(weak, res->RenderLayer, oldLayer);
 		});
 	}
-	AddRenderItem(layer, std::move(newItem));
-	return res;
+	SceneGeometryItemDependency[Mesh].push_back(newItem);
+	AddRenderItem(layer, newItem);
+	return newItem;
 }
 
 OShadowMap* OEngine::CreateShadowMap()
@@ -1668,18 +1692,18 @@ ODirectionalLightComponent* OEngine::AddDirectionalLightComponent(ORenderItem* I
 
 void OEngine::BuildPickRenderItem()
 {
-	auto newItem = make_unique<ORenderItem>();
+	auto newItem = make_shared<ORenderItem>();
 	newItem->bFrustrumCoolingEnabled = false;
 	newItem->DefaultMaterial = MaterialManager->FindMaterial(SMaterialNames::Picked);
 	newItem->RenderLayer = SRenderLayers::Highlight;
 	newItem->bTraceable = false;
 
-	HLSL::InstanceData defaultInstance;
-	defaultInstance.MaterialIndex = newItem->DefaultMaterial->MaterialCBIndex;
+	SInstanceData defaultInstance;
+	defaultInstance.HlslData.MaterialIndex = newItem->DefaultMaterial.lock()->MaterialCBIndex;
 
 	newItem->Instances.push_back(defaultInstance);
 	PickedItem = newItem.get();
-	AddRenderItem(SRenderLayers::Highlight, std::move(newItem));
+	AddRenderItem(SRenderLayers::Highlight, newItem);
 }
 
 SMeshGeometry* OEngine::FindSceneGeometry(const string& Name) const
@@ -1714,10 +1738,10 @@ vector<D3D12_INPUT_ELEMENT_DESC>& OEngine::GetDefaultInputLayout()
 	return InputLayout;
 }
 
-ORenderItem* OEngine::BuildRenderItemFromMesh(const string& Name, string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params)
+weak_ptr<ORenderItem> OEngine::BuildRenderItemFromMesh(const string& Name, string Category, unique_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params)
 {
 	auto ri = BuildRenderItemFromMesh(std::move(Mesh), Params);
-	ri->Name = Name + std::to_string(AllRenderItems.size());
+	ri.lock()->Name = Name + std::to_string(AllRenderItems.size());
 	return ri;
 }
 

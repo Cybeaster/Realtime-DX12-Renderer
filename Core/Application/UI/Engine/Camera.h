@@ -7,8 +7,7 @@ class OCamera;
 class OCameraWidget : public IWidget
 {
 public:
-	OCameraWidget(const shared_ptr<OCamera>& Other);
-	;
+	OCameraWidget(const weak_ptr<OCamera>& Other);
 
 	shared_ptr<OCamera> GetCamera() const
 	{

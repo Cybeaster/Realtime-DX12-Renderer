@@ -401,6 +401,25 @@ static DirectX::XMFLOAT3 TransformTransposed(const DirectX::XMFLOAT3& point, con
 	return result;
 }
 
+inline DirectX::XMMATRIX BuildWorldMatrix(const DirectX::XMFLOAT3& Position,
+                                          const DirectX::XMFLOAT3& Scale,
+                                          const DirectX::XMFLOAT4& Quaternion)
+{
+	using namespace DirectX;
+	// Scale matrix
+	XMMATRIX scaleMatrix = XMMatrixScaling(Scale.x, Scale.y, Scale.z);
+
+	// Rotation matrix
+	XMVECTOR rotationQuat = XMLoadFloat4(&Quaternion);
+	XMMATRIX rotationMatrix = XMMatrixRotationQuaternion(rotationQuat);
+
+	// Translation matrix
+	XMMATRIX translationMatrix = XMMatrixTranslation(Position.x, Position.y, Position.z);
+
+	// Combine scale, rotation, and translation to form the final world matrix
+	return scaleMatrix * rotationMatrix * translationMatrix;
+}
+
 inline bool operator==(const DirectX::XMFLOAT3 A, const DirectX::XMFLOAT3 B)
 {
 	return abs(A.x - B.x) < EPSILON && abs(A.y - B.y) < EPSILON && abs(A.z - B.z) < EPSILON;

@@ -11,7 +11,7 @@ void OPerfomanceWidget::Draw()
 		size_t numTriangles = 0;
 		for (const auto& item : OEngine::Get()->GetRenderedItems().Items)
 		{
-			numTriangles += item.first->ChosenSubmesh->Vertices->size() / 3;
+			numTriangles += item.first.lock()->ChosenSubmesh.lock()->Vertices->size() / 3;
 		}
 		ImGui::Text("Number of rendered triangles: %d", numTriangles);
 		ImGui::Checkbox("Enable Frustum Cooling", &OEngine::Get()->bFrustrumCullingEnabled);

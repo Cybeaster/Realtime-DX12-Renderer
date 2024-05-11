@@ -12,13 +12,13 @@ vector<STexturePath> OMaterialsConfigParser::GetTexturePaths(const boost::proper
 	return paths;
 }
 
-std::unordered_map<string, unique_ptr<SMaterial>> OMaterialsConfigParser::LoadMaterials()
+std::unordered_map<string, shared_ptr<SMaterial>> OMaterialsConfigParser::LoadMaterials()
 {
-	std::unordered_map<string, unique_ptr<SMaterial>> Materials;
+	std::unordered_map<string, shared_ptr<SMaterial>> Materials;
 	LoadConfig(FileName);
 	for (const auto& val : PTree.get_child("Materials") | std::views::values)
 	{
-		auto material = make_unique<SMaterial>();
+		auto material = make_shared<SMaterial>();
 		material->Name = val.get<string>("Name");
 		auto& data = val.get_child("Data");
 

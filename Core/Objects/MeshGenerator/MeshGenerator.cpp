@@ -80,15 +80,15 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const SMeshPayloadData& Dat
 		XMStoreFloat3(&bounds.Center, 0.5f * (vMin + vMax));
 		XMStoreFloat3(&bounds.Extents, 0.5f * (vMax - vMin));
 
-		SSubmeshGeometry submesh;
-		submesh.Bounds = bounds;
-		submesh.Vertices = make_unique<vector<XMFLOAT3>>(std::move(positions));
-		submesh.Indices = make_unique<vector<std::uint32_t>>(payload.Indices32);
-		submesh.IndexCount = payload.Indices32.size();
-		submesh.StartIndexLocation = vertCounter;
-		submesh.BaseVertexLocation = indexCounter;
-		submesh.Name = payload.Name;
-		submesh.Material = CreateMaterial(payload.Material);
+		auto submesh = make_shared<SSubmeshGeometry>();
+		submesh->Bounds = bounds;
+		submesh->Vertices = make_unique<vector<XMFLOAT3>>(std::move(positions));
+		submesh->Indices = make_unique<vector<std::uint32_t>>(payload.Indices32);
+		submesh->IndexCount = payload.Indices32.size();
+		submesh->StartIndexLocation = vertCounter;
+		submesh->BaseVertexLocation = indexCounter;
+		submesh->Name = payload.Name;
+		submesh->Material = CreateMaterial(payload.Material);
 		vertCounter += payload.Vertices.size();
 		indexCounter += payload.Indices32.size();
 		indices.insert(indices.end(), payload.Indices32.begin(), payload.Indices32.end());

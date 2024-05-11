@@ -8,7 +8,7 @@
 void OMaterialPickerWidget::Draw()
 {
 	auto name = string("Current material");
-	name += CurrentMaterial ? ": " + CurrentMaterial->Name : ": None";
+	name += !CurrentMaterial.expired() ? ": " + CurrentMaterial.lock()->Name : ": None";
 	ImGui::SeparatorText(name.c_str());
 	if (ImGui::Button("Pick material"))
 	{
@@ -32,7 +32,7 @@ void OMaterialPickerWidget::Draw()
 
 			if (ImGui::Selectable(material.first.c_str()))
 			{
-				CurrentMaterial = material.second.get();
+				CurrentMaterial = material.second;
 				OnMaterialUpdate.Broadcast(CurrentMaterial);
 			}
 			counter++;

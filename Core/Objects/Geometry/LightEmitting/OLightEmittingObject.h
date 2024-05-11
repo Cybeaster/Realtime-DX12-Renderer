@@ -7,8 +7,8 @@ class OLightEmittingObject : public ORenderObjectBase
 {
 public:
 	OLightEmittingObject() = default;
-	OLightEmittingObject(SMeshGeometry* Mesh, SMaterial* Material);
+	OLightEmittingObject(const weak_ptr<SMeshGeometry>& Mesh, const weak_ptr<SMaterial>& Material);
 
 private:
-	ORenderItem* RenderItem = nullptr;
+	weak_ptr<ORenderItem> RenderItem;
 };

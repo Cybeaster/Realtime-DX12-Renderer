@@ -54,7 +54,7 @@ OMaterialManager::OMaterialManager()
 	MaterialsConfigParser = make_unique<OMaterialsConfigParser>(OApplication::Get()->GetConfigPath("MaterialsConfigPath"));
 }
 
-void OMaterialManager::AddMaterial(string Name, unique_ptr<SMaterial> Material, bool Notify /*= false*/)
+void OMaterialManager::AddMaterial(const string& Name, shared_ptr<SMaterial> Material, bool Notify /*= false*/)
 {
 	if (Materials.contains(Name))
 	{
@@ -62,7 +62,7 @@ void OMaterialManager::AddMaterial(string Name, unique_ptr<SMaterial> Material, 
 		return;
 	}
 
-	MaterialsIndicesMap[Material->MaterialCBIndex] = Material.get();
+	MaterialsIndicesMap[Material->MaterialCBIndex] = Material;
 
 	auto type = SRenderLayers::Opaque;
 	if (Material->AlphaMap.IsValid())
@@ -86,18 +86,17 @@ const OMaterialManager::TMaterialsMap& OMaterialManager::GetMaterials() const
 	return Materials;
 }
 
-SMaterial* OMaterialManager::FindMaterial(const string& Name) const
+weak_ptr<SMaterial> OMaterialManager::FindMaterial(const string& Name) const
 {
 	if (!Materials.contains(Name))
 	{
 		LOG(Engine, Error, "Material not found!");
-		return Name != STextureNames::Debug ? FindMaterial(STextureNames::Debug) : nullptr;
-		;
+		return Name != STextureNames::Debug ? FindMaterial(STextureNames::Debug) : weak_ptr<SMaterial>();
 	}
-	return Materials.at(Name).get();
+	return Materials.at(Name);
 }
 
-SMaterial* OMaterialManager::FindMaterial(const uint32_t Index) const
+weak_ptr<SMaterial> OMaterialManager::FindMaterial(const uint32_t Index) const
 {
 	if (!MaterialsIndicesMap.contains(Index))
 	{
@@ -110,12 +109,12 @@ SMaterial* OMaterialManager::FindMaterial(const uint32_t Index) const
 uint32_t OMaterialManager::GetMaterialCBIndex(const string& Name)
 {
 	const auto material = FindMaterial(Name);
-	if (!material)
+	if (material.expired())
 	{
 		LOG(Engine, Error, "Material not found!");
 		return Name != STextureNames::Debug ? GetMaterialCBIndex(STextureNames::Debug) : -1;
 	}
-	return material->MaterialCBIndex;
+	return material.lock()->MaterialCBIndex;
 }
 
 uint32_t OMaterialManager::GetNumMaterials()
@@ -171,7 +170,7 @@ void OMaterialManager::LoadMaterialsFromCache()
 		LoadTextureFromPath(mat->NormalMap.Path, mat->NormalMap);
 		LoadTextureFromPath(mat->HeightMap.Path, mat->HeightMap);
 		mat->MaterialCBIndex = it;
-		MaterialsIndicesMap[it] = val.get();
+		MaterialsIndicesMap[it] = val;
 		++it;
 		auto name = mat->Name;
 		AddMaterial(name, std::move(val), false);

@@ -9,5 +9,5 @@ public:
 	void Update(const UpdateEventArgs& Event) override;
 
 private:
-	ORenderItem* WaterItem;
+	weak_ptr<ORenderItem> WaterItem;
 };

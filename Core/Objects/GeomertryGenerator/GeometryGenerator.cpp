@@ -740,14 +740,14 @@ unique_ptr<SMeshGeometry> OGeometryGenerator::CreateSkullGeometry(string PathToM
 	geometry->IndexFormat = DXGI_FORMAT_R32_UINT;
 	geometry->IndexBufferByteSize = ibByteSize;
 
-	SSubmeshGeometry submesh;
-	submesh.IndexCount = (UINT)indices.size();
-	submesh.StartIndexLocation = 0;
-	submesh.BaseVertexLocation = 0;
-	submesh.Bounds = bounds;
+	auto submesh = make_shared<SSubmeshGeometry>();
+	submesh->IndexCount = (UINT)indices.size();
+	submesh->StartIndexLocation = 0;
+	submesh->BaseVertexLocation = 0;
+	submesh->Bounds = bounds;
 
-	submesh.Vertices = make_unique<vector<XMFLOAT3>>(std::move(positions));
-	submesh.Indices = make_unique<vector<uint32_t>>(std::move(indices));
+	submesh->Vertices = make_unique<vector<XMFLOAT3>>(std::move(positions));
+	submesh->Indices = make_unique<vector<uint32_t>>(std::move(indices));
 
 	geometry->SetGeometry(geometry->Name, submesh);
 	return std::move(geometry);
@@ -808,11 +808,11 @@ unique_ptr<SMeshGeometry> OGeometryGenerator::CreateWaterGeometry(float Width, f
 	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
 
-	SSubmeshGeometry submesh;
-	submesh.IndexCount = (UINT)indices.size();
-	submesh.StartIndexLocation = 0;
-	submesh.BaseVertexLocation = 0;
-	submesh.Bounds = bounds;
+	auto submesh = make_shared<SSubmeshGeometry>();
+	submesh->IndexCount = (UINT)indices.size();
+	submesh->StartIndexLocation = 0;
+	submesh->BaseVertexLocation = 0;
+	submesh->Bounds = bounds;
 
 	geo->SetGeometry("Grid", submesh);
 	return move(geo);

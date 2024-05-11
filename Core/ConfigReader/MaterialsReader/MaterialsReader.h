@@ -10,7 +10,7 @@ public:
 	OMaterialsConfigParser(const string& ConfigPath)
 	    : OConfigReader(ConfigPath) {}
 
-	std::unordered_map<string, unique_ptr<SMaterial>> LoadMaterials();
+	std::unordered_map<string, shared_ptr<SMaterial>> LoadMaterials();
 
 	void AddDataToNode(const SMaterial* Mat, boost::property_tree::ptree& OutNode);
 	/*Adds or modifies the material in the tree*/

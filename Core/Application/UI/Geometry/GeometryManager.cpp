@@ -18,21 +18,23 @@ void OGeometryManagerWidget::Draw()
 			{
 				if (const auto widget = Cast<OGeometryEntityWidget>(entity.get()))
 				{
-					if (const auto ri = widget->GetRenderItem())
+					const auto ri = widget->GetRenderItem();
+					if (!ri.expired())
 					{
-						if (ri->bIsDisplayable == false)
+						auto lock = ri.lock();
+						if (lock->bIsDisplayable == false)
 						{
 							continue;
 						}
 
-						if (ImGui::Selectable(ri->Name.c_str(), SelectedRenderItem == ri->Name))
+						if (ImGui::Selectable(lock->Name.c_str(), SelectedRenderItem == lock->Name))
 						{
-							SelectedRenderItem = ri->Name;
+							SelectedRenderItem = lock->Name;
 							SelectedComponentName = "";
 							SelectedComponent = nullptr;
 						}
 
-						if (SelectedRenderItem == ri->Name)
+						if (SelectedRenderItem == lock->Name)
 						{
 							selectedWidget = widget;
 						}
@@ -58,10 +60,11 @@ void OGeometryManagerWidget::InitWidget()
 	{
 		for (auto item : layer.second)
 		{
-			if (item->Geometry)
+			auto lock = item.lock();
+			if (!lock->Geometry.expired())
 			{
 				MakeWidget<OGeometryEntityWidget>(item, Engine, this);
-				StringToGeo[item->Name] = item;
+				StringToGeo[lock->Name] = item;
 			}
 		}
 	}
@@ -77,16 +80,17 @@ void OGeometryManagerWidget::DrawComponentWidgets()
 {
 	ImGui::SeparatorText("Item components");
 	auto item = StringToGeo[SelectedRenderItem];
-	if (item)
+	if (!item.expired())
 	{
-		auto compNum = item->GetComponents().size();
+		auto lock = item.lock();
+		auto compNum = lock->GetComponents().size();
 		ImGui::Text("Number of components %zu", compNum);
 		if (compNum > 0)
 		{
 			if (ImGui::TreeNode("Components"))
 			{
 				uint32_t it = 0;
-				for (auto& comp : item->GetComponents())
+				for (auto& comp : lock->GetComponents())
 				{
 					auto name = comp->GetName();
 					name += "##" + std::to_string(it);

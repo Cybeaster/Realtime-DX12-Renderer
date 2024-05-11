@@ -21,12 +21,12 @@ inline auto& GetMaterials()
 	return OEngine::Get()->GetMaterialManager()->GetMaterials();
 }
 
-inline SMaterial* FindMaterial(const string& Name)
+inline auto FindMaterial(const string& Name)
 {
 	return OEngine::Get()->GetMaterialManager()->FindMaterial(Name);
 }
 
-inline SMaterial* FindMaterial(int32_t Index)
+inline auto FindMaterial(int32_t Index)
 {
 	return OEngine::Get()->GetMaterialManager()->FindMaterial(Index);
 }
@@ -140,7 +140,7 @@ inline auto CreateLightSource(const SSpotLightPayload& Params)
 	SRenderItemParams params;
 	params.MaterialParams.Material = FindMaterial("White");
 	auto ri = engine->BuildRenderItemFromMesh(std::move(mesh), params);
-	auto component = engine->AddSpotLightComponent(ri);
+	auto component = engine->AddSpotLightComponent(ri.lock().get());
 	component->SetSpotLight(Params);
 	return ri;
 }
@@ -153,7 +153,7 @@ inline auto CreateLightSource(const SDirectionalLightPayload& Params)
 	SRenderItemParams params;
 	params.MaterialParams.Material = FindMaterial("White");
 	auto ri = engine->BuildRenderItemFromMesh(std::move(mesh), params);
-	auto component = engine->AddDirectionalLightComponent(ri);
+	auto component = engine->AddDirectionalLightComponent(ri.lock().get());
 	component->SetDirectionalLight(Params);
 	return ri;
 }
@@ -166,7 +166,7 @@ inline auto CreateLightSource(const string& Category, const SPointLightPayload& 
 	SRenderItemParams params;
 	params.MaterialParams.Material = FindMaterial("White");
 	auto ri = engine->BuildRenderItemFromMesh(std::move(mesh), params);
-	auto component = engine->AddPointLightComponent(ri);
+	auto component = engine->AddPointLightComponent(ri.lock().get());
 	component->SetPointLight(Params);
 	return ri;
 }

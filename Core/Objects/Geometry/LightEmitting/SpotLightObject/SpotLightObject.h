@@ -6,7 +6,7 @@ struct SMaterial;
 class OSpotLightObject : public OLightEmittingObject
 {
 public:
-	OSpotLightObject(const HLSL::SpotLight& Data, SMeshGeometry* Mesh, SMaterial*);
+	OSpotLightObject(const HLSL::SpotLight& Data, const weak_ptr<SMeshGeometry>& Mesh, const weak_ptr<SMaterial>& Mat);
 
 public:
 private:

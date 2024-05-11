@@ -14,19 +14,19 @@ class OEngine;
 class OGeometryEntityWidget : public OHierarchicalWidgetBase
 {
 public:
-	OGeometryEntityWidget(ORenderItem* _RItem, OEngine* _Engine, OGeometryManagerWidget* _OwningWidget)
-	    : RenderItem(_RItem), Engine(_Engine), Manager(_OwningWidget) {}
+	OGeometryEntityWidget(const weak_ptr<ORenderItem>& InRItem, OEngine* InEngine, OGeometryManagerWidget* InOwningWidget)
+	    : RenderItem(InRItem), Engine(InEngine), Manager(InOwningWidget) {}
 
 	void Draw() override;
 	void InitWidget() override;
 	SMeshGeometry* GetGeometry() const
 	{
-		if (RenderItem)
-			return RenderItem->Geometry;
+		if (!RenderItem.expired())
+			return RenderItem.lock()->Geometry.lock().get();
 		else
 			return nullptr;
 	}
-	ORenderItem* GetRenderItem() const { return RenderItem; }
+	weak_ptr<ORenderItem> GetRenderItem() const { return RenderItem; }
 	void RebuildRequest() const;
 
 private:
@@ -34,13 +34,13 @@ private:
 	void DrawInstanceParameters();
 	float SliderWidth = 350;
 	OGeometryManagerWidget* Manager = nullptr;
-	ORenderItem* RenderItem = nullptr;
+	weak_ptr<ORenderItem> RenderItem;
 	OEngine* Engine = nullptr;
 
 	string SelectedSubmesh = "";
 	string SelectedInstance = "";
 
-	HLSL::InstanceData* SelectedInstanceData = nullptr;
+	SInstanceData* SelectedInstanceData = nullptr;
 
 	DirectX::XMFLOAT3 Position;
 	DirectX::XMFLOAT3 Rotation;

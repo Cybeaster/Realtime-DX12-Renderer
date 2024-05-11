@@ -23,25 +23,31 @@
 #undef max
 #endif
 
+struct ORenderItem;
+using boost::make_shared;
 using boost::optional;
+using boost::shared_ptr;
 using boost::unordered_map;
+using boost::weak_ptr;
 using std::array;
-using std::make_shared;
 using std::make_unique;
 using std::map;
 using std::pair;
 using std::queue;
-using std::shared_ptr;
 using std::string;
 using std::to_wstring;
 using std::unique_ptr;
 using std::unordered_set;
 using std::vector;
-using std::weak_ptr;
 using std::wstring;
 #include <algorithm>
 #include <string>
 #include <unordered_map>
+
+inline bool operator==(const weak_ptr<ORenderItem>& Lhs, const weak_ptr<ORenderItem>& Rhs)
+{
+	return Lhs.lock() == Rhs.lock();
+}
 
 template<typename EnumType>
 struct SLitEnum

@@ -2,7 +2,7 @@
 
 #include "Camera/Camera.h"
 
-OCameraWidget::OCameraWidget(const shared_ptr<OCamera>& Other)
+OCameraWidget::OCameraWidget(const weak_ptr<OCamera>& Other)
     : Camera(Other)
 {
 	View = GetCamera()->GetView4x4f();

@@ -66,10 +66,10 @@ private:
 struct SMaterialParams
 {
 	SMaterialParams() = default;
-	SMaterialParams(SMaterial* Mat)
-	    : Material(Mat) {}
+	SMaterialParams(const weak_ptr<SMaterial>& InMaterial)
+	    : Material(InMaterial) {}
 
-	SMaterial* Material = nullptr;
+	weak_ptr<SMaterial> Material;
 	DirectX::XMFLOAT2 DisplacementMapTexelSize = { 1, 1 };
 	float GridSpatialStep = 1.0f;
 };

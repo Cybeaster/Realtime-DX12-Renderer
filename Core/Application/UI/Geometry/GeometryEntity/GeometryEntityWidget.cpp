@@ -39,14 +39,14 @@ void OGeometryEntityWidget::DrawSubmeshParameters()
 			const auto& Submesh = GetGeometry()->DrawArgs[SelectedSubmesh];
 			const auto formattedName = "Submesh " + SelectedSubmesh;
 			ImGui::SeparatorText(formattedName.c_str());
-			if (Submesh.Vertices)
+			if (Submesh->Vertices)
 			{
 				ImGui::SetNextItemWidth(SliderWidth - 50);
 				ImGui::Text("Vertices & Indices");
 				if (ImGui::BeginListBox("##Vertices & Indices"))
 				{
 					int32_t counter = 0;
-					for (auto& vertex : *Submesh.Vertices)
+					for (auto& vertex : *Submesh->Vertices)
 					{
 						string vertexName = "##Vertex: " + std::to_string(counter);
 						DirectX::XMFLOAT3 newVertex = vertex;
@@ -62,7 +62,7 @@ void OGeometryEntityWidget::DrawSubmeshParameters()
 						int32_t idx = counter;
 						if (ImGui::InputInt(idxName.c_str(), &idx))
 						{
-							Submesh.Indices->at(counter) = idx;
+							Submesh->Indices->at(counter) = idx;
 							RebuildRequest();
 						}
 
@@ -82,7 +82,7 @@ void OGeometryEntityWidget::DrawInstanceParameters()
 		if (ImGui::BeginListBox("##Object Instances"))
 		{
 			size_t counter = 1;
-			for (auto& Instance : RenderItem->Instances)
+			for (auto& Instance : RenderItem.lock()->Instances)
 			{
 				auto name = "Instance: " + std::to_string(counter);
 
@@ -103,9 +103,9 @@ void OGeometryEntityWidget::DrawInstanceParameters()
 			}
 
 			ImGui::EndListBox();
-			if (SelectedInstance != "")
+			if (!SelectedInstance.empty())
 			{
-				MaterialPickerWidget->SetCurrentMaterial(FindMaterial(SelectedInstanceData->MaterialIndex));
+				MaterialPickerWidget->SetCurrentMaterial(FindMaterial(SelectedInstanceData->HlslData.MaterialIndex));
 				OHierarchicalWidgetBase::Draw();
 			}
 		}
@@ -114,7 +114,7 @@ void OGeometryEntityWidget::DrawInstanceParameters()
 
 void OGeometryEntityWidget::Draw()
 {
-	if (RenderItem->Instances.size() > 1)
+	if (RenderItem.lock()->Instances.size() > 1)
 	{
 		auto setNextWindowPos = []() {
 			ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y));
@@ -131,8 +131,8 @@ void OGeometryEntityWidget::Draw()
 	}
 	else
 	{
-		SelectedInstanceData = RenderItem->GetDefaultInstance();
-		MaterialPickerWidget->SetCurrentMaterial(FindMaterial(SelectedInstanceData->MaterialIndex));
+		SelectedInstanceData = RenderItem.lock()->GetDefaultInstance();
+		MaterialPickerWidget->SetCurrentMaterial(FindMaterial(SelectedInstanceData->HlslData.MaterialIndex));
 		OHierarchicalWidgetBase::Draw();
 	}
 }
@@ -143,10 +143,10 @@ void OGeometryEntityWidget::InitWidget()
 	using namespace DirectX;
 
 	// If the decompose fails, set the default values
-	Position = RenderItem->GetDefaultInstance()->Position;
-	QuaternionToEulerAngles(RenderItem->GetDefaultInstance()->Rotation, Rotation);
+	Position = RenderItem.lock()->GetDefaultInstance()->HlslData.Position;
+	QuaternionToEulerAngles(RenderItem.lock()->GetDefaultInstance()->HlslData.Rotation, Rotation);
 
-	Scale = RenderItem->GetDefaultInstance()->Scale;
+	Scale = RenderItem.lock()->GetDefaultInstance()->HlslData.Scale;
 
 	TransformWidget = MakeWidget<OGeometryTransformWidget>(&Position, &Rotation, &Scale);
 	MaterialPickerWidget = MakeWidget<OMaterialPickerWidget>(Engine->GetMaterialManager());
@@ -164,14 +164,14 @@ void OGeometryEntityWidget::InitWidget()
 
 		// Combine into a single transform matrix
 		const XMMATRIX transformMatrix = matScale * matRotation * matTranslation;
-		XMStoreFloat4x4(&SelectedInstanceData->World, transformMatrix);
-		SelectedInstanceData->Position = Position;
-		Put(SelectedInstanceData->Rotation, XMQuaternionRotationRollPitchYaw(Rotation.x, Rotation.y, Rotation.z));
-		SelectedInstanceData->Scale = Scale;
+		XMStoreFloat4x4(&SelectedInstanceData->HlslData.World, transformMatrix);
+		SelectedInstanceData->HlslData.Position = Position;
+		Put(SelectedInstanceData->HlslData.Rotation, XMQuaternionRotationRollPitchYaw(Rotation.x, Rotation.y, Rotation.z));
+		SelectedInstanceData->HlslData.Scale = Scale;
 	});
 
-	MaterialPickerWidget->GetOnMaterialUpdateDelegate().Add([this](const SMaterial* Material) {
-		SelectedInstanceData->MaterialIndex = Material->MaterialCBIndex;
+	MaterialPickerWidget->GetOnMaterialUpdateDelegate().Add([this](const weak_ptr<SMaterial>& Material) {
+		SelectedInstanceData->HlslData.MaterialIndex = Material.lock()->MaterialCBIndex;
 	});
 }
 

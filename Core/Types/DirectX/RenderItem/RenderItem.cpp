@@ -13,7 +13,7 @@ void ORenderItem::Update(const UpdateEventArgs& Arg)
 
 bool ORenderItem::IsValid() const
 {
-	return RenderLayer != "NONE" && Geometry != nullptr;
+	return RenderLayer != "NONE" && !Geometry.expired();
 }
 
 bool ORenderItem::IsValidChecked() const
@@ -22,21 +22,27 @@ bool ORenderItem::IsValidChecked() const
 	CWIN_LOG(!bIsValid, Geometry, Error, "RenderLayer is NONE");
 	return bIsValid;
 }
-HLSL::InstanceData* ORenderItem::GetDefaultInstance()
+
+void ORenderItem::AddInstance(const SInstanceData& Instance)
 {
-	return &Instances[0];
+	Instances.push_back(Instance);
+}
+
+SInstanceData* ORenderItem::GetDefaultInstance()
+{
+	if (Instances.empty())
+	{
+		return nullptr;
+	}
+	else
+	{
+		return &Instances[0];
+	}
 }
 
 const vector<unique_ptr<OComponentBase>>& ORenderItem::GetComponents() const
 {
 	return Components;
-}
-
-void ORenderItem::OnMaterialChanged()
-{
-	auto old = RenderLayer;
-	RenderLayer = DefaultMaterial->RenderLayer;
-	OEngine::Get()->MoveRIToNewLayer(this, RenderLayer, old);
 }
 
 void SRenderItemParams::SetPosition(DirectX::XMFLOAT3 P)
