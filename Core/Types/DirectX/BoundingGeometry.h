@@ -79,10 +79,10 @@ public:
 		return Geometry.Contains(sphere);
 	}
 
-	DirectX::ContainmentType Contains(const DirectX::XMMATRIX& View, DirectX::BoundingBox Box) override
+	DirectX::ContainmentType Contains(const DirectX::XMMATRIX& ViewToLocal, DirectX::BoundingBox Box) override
 	{
 		GeometryType otherGeometry;
-		Transform(otherGeometry, View);
+		Transform(otherGeometry, ViewToLocal);
 		return otherGeometry.Contains(Box);
 	}
 

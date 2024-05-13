@@ -35,6 +35,8 @@ public:
 	IBoundingGeometry* GetBoundingGeometry() const;
 	const SCulledInstancesInfo* GetCulledInstancesInfo() const;
 
+	bool bDrawBoundingGeometry = false;
+
 private:
 	optional<TUUID> ShadowMapInstancesBufferId;
 	SCulledInstancesInfo InstancesInfo;

@@ -29,11 +29,12 @@ void OLightComponentWidget::Draw()
 			ImGui::DragFloat("Radius Scale", &component->RadiusScale, 0.01f, 0.1f, 10.0f);
 			if (ImGui::Begin("Shadow Maps"))
 			{
-				for (auto& map : component->GetCSM()->GetShadowMaps())
+				for (const auto map : component->GetCSM()->GetShadowMaps())
 				{
 					auto format = std::format("Shadow Map {}", map->GetShadowMapIndex());
 					ImGui::SeparatorText(format.c_str());
-
+					auto boxName = std::format("Bounding Box for {}", map->GetShadowMapIndex());
+					ImGui::Checkbox(boxName.c_str(), &map->bDrawBoundingGeometry);
 					auto numRenderObjects = map->GetCulledInstancesInfo()->InstanceCount;
 					auto numTriangles = std::accumulate(map->GetCulledInstancesInfo()->Items.begin(),
 					                                    map->GetCulledInstancesInfo()->Items.end(),

@@ -65,6 +65,7 @@ struct SPSODescriptionBase
 struct SPSOGraphicsDescription : SPSODescriptionBase
 {
 	SGraphicsPSODesc PSODesc;
+	D3D_PRIMITIVE_TOPOLOGY PrimitiveTopologyType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	void BuildPipelineState(ID3D12Device* Device) override;
 	void SetVertexByteCode(const D3D12_SHADER_BYTECODE& ByteCode) override { PSODesc.VS = ByteCode; }
 	void SetPixelByteCode(const D3D12_SHADER_BYTECODE& ByteCode) override { PSODesc.PS = ByteCode; }

@@ -24,6 +24,7 @@ public:
 	struct SMeshData;
 
 	SMeshData CreateBox(float Width, float Height, float Depth, uint32_t NumSubdivisions);
+	SMeshData CreateCube(float Width, float Height, float Depth, uint32_t NumSubdivisions);
 	SMeshData CreateSphere(float Radius, uint32_t SliceCount, uint32_t StackCount);
 	SMeshData CreateGeosphere(float Radius, uint32_t NumSubdivisions);
 	SMeshData CreateCylinder(float BottomRadius, float TopRadius, float Height, uint32_t SliceCount,

@@ -19,6 +19,14 @@ struct SRenderConstants
 		const uint32_t StackCount = 20;
 	};
 
+	struct SCube
+	{
+		const float Width = 1.0f;
+		const float Height = 1.0f;
+		const float Depth = 1.0f;
+		const uint32_t NumSubdivisions = 1;
+	};
+
 	struct SBox
 	{
 		const float Width = 1.0f;
@@ -92,6 +100,7 @@ struct SRenderLayers
 	RENDER_TYPE(Water);
 	RENDER_TYPE(LightObjects);
 	RENDER_TYPE(Debug);
+	RENDER_TYPE(DebugBox);
 	RENDER_TYPE(ShadowDebug);
 };
 

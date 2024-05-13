@@ -281,12 +281,12 @@ void OEngine::DrawRenderItemsImpl(const SDrawPayload& Payload)
 	PROFILE_SCOPE();
 	auto& renderItems = GetRenderItems(Payload.RenderLayer);
 	auto cmd = GetCommandQueue()->GetCommandList();
+	auto graphicsPSO = Cast<SPSOGraphicsDescription>(Payload.Description);
 	for (auto it = renderItems.begin(); it != renderItems.end(); ++it)
 	{
 		if (it->expired())
 		{
 			renderItems.erase(it);
-			LOG(Render, Log, "Removed expired item from render list")
 			continue;
 		}
 
@@ -308,11 +308,11 @@ void OEngine::DrawRenderItemsImpl(const SDrawPayload& Payload)
 		PROFILE_BLOCK_START(renderItem->Name.c_str());
 		if (!renderItem->Instances.empty() && !renderItem->Geometry.expired())
 		{
+			cmd->IASetPrimitiveTopology(graphicsPSO->PrimitiveTopologyType);
 			BindMesh(geometry.lock().get());
 			auto instanceBuffer = GetCurrentFrameInstBuffer(Payload.InstanceBuffer->BufferId);
 			auto location = instanceBuffer->GetGPUAddress() + StartInstanceLocation * sizeof(HLSL::InstanceData);
 			GetCommandQueue()->SetResource(STRINGIFY_MACRO(INSTANCE_DATA), location, Payload.Description);
-			LOG(Render, Log, "Drawing item: {}, Material ID: {}, Instance ID: {}, Buffer name: {}", TEXT(renderItem->Name), renderItem->GetDefaultInstance()->HlslData.MaterialIndex, StartInstanceLocation, instanceBuffer->Name);
 			cmd->DrawIndexedInstanced(
 			    submesh.lock()->IndexCount,
 			    visibleInstances,
@@ -746,33 +746,33 @@ void OEngine::RemoveItemInstances(UpdateEventArgs& Args)
 				if (it->Lifetime.value() <= 0)
 				{
 					it = item->Instances.erase(it);
-				}
-				else
-				{
-					++it;
-				}
-
-				if (item->Instances.empty())
-				{
-					PendingRemoveItems.insert(item);
+					if (item->Instances.empty())
+					{
+						PendingRemoveItems.insert(item);
+					}
+					continue;
 				}
 			}
+			++it;
 		}
+		LOG(Render, Log, "Removed instances from item: {}", TEXT(item->Name));
 	}
 }
 
 void OEngine::OnUpdate(UpdateEventArgs& Args)
 {
 	PROFILE_SCOPE();
+
 	RemoveItemInstances(Args);
 	UpdateBoundingSphere();
 	TryRebuildFrameResource();
 	UpdateFrameResource();
-	auto camera = Window->GetCamera().lock();
-	CameraRenderedItems = PerformFrustumCulling(&camera->GetFrustrum(), camera->GetView(), CameraInstanceBufferID);
 
 	if (CurrentFrameResource)
 	{
+		auto camera = Window->GetCamera().lock();
+		CameraRenderedItems = PerformFrustumCulling(&camera->GetFrustrum(), camera->GetView(), CameraInstanceBufferID);
+
 		UpdateMainPass(Args.Timer);
 		UpdateMaterialCB();
 		UpdateObjectCB();
@@ -845,9 +845,15 @@ void OEngine::DrawDebugBox(DirectX::XMFLOAT3 Center, DirectX::XMFLOAT3 Extents, 
 	Put(data.HlslData.World, BuildWorldMatrix(data.HlslData.Position, data.HlslData.Scale, data.HlslData.Rotation));
 	if (BoxRenderItem.expired())
 	{
-		BoxRenderItem = CreateBoxRenderItem("Debug_Box", {});
+		SRenderItemParams params;
+		params.OverrideLayer = SRenderLayers::Debug;
+		params.bFrustrumCoolingEnabled = false;
+		params.Lifetime = Duration;
+		BoxRenderItem = CreateBoxRenderItem("Debug_Box", params);
+		return;
 	}
 	BoxRenderItem.lock()->AddInstance(data);
+	LOG(Render, Log, "Added debug box instance")
 }
 
 void OEngine::OnKeyPressed(KeyEventArgs& Args)
@@ -1003,9 +1009,13 @@ void OEngine::FillExpectedShadowMaps()
 	}
 }
 
-OUploadBuffer<HLSL::InstanceData>* OEngine::GetCurrentFrameInstBuffer(TUUID Id)
+OUploadBuffer<HLSL::InstanceData>* OEngine::GetCurrentFrameInstBuffer(const TUUID& Id) const
 {
-	return CurrentFrameResource->InstanceBuffers.at(Id).get();
+	if (CurrentFrameResource && CurrentFrameResource->InstanceBuffers.contains(Id))
+	{
+		return CurrentFrameResource->InstanceBuffers.at(Id).get();
+	}
+	return nullptr;
 }
 
 void OEngine::FillDescriptorHeaps()
@@ -1314,9 +1324,16 @@ OEngine::TRenderLayer& OEngine::GetRenderLayers()
 	return RenderLayers;
 }
 
-SCulledInstancesInfo OEngine::PerformFrustumCulling(IBoundingGeometry* Frustum, const DirectX::XMMATRIX& ViewMatrix, TUUID BufferId)
+SCulledInstancesInfo OEngine::PerformFrustumCulling(IBoundingGeometry* BoundingGeometry, const DirectX::XMMATRIX& ViewMatrix, TUUID BufferId)
 {
 	PROFILE_SCOPE();
+
+	if (CurrentFrameResource == nullptr)
+	{
+		LOG(Engine, Error, "CurrentFrameResource is nullptr!")
+		return {};
+	}
+
 	SCulledInstancesInfo result;
 	result.BufferId = BufferId;
 	const auto& buffers = GetInstanceBuffersByUUID(BufferId);
@@ -1348,12 +1365,18 @@ SCulledInstancesInfo OEngine::PerformFrustumCulling(IBoundingGeometry* Frustum, 
 			const auto invWorld = Inverse(world);
 			const auto viewToLocal = XMMatrixMultiply(invWorld, invView);
 
-			if (!bFrustrumCullingEnabled || Frustum->Contains(viewToLocal, e->Bounds) != DISJOINT)
+			if (!bFrustrumCullingEnabled || !e->bFrustrumCoolingEnabled || BoundingGeometry->Contains(viewToLocal, e->Bounds) != DISJOINT)
 			{
 				auto data = e->Instances[i];
 				Put(data.HlslData.World, Transpose(world));
 				Put(data.HlslData.TexTransform, Transpose(Load(instData[i].HlslData.TexTransform)));
+
+				data.HlslData.OverrideColor = instData[i].HlslData.OverrideColor;
+				data.HlslData.Position = instData[i].HlslData.Position;
+				data.HlslData.Scale = instData[i].HlslData.Scale;
+				data.HlslData.Rotation = instData[i].HlslData.Rotation;
 				data.HlslData.MaterialIndex = instData[i].HlslData.MaterialIndex;
+
 				result.InstanceCount++;
 				for (auto* buffer : buffers)
 				{
@@ -1564,15 +1587,16 @@ weak_ptr<SMeshGeometry> OEngine::SetSceneGeometry(shared_ptr<SMeshGeometry> Geom
 
 weak_ptr<ORenderItem> OEngine::BuildRenderItemFromMesh(shared_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params)
 {
-	return BuildRenderItemFromMesh(SetSceneGeometry(move(Mesh)), Params);
+	return BuildRenderItemFromMesh(SetSceneGeometry(Mesh), Params);
 }
 
 weak_ptr<ORenderItem> OEngine::BuildRenderItemFromMesh(weak_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params)
 {
-	if (!Params.MaterialParams.Material.expired() || Params.MaterialParams.Material.lock()->MaterialCBIndex == -1)
+	if (Params.MaterialParams.Material.expired() || Params.MaterialParams.Material.lock()->MaterialCBIndex == -1)
 	{
-		LOG(Geometry, Error, "Material not specified!");
+		LOG(Geometry, Warning, "Material not specified!");
 	}
+
 	weak_ptr<ORenderItem> item;
 	if (Params.Submesh.empty())
 	{
@@ -1585,6 +1609,7 @@ weak_ptr<ORenderItem> OEngine::BuildRenderItemFromMesh(weak_ptr<SMeshGeometry> M
 	{
 		item = BuildRenderItemFromMesh(Mesh, Mesh.lock()->GetDrawArgs().begin()->first, Params);
 	}
+	LOG(Render, Log, "Built render item from mesh: {}", TEXT(Mesh.lock()->Name));
 	return item;
 }
 
@@ -1751,7 +1776,6 @@ void OEngine::BindMesh(const SMeshGeometry* Mesh)
 	auto vertexBufferView = Mesh->VertexBufferView();
 
 	auto list = GetCommandQueue()->GetCommandList().Get();
-	list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	list->IASetIndexBuffer(&idxBufferView);
 	list->IASetVertexBuffers(0, 1, &vertexBufferView);
 }

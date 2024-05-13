@@ -82,6 +82,21 @@ inline auto CreateBoxRenderItem(string Name, float Width, float Height, float De
 	return engine->BuildRenderItemFromMesh(generator->CreateBoxMesh(Name, Width, Height, Depth, NumSubdivisions), Params);
 }
 
+inline auto CreateCubeRenderItem(string Name, float Width, float Height, float Depth, uint32_t NumSubdivisions, const SRenderItemParams& Params)
+{
+	auto engine = OEngine::Get();
+	auto generator = engine->GetMeshGenerator();
+	return engine->BuildRenderItemFromMesh(generator->CreateCubeMesh(Name, Width, Height, Depth, NumSubdivisions), Params);
+}
+
+inline auto CreateCubeRenderItem(string Name, const SRenderItemParams& Params)
+{
+	auto engine = OEngine::Get();
+	auto generator = engine->GetMeshGenerator();
+	auto& constants = SRenderConstants::Box;
+	return engine->BuildRenderItemFromMesh(generator->CreateCubeMesh(Name, constants.Width, constants.Height, constants.Depth, constants.NumSubdivisions), Params);
+}
+
 inline auto CreateSphereRenderItem(string Name, float Radius, uint32_t SliceCount, uint32_t StackCount, const SRenderItemParams& Params)
 {
 	auto engine = OEngine::Get();

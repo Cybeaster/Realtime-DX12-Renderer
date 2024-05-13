@@ -3,9 +3,11 @@
 
 #include "Application.h"
 #include "Engine/RenderTarget/NormalTangetDebugTarget/NormalTangentDebugTarget.h"
+#include "GraphSettings.h"
 #include "Profiler.h"
 #include "RenderGraph/Nodes/AABBVisualizer/AabbVisNode.h"
 #include "RenderGraph/Nodes/CopyNode/CopyRenderNode.h"
+#include "RenderGraph/Nodes/DebugGeometryNode/ODebugGeometryNode.h"
 #include "RenderGraph/Nodes/DefaultNode/DefaultRenderNode.h"
 #include "RenderGraph/Nodes/FrustrumDebugNode/FrustumDebugNode.h"
 #include "RenderGraph/Nodes/PostProcessNode/PostProcessNode.h"
@@ -99,53 +101,9 @@ SPSODescriptionBase* ORenderGraph::FindPSOInfo(const string& Name) const
 // TODO Resolve automatically the type of the node
 unique_ptr<ORenderNode> ORenderGraph::ResolveNodeType(const string& Type)
 {
-	if (Type == "OpaqueDynamicReflections")
+	if (FactoryMap.contains(Type))
 	{
-		return make_unique<OReflectionNode>();
-	}
-	if (Type == "Opaque" || Type == "Transparent" || Type == "AlphaTested")
-	{
-		return make_unique<ODefaultRenderNode>();
-	}
-	else if (Type == "PostProcess")
-	{
-		return make_unique<OPostProcessNode>();
-	}
-	else if (Type == "UI")
-	{
-		return make_unique<OUIRenderNode>();
-	}
-	else if (Type == "Present")
-	{
-		return make_unique<OPresentNode>();
-	}
-	else if (Type == "Shadow")
-	{
-		return make_unique<OShadowMapNode>();
-	}
-	else if (Type == "ShadowDebug")
-	{
-		return make_unique<OShadowDebugNode>();
-	}
-	else if (Type == "SSAO")
-	{
-		return make_unique<OSSAONode>();
-	}
-	else if (Type == "CopyTarget")
-	{
-		return make_unique<OCopyRenderNode>(OEngine::Get()->GetWindow());
-	}
-	else if (Type == "TangentNormalDebug")
-	{
-		return make_unique<TangentNormalDebugNode>();
-	}
-	else if (Type == "FrustumDebug")
-	{
-		return make_unique<OFrustumDebugNode>();
-	}
-	else if (Type == "AABBVisualizer")
-	{
-		return make_unique<OAABBVisNode>();
+		return FactoryMap[Type]();
 	}
 
 	LOG(Render, Warning, "Node type not found: {}", TEXT(Type));

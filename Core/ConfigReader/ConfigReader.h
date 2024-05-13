@@ -22,6 +22,13 @@ public:
 		}
 	}
 
+	void ReloadConfig()
+	{
+		PTree.clear();
+		bIsLoaded = false;
+		LoadConfig(FileName);
+	}
+
 	static auto GetAttribute(const boost::property_tree::ptree& Tree, const string& Value)
 	{
 		return Tree.get<string>(Value);

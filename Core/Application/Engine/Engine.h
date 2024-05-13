@@ -148,7 +148,7 @@ public:
 	void CreateWindow();
 	bool GetMSAAState(UINT& Quality) const;
 	void FillExpectedShadowMaps();
-	OUploadBuffer<HLSL::InstanceData>* GetCurrentFrameInstBuffer(TUUID Id);
+	OUploadBuffer<HLSL::InstanceData>* GetCurrentFrameInstBuffer(const TUUID& Id) const;
 	vector<weak_ptr<ORenderItem>>& GetRenderItems(const SRenderLayer& Type);
 	D3D12_RENDER_TARGET_BLEND_DESC GetTransparentBlendState();
 	void FillDescriptorHeaps();
@@ -229,7 +229,7 @@ public:
 	float GetTime() const;
 	TRenderLayer& GetRenderLayers();
 
-	SCulledInstancesInfo PerformFrustumCulling(IBoundingGeometry* Frustum, const DirectX::XMMATRIX& ViewMatrix, TUUID BufferId);
+	SCulledInstancesInfo PerformFrustumCulling(IBoundingGeometry* BoundingGeometry, const DirectX::XMMATRIX& ViewMatrix, TUUID BufferId);
 
 	uint32_t GetTotalNumberOfInstances() const;
 

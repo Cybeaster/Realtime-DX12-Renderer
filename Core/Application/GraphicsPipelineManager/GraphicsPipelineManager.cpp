@@ -57,6 +57,11 @@ void OGraphicsPipelineManager::LoadPipelines()
 
 void OGraphicsPipelineManager::ReloadShaders()
 {
+	GlobalPSOMap.clear();
+	GlobalShaderMap.clear();
+	GlobalShaderPipelineMap.clear();
+	RootSignatures.clear();
+	PSOReader->ReloadConfig();
 	LoadShaders();
 	LoadPipelines();
 }

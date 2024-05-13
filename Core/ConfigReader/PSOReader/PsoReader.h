@@ -15,7 +15,7 @@ public:
 private:
 	static SShaderArrayText GetShaderArray(const boost::property_tree::ptree& Node);
 	static D3D12_PIPELINE_STATE_FLAGS GetFlags(const boost::property_tree::ptree& Node);
-	static D3D12_PRIMITIVE_TOPOLOGY_TYPE GetTopologyType(const boost::property_tree::ptree& Node);
+	static void GetTopologyType(const boost::property_tree::ptree& Node, D3D12_PRIMITIVE_TOPOLOGY_TYPE& OutTopologyType, D3D_PRIMITIVE_TOPOLOGY& OutTopology);
 	static void SetRenderTargetFormats(DXGI_FORMAT* Formats, const boost::property_tree::ptree& Node);
 	static DXGI_FORMAT GetFormat(const boost::property_tree::ptree& Node);
 	static DXGI_FORMAT GetFormat(const string& FormatString);

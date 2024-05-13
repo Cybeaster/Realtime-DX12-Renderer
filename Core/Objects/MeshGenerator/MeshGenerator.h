@@ -19,7 +19,7 @@ public:
 	    , CommandQueue(CommandList)
 	{
 	}
-
+	unique_ptr<SMeshGeometry> CreateCubeMesh(string Name, float Width, float Height, float Depth, uint32_t NumSubdivisions);
 	unique_ptr<SMeshGeometry> CreateGridMesh(string Name, float Width, float Height, uint32_t Row, uint32_t NumSubdivisions);
 	unique_ptr<SMeshGeometry> CreateBoxMesh(string Name, float Width, float Height, float Depth, uint32_t NumSubdivisions);
 	unique_ptr<SMeshGeometry> CreateSphereMesh(string Name, float Radius, uint32_t SliceCount, uint32_t StackCount);

@@ -24,6 +24,7 @@
 #endif
 
 struct ORenderItem;
+using boost::function;
 using boost::make_shared;
 using boost::optional;
 using boost::shared_ptr;

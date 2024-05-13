@@ -30,7 +30,7 @@ unique_ptr<SPSOGraphicsDescription> OPSOReader::LoadGraphicsPSO(const boost::pro
 	PSODesc->ShaderPipeline = GetShaderArray(Node.get_child("ShaderPipeline"));
 	desc.Flags = GetFlags(Node);
 	desc.SampleMask = GetOptionalOr(Node, "SampleMask", UINT_MAX);
-	desc.PrimitiveTopologyType = GetTopologyType(Node);
+	GetTopologyType(Node, desc.PrimitiveTopologyType, PSODesc->PrimitiveTopologyType);
 	desc.NumRenderTargets = GetOptionalOr(Node, "NumRenderTargets", 1);
 	SetRenderTargetFormats(desc.RTVFormats, Node);
 	desc.DSVFormat = GetFormat(Node);
@@ -471,29 +471,49 @@ SShaderArrayText OPSOReader::GetShaderArray(const boost::property_tree::ptree& N
 	return shaderArray;
 }
 
-D3D12_PRIMITIVE_TOPOLOGY_TYPE OPSOReader::GetTopologyType(const boost::property_tree::ptree& Node)
+void OPSOReader::GetTopologyType(const boost::property_tree::ptree& Node, D3D12_PRIMITIVE_TOPOLOGY_TYPE& OutTopologyType, D3D_PRIMITIVE_TOPOLOGY& OutTopology)
 {
-	if (auto optional = Node.get_optional<string>("PrimitiveTopologyType"))
+	if (auto optional = Node.get_optional<string>("PrimitiveTopology"))
 	{
 		const auto string = optional.value();
-		if (string == "Point")
+		if (string == "TriangleList")
 		{
-			return D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+			OutTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+			OutTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+			return;
 		}
-		if (string == "Line")
+		if (string == "PointList")
 		{
-			return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+			OutTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+			OutTopology = D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+			return;
 		}
-		if (string == "Triangle")
+		if (string == "LineList")
 		{
-			return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+			OutTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+			OutTopology = D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+			return;
 		}
 		if (string == "Patch")
 		{
-			return D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
+			OutTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
+			OutTopology = D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST;
+			return;
 		}
+		if (string == "LineStrip")
+		{
+			OutTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+			OutTopology = D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
+			return;
+		}
+		if (string == "TriangleStrip")
+		{
+			OutTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+			OutTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+			return;
+		}
+		LOG(Config, Error, "Unknown topology type: {}", TEXT(optional.value()));
 	}
-	return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 }
 
 void OPSOReader::SetRenderTargetFormats(DXGI_FORMAT* Formats, const boost::property_tree::ptree& Node)

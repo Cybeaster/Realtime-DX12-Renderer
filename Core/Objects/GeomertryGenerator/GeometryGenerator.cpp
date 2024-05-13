@@ -123,6 +123,53 @@ OGeometryGenerator::SMeshData OGeometryGenerator::CreateBox(float Width, float H
 	return data;
 }
 
+OGeometryGenerator::SMeshData OGeometryGenerator::CreateCube(float Width, float Height, float Depth, uint32_t NumSubdivisions)
+{
+	SMeshData data;
+	SGeometryExtendedVertex vertices[8];
+
+	const float w2 = 0.5f * Width;
+	const float h2 = 0.5f * Height;
+	const float d2 = 0.5f * Depth;
+
+	// clang-format off
+
+	// Define the 8 vertices of the cube, with normals and UV coordinates
+	vertices[0] = SGeometryExtendedVertex(-w2, -h2, -d2, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,0,0,1); // Front bottom-left
+	vertices[1] = SGeometryExtendedVertex(-w2, h2, -d2, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,0,0,0); // Front top-left
+	vertices[2] = SGeometryExtendedVertex(w2, h2, -d2, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,0,0,0);   // Front top-right
+	vertices[3] = SGeometryExtendedVertex(w2, -h2, -d2, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,0,0,1);  // Front bottom-right
+
+	vertices[4] = SGeometryExtendedVertex(-w2, -h2, d2,0.0f, 0.0f, -1.0f, 0.0f, 0.0f,0,0,1);   // Back bottom-left
+	vertices[5] = SGeometryExtendedVertex(-w2, h2, d2, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,0,0,1);    // Back top-left
+	vertices[6] = SGeometryExtendedVertex(w2, h2, d2, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,0,0,0);    // Back top-right
+	vertices[7] = SGeometryExtendedVertex(w2, -h2, d2,0.0f, 0.0f, -1.0f, 0.0f, 0.0f,0,0,0);   // Back bottom-right
+
+	data.Vertices.assign(&vertices[0], &vertices[8]);
+
+	// Define indices to form 12 triangles across the 6 faces
+	uint32_t indices[36] = {
+		// Front face
+		0, 1, 2, 0, 2, 3,
+		// Back face
+		4, 6, 5, 4, 7, 6,
+		// Left face
+		4, 5, 1, 4, 1, 0,
+		// Right face
+		3, 2, 6, 3, 6, 7,
+		// Top face
+		1, 5, 6, 1, 6, 2,
+		// Bottom face
+		4, 0, 3, 4, 3, 7
+	};
+
+	// clang-format on
+
+	data.Indices32.assign(&indices[0], &indices[36]);
+
+	return data;
+}
+
 OGeometryGenerator::SMeshData OGeometryGenerator::CreateSphere(float Radius, uint32_t SliceCount, uint32_t StackCount)
 {
 	SMeshData meshData;

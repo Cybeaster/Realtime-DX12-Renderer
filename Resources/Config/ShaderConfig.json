@@ -333,6 +333,59 @@
           "TargetProfile": "ps_6_0"
         }
       ]
+    },
+    {
+      "Path": "Shaders/DebugGeometry.hlsl",
+      "Name": "DebugGeometry",
+      "Pipeline": [
+        {
+          "Type": "Vertex",
+          "EntryPoint": "VS",
+          "TargetProfile": "vs_6_0"
+        },
+        {
+          "Type": "Pixel",
+          "EntryPoint": "PS",
+          "TargetProfile": "ps_6_0"
+        }
+      ]
+    },
+    {
+      "Path": "Shaders/DebugBox.hlsl",
+      "Name": "DebugBox",
+      "Pipeline": [
+        {
+          "Type": "Vertex",
+          "EntryPoint": "VS",
+          "TargetProfile": "vs_6_0"
+        },
+        {
+          "Type": "Geometry",
+          "EntryPoint": "GS",
+          "TargetProfile": "gs_6_0"
+        },
+        {
+          "Type": "Pixel",
+          "EntryPoint": "PS",
+          "TargetProfile": "ps_6_0"
+        }
+      ]
+    },
+    {
+      "Path": "Shaders/DebugGeometry.hlsl",
+      "Name": "DebugGeometry",
+      "Pipeline": [
+        {
+          "Type": "Vertex",
+          "EntryPoint": "VS",
+          "TargetProfile": "vs_6_0"
+        },
+        {
+          "Type": "Pixel",
+          "EntryPoint": "PS",
+          "TargetProfile": "ps_6_0"
+        }
+      ]
     }
   ]
 }

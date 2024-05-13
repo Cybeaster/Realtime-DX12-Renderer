@@ -21,6 +21,11 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateBoxMesh(string Name, float Width
 	return CreateMesh(Name, Generator.CreateBox(Width, Height, Depth, NumSubdivisions));
 }
 
+unique_ptr<SMeshGeometry> OMeshGenerator::CreateCubeMesh(string Name, float Width, float Height, float Depth, uint32_t NumSubdivisions)
+{
+	return CreateMesh(Name, Generator.CreateCube(Width, Height, Depth, NumSubdivisions));
+}
+
 unique_ptr<SMeshGeometry> OMeshGenerator::CreateSphereMesh(string Name, float Radius, uint32_t SliceCount, uint32_t StackCount)
 {
 	return CreateMesh(Name, Generator.CreateSphere(Radius, SliceCount, StackCount));

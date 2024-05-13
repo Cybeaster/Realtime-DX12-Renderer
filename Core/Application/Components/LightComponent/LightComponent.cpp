@@ -283,6 +283,12 @@ void ODirectionalLightComponent::SetLightSourceData()
 		arrayedCorners[i] = HLSL::FrustumCornens[i];
 	}
 
+	array<SColor, 3> colors = {
+		SColor::Red,
+		SColor::Blue,
+		SColor::Green,
+	};
+
 	//Calculate shadow matrices, view and proj for light based on the splits
 	float lastSplitDist = 0.0f;
 	for (int i = 0; i < MAX_CSM_PER_FRAME; i++)
@@ -336,14 +342,16 @@ void ODirectionalLightComponent::SetLightSourceData()
 		const auto lightProj = MatrixOrthographicOffCenter(-radius, radius, -radius, radius, -depth, depth);
 
 		BoundingOrientedBox obj;
-		Put(obj.Center, center);
-		obj.Extents = XMFLOAT3{ radius, radius, depth }; // draw debug geometry
+		Put(obj.Center, eye);
+		obj.Extents = XMFLOAT3{ radius * 2, depth * 2, radius * 2 };
 		Put(obj.Orientation, XMQuaternionRotationMatrix(lightView));
+		OBoundingOrientedBox bound{ obj };
 
-		OEngine::Get()->DrawDebugBox(obj.Center, obj.Extents, obj.Orientation, SColor::Blue, 0.1);
+		if (CSM->GetShadowMap(i)->bDrawBoundingGeometry)
+		{
+			OEngine::Get()->DrawDebugBox(obj.Center, obj.Extents, obj.Orientation, colors[i], 0.05);
+		}
 
-		OBoundingOrientedBox bound;
-		bound.ConstructFromGeometry(obj);
 		CSM->GetShadowMap(i)->UpdateBoundingGeometry(&bound, lightView);
 
 		const XMMATRIX T{

@@ -89,8 +89,15 @@
       {
         "Name": "AABBVisualizer",
         "PSO": "AABBVisualizer",
-        "NextNode": "CopyTarget",
+        "NextNode": "DebugGeometry",
         "RenderLayer": "Opaque",
+        "Enabled": true
+      },
+      {
+        "Name": "DebugGeometry",
+        "PSO": "DebugGeometry",
+        "NextNode": "CopyTarget",
+        "RenderLayer": "Debug",
         "Enabled": true
       },
       {

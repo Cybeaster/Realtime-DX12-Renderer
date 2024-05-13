@@ -256,6 +256,9 @@ set(SRC_FILES
         Core/Application/RenderGraph/Nodes/AABBVisualizer/AabbVisNode.h
         Core/Types/DirectX/BoundingGeometry.h
         Core/Types/Color.h
+        Core/Application/RenderGraph/Nodes/DebugGeometryNode/ODebugGeometryNode.cpp
+        Core/Application/RenderGraph/Nodes/DebugGeometryNode/ODebugGeometryNode.h
+        Core/Application/RenderGraph/Graph/GraphSettings.h
 )
 
 
