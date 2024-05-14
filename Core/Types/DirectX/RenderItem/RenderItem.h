@@ -40,7 +40,7 @@ struct ORenderItem
 
 	string Name;
 	bool bTraceable = true;
-	bool bFrustrumCoolingEnabled = true;
+	bool bFrustumCoolingEnabled = true;
 
 	weak_ptr<SMaterial> DefaultMaterial;
 	weak_ptr<SMeshGeometry> Geometry;
@@ -95,7 +95,7 @@ struct SRenderItemParams
 	string Submesh;
 	SMaterialParams MaterialParams;
 	size_t NumberOfInstances = 1;
-	bool bFrustrumCoolingEnabled = false;
+	bool bFrustumCoolingEnabled = false;
 	bool Pickable = false;
 	void SetPosition(DirectX::XMFLOAT3 P);
 	void SetScale(DirectX::XMFLOAT3 S);

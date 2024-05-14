@@ -2,7 +2,7 @@
 
 #include "Engine/Engine.h"
 
-void SPSOGraphicsDescription::BuildPipelineState(ID3D12Device* Device)
+bool SPSOGraphicsDescription::BuildPipelineState(ID3D12Device* Device)
 {
 	PSODesc.pRootSignature = RootSignature->RootSignatureParams.RootSignature.Get();
 	PSODesc.InputLayout = {
@@ -10,18 +10,28 @@ void SPSOGraphicsDescription::BuildPipelineState(ID3D12Device* Device)
 		.NumElements = static_cast<uint32_t>(RootSignature->InputElementDescs.size())
 	};
 	RootSignature->Type = EPSOType::Graphics;
-	THROW_IF_FAILED(Device->CreateGraphicsPipelineState(&PSODesc, IID_PPV_ARGS(&PSO)));
+	if (const auto hr = Device->CreateGraphicsPipelineState(&PSODesc, IID_PPV_ARGS(&PSO)); FAILED(hr))
+	{
+		LOG(Render, Error, "Failed to create graphics pipeline state: {}", TEXT(hr));
+		return false;
+	}
 	auto signature = UTF8ToWString(Name) + L"_PipelineStateObject";
 	PSO->SetName(signature.c_str());
+	return true;
 }
 
-void SPSOComputeDescription::BuildPipelineState(ID3D12Device* Device)
+bool SPSOComputeDescription::BuildPipelineState(ID3D12Device* Device)
 {
 	PSODesc.pRootSignature = RootSignature->RootSignatureParams.RootSignature.Get();
 	RootSignature->Type = EPSOType::Compute;
-	THROW_IF_FAILED(Device->CreateComputePipelineState(&PSODesc, IID_PPV_ARGS(&PSO)));
+	if (const auto hr = Device->CreateComputePipelineState(&PSODesc, IID_PPV_ARGS(&PSO)); FAILED(hr))
+	{
+		LOG(Render, Error, "Failed to create compute pipeline state: {}", TEXT(hr));
+		return false;
+	}
 	auto signature = UTF8ToWString(Name) + L"_PipelineStateObject";
 	PSO->SetName(signature.c_str());
+	return true;
 }
 
 void SShaderPipelineDesc::AddRootParameter(const D3D12_ROOT_PARAMETER1& RootParameter, const wstring& Name)

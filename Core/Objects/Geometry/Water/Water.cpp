@@ -7,7 +7,7 @@ void OWaterRenderObject::InitRenderObject()
 {
 	SRenderItemParams params;
 	params.NumberOfInstances = 1;
-	params.bFrustrumCoolingEnabled = false;
+	params.bFrustumCoolingEnabled = false;
 	params.Pickable = false;
 	params.MaterialParams.Material = FindMaterial("Water01");
 	params.OverrideLayer = SRenderLayers::Water;

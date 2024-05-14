@@ -367,7 +367,7 @@ void OEngine::DrawBox(SPSODescriptionBase* Desc)
 	payload.RenderLayer = SRenderLayers::Opaque;
 	payload.bForceDrawAll = true;
 	payload.InstanceBuffer = &CameraRenderedItems;
-	payload.OverrideGeometry = BoxRenderItem.lock()->Geometry;
+	payload.OverrideGeometry = DebugBoxRenderItem.lock()->Geometry;
 
 	DrawRenderItemsImpl(payload);
 }
@@ -755,7 +755,7 @@ void OEngine::RemoveItemInstances(UpdateEventArgs& Args)
 			}
 			++it;
 		}
-		LOG(Render, Log, "Removed instances from item: {}", TEXT(item->Name));
+		//LOG(Render, Log, "Removed instances from item: {}", TEXT(item->Name));
 	}
 }
 
@@ -771,7 +771,7 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 	if (CurrentFrameResource)
 	{
 		auto camera = Window->GetCamera().lock();
-		CameraRenderedItems = PerformFrustumCulling(&camera->GetFrustrum(), camera->GetView(), CameraInstanceBufferID);
+		CameraRenderedItems = PerformFrustumCulling(&camera->GetFrustum(), camera->GetView(), CameraInstanceBufferID);
 
 		UpdateMainPass(Args.Timer);
 		UpdateMaterialCB();
@@ -836,24 +836,55 @@ void OEngine::OnWindowDestroyed()
 
 void OEngine::DrawDebugBox(DirectX::XMFLOAT3 Center, DirectX::XMFLOAT3 Extents, DirectX::XMFLOAT4 Orientation, SColor Color, float Duration)
 {
+	auto world = BuildWorldMatrix(Center, Extents, Orientation);
+
 	SInstanceData data;
 	data.HlslData.OverrideColor = Color.ToFloat3();
 	data.HlslData.Position = Center;
 	data.HlslData.Scale = Extents;
 	data.HlslData.Rotation = Orientation;
+	Put(data.HlslData.World, world);
 	data.Lifetime = Duration;
-	Put(data.HlslData.World, BuildWorldMatrix(data.HlslData.Position, data.HlslData.Scale, data.HlslData.Rotation));
-	if (BoxRenderItem.expired())
+	data.HlslData.BoundingBoxCenter = Center;
+	data.HlslData.BoundingBoxExtents = Extents;
+	if (DebugBoxRenderItem.expired())
 	{
 		SRenderItemParams params;
-		params.OverrideLayer = SRenderLayers::Debug;
-		params.bFrustrumCoolingEnabled = false;
+		params.OverrideLayer = SRenderLayers::DebugBox;
+		params.bFrustumCoolingEnabled = false;
 		params.Lifetime = Duration;
-		BoxRenderItem = CreateBoxRenderItem("Debug_Box", params);
+		DebugBoxRenderItem = CreateBoxRenderItem("Debug_Box", params);
 		return;
 	}
-	BoxRenderItem.lock()->AddInstance(data);
+	DebugBoxRenderItem.lock()->AddInstance(data);
 	LOG(Render, Log, "Added debug box instance")
+}
+
+void OEngine::DrawDebugFrustum(const DirectX::XMFLOAT4X4& InvViewProjection, const SColor Color, float Duration)
+{
+	auto world = BuildWorldMatrix(XMFLOAT3(0, 0, 0), XMFLOAT3(1, 1, 1), XMFLOAT4(0, 0, 0, 0));
+
+	SInstanceData data;
+	data.HlslData.OverrideColor = Color.ToFloat3();
+	data.HlslData.Position = XMFLOAT3(0, 0, 0);
+	data.HlslData.Scale = XMFLOAT3(1, 1, 1);
+	data.HlslData.Rotation = XMFLOAT4(0, 0, 0, 0);
+	Put(data.HlslData.World, world);
+	data.Lifetime = Duration;
+	data.HlslData.BoundingBoxCenter = XMFLOAT3(0, 0, 0);
+	data.HlslData.BoundingBoxExtents = XMFLOAT3(1, 1, 1);
+	data.HlslData.InvViewProjection = InvViewProjection;
+	if (DebugFrustumRenderItem.expired())
+	{
+		SRenderItemParams params;
+		params.OverrideLayer = SRenderLayers::FrustumDebug;
+		params.bFrustumCoolingEnabled = false;
+		params.Lifetime = Duration;
+		DebugFrustumRenderItem = CreateBoxRenderItem("Debug_Frustum", params);
+		return;
+	}
+	DebugFrustumRenderItem.lock()->AddInstance(data);
+	LOG(Render, Log, "Added debug frustum instance")
 }
 
 void OEngine::OnKeyPressed(KeyEventArgs& Args)
@@ -1324,7 +1355,7 @@ OEngine::TRenderLayer& OEngine::GetRenderLayers()
 	return RenderLayers;
 }
 
-SCulledInstancesInfo OEngine::PerformFrustumCulling(IBoundingGeometry* BoundingGeometry, const DirectX::XMMATRIX& ViewMatrix, TUUID BufferId)
+SCulledInstancesInfo OEngine::PerformFrustumCulling(IBoundingGeometry* BoundingGeometry, const DirectX::XMMATRIX& ViewMatrix, const TUUID& BufferId) const
 {
 	PROFILE_SCOPE();
 
@@ -1365,7 +1396,7 @@ SCulledInstancesInfo OEngine::PerformFrustumCulling(IBoundingGeometry* BoundingG
 			const auto invWorld = Inverse(world);
 			const auto viewToLocal = XMMatrixMultiply(invWorld, invView);
 
-			if (!bFrustrumCullingEnabled || !e->bFrustrumCoolingEnabled || BoundingGeometry->Contains(viewToLocal, e->Bounds) != DISJOINT)
+			if (!bFrustumCullingEnabled || !e->bFrustumCoolingEnabled || BoundingGeometry->Contains(viewToLocal, e->Bounds) != DISJOINT)
 			{
 				auto data = e->Instances[i];
 				Put(data.HlslData.World, Transpose(world));
@@ -1619,7 +1650,7 @@ weak_ptr<ORenderItem> OEngine::BuildRenderItemFromMesh(const weak_ptr<SMeshGeome
 	const auto mat = submesh.lock()->Material;
 	auto newItem = make_shared<ORenderItem>();
 
-	newItem->bFrustrumCoolingEnabled = Params.bFrustrumCoolingEnabled;
+	newItem->bFrustumCoolingEnabled = Params.bFrustumCoolingEnabled;
 
 	uint32_t matIdx = 0;
 	SRenderLayer layer;
@@ -1718,7 +1749,7 @@ ODirectionalLightComponent* OEngine::AddDirectionalLightComponent(ORenderItem* I
 void OEngine::BuildPickRenderItem()
 {
 	auto newItem = make_shared<ORenderItem>();
-	newItem->bFrustrumCoolingEnabled = false;
+	newItem->bFrustumCoolingEnabled = false;
 	newItem->DefaultMaterial = MaterialManager->FindMaterial(SMaterialNames::Picked);
 	newItem->RenderLayer = SRenderLayers::Highlight;
 	newItem->bTraceable = false;

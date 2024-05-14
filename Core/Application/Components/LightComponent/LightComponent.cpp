@@ -266,9 +266,9 @@ void ODirectionalLightComponent::SetLightSourceData()
 
 	using namespace DirectX;
 
-	auto zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-	auto lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-	auto camera = OEngine::Get()->GetWindow()->GetCamera();
+	const auto zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+	const auto lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	const auto camera = OEngine::Get()->GetWindow()->GetCamera();
 
 	auto lightDir = XMVector3Normalize(XMLoadFloat3(&DirectionalLight.Direction));
 	auto lightPos = lightDir;
@@ -283,7 +283,7 @@ void ODirectionalLightComponent::SetLightSourceData()
 		arrayedCorners[i] = HLSL::FrustumCornens[i];
 	}
 
-	array<SColor, 3> colors = {
+	array colors = {
 		SColor::Red,
 		SColor::Blue,
 		SColor::Green,
@@ -336,35 +336,39 @@ void ODirectionalLightComponent::SetLightSourceData()
 		radius = scale * texelSize / 2.0f;
 		const auto eye = center + (lightDir * -radius);
 		const auto lightView = MatrixLookAt(eye, center, lightUp);
-
+		const auto invLightView = Inverse(lightView);
 		float depth = radius * RadiusScale;
 
 		const auto lightProj = MatrixOrthographicOffCenter(-radius, radius, -radius, radius, -depth, depth);
+		const auto lightViewProj = lightView * lightProj;
+		const auto invLightViewProj = Inverse(lightViewProj);
 
-		BoundingOrientedBox obj;
-		Put(obj.Center, eye);
-		obj.Extents = XMFLOAT3{ radius * 2, depth * 2, radius * 2 };
-		Put(obj.Orientation, XMQuaternionRotationMatrix(lightView));
-		OBoundingOrientedBox bound{ obj };
+		// Compute the center of the bounding box
+		BoundingOrientedBox localBound;
+		localBound.Extents = XMFLOAT3(radius, radius, depth);
+		Put(localBound.Orientation, XMQuaternionRotationMatrix(lightView));
+		Put(localBound.Center, XMVector3TransformCoord(eye, lightView));
 
 		if (CSM->GetShadowMap(i)->bDrawBoundingGeometry)
 		{
-			OEngine::Get()->DrawDebugBox(obj.Center, obj.Extents, obj.Orientation, colors[i], 0.05);
+			BoundingOrientedBox worldbound;
+			worldbound.Extents = XMFLOAT3(radius, radius, depth);
+			Put(worldbound.Orientation, XMQuaternionRotationMatrix(lightView));
+			Put(worldbound.Center, eye);
+			OEngine::Get()->DrawDebugBox(worldbound.Center, worldbound.Extents, worldbound.Orientation, colors[i], 0.05);
 		}
-
-		CSM->GetShadowMap(i)->UpdateBoundingGeometry(&bound, lightView);
+		OBoundingOrientedBox boundingBox{ localBound };
+		CSM->GetShadowMap(i)->UpdateBoundingGeometry(&boundingBox, lightView);
 
 		const XMMATRIX T{
 			0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f
 		};
 
-		const auto lightViewProj = lightView * lightProj;
-		const auto invLightViewProj = Inverse(lightViewProj);
 		SPassConstants passConstants;
 		Put(passConstants.View, Transpose(lightView));
 		Put(passConstants.Proj, Transpose(lightProj));
 		Put(passConstants.ViewProj, Transpose(lightViewProj));
-		Put(passConstants.InvView, Transpose(Inverse(lightView)));
+		Put(passConstants.InvView, Transpose(invLightView));
 		Put(passConstants.InvProj, Transpose(Inverse(lightProj)));
 		Put(passConstants.InvViewProj, Transpose(invLightViewProj));
 		Put(passConstants.EyePosW, lightPos);

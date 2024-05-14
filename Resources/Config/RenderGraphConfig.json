@@ -76,7 +76,7 @@
         "Name": "FrustumDebug",
         "PSO": "FrustumDebug",
         "NextNode": "ShadowDebug",
-        "RenderLayer": "None",
+        "RenderLayer": "FrustumDebug",
         "Enabled": true
       },
       {
@@ -89,15 +89,15 @@
       {
         "Name": "AABBVisualizer",
         "PSO": "AABBVisualizer",
-        "NextNode": "DebugGeometry",
+        "NextNode": "DebugBox",
         "RenderLayer": "Opaque",
         "Enabled": true
       },
       {
-        "Name": "DebugGeometry",
-        "PSO": "DebugGeometry",
+        "Name": "DebugBox",
+        "PSO": "DebugBox",
         "NextNode": "CopyTarget",
-        "RenderLayer": "Debug",
+        "RenderLayer": "DebugBox",
         "Enabled": true
       },
       {

@@ -23,7 +23,7 @@ public:
 	void PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList, uint32_t SubtargetIdx = 0) override;
 	void UpdatePass(const TUploadBufferData<SPassConstants>& Data) override;
 	void SetShadowMapIndex(uint32_t Idx);
-
+	void Update(const UpdateEventArgs& Event) override;
 	bool ConsumeUpdate();
 	void UpdateLightSourceData();
 	void SetPassConstants(const SPassConstants&);

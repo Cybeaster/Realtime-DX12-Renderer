@@ -420,6 +420,57 @@ inline DirectX::XMMATRIX BuildWorldMatrix(const DirectX::XMFLOAT3& Position,
 	return scaleMatrix * rotationMatrix * translationMatrix;
 }
 
+inline DirectX::XMMATRIX BuildViewMatrix(const DirectX::XMVECTOR& Origin, const DirectX::XMVECTOR& Orientation, const DirectX::XMVECTOR& Up)
+{
+	// Compute the forward direction vector from the orientation quaternion
+	const DirectX::XMVECTOR forward = DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), Orientation);
+
+	// Compute the target position by adding the forward vector to the origin
+	const DirectX::XMVECTOR target = DirectX::XMVectorAdd(Origin, forward);
+
+	// Use XMMatrixLookAtLH to build the view matrix
+	return MatrixLookAt(Origin, target, Up);
+}
+
+inline DirectX::XMMATRIX BuildOrthographicMatrix(const DirectX::BoundingFrustum& frustum)
+{
+	const float nearZ = frustum.Near;
+	const float farZ = frustum.Far;
+
+	// Calculate the width and height at the near plane
+	const float width = frustum.RightSlope * nearZ * 2.0f;
+	const float height = frustum.TopSlope * nearZ * 2.0f;
+
+	// Calculate left, right, bottom, top, near, far values
+	const float left = -width / 2.0f;
+	const float right = width / 2.0f;
+	const float bottom = -height / 2.0f;
+	const float top = height / 2.0f;
+
+	// Create the orthographic matrix
+	return MatrixOrthographicOffCenter(left, right, bottom, top, nearZ, farZ);
+}
+
+inline DirectX::BoundingOrientedBox TransformBoundingBoxToViewSpace(const DirectX::BoundingOrientedBox& box, const DirectX::XMMATRIX& viewMatrix)
+{
+	using namespace DirectX;
+	// Transform the center of the bounding box to view space
+	XMVECTOR center = XMLoadFloat3(&box.Center);
+	center = XMVector3Transform(center, viewMatrix);
+
+	// The orientation needs to be transformed as well
+	XMVECTOR orientation = XMLoadFloat4(&box.Orientation);
+	orientation = XMQuaternionMultiply(orientation, XMQuaternionRotationMatrix(viewMatrix));
+
+	// The extents remain the same since they are axis-aligned with respect to the box's local space
+	BoundingOrientedBox viewSpaceBox;
+	XMStoreFloat3(&viewSpaceBox.Center, center);
+	XMStoreFloat4(&viewSpaceBox.Orientation, orientation);
+	viewSpaceBox.Extents = box.Extents;
+
+	return viewSpaceBox;
+}
+
 inline bool operator==(const DirectX::XMFLOAT3 A, const DirectX::XMFLOAT3 B)
 {
 	return abs(A.x - B.x) < EPSILON && abs(A.y - B.y) < EPSILON && abs(A.z - B.z) < EPSILON;

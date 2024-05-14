@@ -1,40 +1,29 @@
 #include "Common.hlsl"
 
-struct GSInput {
-	float4 PosW : SV_POSITION ;
-	nointerpolation float3 Color : COLOR;
-};
-
-struct VertexIn{
-	float3 PosL : POSITION;
-};
-
-
-GSInput VS(VertexIn VIn, uint InstanceID
-			: SV_InstanceID)
+struct VertexInput
 {
-	GSInput output = (GSInput)0;
+    float3 PosL : POSITION;
+};
+
+struct VertexOutput
+{
+	float4 PosH : SV_POSITION;
+    float3 Color : COLOR;
+};
+
+VertexOutput VS(VertexInput Input, uint InstanceID : SV_InstanceID)
+{
+	VertexOutput output = (VertexOutput)0;
 	InstanceData inst = gInstanceData[InstanceID];
 	float4x4 world = inst.World;
-	float4 posW = mul(float4(VIn.PosL, 1.0f), world);
-	output.PosW = posW;
+
+	float4 posW = mul(float4(Input.PosL, 1.0f), world);
+	output.PosH = mul(posW, gViewProj);
 	output.Color = inst.OverrideColor;
 	return output;
 }
 
-
-[maxvertexcount(6)]
-void GS(triangle GSInput input[3], inout LineStream<GSInput> OutputStream)
+float4 PS(VertexOutput input) : SV_Target
 {
-
-		OutputStream.Append( input[0]);
-		OutputStream.Append( input[1]);
-		OutputStream.Append( input[2]);
-
-}
-
-
-float4 PS(GSInput input) : SV_Target
-{
-	return float4(1,0,0,1);
+	return float4(input.Color,1);
 }

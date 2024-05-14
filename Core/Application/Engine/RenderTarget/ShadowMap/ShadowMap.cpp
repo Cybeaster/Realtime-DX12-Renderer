@@ -186,6 +186,11 @@ void OShadowMap::SetShadowMapIndex(uint32_t Idx)
 	ShadowMapIndex = Idx;
 	ShadowMapInstancesBufferId = OEngine::Get()->AddInstanceBuffer(L"ShadowMapInstancesBuffer_" + std::to_wstring(ShadowMapIndex.value_or(-1)));
 }
+void OShadowMap::Update(const UpdateEventArgs& Event)
+{
+	ORenderTargetBase::Update(Event);
+	OEngine::Get()->DrawDebugFrustum(PassConstant.InvViewProj, SColor::Red, 0.05);
+}
 
 D3D12_GPU_VIRTUAL_ADDRESS OShadowMap::GetPassConstantAddresss() const
 {

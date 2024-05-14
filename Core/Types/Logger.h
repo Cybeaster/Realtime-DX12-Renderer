@@ -270,6 +270,16 @@ inline wstring ToString(const D3D12_ROOT_PARAMETER_TYPE& Id)
 	return L"Unknown";
 }
 
+inline wstring ToString(const DirectX::XMVECTOR& Vec)
+{
+	return L"[ X: " + ToString(DirectX::XMVectorGetX(Vec)) + L" Y: " + ToString(DirectX::XMVectorGetY(Vec)) + L" Z: " + ToString(DirectX::XMVectorGetZ(Vec)) + L" W: " + ToString(DirectX::XMVectorGetW(Vec)) + L" ]";
+}
+
+inline wstring ToString(const DirectX::XMFLOAT4 Vec)
+{
+	return L"[ X: " + ToString(Vec.x) + L" Y: " + ToString(Vec.y) + L" Z: " + ToString(Vec.z) + L" W: " + ToString(Vec.w) + L" ]";
+}
+
 inline wstring ToString(const D3D12_SHADER_VISIBILITY& Id)
 {
 	switch (Id)

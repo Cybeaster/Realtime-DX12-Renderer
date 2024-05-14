@@ -112,6 +112,8 @@ struct InstanceData
 	float3 BoundingBoxExtents;
 	float pad5;
 	float3 OverrideColor;
+	float pad6;
+	float4x4 InvViewProjection;
 };
 
 struct SpotLight

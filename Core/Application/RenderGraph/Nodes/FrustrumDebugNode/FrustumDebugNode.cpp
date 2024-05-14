@@ -8,19 +8,13 @@
 #include "Window/Window.h"
 ORenderTargetBase* OFrustumDebugNode::Execute(ORenderTargetBase* RenderTarget)
 {
-	auto resource = OEngine::Get()->CurrentFrameResource;
-	auto camera = OEngine::Get()->GetWindow()->GetCamera();
-	auto pso = FindPSOInfo(PSO);
-	SetPSO(PSO);
-	CommandQueue->SetResource(STRINGIFY_MACRO(CB_PASS), resource->PassCB->GetGPUAddress(), pso);
-	CommandQueue->SetResource(STRINGIFY_MACRO(CAMERA_MATRIX), resource->CameraMatrixBuffer->GetGPUAddress(), pso);
-	OEngine::Get()->DrawFullScreenQuad();
-
-	auto shadowMaps = OEngine::Get()->GetShadowMaps();
-	for (auto shadow : shadowMaps)
-	{
-		CommandQueue->SetResource(STRINGIFY_MACRO(CB_PASS), shadow->GetPassConstantAddresss(), pso);
-		OEngine::Get()->DrawFullScreenQuad();
-	}
+	OEngine::Get()->DrawRenderItems(FindPSOInfo(PSO), GetNodeInfo().RenderLayer);
 	return RenderTarget;
+}
+void OFrustumDebugNode::SetupCommonResources()
+{
+	auto resource = OEngine::Get()->CurrentFrameResource;
+	auto pso = FindPSOInfo(PSO);
+	CommandQueue->SetPipelineState(pso);
+	CommandQueue->SetResource(STRINGIFY_MACRO(CB_PASS), resource->PassCB->GetGPUAddress(), pso);
 }

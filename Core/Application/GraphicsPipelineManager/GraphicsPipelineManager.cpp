@@ -48,9 +48,11 @@ void OGraphicsPipelineManager::LoadPipelines()
 		if (auto rootSig = FindRootSignatureForPipeline(pso->RootSignatureName); rootSig != nullptr)
 		{
 			pso->RootSignature = rootSig;
-			pso->BuildPipelineState(OEngine::Get()->GetDevice().Get());
-			GlobalPSOMap[pso->Name] = std::move(pso);
-			OnPipelineLoaded.Broadcast(pso.get());
+			if (pso->BuildPipelineState(OEngine::Get()->GetDevice().Get()))
+			{
+				GlobalPSOMap[pso->Name] = std::move(pso);
+				OnPipelineLoaded.Broadcast(pso.get());
+			}
 		}
 	}
 }

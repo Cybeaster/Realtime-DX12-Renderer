@@ -115,7 +115,7 @@ float4 PS(VertexOut pin)
 
 	if(!FindDirLightShadowPosition(float4(pin.PosW, 1.0f), shadowPositionH, lightIndex))
 	{
-		return float4(0.0f, 0.0f, 0.0f, 1.0f);
+		return float4(1.0f, 0.0f, 0.0f, 1.0f);
 	}
 
 

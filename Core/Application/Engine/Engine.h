@@ -121,6 +121,7 @@ public:
 	void OnWindowDestroyed();
 
 	void DrawDebugBox(DirectX::XMFLOAT3 Center, DirectX::XMFLOAT3 Extents, DirectX::XMFLOAT4 Orientation, SColor Color, float Duration);
+	void DrawDebugFrustum(const DirectX::XMFLOAT4X4& InvViewProjection, SColor Color, float Duration);
 
 	ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(UINT NumDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE Type, const wstring& Name, D3D12_DESCRIPTOR_HEAP_FLAGS Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE) const;
 	OCommandQueue* GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type = D3D12_COMMAND_LIST_TYPE_DIRECT);
@@ -229,7 +230,7 @@ public:
 	float GetTime() const;
 	TRenderLayer& GetRenderLayers();
 
-	SCulledInstancesInfo PerformFrustumCulling(IBoundingGeometry* BoundingGeometry, const DirectX::XMMATRIX& ViewMatrix, TUUID BufferId);
+	SCulledInstancesInfo PerformFrustumCulling(IBoundingGeometry* BoundingGeometry, const DirectX::XMMATRIX& ViewMatrix, const TUUID& BufferId) const;
 
 	uint32_t GetTotalNumberOfInstances() const;
 
@@ -366,13 +367,14 @@ private:
 	SCulledInstancesInfo CameraRenderedItems;
 	unique_ptr<OSceneManager> SceneManager;
 
-	weak_ptr<ORenderItem> BoxRenderItem;
+	weak_ptr<ORenderItem> DebugBoxRenderItem;
+	weak_ptr<ORenderItem> DebugFrustumRenderItem;
 
 	uint32_t GarbageMaxItems = 100;
 
 public:
 	TUUID CameraInstanceBufferID;
-	bool bFrustrumCullingEnabled = true;
+	bool bFrustumCullingEnabled = true;
 	bool ReloadShadersRequested = false;
 	SDescriptorPair NullCubeSRV;
 	SDescriptorPair NullTexSRV;

@@ -35,7 +35,7 @@ static unordered_map<string, SNodeFactory> FactoryMap = {
 		{"TangentNormalDebug", []() { return make_unique<TangentNormalDebugNode>(); }},
 		{"FrustumDebug", []() { return make_unique<OFrustumDebugNode>(); }},
 		{"AABBVisualizer", []() { return make_unique<OAABBVisNode>(); }},
-		{"DebugGeometry", []() { return make_unique<ODebugGeometryNode>(); }}
+		{"DebugBox", []() { return make_unique<ODebugGeometryNode>(); }}
 	}
 };
 

@@ -72,7 +72,7 @@ public:
 	void SetCameraSensivity(float Sensetivity);
 	float GetCameraSpeed() const;
 	float GetCameraSensivity() const;
-	OBoundingFrustum& GetFrustrum() { return Frustum; };
+	OBoundingFrustum& GetFrustum() { return Frustum; };
 
 	std::tuple<DirectX::XMVECTOR /*ray_origin*/, DirectX::XMVECTOR /*ray dir*/, DirectX::XMMATRIX /*invView*/> Pick(int32_t Sx, int32_t Sy) const;
 	void FillPassConstant(SPassConstants& OutOther) const;

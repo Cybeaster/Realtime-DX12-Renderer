@@ -37,7 +37,7 @@ public:
 	{
 		SRenderItemParams params;
 		params.NumberOfInstances = 1;
-		params.bFrustrumCoolingEnabled = false;
+		params.bFrustumCoolingEnabled = false;
 		params.Pickable = false;
 		params.MaterialParams = GetDisplacementParams();
 		return params;

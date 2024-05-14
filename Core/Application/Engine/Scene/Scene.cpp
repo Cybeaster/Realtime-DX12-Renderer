@@ -17,7 +17,7 @@ void OScene::Load() const
 	SRenderItemParams skyParams;
 	skyParams.MaterialParams = FindMaterial("GrassSky");
 	skyParams.NumberOfInstances = 1;
-	skyParams.bFrustrumCoolingEnabled = false;
+	skyParams.bFrustumCoolingEnabled = false;
 	skyParams.OverrideLayer = SRenderLayers::Sky;
 	skyParams.Scale = { 5000.0f, 5000.0f, 5000.0f };
 
@@ -30,7 +30,7 @@ void OScene::Load() const
 	SRenderItemParams objectsParams;
 	objectsParams.MaterialParams = FindMaterial("White");
 	objectsParams.NumberOfInstances = 1;
-	objectsParams.bFrustrumCoolingEnabled = true;
+	objectsParams.bFrustumCoolingEnabled = true;
 	objectsParams.Pickable = false;
 	objectsParams.Displayable = false;
 
@@ -60,7 +60,7 @@ void OScene::Load() const
 	SRenderItemParams params;
 	params.MaterialParams = FindMaterial("White");
 	params.NumberOfInstances = 1;
-	params.bFrustrumCoolingEnabled = false;
+	params.bFrustumCoolingEnabled = false;
 	params.OverrideLayer = SRenderLayers::ShadowDebug;
 	params.Pickable = false;
 	params.Displayable = false;

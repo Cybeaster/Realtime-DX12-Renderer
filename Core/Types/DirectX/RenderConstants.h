@@ -32,7 +32,7 @@ struct SRenderConstants
 		const float Width = 1.0f;
 		const float Height = 1.0f;
 		const float Depth = 1.0f;
-		const uint32_t NumSubdivisions = 1;
+		const uint32_t NumSubdivisions = 5;
 	};
 
 	inline static constexpr D3D12_HEAP_PROPERTIES DefaultHeapProperties = {
@@ -101,6 +101,7 @@ struct SRenderLayers
 	RENDER_TYPE(LightObjects);
 	RENDER_TYPE(Debug);
 	RENDER_TYPE(DebugBox);
+	RENDER_TYPE(FrustumDebug);
 	RENDER_TYPE(ShadowDebug);
 };
 

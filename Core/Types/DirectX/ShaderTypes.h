@@ -52,7 +52,7 @@ struct SPSODescriptionBase
 	shared_ptr<SShaderPipelineDesc> RootSignature;
 	ComPtr<ID3D12PipelineState> PSO;
 
-	virtual void BuildPipelineState(ID3D12Device* Device) = 0;
+	virtual bool BuildPipelineState(ID3D12Device* Device) = 0;
 
 	virtual void SetVertexByteCode(const D3D12_SHADER_BYTECODE& ByteCode) {}
 	virtual void SetPixelByteCode(const D3D12_SHADER_BYTECODE& ByteCode) {}
@@ -66,7 +66,7 @@ struct SPSOGraphicsDescription : SPSODescriptionBase
 {
 	SGraphicsPSODesc PSODesc;
 	D3D_PRIMITIVE_TOPOLOGY PrimitiveTopologyType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	void BuildPipelineState(ID3D12Device* Device) override;
+	bool BuildPipelineState(ID3D12Device* Device) override;
 	void SetVertexByteCode(const D3D12_SHADER_BYTECODE& ByteCode) override { PSODesc.VS = ByteCode; }
 	void SetPixelByteCode(const D3D12_SHADER_BYTECODE& ByteCode) override { PSODesc.PS = ByteCode; }
 	void SetGeometryByteCode(const D3D12_SHADER_BYTECODE& ByteCode) override { PSODesc.GS = ByteCode; }
@@ -78,7 +78,7 @@ struct SPSOComputeDescription : SPSODescriptionBase
 {
 	SComputePSODesc PSODesc;
 	void SetComputeByteCode(const D3D12_SHADER_BYTECODE& ByteCode) override { PSODesc.CS = ByteCode; }
-	void BuildPipelineState(ID3D12Device* Device) override;
+	bool BuildPipelineState(ID3D12Device* Device) override;
 };
 
 struct SShaderDefinition
