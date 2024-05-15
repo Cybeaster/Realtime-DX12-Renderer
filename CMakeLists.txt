@@ -12,16 +12,20 @@ set(IMGUI_BACKENDS
 
 # Use solution folders to organize projects
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-find_package(Python REQUIRED)
 
 source_group("Resources\\Shaders" FILES ${SHADER_FILES})
 
+set(Boost_INCLUDE_DIR "${CMAKE_BINARY_DIR}/vcpkg_installed/x64-windows/include")
+set(Boost_LIBRARY_DIRS "${CMAKE_BINARY_DIR}/vcpkg_installed/x64-windows/lib")
 
 add_definitions(-D_UNICODE -DUNICODE)
+
 set(CMAKE_PREFIX_PATH Externals/EasyProfiler)
 find_package(easy_profiler REQUIRED)
 find_package(Boost REQUIRED)
+
 include_directories(${Boost_INCLUDE_DIRS})
+
 set(SRC_FILES
         main.cpp
         Core/Types/Types.h
