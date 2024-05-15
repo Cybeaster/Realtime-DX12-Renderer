@@ -23,8 +23,12 @@ if errorlevel 1 (
 REM Change to the build directory
 cd build
 
-REM Build all targets
-cmake --build .
+REM Determine the number of CPU cores for parallel build
+for /f "tokens=*" %%A in ('wmic cpu get NumberOfLogicalProcessors /value') do set "%%A"
+set "NUM_CORES=%NumberOfLogicalProcessors%"
+
+REM Build all targets with parallel jobs
+cmake --build . --parallel %NUM_CORES%
 
 REM Check if the build succeeded
 if errorlevel 1 (

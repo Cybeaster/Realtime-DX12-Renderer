@@ -289,6 +289,7 @@ if (MSVC)
             LINK_FLAGS "/SUBSYSTEM:WINDOWS"
     )
     add_compile_options(/wd4996)
+    add_compile_options(/FS)
 endif ()
 
 include_directories(IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Externals/imgui)
