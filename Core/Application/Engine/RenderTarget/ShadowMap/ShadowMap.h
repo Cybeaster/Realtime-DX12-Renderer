@@ -36,7 +36,7 @@ public:
 	const SCulledInstancesInfo* GetCulledInstancesInfo() const;
 
 	bool bDrawBoundingGeometry = false;
-
+	bool bDrawShadowMap = true;
 private:
 	optional<TUUID> ShadowMapInstancesBufferId;
 	SCulledInstancesInfo InstancesInfo;

@@ -231,6 +231,7 @@ public:
 	TRenderLayer& GetRenderLayers();
 
 	SCulledInstancesInfo PerformFrustumCulling(IBoundingGeometry* BoundingGeometry, const DirectX::XMMATRIX& ViewMatrix, const TUUID& BufferId) const;
+	SCulledInstancesInfo PerformBoundingBoxShadowCulling(const IBoundingGeometry* BoundingGeometry, const DirectX::XMMATRIX& ViewMatrix, const TUUID& BufferId) const;
 
 	uint32_t GetTotalNumberOfInstances() const;
 

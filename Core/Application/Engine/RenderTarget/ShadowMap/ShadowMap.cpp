@@ -122,7 +122,8 @@ void OShadowMap::SetPassConstants(const SPassConstants& Pass)
 	PassConstant.InvRenderTargetSize = DirectX::XMFLOAT2(1.0f / Width, 1.0f / Height);
 	if (ShadowMapInstancesBufferId.has_value())
 	{
-		InstancesInfo = OEngine::Get()->PerformFrustumCulling(BoundingGeometry.get(), LightView, ShadowMapInstancesBufferId.value());
+		const auto view = LightView;
+		InstancesInfo = OEngine::Get()->PerformBoundingBoxShadowCulling(BoundingGeometry.get(), view, ShadowMapInstancesBufferId.value());
 	}
 	else
 	{

@@ -37,6 +37,7 @@ public:
 	virtual std::unique_ptr<IBoundingGeometry> Clone() = 0;
 	virtual EBoundingType GetType() const = 0;
 	virtual DirectX::ContainmentType Contains(const DirectX::XMMATRIX& View, DirectX::BoundingBox) = 0;
+	virtual DirectX::ContainmentType Contains(const DirectX::BoundingBox&) const = 0;
 };
 
 template<typename GeometryType>
@@ -66,10 +67,12 @@ public:
 	{
 		return Geometry.Contains(frustum);
 	}
-	DirectX::ContainmentType Contains(const DirectX::BoundingBox& box) const
+
+	DirectX::ContainmentType Contains(const DirectX::BoundingBox& box) const override
 	{
 		return Geometry.Contains(box);
 	}
+
 	DirectX::ContainmentType Contains(const DirectX::BoundingOrientedBox& box) const
 	{
 		return Geometry.Contains(box);

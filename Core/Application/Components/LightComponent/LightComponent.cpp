@@ -293,6 +293,10 @@ void ODirectionalLightComponent::SetLightSourceData()
 	float lastSplitDist = 0.0f;
 	for (int i = 0; i < MAX_CSM_PER_FRAME; i++)
 	{
+		if (!CSM->GetShadowMap(i)->bDrawShadowMap)
+		{
+			continue;
+		}
 		auto frustrumCorners = arrayedCorners;
 		float splitDist = CascadeSplits[i];
 
@@ -343,20 +347,20 @@ void ODirectionalLightComponent::SetLightSourceData()
 		const auto lightViewProj = lightView * lightProj;
 		const auto invLightViewProj = Inverse(lightViewProj);
 
-		// Compute the center of the bounding box
-		BoundingOrientedBox localBound;
-		localBound.Extents = XMFLOAT3(radius, radius, depth);
-		Put(localBound.Orientation, XMQuaternionRotationMatrix(lightView));
-		Put(localBound.Center, XMVector3TransformCoord(eye, lightView));
-
 		if (CSM->GetShadowMap(i)->bDrawBoundingGeometry)
 		{
 			BoundingOrientedBox worldbound;
-			worldbound.Extents = XMFLOAT3(radius, radius, depth);
+			worldbound.Extents = XMFLOAT3(radius, depth, radius);
 			Put(worldbound.Orientation, XMQuaternionRotationMatrix(lightView));
-			Put(worldbound.Center, eye);
+			Put(worldbound.Center, center);
 			OEngine::Get()->DrawDebugBox(worldbound.Center, worldbound.Extents, worldbound.Orientation, colors[i], 0.05);
 		}
+
+		// Compute the center of the bounding box
+		BoundingOrientedBox localBound;
+		localBound.Extents = XMFLOAT3(radius, depth, radius);
+		Put(localBound.Orientation, XMQuaternionRotationMatrix(lightView));
+		Put(localBound.Center, XMVector3Transform(center, lightView));
 		OBoundingOrientedBox boundingBox{ localBound };
 		CSM->GetShadowMap(i)->UpdateBoundingGeometry(&boundingBox, lightView);
 

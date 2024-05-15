@@ -32,7 +32,9 @@ void OLightComponentWidget::Draw()
 				for (const auto map : component->GetCSM()->GetShadowMaps())
 				{
 					auto format = std::format("Shadow Map {}", map->GetShadowMapIndex());
+					auto enabledFormat = std::format("Enable Shadow Map {}", map->GetShadowMapIndex());
 					ImGui::SeparatorText(format.c_str());
+					ImGui::Checkbox(enabledFormat.c_str(), &map->bDrawShadowMap);
 					auto boxName = std::format("Bounding Box for {}", map->GetShadowMapIndex());
 					ImGui::Checkbox(boxName.c_str(), &map->bDrawBoundingGeometry);
 					auto numRenderObjects = map->GetCulledInstancesInfo()->InstanceCount;

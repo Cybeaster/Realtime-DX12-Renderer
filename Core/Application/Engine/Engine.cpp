@@ -771,7 +771,7 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 	if (CurrentFrameResource)
 	{
 		auto camera = Window->GetCamera().lock();
-		CameraRenderedItems = PerformFrustumCulling(&camera->GetFrustum(), camera->GetView(), CameraInstanceBufferID);
+		CameraRenderedItems = PerformFrustumCulling(&camera->GetFrustum(), Inverse(camera->GetView()), CameraInstanceBufferID);
 
 		UpdateMainPass(Args.Timer);
 		UpdateMaterialCB();
@@ -1368,7 +1368,6 @@ SCulledInstancesInfo OEngine::PerformFrustumCulling(IBoundingGeometry* BoundingG
 	SCulledInstancesInfo result;
 	result.BufferId = BufferId;
 	const auto& buffers = GetInstanceBuffersByUUID(BufferId);
-	const auto invView = Inverse(ViewMatrix);
 	int32_t counter = 0;
 	for (auto& e : AllRenderItems)
 	{
@@ -1391,12 +1390,86 @@ SCulledInstancesInfo OEngine::PerformFrustumCulling(IBoundingGeometry* BoundingG
 				}
 				item.StartInstanceLocation = counter;
 			}
-
 			const auto world = Load(instData[i].HlslData.World);
 			const auto invWorld = Inverse(world);
-			const auto viewToLocal = XMMatrixMultiply(invWorld, invView);
+			const auto viewToLocal = XMMatrixMultiply(invWorld, ViewMatrix);
 
 			if (!bFrustumCullingEnabled || !e->bFrustumCoolingEnabled || BoundingGeometry->Contains(viewToLocal, e->Bounds) != DISJOINT)
+			{
+				auto data = e->Instances[i];
+				Put(data.HlslData.World, Transpose(world));
+				Put(data.HlslData.TexTransform, Transpose(Load(instData[i].HlslData.TexTransform)));
+
+				data.HlslData.OverrideColor = instData[i].HlslData.OverrideColor;
+				data.HlslData.Position = instData[i].HlslData.Position;
+				data.HlslData.Scale = instData[i].HlslData.Scale;
+				data.HlslData.Rotation = instData[i].HlslData.Rotation;
+				data.HlslData.MaterialIndex = instData[i].HlslData.MaterialIndex;
+
+				result.InstanceCount++;
+				for (auto* buffer : buffers)
+				{
+					buffer->CopyData(counter, data.HlslData);
+				}
+				counter++;
+
+				visibleInstanceCount++;
+			}
+		}
+		if (visibleInstanceCount > 0)
+		{
+			item.VisibleInstanceCount = visibleInstanceCount;
+			item.Item = e;
+			result.Items[e] = item;
+		}
+	}
+	return result;
+}
+
+//TODO fix boilerplate
+SCulledInstancesInfo OEngine::PerformBoundingBoxShadowCulling(const IBoundingGeometry* BoundingGeometry, const DirectX::XMMATRIX& ViewMatrix, const TUUID& BufferId) const // fix
+{
+	PROFILE_SCOPE();
+
+	if (CurrentFrameResource == nullptr)
+	{
+		LOG(Engine, Error, "CurrentFrameResource is nullptr!")
+		return {};
+	}
+	auto transformBoundingBox = [](BoundingBox Box, const XMMATRIX& Matrix) {
+		XMVECTOR Center = XMLoadFloat3(&Box.Center);
+		Center = XMVector3Transform(Center, Matrix);
+		XMStoreFloat3(&Box.Center, Center);
+		return Box;
+	};
+	SCulledInstancesInfo result;
+	result.BufferId = BufferId;
+	const auto& buffers = GetInstanceBuffersByUUID(BufferId);
+	int32_t counter = 0;
+	for (auto& e : AllRenderItems)
+	{
+		const auto& instData = e->Instances;
+		if (e->Instances.size() == 0)
+		{
+			continue;
+		}
+		SCulledRenderItem item;
+
+		size_t visibleInstanceCount = 0;
+		for (size_t i = 0; i < instData.size(); i++)
+		{
+			if (visibleInstanceCount == 0)
+			{
+				if (counter >= GetCurrentFrameInstBuffer(BufferId)->MaxOffset)
+				{
+					LOG(Engine, Error, "Buffer size exceeded!")
+					break;
+				}
+				item.StartInstanceLocation = counter;
+			}
+			BoundingBox viewBoundingBox = transformBoundingBox(e->Bounds, ViewMatrix);
+			const auto world = Load(instData[i].HlslData.World);
+			if (!bFrustumCullingEnabled || !e->bFrustumCoolingEnabled || BoundingGeometry->Contains(viewBoundingBox) != DISJOINT)
 			{
 				auto data = e->Instances[i];
 				Put(data.HlslData.World, Transpose(world));
