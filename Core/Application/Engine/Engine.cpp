@@ -279,39 +279,44 @@ void OEngine::UpdateLightCB(const UpdateEventArgs& Args) const
 void OEngine::DrawRenderItemsImpl(const SDrawPayload& Payload)
 {
 	PROFILE_SCOPE();
-	auto& renderItems = GetRenderItems(Payload.RenderLayer);
 	auto cmd = GetCommandQueue()->GetCommandList();
 	auto graphicsPSO = Cast<SPSOGraphicsDescription>(Payload.Description);
-	for (auto it = renderItems.begin(); it != renderItems.end(); ++it)
+	auto& layerRenderItems = GetRenderItems(Payload.RenderLayer);
+	for (const auto& val : Payload.InstanceBuffer->Items | std::views::values)
 	{
-		if (it->expired())
+		auto [item, startInstanceLocation, visibleInstanceCount] = val;
+		if (item.expired())
 		{
-			renderItems.erase(it);
+			layerRenderItems.erase(item);
 			continue;
 		}
 
-		const auto renderItem = it->lock();
-		if (!Payload.InstanceBuffer->Items.contains(renderItem))
+		//do not process those items that are not in the layer being drawn
+		if (!layerRenderItems.contains(item))
 		{
 			continue;
 		}
-		const auto& [Item, StartInstanceLocation, VisibleInstanceCount] = Payload.InstanceBuffer->Items.at(renderItem);
+
+		//extract overridden geometry
+		const auto renderItem = item.lock();
 		const auto geometry = !Payload.OverrideGeometry.expired() ? Payload.OverrideGeometry : renderItem->Geometry;
 		const auto submesh = !Payload.OverrideSubmesh.expired() ? Payload.OverrideSubmesh : renderItem->ChosenSubmesh;
 
-		auto visibleInstances = Payload.bForceDrawAll ? renderItem->Instances.size() : VisibleInstanceCount;
+		//check if frustum-culled
+		auto visibleInstances = Payload.bForceDrawAll ? renderItem->Instances.size() : visibleInstanceCount;
 		if (!renderItem->IsValidChecked() || visibleInstances == 0)
 		{
 			continue;
 		}
 
+		//draw
 		PROFILE_BLOCK_START(renderItem->Name.c_str());
 		if (!renderItem->Instances.empty() && !renderItem->Geometry.expired())
 		{
 			cmd->IASetPrimitiveTopology(graphicsPSO->PrimitiveTopologyType);
 			BindMesh(geometry.lock().get());
 			auto instanceBuffer = GetCurrentFrameInstBuffer(Payload.InstanceBuffer->BufferId);
-			auto location = instanceBuffer->GetGPUAddress() + StartInstanceLocation * sizeof(HLSL::InstanceData);
+			auto location = instanceBuffer->GetGPUAddress() + startInstanceLocation * sizeof(HLSL::InstanceData);
 			GetCommandQueue()->SetResource(STRINGIFY_MACRO(INSTANCE_DATA), location, Payload.Description);
 			cmd->DrawIndexedInstanced(
 			    submesh.lock()->IndexCount,
@@ -341,15 +346,15 @@ OOffscreenTexture* OEngine::GetOffscreenRT() const
 	return OffscreenRT;
 }
 
-void OEngine::DrawFullScreenQuad()
+void OEngine::DrawFullScreenQuad(SPSODescriptionBase* Desc)
 {
-	const auto commandList = GetCommandQueue()->GetCommandList();
-	//const auto view = QuadItem->Geometry->VertexBufferView();
-	commandList->IASetVertexBuffers(0, 0, nullptr);
-	commandList->IASetIndexBuffer(nullptr);
-	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	commandList->DrawInstanced(6, 1, 0, 0);
-}
+	SDrawPayload payload;
+	payload.Description = Desc;
+	payload.RenderLayer = SRenderLayers::OneFullscreenQuad;
+	payload.bForceDrawAll = true;
+	payload.InstanceBuffer = &CameraRenderedItems;
+	DrawRenderItemsImpl(payload);
+};
 
 void OEngine::DrawOnePoint()
 {
@@ -391,6 +396,14 @@ void OEngine::InitPipelineManager()
 
 void OEngine::BuildCustomGeometry()
 {
+	SRenderItemParams params;
+	params.MaterialParams = FindMaterial("White");
+	params.NumberOfInstances = 1;
+	params.bFrustumCoolingEnabled = false;
+	params.OverrideLayer = SRenderLayers::OneFullscreenQuad;
+	params.Pickable = false;
+	params.Displayable = false;
+	QuadRenderItem = CreateQuadRenderItem("Quad", params);
 }
 
 void OEngine::TryCreateFrameResources()
@@ -470,6 +483,7 @@ int OEngine::InitScene()
 
 	GetCommandQueue()->TryResetCommandList();
 	SceneManager->LoadScenes();
+	BuildCustomGeometry();
 	GetCommandQueue()->ExecuteCommandListAndWait();
 
 	PostTestInit();
@@ -1136,14 +1150,14 @@ D3D12_RENDER_TARGET_BLEND_DESC OEngine::GetTransparentBlendState()
 	return transparencyBlendDesc;
 }
 
-vector<weak_ptr<ORenderItem>>& OEngine::GetRenderItems(const string& Type)
+unordered_set<weak_ptr<ORenderItem>>& OEngine::GetRenderItems(const string& Type)
 {
 	return RenderLayers[Type];
 }
 
 void OEngine::AddRenderItem(string Category, shared_ptr<ORenderItem> RenderItem)
 {
-	RenderLayers[Category].push_back(RenderItem);
+	RenderLayers[Category].insert(RenderItem);
 	AllRenderItems.insert(move(RenderItem));
 }
 
@@ -1151,7 +1165,7 @@ void OEngine::AddRenderItem(const vector<string>& Categories, const shared_ptr<O
 {
 	for (auto category : Categories)
 	{
-		RenderLayers[category].push_back(RenderItem);
+		RenderLayers[category].insert(RenderItem);
 	}
 	AllRenderItems.insert(RenderItem);
 }
@@ -1160,9 +1174,9 @@ void OEngine::MoveRIToNewLayer(weak_ptr<ORenderItem> Item, const SRenderLayer& N
 {
 	if (RenderLayers.contains(OldLayer))
 	{
-		std::erase(RenderLayers[OldLayer], Item);
+		RenderLayers[OldLayer].erase(Item);
 	}
-	RenderLayers[NewLayer].push_back(Item);
+	RenderLayers[NewLayer].insert(Item);
 }
 
 const unordered_set<shared_ptr<ORenderItem>>& OEngine::GetAllRenderItems()

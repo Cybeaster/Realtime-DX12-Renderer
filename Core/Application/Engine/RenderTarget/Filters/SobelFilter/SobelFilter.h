@@ -11,30 +11,47 @@ public:
 
 	uint32_t GetNumSRVRequired() const override
 	{
-		return 2;
+		return 3;
 	}
 
 	void BuildDescriptors() const override;
 	void BuildResource() override;
 
-	std::pair<bool, CD3DX12_GPU_DESCRIPTOR_HANDLE> Execute(SPSODescriptionBase* PSO, CD3DX12_GPU_DESCRIPTOR_HANDLE Input);
+	bool Execute(SPSODescriptionBase* PSO, ORenderTargetBase* InTarget);
 
 	void BuildDescriptors(IDescriptor* Descriptor) override;
 
-	void SetIsEnabled(bool bIsEnabled)
+	void SetIsEnabled(bool bIsEnabled, bool InPureSobel)
 	{
 		bEnabled = bIsEnabled;
+		PureSobel = InPureSobel;
 	}
 
-	bool GetIsEnabled() const
+	bool IsEnabled() const;
+	bool IsPureSobel() const;
+
+	auto GetOutputSRV() const
 	{
-		return bEnabled;
+		return OutputSRVHandle;
+	}
+
+	auto GetInputSRV() const
+	{
+		return InputSRVHandle;
+	}
+
+	auto GetOutput()
+	{
+		return &Output;
 	}
 
 private:
-	SDescriptorPair SRVHandle;
-	SDescriptorPair UAVHandle;
+	SDescriptorPair OutputSRVHandle;
+	SDescriptorPair OutputUAVHandle;
+	SDescriptorPair InputSRVHandle;
 
 	SResourceInfo Output;
+	SResourceInfo Input;
 	bool bEnabled = true;
+	bool PureSobel = false;
 };

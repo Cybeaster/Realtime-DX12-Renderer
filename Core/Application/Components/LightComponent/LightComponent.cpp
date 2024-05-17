@@ -341,26 +341,23 @@ void ODirectionalLightComponent::SetLightSourceData()
 		const auto eye = center + (lightDir * -radius);
 		const auto lightView = MatrixLookAt(eye, center, lightUp);
 		const auto invLightView = Inverse(lightView);
-		float depth = radius * RadiusScale;
+		float depth = 5000;
 
 		const auto lightProj = MatrixOrthographicOffCenter(-radius, radius, -radius, radius, -depth, depth);
 		const auto lightViewProj = lightView * lightProj;
 		const auto invLightViewProj = Inverse(lightViewProj);
-
+		BoundingOrientedBox worldbound;
+		worldbound.Extents = XMFLOAT3(radius + 1000, depth, radius + 1000);
+		Put(worldbound.Orientation, XMQuaternionRotationMatrix(lightView));
+		Put(worldbound.Center, center);
 		if (CSM->GetShadowMap(i)->bDrawBoundingGeometry)
 		{
-			BoundingOrientedBox worldbound;
-			worldbound.Extents = XMFLOAT3(radius, depth, radius);
-			Put(worldbound.Orientation, XMQuaternionRotationMatrix(lightView));
-			Put(worldbound.Center, center);
-			OEngine::Get()->DrawDebugBox(worldbound.Center, worldbound.Extents, worldbound.Orientation, colors[i], 0.05);
+			OEngine::Get()->DrawDebugBox(worldbound.Center, worldbound.Extents, worldbound.Orientation, colors[i], 0.1);
 		}
 
 		// Compute the center of the bounding box
 		BoundingOrientedBox localBound;
-		localBound.Extents = XMFLOAT3(radius, depth, radius);
-		Put(localBound.Orientation, XMQuaternionRotationMatrix(lightView));
-		Put(localBound.Center, XMVector3Transform(center, lightView));
+		worldbound.Transform(localBound, lightView);
 		OBoundingOrientedBox boundingBox{ localBound };
 		CSM->GetShadowMap(i)->UpdateBoundingGeometry(&boundingBox, lightView);
 

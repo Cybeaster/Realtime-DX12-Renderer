@@ -21,7 +21,7 @@ public:
 
 	void BuildDescriptors(IDescriptor* Descriptor) override;
 
-	void OutputTo(SResourceInfo* Destination) const;
+	void OutputTo(SResourceInfo* Destination);
 	void BuildDescriptors() const override;
 	void BuildResource() override;
 	void Execute(const SPSODescriptionBase* PSO,

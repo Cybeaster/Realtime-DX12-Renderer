@@ -141,6 +141,14 @@ inline auto CreateQuadRenderItem(string Name, float X, float Y, float Width, flo
 	return engine->BuildRenderItemFromMesh(generator->CreateQuadMesh(Name, X, Y, Width, Height, Depth), Params);
 }
 
+inline auto CreateQuadRenderItem(const string& Name, const SRenderItemParams& Params)
+{
+	auto engine = OEngine::Get();
+	auto generator = engine->GetMeshGenerator();
+	auto& constants = SRenderConstants::Quad;
+	return engine->BuildRenderItemFromMesh(generator->CreateQuadMesh(Name, constants.X, constants.Y, constants.Width, constants.Height, constants.Depth), Params);
+}
+
 inline auto GetSkyTextureSRV()
 {
 	return OEngine::Get()->GetSRVDescHandleForTexture(FindTextureByName(SRenderConstants::DefaultSkyTexture));

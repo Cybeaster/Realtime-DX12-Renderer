@@ -4,10 +4,15 @@
 #include "Engine/RenderTarget/Filters/SobelFilter/SobelFilter.h"
 void OSobelFilterWidget::Draw()
 {
-	ImGui::Checkbox("Enable sobel Filter", &bEnable);
+	bEnable = ImGui::TreeNode("Sobel Filter");
+	if (bEnable)
+	{
+		ImGui::Checkbox("Pure Sobel", &PureSobel);
+		ImGui::TreePop();
+	}
 }
 void OSobelFilterWidget::Update()
 {
 	IWidget::Update();
-	Sobel->SetIsEnabled(bEnable);
+	Sobel->SetIsEnabled(bEnable, PureSobel);
 }

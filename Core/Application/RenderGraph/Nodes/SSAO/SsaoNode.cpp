@@ -47,7 +47,7 @@ void OSSAONode::DrawSSAO()
 	CommandQueue->SetResource("gNormalMap", ssao->GetNormalMapSRV().GPUHandle, pso);
 	CommandQueue->SetResource("gRandomVecMap", ssao->GetRandomVectorMapSRV().GPUHandle, pso);
 	CommandQueue->SetResource("gDepthMap", ssao->GetDepthMapSRV().GPUHandle, pso);
-	OEngine::Get()->DrawFullScreenQuad();
+	OEngine::Get()->DrawFullScreenQuad(pso);
 	CommandQueue->ResourceBarrier(ssao->GetAmbientMap0(), D3D12_RESOURCE_STATE_GENERIC_READ);
 }
 
@@ -87,6 +87,6 @@ void OSSAONode::BlurSSAO(OSSAORenderTarget::ESubtargets OutputTarget, const SDes
 	auto pso = FindPSOInfo(SPSOTypes::SSAOBlur);
 	CommandQueue->SetResource("gInputMap", InputSRV->GPUHandle, pso);
 	const auto commandList = CommandQueue->GetCommandList();
-	OEngine::Get()->DrawFullScreenQuad();
+	OEngine::Get()->DrawFullScreenQuad(pso);
 	CommandQueue->ResourceBarrier(output, D3D12_RESOURCE_STATE_GENERIC_READ);
 }

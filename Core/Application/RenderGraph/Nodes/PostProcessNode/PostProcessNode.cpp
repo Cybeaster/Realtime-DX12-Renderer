@@ -8,10 +8,9 @@
 ORenderTargetBase* OPostProcessNode::Execute(ORenderTargetBase* RenderTarget)
 {
 	PROFILE_SCOPE();
+	DrawBlurFilter(RenderTarget);
 	DrawSobel(RenderTarget);
-	DrawBlurFilter(Window);
-	CommandQueue->ResourceBarrier(Window, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	return Window;
+	return RenderTarget;
 }
 void OPostProcessNode::SetupCommonResources()
 {
@@ -21,13 +20,19 @@ void OPostProcessNode::SetupCommonResources()
 void OPostProcessNode::DrawSobel(ORenderTargetBase* RenderTarget)
 {
 	auto engine = OEngine::Get();
-	if (engine->GetSobelFilter()->GetIsEnabled())
+	auto sobel = engine->GetSobelFilter();
+	if (sobel->IsEnabled())
 	{
-		CommandQueue->ResourceBarrier(RenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
-		auto [executed, result] = engine->GetSobelFilter()->Execute(FindPSOInfo(SPSOTypes::SobelFilter), RenderTarget->GetSRV().GPUHandle);
-		if (executed)
+		if (sobel->Execute(FindPSOInfo(SPSOTypes::SobelFilter), RenderTarget))
 		{
-			DrawComposite(RenderTarget->GetSRV().GPUHandle, result);
+			if (sobel->IsPureSobel())
+			{
+				CommandQueue->CopyResourceTo(RenderTarget->GetResource(), engine->GetSobelFilter()->GetOutput());
+			}
+			else
+			{
+				DrawComposite(engine->GetSobelFilter()->GetInputSRV().GPUHandle, engine->GetSobelFilter()->GetOutputSRV().GPUHandle);
+			}
 		}
 	}
 }
@@ -53,5 +58,5 @@ void OPostProcessNode::DrawComposite(D3D12_GPU_DESCRIPTOR_HANDLE Input, D3D12_GP
 	SetPSO(SPSOTypes::Composite);
 	CommandQueue->SetResource("gBaseMap", Input, pso);
 	CommandQueue->SetResource("gEdgeMap", Input2, pso);
-	OEngine::Get()->DrawFullScreenQuad();
+	OEngine::Get()->DrawFullScreenQuad(pso);
 }

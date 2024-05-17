@@ -91,27 +91,27 @@
         "PSO": "AABBVisualizer",
         "NextNode": "DebugBox",
         "RenderLayer": "Opaque",
-        "Enabled": true
+        "Enabled": false
       },
       {
         "Name": "DebugBox",
         "PSO": "DebugBox",
-        "NextNode": "CopyTarget",
-        "RenderLayer": "DebugBox",
-        "Enabled": true
-      },
-      {
-        "Name": "CopyTarget",
-        "PSO": "None",
         "NextNode": "PostProcess",
-        "RenderLayer": "None",
+        "RenderLayer": "DebugBox",
         "Enabled": true
       },
       {
         "Name": "PostProcess",
         "PSO": "Opaque",
-        "NextNode": "UI",
+        "NextNode": "CopyTarget",
         "RenderLayer": "PostProcess",
+        "Enabled": true
+      },
+      {
+        "Name": "CopyTarget",
+        "PSO": "None",
+        "NextNode": "UI",
+        "RenderLayer": "None",
         "Enabled": true
       },
       {

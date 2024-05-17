@@ -15,4 +15,5 @@ public:
 private:
 	OSobelFilter* Sobel = nullptr;
 	bool bEnable = false;
+	bool PureSobel = false;
 };

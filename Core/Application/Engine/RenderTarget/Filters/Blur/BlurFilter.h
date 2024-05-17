@@ -38,7 +38,7 @@ public:
 	    SResourceInfo* Input);
 	uint32_t GetNumSRVRequired() const override
 	{
-		return 4;
+		return 5;
 	}
 
 	void SetParameters(float InSigma, uint32_t InBlurCount)
@@ -64,6 +64,10 @@ private:
 
 	SResourceInfo BlurMap0;
 	SResourceInfo BlurMap1;
+
+	SResourceInfo InputMap;
+	SDescriptorPair InputSRVHandle;
+
 	unique_ptr<OUploadBuffer<SConstantBlurSettings>> Buffer;
 
 	float Sigma = 2.5;

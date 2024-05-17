@@ -28,10 +28,9 @@ void OBilateralBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
 	BuildDescriptors();
 }
 
-void OBilateralBlurFilter::OutputTo(SResourceInfo* Destination) const
+void OBilateralBlurFilter::OutputTo(SResourceInfo* Destination)
 {
-	Utils::ResourceBarrier(Queue->GetCommandList().Get(), Destination, D3D12_RESOURCE_STATE_COPY_DEST);
-	Queue->GetCommandList()->CopyResource(Destination->Resource.Get(), OutputTexture.Resource.Get());
+	Queue->CopyResourceTo(Destination, &OutputTexture);
 }
 
 void OBilateralBlurFilter::BuildDescriptors() const
@@ -86,10 +85,7 @@ void OBilateralBlurFilter::Execute(const SPSODescriptionBase* PSO, SResourceInfo
 	PSO->RootSignature->SetResource("BilateralBlur", BlurBuffer->GetGPUAddress(), cmd);
 	PSO->RootSignature->SetResource("BufferConstants", BufferConstants->GetGPUAddress(), cmd);
 
-	ResourceBarrier(cmd, Input, D3D12_RESOURCE_STATE_COPY_SOURCE);
-	ResourceBarrier(cmd, &InputTexture, D3D12_RESOURCE_STATE_COPY_DEST);
-
-	cmd->CopyResource(InputTexture.Resource.Get(), Input->Resource.Get());
+	Queue->CopyResourceTo(&InputTexture, Input);
 
 	ResourceBarrier(cmd, &InputTexture, D3D12_RESOURCE_STATE_GENERIC_READ);
 	ResourceBarrier(cmd, &OutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);

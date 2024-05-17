@@ -19,6 +19,15 @@ struct SRenderConstants
 		const uint32_t StackCount = 20;
 	};
 
+	struct SQuad
+	{
+		const float X = -1.0f;
+		const float Y = 1.0f;
+		const float Width = 2.0f;
+		const float Height = 2.0f;
+		const float Depth = 0.0f;
+	};
+
 	struct SCube
 	{
 		const float Width = 1.0f;
@@ -63,6 +72,7 @@ struct SRenderConstants
 	inline static constexpr SSphere Sphere;
 	inline static constexpr SCylinder Cylinder;
 	inline static constexpr SBox Box;
+	inline static constexpr SQuad Quad;
 	inline static const string DefaultSkyTexture = "grasscube1024";
 
 	static D3D12_SHADER_RESOURCE_VIEW_DESC GetNullSRV();
@@ -103,6 +113,7 @@ struct SRenderLayers
 	RENDER_TYPE(DebugBox);
 	RENDER_TYPE(FrustumDebug);
 	RENDER_TYPE(ShadowDebug);
+	RENDER_TYPE(OneFullscreenQuad);
 };
 
 struct SPSOTypes

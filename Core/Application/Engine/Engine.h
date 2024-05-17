@@ -73,7 +73,7 @@ public:
 	using TSceneGeometryMap = unordered_map<TUUID, shared_ptr<SMeshGeometry>>;
 	using TSceneGeometryItemDependencyMap = unordered_map<weak_ptr<SMeshGeometry>, vector<weak_ptr<ORenderItem>>>;
 
-	using TRenderLayer = map<SRenderLayer, vector<weak_ptr<ORenderItem>>>;
+	using TRenderLayer = unordered_map<SRenderLayer, unordered_set<weak_ptr<ORenderItem>>>;
 	vector<unique_ptr<SFrameResource>> FrameResources;
 	SFrameResource* CurrentFrameResource = nullptr;
 	UINT CurrentFrameResourceIndex = 0;
@@ -150,7 +150,7 @@ public:
 	bool GetMSAAState(UINT& Quality) const;
 	void FillExpectedShadowMaps();
 	OUploadBuffer<HLSL::InstanceData>* GetCurrentFrameInstBuffer(const TUUID& Id) const;
-	vector<weak_ptr<ORenderItem>>& GetRenderItems(const SRenderLayer& Type);
+	unordered_set<weak_ptr<ORenderItem>>& GetRenderItems(const SRenderLayer& Type);
 	D3D12_RENDER_TARGET_BLEND_DESC GetTransparentBlendState();
 	void FillDescriptorHeaps();
 
@@ -204,7 +204,7 @@ public:
 	void BuildOffscreenRT();
 	OOffscreenTexture* GetOffscreenRT() const;
 
-	void DrawFullScreenQuad();
+	void DrawFullScreenQuad(SPSODescriptionBase* Desc);
 	void DrawOnePoint();
 	void DrawBox(SPSODescriptionBase* Desc);
 	void DrawAABBOfRenderItems(SPSODescriptionBase* Desc);
@@ -370,7 +370,7 @@ private:
 
 	weak_ptr<ORenderItem> DebugBoxRenderItem;
 	weak_ptr<ORenderItem> DebugFrustumRenderItem;
-
+	weak_ptr<ORenderItem> QuadRenderItem;
 	uint32_t GarbageMaxItems = 100;
 
 public:

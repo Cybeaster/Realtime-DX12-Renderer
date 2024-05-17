@@ -12,8 +12,7 @@ OGaussianBlurFilter::OGaussianBlurFilter(ID3D12Device* Device, OCommandQueue* Ot
 
 void OGaussianBlurFilter::OutputTo(SResourceInfo* Destination)
 {
-	Utils::ResourceBarrier(Queue->GetCommandList().Get(), Destination, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
-	Queue->GetCommandList()->CopyResource(Destination->Resource.Get(), BlurMap0.Resource.Get());
+	Queue->CopyResourceTo(Destination, &BlurMap0);
 }
 
 void OGaussianBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
@@ -28,6 +27,7 @@ void OGaussianBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
 	descriptor->SRVHandle.Offset(UAV0Handle);
 	descriptor->SRVHandle.Offset(SRV1Handle);
 	descriptor->SRVHandle.Offset(UAV1Handle);
+	descriptor->SRVHandle.Offset(InputSRVHandle);
 
 	BuildDescriptors();
 }
@@ -71,6 +71,8 @@ void OGaussianBlurFilter::BuildResource()
 	texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 	BlurMap0 = Utils::CreateResource(this, L"BlurMap0", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
 	BlurMap1 = Utils::CreateResource(this, L"BlurMap1", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
+
+	InputMap = Utils::CreateResource(this, L"InputMap", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
 }
 
 void OGaussianBlurFilter::Execute(
@@ -94,15 +96,17 @@ void OGaussianBlurFilter::Execute(
 	                   weights[8],
 	                   weights[9],
 	                   weights[10] });
+
 	auto rootSig = VerticalBlurPSO->RootSignature;
 	auto cmdList = Queue->GetCommandList().Get();
 	rootSig->ActivateRootSignature(Queue->GetCommandList().Get());
 	rootSig->SetResource("cbSettings", Buffer->GetUploadResource()->Resource->GetGPUVirtualAddress(), cmdList);
 
-	ResourceBarrier(cmdList, Input, D3D12_RESOURCE_STATE_COPY_SOURCE);
+	Queue->CopyResourceTo(&InputMap, Input);
+	ResourceBarrier(cmdList, &InputMap, D3D12_RESOURCE_STATE_COPY_SOURCE);
 	ResourceBarrier(cmdList, &BlurMap0, D3D12_RESOURCE_STATE_COPY_DEST);
 
-	cmdList->CopyResource(BlurMap0.Resource.Get(), Input->Resource.Get());
+	cmdList->CopyResource(BlurMap0.Resource.Get(), InputMap.Resource.Get());
 
 	ResourceBarrier(cmdList, &BlurMap0, D3D12_RESOURCE_STATE_GENERIC_READ);
 	ResourceBarrier(cmdList, &BlurMap1, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
