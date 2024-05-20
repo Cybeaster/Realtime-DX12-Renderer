@@ -1,5 +1,6 @@
 #pragma once
 #include "easy/profiler.h"
+
 #ifdef ENABLE_PROFILER
 #define PROFILE_SCOPE() EASY_FUNCTION()
 #define PROFILE_BLOCK_START(name) EASY_BLOCK(name)

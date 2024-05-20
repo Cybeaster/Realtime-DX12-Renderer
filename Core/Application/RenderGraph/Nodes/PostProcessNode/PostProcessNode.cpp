@@ -46,12 +46,13 @@ void OPostProcessNode::DrawBlurFilter(ORenderTargetBase* RenderTarget)
 	    RenderTarget->GetResource());
 	engine->GetBlurFilter()->OutputTo(RenderTarget->GetResource());
 
+
 	SetPSO(SPSOTypes::BilateralBlur);
 	engine->GetBilateralBlurFilter()->Execute(FindPSOInfo(SPSOTypes::BilateralBlur), RenderTarget->GetResource());
 	engine->GetBilateralBlurFilter()->OutputTo(RenderTarget->GetResource());
 }
 
-void OPostProcessNode::DrawComposite(D3D12_GPU_DESCRIPTOR_HANDLE Input, D3D12_GPU_DESCRIPTOR_HANDLE Input2)
+void OPostProcessNode::DrawComposite(D3D12_GPU_DESCRIPTOR_HANDLE Input, D3D12_GPU_DESCRIPTOR_HANDLE Input2) const
 {
 	const auto commandList = CommandQueue->GetCommandList();
 	auto pso = FindPSOInfo(SPSOTypes::Composite);

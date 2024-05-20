@@ -14,7 +14,7 @@ public:
 	static OApplication* Get();
 	void Destory();
 
-	OWindow* CreateWindow() const;
+	shared_ptr<OWindow> CreateWindow() const;
 
 	void DestroyWindow(unique_ptr<OWindow> Window)
 	{
@@ -89,7 +89,7 @@ inline int OApplication::Run()
 			}
 			else
 			{
-				UpdateEventArgs args(Timer, Engine->GetWindow()->GetHWND());
+				UpdateEventArgs args(Timer, Engine->GetWindow().lock()->GetHWND());
 				Engine->Draw(args);
 			}
 		}

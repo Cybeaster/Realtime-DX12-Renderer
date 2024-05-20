@@ -5,6 +5,7 @@
 
 #include <wrl/client.h>
 
+class ODevice;
 struct SConstantBlurSettings
 {
 	int BlurRadius;
@@ -24,10 +25,10 @@ struct SConstantBlurSettings
 class OGaussianBlurFilter : public OFilterBase
 {
 public:
-	OGaussianBlurFilter(ID3D12Device* Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format);
+	OGaussianBlurFilter(const shared_ptr<ODevice>& Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format);
 	OGaussianBlurFilter(const OGaussianBlurFilter& rhs) = delete;
 	OGaussianBlurFilter& operator=(const OGaussianBlurFilter& rhs) = delete;
-
+	void InitRenderObject() override;
 	void OutputTo(SResourceInfo* Destination);
 
 	void BuildDescriptors(IDescriptor* Descriptor) override;
@@ -50,7 +51,7 @@ public:
 private:
 	vector<float> CalcGaussWeights(float Sigma) const;
 
-	void BuildDescriptors() const override;
+	void BuildDescriptors() override;
 	void BuildResource() override;
 
 private:
@@ -61,14 +62,14 @@ private:
 
 	SDescriptorPair SRV1Handle;
 	SDescriptorPair UAV1Handle;
-
-	SResourceInfo BlurMap0;
-	SResourceInfo BlurMap1;
-
-	SResourceInfo InputMap;
 	SDescriptorPair InputSRVHandle;
 
-	unique_ptr<OUploadBuffer<SConstantBlurSettings>> Buffer;
+	TResourceInfo BlurMap0;
+	TResourceInfo BlurMap1;
+
+	TResourceInfo InputMap;
+
+	TUploadBuffer<SConstantBlurSettings> Buffer;
 
 	float Sigma = 2.5;
 	uint32_t BlurCount = 1;

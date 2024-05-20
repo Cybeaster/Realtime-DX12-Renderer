@@ -19,7 +19,7 @@ public:
 		AmbientSubtarget1
 	};
 
-	OSSAORenderTarget(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format)
+	OSSAORenderTarget(const weak_ptr<ODevice>& Device, UINT Width, UINT Height, DXGI_FORMAT Format)
 	    : ORenderTargetBase(Device, Width, Height, Format, EResourceHeapType::Default)
 	{
 		Name = L"SSAORenderTarget";
@@ -57,7 +57,7 @@ public:
 	SDescriptorPair GetAmbientMap0RTV() const;
 	SDescriptorPair GetAmbientMap1RTV() const;
 
-	void PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList, uint32_t SubtargetIdx) override;
+	void PrepareRenderTarget(OCommandQueue* Queue, bool ClearRenderTarget, bool ClearDepth, uint32_t SubtargetIdx) override;
 	D3D12_GPU_VIRTUAL_ADDRESS GetHBlurCBAddress() const;
 	D3D12_GPU_VIRTUAL_ADDRESS GetVBlurCBAddress() const;
 
@@ -71,12 +71,12 @@ private:
 	TUploadBuffer<SConstantBufferBlurData> HBlurCB;
 	TUploadBuffer<SConstantBufferBlurData> VBlurCB;
 
-	SResourceInfo RandomVectorMap;
-	SResourceInfo RandomVectorMapUploadBuffer;
-	SResourceInfo NormalMap;
-	SResourceInfo AmbientMap0;
-	SResourceInfo AmbientMap1;
-	SResourceInfo DepthMap;
+	TResourceInfo RandomVectorMap;
+	TResourceInfo RandomVectorMapUploadBuffer;
+	TResourceInfo NormalMap;
+	TResourceInfo AmbientMap0;
+	TResourceInfo AmbientMap1;
+	TResourceInfo DepthMap;
 
 	SDescriptorPair NormalMapSRV;
 	SDescriptorPair NormalMapRTV;

@@ -5,7 +5,7 @@
 #include "Window/Window.h"
 
 ORenderTargetBase::ORenderTargetBase(UINT Width, UINT Height, EResourceHeapType HeapType)
-    : Width(Width), Height(Height), Format(SRenderConstants::BackBufferFormat), Device(OEngine::Get()->GetDevice().Get()), ORenderObjectBase(HeapType)
+    : Width(Width), Height(Height), Format(SRenderConstants::BackBufferFormat), Device(OEngine::Get()->GetDevice()), ORenderObjectBase(HeapType)
 {
 }
 
@@ -31,9 +31,7 @@ void ORenderTargetBase::CopyTo(ORenderTargetBase* Dest, const OCommandQueue* Com
 
 SDescriptorPair ORenderTargetBase::GetDSV(uint32_t SubtargetIdx) const
 {
-	SDescriptorPair DSV;
-	DSV.CPUHandle = OEngine::Get()->DefaultGlobalHeap.DSVHeap->GetCPUDescriptorHandleForHeapStart();
-	return DSV; // TODO recursive call
+	return OEngine::Get()->GetWindow().lock()->GetDSV(); // TODO recursive call
 }
 
 void ORenderTargetBase::InitRenderObject()
@@ -47,7 +45,7 @@ void ORenderTargetBase::SetViewport(ID3D12GraphicsCommandList* List) const
 	List->RSSetScissorRects(1, &ScissorRect);
 }
 
-void ORenderTargetBase::PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList, uint32_t SubtargetIdx)
+void ORenderTargetBase::PrepareRenderTarget(OCommandQueue* Queue, bool ClearRenderTarget, bool ClearDepth, uint32_t SubtargetIdx)
 {
 	if (PreparedTaregts.contains(SubtargetIdx))
 	{
@@ -56,10 +54,17 @@ void ORenderTargetBase::PrepareRenderTarget(ID3D12GraphicsCommandList* CommandLi
 	PreparedTaregts.insert(SubtargetIdx);
 	auto backbufferView = GetRTV(SubtargetIdx);
 	auto depthStencilView = GetDSV(SubtargetIdx);
-	Utils::ResourceBarrier(CommandList, GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
-	CommandList->ClearRenderTargetView(backbufferView.CPUHandle, DirectX::Colors::LightSteelBlue, 0, nullptr);
-	CommandList->ClearDepthStencilView(depthStencilView.CPUHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-	CommandList->OMSetRenderTargets(1, &backbufferView.CPUHandle, true, &depthStencilView.CPUHandle);
+	Utils::ResourceBarrier(Queue->GetCommandList().Get(), GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+	if (ClearRenderTarget)
+	{
+		Queue->ClearRenderTarget(backbufferView, SColor::Blue);
+	}
+	if (ClearDepth)
+	{
+		Queue->ClearDepthStencil(depthStencilView);
+	}
+	LOG(Engine, Log, "Setting render target with address: [{}] in [{}] and depth stencil: [{}]", TEXT(backbufferView.CPUHandle.ptr), GetName(), TEXT(depthStencilView.CPUHandle.ptr));
+	Queue->GetCommandList()->OMSetRenderTargets(1, &backbufferView.CPUHandle, true, &depthStencilView.CPUHandle);
 }
 
 void ORenderTargetBase::UnsetRenderTarget(OCommandQueue* CommandQueue)
@@ -131,7 +136,7 @@ D3D12_RESOURCE_DESC ORenderTargetBase::GetResourceDesc() const
 	return texDesc;
 }
 
-OOffscreenTexture::OOffscreenTexture(ID3D12Device* Device, UINT Width, UINT Height, DXGI_FORMAT Format)
+OOffscreenTexture::OOffscreenTexture(const weak_ptr<ODevice>& Device, UINT Width, UINT Height, DXGI_FORMAT Format)
     : ORenderTargetBase(Device, Width, Height, Format, EResourceHeapType::Default)
 {
 	Name = L"OffscreenTexture";
@@ -164,9 +169,9 @@ void OOffscreenTexture::BuildDescriptors()
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.MipLevels = 1;
-
-	Device->CreateShaderResourceView(RenderTarget.Resource.Get(), &srvDesc, SRVHandle.CPUHandle);
-	Device->CreateRenderTargetView(RenderTarget.Resource.Get(), nullptr, RTVHandle.CPUHandle);
+	auto device = Device.lock();
+	device->CreateShaderResourceView(RenderTarget, srvDesc, SRVHandle);
+	device->CreateRenderTargetView(RenderTarget, RTVHandle);
 }
 
 void OOffscreenTexture::BuildResource()
@@ -185,9 +190,9 @@ void OOffscreenTexture::BuildResource()
 	texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
-	RenderTarget = Utils::CreateResource(this, L"RenderTarget", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc);
+	RenderTarget = Utils::CreateResource(weak_from_this(), L"RenderTarget", Device.lock()->GetDevice(), D3D12_HEAP_TYPE_DEFAULT, texDesc);
 }
 SResourceInfo* OOffscreenTexture::GetResource()
 {
-	return &RenderTarget;
+	return RenderTarget.get();
 }

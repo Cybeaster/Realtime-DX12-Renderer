@@ -66,7 +66,7 @@ class OEngine : public std::enable_shared_from_this<OEngine>
 public:
 	DECLARE_DELEGATE(SOnFrameResourceChanged);
 
-	using TWindowPtr = OWindow*;
+	using TWindowPtr = shared_ptr<OWindow>;
 	using TWindowMap = std::map<HWND, TWindowPtr>;
 	using WindowNameMap = std::map<std::wstring, TWindowPtr>;
 
@@ -110,8 +110,8 @@ public:
 	void SetFogColor(DirectX::XMFLOAT4 Color);
 	void SetFogStart(float Start);
 	void SetFogRange(float Range);
-	OWindow* GetWindow() const;
-	ComPtr<ID3D12Device2> GetDevice() const;
+	weak_ptr<OWindow> GetWindow() const;
+	weak_ptr<ODevice> GetDevice() const;
 
 	void FlushGPU() const;
 	TUUID AddInstanceBuffer(const wstring& Name);
@@ -145,7 +145,7 @@ public:
 	void OnResizeRequest(HWND& WindowHandle);
 	void OnUpdateWindowSize(ResizeEventArgs& Args);
 	void SetWindowViewport();
-	OSSAORenderTarget* GetSSAORT() const;
+	weak_ptr<OSSAORenderTarget> GetSSAORT() const;
 	void CreateWindow();
 	bool GetMSAAState(UINT& Quality) const;
 	void FillExpectedShadowMaps();
@@ -197,12 +197,13 @@ public:
 	void BuildFilters();
 
 	template<typename T, typename... Args>
-	T* BuildRenderObject(ERenderGroup Group, Args&&... Params);
+	weak_ptr<T> BuildRenderObject(ERenderGroup Group, Args&&... Params);
 
 	TUUID AddRenderObject(ERenderGroup Group, IRenderObject* RenderObject);
+	TUUID AddRenderObject(ERenderGroup Group, const shared_ptr<IRenderObject>& RenderObject);
 
 	void BuildOffscreenRT();
-	OOffscreenTexture* GetOffscreenRT() const;
+	weak_ptr<OOffscreenTexture> GetOffscreenRT() const;
 
 	void DrawFullScreenQuad(SPSODescriptionBase* Desc);
 	void DrawOnePoint();
@@ -235,14 +236,14 @@ public:
 
 	uint32_t GetTotalNumberOfInstances() const;
 
-	OMaterialManager* GetMaterialManager() const
+	shared_ptr<OMaterialManager> GetMaterialManager() const
 	{
-		return MaterialManager.get();
+		return MaterialManager;
 	}
 
-	OTextureManager* GetTextureManager() const
+	shared_ptr<OTextureManager> GetTextureManager() const
 	{
-		return TextureManager.get();
+		return TextureManager;
 	}
 
 	OMeshGenerator* GetMeshGenerator() const;
@@ -251,8 +252,8 @@ public:
 	ORenderItem* GetPickedItem() const;
 
 	SOnFrameResourceChanged OnFrameResourceChanged;
-	ODynamicCubeMapRenderTarget* GetCubeRenderTarget() const;
-	ODynamicCubeMapRenderTarget* BuildCubeRenderTarget(DirectX::XMFLOAT3 Center);
+	weak_ptr<ODynamicCubeMapRenderTarget> GetCubeRenderTarget() const;
+	weak_ptr<ODynamicCubeMapRenderTarget> BuildCubeRenderTarget(DirectX::XMFLOAT3 Center);
 
 	void DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, bool ForceDrawAll = false);
 	void DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, const SCulledInstancesInfo* InstanceBuffer);
@@ -266,8 +267,8 @@ public:
 	void UpdateObjectCB() const;
 	void SetDescriptorHeap(EResourceHeapType Type);
 	OShaderCompiler* GetShaderCompiler() const;
-	OUIManager* GetUIManager() const;
-	vector<OShadowMap*>& GetShadowMaps();
+	weak_ptr<OUIManager> GetUIManager() const;
+	vector<weak_ptr<OShadowMap>>& GetShadowMaps();
 	const DirectX::BoundingSphere& GetSceneBounds() const;
 
 	SRenderObjectHeap DefaultGlobalHeap;
@@ -280,12 +281,12 @@ public:
 
 protected:
 	template<typename T, typename... Args>
-	T* BuildRenderObjectImpl(ERenderGroup Group, Args&&... Params);
+	weak_ptr<T> BuildRenderObjectImpl(ERenderGroup Group, Args&&... Params);
 
-	OWindow* GetWindowByHWND(HWND Handler);
+	weak_ptr<OWindow> GetWindowByHWND(HWND Handler);
 	void Destroy();
 
-	OWindow* Window;
+	shared_ptr<OWindow> Window;
 	ComPtr<IDXGIAdapter4> GetAdapter(bool UseWarp);
 	ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> Adapter);
 
@@ -313,10 +314,7 @@ private:
 	void GetNumLights(uint32_t& OutNumPointLights, uint32_t& OutNumSpotLights, uint32_t& OutNumDirLights) const;
 	SPassConstants MainPassCB;
 
-	unique_ptr<OCommandQueue> DirectCommandQueue;
-	unique_ptr<OCommandQueue> ComputeCommandQueue;
-	unique_ptr<OCommandQueue> CopyCommandQueue;
-	unique_ptr<ODevice> Device;
+	shared_ptr<ODevice> Device;
 
 	bool bIsTearingSupported = false;
 
@@ -337,40 +335,44 @@ private:
 
 	bool HasInitializedTests = false;
 	STimer TickTimer;
-	OOffscreenTexture* OffscreenRT = nullptr;
-	ODynamicCubeMapRenderTarget* CubeRenderTarget = nullptr;
-
-	OUIManager* UIManager;
 
 	map<ERenderGroup, vector<TUUID>> RenderGroups;
-	map<TUUID, unique_ptr<IRenderObject>> RenderObjects;
+	map<TUUID, shared_ptr<IRenderObject>> RenderObjects;
 
 	int32_t LightCount = 0;
-
-	unique_ptr<OMeshGenerator> MeshGenerator;
-	unique_ptr<OTextureManager> TextureManager;
-	unique_ptr<OMaterialManager> MaterialManager;
 
 	inline static OEngine* Engine = nullptr;
 
 	std::optional<string> GeometryToRebuild;
-
+	DirectX::BoundingSphere SceneBounds;
+	SCulledInstancesInfo CameraRenderedItems;
 	ORenderItem* PickedItem = nullptr;
 
 	unique_ptr<OShaderCompiler> ShaderCompiler;
 	unique_ptr<OGraphicsPipelineManager> PipelineManager;
 	unique_ptr<ORenderGraph> RenderGraph;
-	vector<OLightComponent*> LightComponents;
-	vector<OShadowMap*> ShadowMaps;
-	DirectX::BoundingSphere SceneBounds;
-	OSSAORenderTarget* SSAORT = nullptr;
-	ONormalTangentDebugTarget* NormalTangentDebugTarget = nullptr;
-	SCulledInstancesInfo CameraRenderedItems;
 	unique_ptr<OSceneManager> SceneManager;
+	unique_ptr<OMeshGenerator> MeshGenerator;
 
+	shared_ptr<OTextureManager> TextureManager;
+	shared_ptr<OMaterialManager> MaterialManager;
+
+	unique_ptr<OCommandQueue> DirectCommandQueue;
+	unique_ptr<OCommandQueue> ComputeCommandQueue;
+	unique_ptr<OCommandQueue> CopyCommandQueue;
+
+	vector<OLightComponent*> LightComponents;
+	vector<weak_ptr<OShadowMap>> ShadowMaps;
+
+	weak_ptr<ONormalTangentDebugTarget> NormalTangentDebugTarget;
 	weak_ptr<ORenderItem> DebugBoxRenderItem;
 	weak_ptr<ORenderItem> DebugFrustumRenderItem;
 	weak_ptr<ORenderItem> QuadRenderItem;
+	weak_ptr<ODynamicCubeMapRenderTarget> CubeRenderTarget;
+	weak_ptr<OUIManager> UIManager;
+	weak_ptr<OSSAORenderTarget> SSAORT;
+	weak_ptr<OOffscreenTexture> OffscreenRT;
+
 	uint32_t GarbageMaxItems = 100;
 
 public:
@@ -379,21 +381,23 @@ public:
 	bool ReloadShadersRequested = false;
 	SDescriptorPair NullCubeSRV;
 	SDescriptorPair NullTexSRV;
+	SDescriptorPair TexturesStartAddress;
+
 	ORenderGraph* GetRenderGraph() const;
-	ONormalTangentDebugTarget* GetNormalTangentDebugTarget() const;
+	weak_ptr<ONormalTangentDebugTarget> GetNormalTangentDebugTarget() const;
 	void ReloadShaders();
-	OShadowMap* CreateShadowMap();
+	weak_ptr<OShadowMap> CreateShadowMap();
 	unordered_set<shared_ptr<ORenderItem>> PendingRemoveItems;
 };
 
 template<typename T, typename... Args>
-T* OEngine::BuildRenderObjectImpl(ERenderGroup Group, Args&&... Params)
+weak_ptr<T> OEngine::BuildRenderObjectImpl(ERenderGroup Group, Args&&... Params)
 {
 	auto uuid = GenerateUUID();
-	auto object = new T(std::forward<Args>(Params)...);
+	auto object = make_shared<T>(std::forward<Args>(Params)...);
 	object->SetID(uuid);
 	object->InitRenderObject();
-	RenderObjects[uuid] = unique_ptr<IRenderObject>(object);
+	RenderObjects[uuid] = object;
 	if (RenderGroups.contains(Group))
 	{
 		RenderGroups[Group].push_back(uuid);
@@ -407,7 +411,7 @@ T* OEngine::BuildRenderObjectImpl(ERenderGroup Group, Args&&... Params)
 }
 
 template<typename T, typename... Args>
-T* OEngine::BuildRenderObject(ERenderGroup Group, Args&&... Params)
+weak_ptr<T> OEngine::BuildRenderObject(ERenderGroup Group, Args&&... Params)
 {
 	return BuildRenderObjectImpl<T, Args...>(Group, std::forward<Args>(Params)...);
 }
@@ -430,7 +434,7 @@ T* OEngine::GetObjectByUUID(TUUID UUID, bool Checked)
 template<typename T>
 TUUID OEngine::AddFilter()
 {
-	return AddRenderObject(ERenderGroup::RenderTargets, OFilterBase::CreateFilter<T>(Device->GetDevice(), GetCommandQueue(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat));
+	return AddRenderObject(ERenderGroup::RenderTargets, OFilterBase::CreateFilter<T>(Device, GetCommandQueue(), GetWindow().lock()->GetWidth(), GetWindow().lock()->GetHeight(), SRenderConstants::BackBufferFormat));
 }
 
 inline CD3DX12_GPU_DESCRIPTOR_HANDLE OEngine::GetRenderGroupStartAddress(ERenderGroup Group)

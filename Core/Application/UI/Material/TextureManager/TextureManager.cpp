@@ -7,7 +7,7 @@
 #include "TextureManager/TextureManager.h"
 
 #include <ranges>
-OTextureManagerWidget::OTextureManagerWidget(OTextureManager* Other)
+OTextureManagerWidget::OTextureManagerWidget(weak_ptr<OTextureManager> Other)
     : TextureManager(Other)
 {
 	HeadderName = "Textures Manager";
@@ -22,7 +22,7 @@ void OTextureManagerWidget::Draw()
 
 void OTextureManagerWidget::DrawTable()
 {
-	for (auto& val : TextureManager->GetTextures() | std::views::values)
+	for (auto& val : TextureManager.lock()->GetTextures() | std::views::values)
 	{
 		if (ImGui::Selectable(val->Name.c_str()))
 		{
@@ -37,7 +37,7 @@ void OTextureManagerWidget::DrawProperty()
 	{
 		ImGui::Text(CurrentTexture->Name.c_str());
 		ImGui::Text(WStringToUTF8(CurrentTexture->FileName).c_str());
-		ImGui::Text("Heap Index: %d", CurrentTexture->HeapIdx);
+		ImGui::Text("Heap Index: %d", CurrentTexture->SRV.Index);
 		if (ImGui::BeginCombo("##textureCombo", CurrentTexture->ViewType.c_str()))
 		{
 			for (const auto& type : STextureViewType::GetTextureTypes())

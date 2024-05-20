@@ -3,7 +3,7 @@
 class ONormalTangentDebugTarget : public ORenderTargetBase
 {
 public:
-	ONormalTangentDebugTarget(ID3D12Device* Device, int Width, int Height, DXGI_FORMAT Format);
+	ONormalTangentDebugTarget(const weak_ptr<ODevice>& Device, int Width, int Height, DXGI_FORMAT Format);
 	uint32_t GetNumRTVRequired() const override;
 	uint32_t GetNumSRVRequired() const override;
 	void InitRenderObject() override;
@@ -16,7 +16,7 @@ public:
 	SDescriptorPair GetRTV(uint32_t SubtargetIdx) const override;
 
 private:
-	SResourceInfo Target;
+	TResourceInfo Target;
 
 	SDescriptorPair RTV;
 	SDescriptorPair SRV;

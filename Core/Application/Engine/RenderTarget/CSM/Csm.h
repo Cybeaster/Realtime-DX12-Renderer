@@ -9,17 +9,17 @@ class ODirectionalLightComponent;
 class OCSM final : public ORenderTargetBase
 {
 public:
-	OCSM(ID3D12Device* Device, DXGI_FORMAT Format);
+	OCSM(const weak_ptr<ODevice>& Device, DXGI_FORMAT Format);
 
 	void BuildDescriptors() override;
 	void BuildResource() override;
 	SResourceInfo* GetResource() override;
 	SResourceInfo* GetSubresource(uint32_t Idx) override;
 
-	OShadowMap* GetShadowMap(uint32_t Idx);
-	const array<OShadowMap*, 3>& GetShadowMaps() const;
+	weak_ptr<OShadowMap> GetShadowMap(uint32_t Idx);
+	const array<weak_ptr<OShadowMap>, 3>& GetShadowMaps() const;
 
 private:
 	ODirectionalLightComponent* InLightComponent;
-	array<OShadowMap*, 3> ShadowMaps;
+	array<weak_ptr<OShadowMap>, 3> ShadowMaps;
 };

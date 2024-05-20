@@ -2,6 +2,8 @@
 
 #include "Device.h"
 
+#include "DirectX/Resource.h"
+#include "Engine/RenderTarget/RenderObject/RenderObject.h"
 #include "Logger.h"
 
 bool ODevice::Init()
@@ -63,6 +65,42 @@ ID3D12Device5* ODevice::GetDevice() const
 IDXGIFactory4* ODevice::GetFactory() const
 {
 	return Factory.Get();
+}
+
+void ODevice::CreateShaderResourceView(const TResourceInfo& Resource, const D3D12_SHADER_RESOURCE_VIEW_DESC& Desc, SDescriptorPair& DescriptorPair) const
+{
+	DescriptorPair.Resource = Resource;
+	Device->CreateShaderResourceView(Resource->Resource.Get(), &Desc, DescriptorPair.CPUHandle);
+}
+
+void ODevice::CreateUnorderedAccessView(const TResourceInfo& Resource, const D3D12_UNORDERED_ACCESS_VIEW_DESC& Desc, SDescriptorPair& DescriptorPair) const
+{
+	DescriptorPair.Resource = Resource;
+	Device->CreateUnorderedAccessView(Resource->Resource.Get(), nullptr, &Desc, DescriptorPair.CPUHandle);
+}
+
+void ODevice::CreateRenderTargetView(const TResourceInfo& Resource, const D3D12_RENDER_TARGET_VIEW_DESC& Desc, SDescriptorPair& DescriptorPair) const
+{
+	DescriptorPair.Resource = Resource;
+	Device->CreateRenderTargetView(Resource->Resource.Get(), &Desc, DescriptorPair.CPUHandle);
+}
+
+void ODevice::CreateRenderTargetView(const TResourceInfo& Resource, SDescriptorPair& DescriptorPair) const
+{
+	DescriptorPair.Resource = Resource;
+	Device->CreateRenderTargetView(Resource->Resource.Get(), nullptr, DescriptorPair.CPUHandle);
+}
+
+void ODevice::CreateDepthStencilView(const TResourceInfo& Resource, const D3D12_DEPTH_STENCIL_VIEW_DESC& Desc, SDescriptorPair& DescriptorPair) const
+{
+	DescriptorPair.Resource = Resource;
+	Device->CreateDepthStencilView(Resource->Resource.Get(), &Desc, DescriptorPair.CPUHandle);
+}
+
+void ODevice::CreateDepthStencilView(const TResourceInfo& Resource, SDescriptorPair& DescriptorPair) const
+{
+	DescriptorPair.Resource = Resource;
+	Device->CreateDepthStencilView(Resource->Resource.Get(), nullptr, DescriptorPair.CPUHandle);
 }
 
 ComPtr<ID3D12Device5> ODevice::CreateDevice(const ComPtr<IDXGIAdapter4>& Adapter)

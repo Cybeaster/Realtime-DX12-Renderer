@@ -5,7 +5,7 @@
 class OGPUWave : public ORenderObjectBase
 {
 public:
-	OGPUWave(ID3D12Device* _Device, ID3D12GraphicsCommandList* _List, int32_t _M, int32_t _N, float dx, float dt, float speed, float damping);
+	OGPUWave(const shared_ptr<ODevice>& _Device, ID3D12GraphicsCommandList* _List, int32_t _M, int32_t _N, float dx, float dt, float speed, float damping);
 	OGPUWave() = default;
 	~OGPUWave() = default;
 
@@ -54,7 +54,7 @@ public:
 
 	void Disturb(ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO, UINT I, UINT J, float Magnitude);
 	void Update(const UpdateEventArgs& Event) override;
-	wstring GetName() override
+	wstring GetName() const override
 	{
 		return Name;
 	}
@@ -74,7 +74,7 @@ private:
 	float TimeStep;
 	float SpatialStep;
 
-	ID3D12Device* Device = nullptr;
+	weak_ptr<ODevice> Device;
 	ID3D12GraphicsCommandList* CMDList = nullptr;
 
 	SDescriptorPair PrevSolSRVHandle;
@@ -86,10 +86,10 @@ private:
 	SDescriptorPair NextSolUAVHandle;
 
 	// Two for ping-ponging the textures.
-	SResourceInfo PrevSol;
-	SResourceInfo CurrSol;
-	SResourceInfo NextSol;
+	TResourceInfo PrevSol;
+	TResourceInfo CurrSol;
+	TResourceInfo NextSol;
 
-	SResourceInfo PrevUploadBuffer;
-	SResourceInfo CurrUploadBuffer;
+	TResourceInfo PrevUploadBuffer;
+	TResourceInfo CurrUploadBuffer;
 };

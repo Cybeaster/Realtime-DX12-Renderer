@@ -1,6 +1,7 @@
 
 #include "RenderGraphWidget.h"
 
+#include "MainPassNode/MainPassNodeWidget.h"
 #include "RenderGraph/Graph/RenderGraph.h"
 #include "SSAORenderNodeWidget/SsaoRenderNodeWidget.h"
 ORenderGraphWidget::ORenderGraphWidget(ORenderGraph* InGraph)
@@ -33,6 +34,11 @@ void ORenderGraphWidget::Draw()
 				SSAONodeWidget->SetNode(Node);
 				SSAONodeWidget->Draw();
 			}
+			else if (Node->GetNodeInfo().Name == "Opaque")
+			{
+				OpaquePassNodeWidget->SetNode(Node);
+				OpaquePassNodeWidget->Draw();
+			}
 			else
 			{
 				BaseNodeWidget->SetNode(Node);
@@ -46,4 +52,5 @@ void ORenderGraphWidget::InitWidget()
 {
 	SSAONodeWidget = MakeWidget<OSSAORenderNodeWidget>();
 	BaseNodeWidget = MakeWidget<ORenderNodeWidgetBase>();
+	OpaquePassNodeWidget = MakeWidget<OOpaquePassNodeWidget>();
 }

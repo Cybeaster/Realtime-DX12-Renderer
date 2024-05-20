@@ -31,7 +31,7 @@ public:
 	void PostInputUpdate();
 
 	bool IsInFocus() override;
-	wstring GetName() override
+	wstring GetName() const override
 	{
 		return Name;
 	}

@@ -1,6 +1,6 @@
 #include "GpuWave.h"
 
-OGPUWave::OGPUWave(ID3D12Device* _Device, ID3D12GraphicsCommandList* _List, int32_t _M, int32_t _N, float dx, float dt, float speed, float damping)
+OGPUWave::OGPUWave(const shared_ptr<ODevice>& _Device, ID3D12GraphicsCommandList* _List, int32_t _M, int32_t _N, float dx, float dt, float speed, float damping)
     : Device(_Device), CMDList(_List), NumRows(_M), NumCols(_N), SpatialStep(dx), TimeStep(dt), VertexCount(_M * _N), TriangleCount((_M - 1) * (_N - 1) * 2)
 {
 	float d = damping * dt + 2.0f;
@@ -31,9 +31,11 @@ void OGPUWave::BuildResources()
 	texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
-	NextSol = Utils::CreateResource(this, L"NextSol", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
-	PrevSol = Utils::CreateResource(this, L"PrevSol", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
-	CurrSol = Utils::CreateResource(this, L"CurSol", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
+	auto device = Device.lock()->GetDevice();
+	auto weak = weak_from_this();
+	NextSol = Utils::CreateResource(weak, L"NextSol", device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
+	PrevSol = Utils::CreateResource(weak, L"PrevSol", device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
+	CurrSol = Utils::CreateResource(weak, L"CurSol", device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
 
 	//
 	// In order to copy CPU memory data into our default buffer, we need to create
@@ -41,11 +43,11 @@ void OGPUWave::BuildResources()
 	//
 
 	const UINT num2DSubresources = texDesc.DepthOrArraySize * texDesc.MipLevels;
-	UINT64 uploadBufferSize = GetRequiredIntermediateSize(CurrSol.Resource.Get(), 0, num2DSubresources);
+	UINT64 uploadBufferSize = GetRequiredIntermediateSize(CurrSol->Resource.Get(), 0, num2DSubresources);
 	auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize);
 
-	PrevUploadBuffer = Utils::CreateResource(this, L"PrevUploadBuffer", Device, D3D12_HEAP_TYPE_UPLOAD, resourceDesc);
-	CurrUploadBuffer = Utils::CreateResource(this, L"CurrUploadBuffer", Device, D3D12_HEAP_TYPE_UPLOAD, resourceDesc);
+	PrevUploadBuffer = Utils::CreateResource(weak, L"PrevUploadBuffer", device, D3D12_HEAP_TYPE_UPLOAD, resourceDesc);
+	CurrUploadBuffer = Utils::CreateResource(weak, L"CurrUploadBuffer", device, D3D12_HEAP_TYPE_UPLOAD, resourceDesc);
 
 	// describe the data, we're going to copy into the default buffer
 	vector<float> initData(NumRows * NumCols, 0.0f);
@@ -61,17 +63,17 @@ void OGPUWave::BuildResources()
 	// read by a shader.
 	//
 
-	Utils::ResourceBarrier(CMDList, &PrevSol, D3D12_RESOURCE_STATE_COPY_DEST);
+	Utils::ResourceBarrier(CMDList, PrevSol.get(), D3D12_RESOURCE_STATE_COPY_DEST);
 
-	UpdateSubresources(CMDList, PrevSol.Resource.Get(), PrevUploadBuffer.Resource.Get(), 0, 0, num2DSubresources, &subResourceData);
+	UpdateSubresources(CMDList, PrevSol->Resource.Get(), PrevUploadBuffer->Resource.Get(), 0, 0, num2DSubresources, &subResourceData);
 
-	Utils::ResourceBarrier(CMDList, &PrevSol, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	Utils::ResourceBarrier(CMDList, &CurrSol, D3D12_RESOURCE_STATE_COPY_DEST);
+	Utils::ResourceBarrier(CMDList, PrevSol.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	Utils::ResourceBarrier(CMDList, CurrSol.get(), D3D12_RESOURCE_STATE_COPY_DEST);
 
-	UpdateSubresources(CMDList, CurrSol.Resource.Get(), CurrUploadBuffer.Resource.Get(), 0, 0, num2DSubresources, &subResourceData);
+	UpdateSubresources(CMDList, CurrSol->Resource.Get(), CurrUploadBuffer->Resource.Get(), 0, 0, num2DSubresources, &subResourceData);
 
-	Utils::ResourceBarrier(CMDList, &CurrSol, D3D12_RESOURCE_STATE_GENERIC_READ);
-	Utils::ResourceBarrier(CMDList, &NextSol, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	Utils::ResourceBarrier(CMDList, CurrSol.get(), D3D12_RESOURCE_STATE_GENERIC_READ);
+	Utils::ResourceBarrier(CMDList, NextSol.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 }
 
 void OGPUWave::BuildDescriptors(IDescriptor* Descriptor)
@@ -101,14 +103,14 @@ void OGPUWave::BuildDescriptors(IDescriptor* Descriptor)
 	descriptor->SRVHandle.Offset(PrevSolUAVHandle);
 	descriptor->SRVHandle.Offset(CurrSolUAVHandle);
 	descriptor->SRVHandle.Offset(NextSolUAVHandle);
+	auto device = Device.lock();
+	device->CreateShaderResourceView(PrevSol, srvDesc, PrevSolSRVHandle);
+	device->CreateShaderResourceView(CurrSol, srvDesc, CurrSolSRVHandle);
+	device->CreateShaderResourceView(NextSol, srvDesc, NextSolSRVHandle);
 
-	Device->CreateShaderResourceView(PrevSol.Resource.Get(), &srvDesc, PrevSolSRVHandle.CPUHandle);
-	Device->CreateShaderResourceView(CurrSol.Resource.Get(), &srvDesc, CurrSolSRVHandle.CPUHandle);
-	Device->CreateShaderResourceView(NextSol.Resource.Get(), &srvDesc, NextSolSRVHandle.CPUHandle);
-
-	Device->CreateUnorderedAccessView(PrevSol.Resource.Get(), nullptr, &uavDesc, PrevSolUAVHandle.CPUHandle);
-	Device->CreateUnorderedAccessView(CurrSol.Resource.Get(), nullptr, &uavDesc, CurrSolUAVHandle.CPUHandle);
-	Device->CreateUnorderedAccessView(NextSol.Resource.Get(), nullptr, &uavDesc, NextSolUAVHandle.CPUHandle);
+	device->CreateUnorderedAccessView(PrevSol, uavDesc, PrevSolUAVHandle);
+	device->CreateUnorderedAccessView(CurrSol, uavDesc, CurrSolUAVHandle);
+	device->CreateUnorderedAccessView(NextSol, uavDesc, NextSolUAVHandle);
 }
 
 void OGPUWave::Update(const STimer& Gt, ID3D12RootSignature* RootSignature, ID3D12PipelineState* PSO)
@@ -161,7 +163,7 @@ void OGPUWave::Update(const STimer& Gt, ID3D12RootSignature* RootSignature, ID3D
 		t = 0.0;
 
 		// The current solution needs to be able to be read by the vertex shader, so change its state to GENERIC_READ.
-		Utils::ResourceBarrier(CMDList, &CurrSol, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
+		Utils::ResourceBarrier(CMDList, CurrSol.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
 	}
 }
 
@@ -180,7 +182,7 @@ void OGPUWave::Disturb(ID3D12RootSignature* RootSignature, ID3D12PipelineState* 
 	// Change it to UNORDERED_ACCESS for the compute shader.  Note that a UAV can still be
 	// read in a compute shader.
 
-	Utils::ResourceBarrier(CMDList, &CurrSol, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	Utils::ResourceBarrier(CMDList, CurrSol.get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 	CMDList->Dispatch(1, 1, 1);
 }
 void OGPUWave::Update(const UpdateEventArgs& Event)

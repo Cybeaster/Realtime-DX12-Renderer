@@ -24,14 +24,14 @@ void OUIManager::InitContext(ID3D12Device2* Device, HWND Hwnd, UINT NumFramesInL
 	KeyMap();
 
 	ImGui_ImplWin32_Init(Hwnd);
-	auto [CPUHandle, GPUHandle, Index] = OutDescriptor.SRVHandle.Offset(GetNumSRVRequired());
+	auto desc = OutDescriptor.SRVHandle.Offset(GetNumSRVRequired());
 	ImGui_ImplDX12_Init(
 	    Device,
 	    NumFramesInLight,
 	    SRenderConstants::BackBufferFormat,
 	    SRVDescriptorHeap,
-	    CPUHandle,
-	    GPUHandle);
+	    desc.CPUHandle,
+	    desc.GPUHandle);
 
 	ImGui::StyleColorsDark();
 	InitWidgets(Engine);
@@ -73,7 +73,7 @@ void OUIManager::InitWidgets(OEngine* Engine)
 	MakeWidget<OFilterManagerWidget>(Engine);
 	MakeWidget<OFogWidget>(Engine);
 	MakeWidget<OLightWidget>(Engine);
-	MakeWidget<OCameraWidget>(Engine->GetWindow()->GetCamera());
+	MakeWidget<OCameraWidget>(Engine->GetWindow().lock()->GetCamera());
 	MakeWidget<OGeometryManagerWidget>(Engine, &Engine->GetRenderLayers());
 	MakeWidget<OMaterialManagerWidget>(Engine->GetMaterialManager());
 	MakeWidget<OTextureManagerWidget>(Engine->GetTextureManager());

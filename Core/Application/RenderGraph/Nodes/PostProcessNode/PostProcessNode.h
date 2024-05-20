@@ -12,6 +12,6 @@ public:
 private:
 	void DrawSobel(ORenderTargetBase* RenderTarget);
 	void DrawBlurFilter(ORenderTargetBase* RenderTarget);
-	void DrawComposite(D3D12_GPU_DESCRIPTOR_HANDLE Input, D3D12_GPU_DESCRIPTOR_HANDLE Input2);
-	OWindow* Window = nullptr;
+	void DrawComposite(D3D12_GPU_DESCRIPTOR_HANDLE Input, D3D12_GPU_DESCRIPTOR_HANDLE Input2) const;
+	weak_ptr<OWindow> Window;
 };

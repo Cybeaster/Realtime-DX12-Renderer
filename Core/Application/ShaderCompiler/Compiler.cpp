@@ -335,6 +335,6 @@ ComPtr<ID3D12RootSignature> OShaderCompiler::BuildRootSignature(vector<D3D12_ROO
 		},
 	};
 	OutDescription = desc;
-	Utils::BuildRootSignature(OEngine::Get()->GetDevice().Get(), rootSignature, OutDescription);
+	Utils::BuildRootSignature(OEngine::Get()->GetDevice().lock(), rootSignature, OutDescription);
 	return rootSignature;
 }

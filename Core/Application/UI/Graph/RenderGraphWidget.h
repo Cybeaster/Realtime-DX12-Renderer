@@ -3,6 +3,7 @@
 #pragma once
 #include "UI/Widget.h"
 
+class OOpaquePassNodeWidget;
 class ORenderNodeWidgetBase;
 class OSSAORenderNodeWidget;
 class ORenderNode;
@@ -20,4 +21,5 @@ public:
 	ORenderNode* Node = nullptr;
 	OSSAORenderNodeWidget* SSAONodeWidget = nullptr;
 	ORenderNodeWidgetBase* BaseNodeWidget = nullptr;
+	OOpaquePassNodeWidget* OpaquePassNodeWidget = nullptr;
 };

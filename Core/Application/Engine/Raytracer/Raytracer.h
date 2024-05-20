@@ -10,9 +10,9 @@ class OCommandQueue;
 class ODevice;
 struct SAccelerationStructureBuffers
 {
-	SResourceInfo Scratch; // Scratch memory for AS builder
-	SResourceInfo Result; // Where the AS is
-	SResourceInfo InstanceDesc; // Hold the matrices of the instances
+	TResourceInfo Scratch; // Scratch memory for AS builder
+	TResourceInfo Result; // Where the AS is
+	TResourceInfo InstanceDesc; // Hold the matrices of the instances
 };
 
 class ORaytracer : public IRenderObject
@@ -23,7 +23,7 @@ public:
 	void CreateAccelerationStructures();
 	void CreateAccelerationStructure();
 	bool Init(ODevice* InDevice, OCommandQueue* InQueue);
-	wstring GetName() override;
+	wstring GetName() const override;
 
 private:
 	void BuildPipeline();

@@ -20,7 +20,7 @@ void OMaterialPickerWidget::Draw()
 
 		float windowWidth = ImGui::GetContentRegionAvail().x;
 		int numColumns = std::max(1, static_cast<int>(windowWidth / MinWidthPerColumn));
-		auto& materials = MaterialManager->GetMaterials();
+		auto& materials = MaterialManager.lock()->GetMaterials();
 		ImGui::Columns(numColumns, nullptr, false);
 		size_t counter = 0;
 		for (auto& material : materials)

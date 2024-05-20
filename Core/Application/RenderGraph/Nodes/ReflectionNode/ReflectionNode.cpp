@@ -10,7 +10,7 @@ ORenderTargetBase* OReflectionNode::Execute(ORenderTargetBase* RenderTarget)
 	PROFILE_SCOPE();
 	auto pso = FindPSOInfo(PSO);
 
-	auto cube = OEngine::Get()->GetCubeRenderTarget();
+	auto cube = OEngine::Get()->GetCubeRenderTarget().lock();
 	auto cmdList = CommandQueue->GetCommandList();
 	CommandQueue->SetResource("gCubeMap", GetSkyTextureSRV(), pso);
 
@@ -18,7 +18,7 @@ ORenderTargetBase* OReflectionNode::Execute(ORenderTargetBase* RenderTarget)
 	for (size_t i = 0; i < cube->GetNumRTVRequired(); i++)
 	{
 		CommandQueue->SetPipelineState(pso);
-		CommandQueue->SetRenderTarget(cube, i);
+		CommandQueue->SetRenderTarget(cube.get(), i);
 		CommandQueue->SetResource("cbPass", cube->GetPassConstantAddresss(i), pso);
 		OEngine::Get()->DrawRenderItems(pso, SRenderLayers::Opaque);
 		OEngine::Get()->DrawRenderItems(pso, SRenderLayers::Sky);

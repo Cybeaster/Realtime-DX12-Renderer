@@ -4,11 +4,11 @@
 class OCopyRenderNode : public ORenderNode
 {
 public:
-	OCopyRenderNode(ORenderTargetBase* OutTexture)
+	OCopyRenderNode(const shared_ptr<ORenderTargetBase>& OutTexture)
 	    : OutTexture(OutTexture){};
 
 	ORenderTargetBase* Execute(ORenderTargetBase* RenderTarget) override;
 
 private:
-	ORenderTargetBase* OutTexture;
+	weak_ptr<ORenderTargetBase> OutTexture;
 };

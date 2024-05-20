@@ -31,7 +31,7 @@ static unordered_map<string, SNodeFactory> FactoryMap = {
 		{"Shadow", []() { return make_unique<OShadowMapNode>(); }},
 		{"ShadowDebug", []() { return make_unique<OShadowDebugNode>(); }},
 		{"SSAO", []() { return make_unique<OSSAONode>(); }},
-		{"CopyTarget", []() { return make_unique<OCopyRenderNode>(OEngine::Get()->GetWindow()); }},
+		{"CopyTarget", []() { return make_unique<OCopyRenderNode>(OEngine::Get()->GetWindow().lock()); }},
 		{"TangentNormalDebug", []() { return make_unique<TangentNormalDebugNode>(); }},
 		{"FrustumDebug", []() { return make_unique<OFrustumDebugNode>(); }},
 		{"AABBVisualizer", []() { return make_unique<OAABBVisNode>(); }},

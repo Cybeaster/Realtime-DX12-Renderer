@@ -235,14 +235,62 @@ void OCommandQueue::CopyResourceTo(SResourceInfo* Dest, SResourceInfo* Src) cons
 
 ORenderTargetBase* OCommandQueue::SetRenderTarget(ORenderTargetBase* RenderTarget, uint32_t Subtarget)
 {
+	return SetRenderTargetImpl(RenderTarget, false, false, Subtarget);
+}
+
+ORenderTargetBase* OCommandQueue::SetRenderTargetImpl(ORenderTargetBase* RenderTarget, bool ClearDepth, bool ClearRenderTarget, uint32_t Subtarget)
+{
 	if (CurrentRenderTarget && CurrentRenderTarget != RenderTarget)
 	{
 		CurrentRenderTarget->UnsetRenderTarget(this);
 	}
 
-	RenderTarget->PrepareRenderTarget(CommandList.Get(), Subtarget);
+	RenderTarget->PrepareRenderTarget(this, ClearRenderTarget, ClearDepth, Subtarget);
 	CurrentRenderTarget = RenderTarget;
 	return RenderTarget;
+}
+
+ORenderTargetBase* OCommandQueue::SetAndClearRenderTarget(ORenderTargetBase* RenderTarget, uint32_t Subtarget)
+{
+	return SetRenderTargetImpl(RenderTarget, true, true, Subtarget);
+}
+
+void OCommandQueue::ClearRenderTarget(const SDescriptorPair& RTV, const SColor Color) const
+{
+	const auto floatColor = Color.ToFloat4();
+	FLOAT color[4] = {
+		floatColor.x,
+		floatColor.y,
+		floatColor.z,
+		floatColor.w
+	};
+	auto resource = RTV.Resource.lock();
+	LOG(Render, Log, "Clearing render target: of {} with index {}", TEXT(resource.get()), TEXT(RTV.Index));
+	CommandList->ClearRenderTargetView(RTV.CPUHandle, color, 0, nullptr);
+}
+
+void OCommandQueue::ClearDepthStencil(const SDescriptorPair& DSV) const
+{
+	LOG(Render, Log, "Clearing depth stencil of {} with index", TEXT(DSV.Resource.lock().get()), TEXT(DSV.Index));
+	CommandList->ClearDepthStencilView(DSV.CPUHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+}
+
+void OCommandQueue::SetRenderTargets(const SDescriptorPair& RTV, const SDescriptorPair& DSV) const
+{
+	LOG(Render, Log, "Setting render target: {} and depth stencil: {}", TEXT(RTV.Resource.lock().get()), TEXT(DSV.Resource.lock().get()));
+	CommandList->OMSetRenderTargets(1, &RTV.CPUHandle, true, &DSV.CPUHandle);
+}
+
+void OCommandQueue::SetRenderToRTVOnly(const SDescriptorPair& RTV) const
+{
+	LOG(Render, Log, "Setting only render target: {}", TEXT(RTV.Resource.lock().get()));
+	CommandList->OMSetRenderTargets(1, &RTV.CPUHandle, true, nullptr);
+}
+
+void OCommandQueue::SetRenderToDSVOnly(const SDescriptorPair& DSV) const
+{
+	LOG(Render, Log, "Setting only depth stencil: {}", TEXT(DSV.Resource.lock().get()));
+	CommandList->OMSetRenderTargets(0, nullptr, true, &DSV.CPUHandle);
 }
 
 void OCommandQueue::ResetQueueState()
@@ -252,6 +300,12 @@ void OCommandQueue::ResetQueueState()
 	CurrentPSO = nullptr;
 	SetResources.clear();
 	CurrentObjectHeap = nullptr;
+}
+
+void OCommandQueue::SetViewportScissors(const D3D12_VIEWPORT& Viewport, const D3D12_RECT& Scissors) const
+{
+	CommandList->RSSetViewports(1, &Viewport);
+	CommandList->RSSetScissorRects(1, &Scissors);
 }
 
 Microsoft::WRL::ComPtr<ID3D12CommandQueue> OCommandQueue::GetCommandQueue()

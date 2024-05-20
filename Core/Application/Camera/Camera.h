@@ -58,7 +58,7 @@ public:
 	DirectX::XMMATRIX GetProj() const;
 	// Set frustum.
 	void SetLens(float FovY, float Aspect, float Zn, float Zf);
-
+	void SetNewFar(float NewFar);
 	void Strafe(float D);
 	void MoveToTarget(float D);
 

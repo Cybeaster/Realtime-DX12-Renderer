@@ -2,13 +2,15 @@
 
 #include "DirectX/Resource.h"
 #include "DirectXUtils.h"
+#include "Engine/Device/Device.h"
 
+class ODevice;
 template<typename Type>
 class OUploadBuffer
 {
 public:
-	OUploadBuffer(ID3D12Device* Device, UINT ElementCount, bool IsConstantBuffer, IRenderObject* Owner = nullptr, const wstring& InName = L"");
-	static unique_ptr<OUploadBuffer> Create(ID3D12Device* Device, UINT ElementCount, bool IsConstantBuffer, IRenderObject* Owner, wstring InName = L"")
+	OUploadBuffer(const weak_ptr<ODevice>& Device, UINT ElementCount, bool IsConstantBuffer, const weak_ptr<IRenderObject>& Owner, const wstring& InName = L"");
+	static unique_ptr<OUploadBuffer> Create(const weak_ptr<ODevice>& Device, UINT ElementCount, bool IsConstantBuffer, weak_ptr<IRenderObject> Owner, wstring InName = L"")
 	{
 		return make_unique<OUploadBuffer>(Device, ElementCount, IsConstantBuffer, Owner, InName);
 	}
@@ -17,18 +19,11 @@ public:
 
 	OUploadBuffer& operator=(const OUploadBuffer&) = delete;
 
-	~OUploadBuffer()
-	{
-		if (UploadBuffer.Resource != nullptr)
-		{
-			UploadBuffer.Resource->Unmap(0, nullptr);
-		}
-		MappedData = nullptr;
-	}
+	~OUploadBuffer();
 
-	SResourceInfo* GetUploadResource()
+	SResourceInfo* GetUploadResource() const
 	{
-		return &UploadBuffer;
+		return UploadBuffer.get();
 	}
 
 	void CopyData(int ElementIdx, const Type& Data)
@@ -47,28 +42,28 @@ public:
 
 	auto GetGPUAddress() const
 	{
-		return UploadBuffer.Resource->GetGPUVirtualAddress();
+		return UploadBuffer->Resource->GetGPUVirtualAddress();
 	}
 
 	void ClearResource();
 
 public:
-	SResourceInfo UploadBuffer;
-	IRenderObject* Owner = nullptr;
+	TResourceInfo UploadBuffer;
+	weak_ptr<IRenderObject> Owner;
 	UINT ElementByteSize = 0;
 	bool bIsConstantBuffer = false;
 	uint32_t CurrentOffset = 0;
 	uint32_t MaxOffset = 0;
 	BYTE* MappedData = nullptr;
 	wstring Name = L"";
-	ID3D12Device* Device = nullptr;
+	weak_ptr<ODevice> Device;
 
 private:
 	void BuildResource(UINT ElementCount);
 };
 
 template<typename Type>
-OUploadBuffer<Type>::OUploadBuffer(ID3D12Device* InDevice, UINT ElementCount, bool IsConstantBuffer, IRenderObject* Owner, const wstring& InName)
+OUploadBuffer<Type>::OUploadBuffer(const weak_ptr<ODevice>& InDevice, UINT ElementCount, bool IsConstantBuffer, const weak_ptr<IRenderObject>& Owner, const wstring& InName)
     : bIsConstantBuffer(IsConstantBuffer), Owner(Owner), MaxOffset(ElementCount), Name(InName), Device(InDevice)
 {
 	ElementByteSize = sizeof(Type);
@@ -89,6 +84,16 @@ OUploadBuffer<Type>::OUploadBuffer(ID3D12Device* InDevice, UINT ElementCount, bo
 }
 
 template<typename Type>
+OUploadBuffer<Type>::~OUploadBuffer()
+{
+	if (UploadBuffer->Resource != nullptr)
+	{
+		UploadBuffer->Resource->Unmap(0, nullptr);
+	}
+	MappedData = nullptr;
+}
+
+template<typename Type>
 void OUploadBuffer<Type>::RebuildBuffer(UINT ElementCount)
 {
 	ClearResource();
@@ -98,12 +103,12 @@ void OUploadBuffer<Type>::RebuildBuffer(UINT ElementCount)
 template<typename Type>
 void OUploadBuffer<Type>::ClearResource()
 {
-	if (UploadBuffer.Resource != nullptr)
+	if (UploadBuffer->Resource != nullptr)
 	{
-		UploadBuffer.Resource->Unmap(0, nullptr);
+		UploadBuffer->Resource->Unmap(0, nullptr);
 	}
 	MappedData = nullptr;
-	UploadBuffer.Resource.Reset();
+	UploadBuffer->Resource.Reset();
 }
 
 template<typename Type>
@@ -111,8 +116,8 @@ void OUploadBuffer<Type>::BuildResource(UINT ElementCount)
 {
 	MaxOffset = ElementCount;
 	const auto uploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(ElementByteSize * ElementCount);
-	UploadBuffer = Utils::CreateResource(Owner, L"UploadBuffer" + Name, Device, D3D12_HEAP_TYPE_UPLOAD, uploadBufferDesc, D3D12_RESOURCE_STATE_GENERIC_READ);
-	THROW_IF_FAILED(UploadBuffer.Resource->Map(0, nullptr, reinterpret_cast<void**>(&MappedData)));
+	UploadBuffer = Utils::CreateResource(Owner, L"UploadBuffer" + Name, Device.lock()->GetDevice(), D3D12_HEAP_TYPE_UPLOAD, uploadBufferDesc, D3D12_RESOURCE_STATE_GENERIC_READ);
+	THROW_IF_FAILED(UploadBuffer->Resource->Map(0, nullptr, reinterpret_cast<void**>(&MappedData)));
 }
 
 template<typename Type>

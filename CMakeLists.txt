@@ -263,6 +263,8 @@ set(SRC_FILES
         Core/Application/RenderGraph/Nodes/DebugGeometryNode/ODebugGeometryNode.cpp
         Core/Application/RenderGraph/Nodes/DebugGeometryNode/ODebugGeometryNode.h
         Core/Application/RenderGraph/Graph/GraphSettings.h
+        Core/Application/UI/Graph/MainPassNode/MainPassNodeWidget.cpp
+        Core/Application/UI/Graph/MainPassNode/MainPassNodeWidget.h
 )
 
 

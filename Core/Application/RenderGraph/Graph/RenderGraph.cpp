@@ -66,10 +66,10 @@ void ORenderGraph::Execute()
 	if (engine->GetDescriptorHeap())
 	{
 		auto currentNode = Head;
-		engine->GetWindow()->SetViewport(CommandQueue->GetCommandList().Get());
-		ORenderTargetBase* texture = OEngine::Get()->GetOffscreenRT();
-		engine->SetDescriptorHeap(EResourceHeapType::Default);
-		CommandQueue->SetRenderTarget(texture);
+		engine->GetWindow().lock()->SetViewport(CommandQueue->GetCommandList().Get());
+		ORenderTargetBase* texture = OEngine::Get()->GetOffscreenRT().lock().get();
+		engine->SetDescriptorHeap(Default);
+		CommandQueue->SetAndClearRenderTarget(texture);
 		while (currentNode != nullptr)
 		{
 			if (!currentNode->GetNodeInfo().bEnable)

@@ -27,13 +27,15 @@ namespace HLSL
 #define SHADOW_MAPS_NUM 1
 
 #define EPSILON 0.0001f
+#define SHADOW_EPSILON 0.0005f
 #define F0_COEFF 0.16f
 #define MAX_CSM_PER_FRAME 3
 
 #define STRINGIFY(x) #x
 #define STRINGIFY_MACRO(x) STRINGIFY(x)
-
+#define CB_SSAO cbSsao
 #define CB_PASS cbPass
+#define CB_ROOT_CONSTANTS cbRootConstants
 #define CUBE_MAP gCubeMap
 #define TEXTURE_MAPS gTextureMaps
 #define MATERIAL_DATA gMaterialData
@@ -46,7 +48,9 @@ namespace HLSL
 #define CAMERA_MATRIX cbCameraMatrix
 #define AABBData gAABBData
 #define INSTANCE_DATA gInstanceData
-
+#define NORMAL_MAP gNormalMap
+#define RANDOM_VEC_MAP gRandomVecMap
+#define DEPTH_MAP gDepthMap
 struct TextureData
 {
 	uint bIsEnabled;
@@ -162,6 +166,7 @@ struct DirectionalLight
 {
 	float3 Direction;
 	float pad1; // Padding to align with HLSL's float4
+	float4 QuatRotaion;
 	float3 Intensity;
 	float pad2;
 	ShadowMapData ShadowMapData[MAX_CSM_PER_FRAME];

@@ -1,4 +1,5 @@
 #pragma once
+#include "Color.h"
 #include "DirectX/DXHelper.h"
 #include "Engine/RenderTarget/RenderTarget.h"
 #include "Types.h"
@@ -31,8 +32,17 @@ public:
 
 	void CopyResourceTo(ORenderTargetBase* Dest, ORenderTargetBase* Src) const;
 	void CopyResourceTo(SResourceInfo* Dest, SResourceInfo* Src) const;
+
 	ORenderTargetBase* SetRenderTarget(ORenderTargetBase* RenderTarget, uint32_t Subtarget = 0);
+	ORenderTargetBase* SetAndClearRenderTarget(ORenderTargetBase* RenderTarget, uint32_t Subtarget = 0);
+
+	void ClearRenderTarget(const SDescriptorPair& RTV, SColor) const;
+	void ClearDepthStencil(const SDescriptorPair& DSV) const;
+	void SetRenderTargets(const SDescriptorPair& RTV, const SDescriptorPair& DSV) const;
+	void SetRenderToRTVOnly(const SDescriptorPair& RTV) const;
+	void SetRenderToDSVOnly(const SDescriptorPair& DSV) const;
 	void ResetQueueState();
+	void SetViewportScissors(const D3D12_VIEWPORT& Viewport, const D3D12_RECT& Scissors) const;
 	void SetResource(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Resource, SPSODescriptionBase* PSO);
 	void SetResource(const string& Name, D3D12_GPU_DESCRIPTOR_HANDLE Resource, SPSODescriptionBase* PSO);
 	void SetHeap(SRenderObjectHeap* Heap);
@@ -45,6 +55,8 @@ protected:
 	ComPtr<ID3D12GraphicsCommandList> CreateCommandList(ComPtr<ID3D12CommandAllocator> Allocator);
 
 private:
+	ORenderTargetBase* SetRenderTargetImpl(ORenderTargetBase* RenderTarget, bool ClearDepth, bool ClearRenderTarget, uint32_t Subtarget = 0);
+
 	struct CommandAllocatorEntry
 	{
 		uint64_t FenceValue;

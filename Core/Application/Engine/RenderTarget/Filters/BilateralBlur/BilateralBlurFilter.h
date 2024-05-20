@@ -17,12 +17,12 @@ public:
 		uint32_t TextureHeight;
 	};
 
-	OBilateralBlurFilter(ID3D12Device* Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format);
-
+	OBilateralBlurFilter(const weak_ptr<ODevice>& Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format);
+	void InitRenderObject() override;
 	void BuildDescriptors(IDescriptor* Descriptor) override;
 
 	void OutputTo(SResourceInfo* Destination);
-	void BuildDescriptors() const override;
+	void BuildDescriptors() override;
 	void BuildResource() override;
 	void Execute(const SPSODescriptionBase* PSO,
 	             SResourceInfo*);
@@ -55,8 +55,8 @@ private:
 	TUploadBuffer<SBilateralBlur> BlurBuffer;
 	TUploadBuffer<SBufferConstants> BufferConstants;
 
-	SResourceInfo InputTexture;
-	SResourceInfo OutputTexture;
+	TResourceInfo InputTexture;
+	TResourceInfo OutputTexture;
 	float SpatialSigma;
 	float IntensitySigma;
 	int32_t BlurCount;

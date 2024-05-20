@@ -2,7 +2,7 @@
 
 #include "DirectX/ShaderTypes.h"
 
-OSobelFilter::OSobelFilter(ID3D12Device* Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format)
+OSobelFilter::OSobelFilter(const weak_ptr<ODevice>& Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format)
     : OFilterBase(Device, Other, Width, Height, Format)
 {
 	FilterName = L"SobelFilter";
@@ -13,8 +13,9 @@ CD3DX12_GPU_DESCRIPTOR_HANDLE OSobelFilter::OutputSRV() const
 	return OutputSRVHandle.GPUHandle;
 }
 
-void OSobelFilter::BuildDescriptors() const
+void OSobelFilter::BuildDescriptors()
 {
+	auto device = Device.lock();
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.Format = Format;
@@ -27,9 +28,9 @@ void OSobelFilter::BuildDescriptors() const
 	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 	uavDesc.Texture2D.MipSlice = 0;
 
-	Device->CreateShaderResourceView(Output.Resource.Get(), &srvDesc, OutputSRVHandle.CPUHandle);
-	Device->CreateUnorderedAccessView(Output.Resource.Get(), nullptr, &uavDesc, OutputUAVHandle.CPUHandle);
-	Device->CreateShaderResourceView(Input.Resource.Get(), &srvDesc, InputSRVHandle.CPUHandle);
+	device->CreateShaderResourceView(Output, srvDesc, OutputSRVHandle);
+	device->CreateUnorderedAccessView(Output, uavDesc, OutputUAVHandle);
+	device->CreateShaderResourceView(Input, srvDesc, InputSRVHandle);
 }
 
 void OSobelFilter::BuildResource()
@@ -47,8 +48,10 @@ void OSobelFilter::BuildResource()
 	texDesc.SampleDesc.Quality = 0;
 	texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-	Output = Utils::CreateResource(this, L"Output", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc);
-	Input = Utils::CreateResource(this, L"Input", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc);
+	auto device = Device.lock()->GetDevice();
+	auto weak = weak_from_this();
+	Output = Utils::CreateResource(weak, L"Output", device, D3D12_HEAP_TYPE_DEFAULT, texDesc);
+	Input = Utils::CreateResource(weak, L"Input", device, D3D12_HEAP_TYPE_DEFAULT, texDesc);
 }
 
 bool OSobelFilter::Execute(SPSODescriptionBase* PSO, ORenderTargetBase* InTarget)
@@ -58,7 +61,7 @@ bool OSobelFilter::Execute(SPSODescriptionBase* PSO, ORenderTargetBase* InTarget
 		return false;
 	}
 
-	Queue->CopyResourceTo(&Input, InTarget->GetResource());
+	Queue->CopyResourceTo(Input.get(), InTarget->GetResource());
 	auto cmd = Queue->GetCommandList().Get();
 	Queue->SetPipelineState(PSO);
 
@@ -66,13 +69,13 @@ bool OSobelFilter::Execute(SPSODescriptionBase* PSO, ORenderTargetBase* InTarget
 	root->SetResource("Input", InputSRVHandle.GPUHandle, cmd);
 	root->SetResource("Output", OutputUAVHandle.GPUHandle, cmd);
 
-	Utils::ResourceBarrier(cmd, &Output, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	Utils::ResourceBarrier(cmd, Output.get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
 	UINT numGroupsX = (UINT)ceilf(Width / 16.0f);
 	UINT numGroupsY = (UINT)ceilf(Height / 16.0f);
 	cmd->Dispatch(numGroupsX, numGroupsY, 1);
 
-	Utils::ResourceBarrier(cmd, &Output, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
+	Utils::ResourceBarrier(cmd, Output.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ);
 	return true;
 }
 
@@ -98,4 +101,8 @@ bool OSobelFilter::IsEnabled() const
 bool OSobelFilter::IsPureSobel() const
 {
 	return PureSobel;
+}
+SResourceInfo* OSobelFilter::GetOutput() const
+{
+	return Output.get();
 }

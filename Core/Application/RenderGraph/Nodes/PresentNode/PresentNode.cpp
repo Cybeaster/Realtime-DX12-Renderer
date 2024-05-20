@@ -9,11 +9,11 @@
 ORenderTargetBase* OPresentNode::Execute(ORenderTargetBase* RenderTarget)
 {
 	PROFILE_SCOPE();
-	auto window = OEngine::Get()->GetWindow();
-	CommandQueue->ResourceBarrier(window, D3D12_RESOURCE_STATE_PRESENT);
+	auto window = OEngine::Get()->GetWindow().lock();
+	CommandQueue->ResourceBarrier(window.get(), D3D12_RESOURCE_STATE_PRESENT);
 	CommandQueue->ExecuteCommandList();
 	THROW_IF_FAILED(window->GetSwapChain()->Present(0, 0));
-	THROW_IF_FAILED(OEngine::Get()->GetDevice()->GetDeviceRemovedReason());
+	THROW_IF_FAILED(OEngine::Get()->GetDevice().lock()->GetDevice()->GetDeviceRemovedReason());
 	window->MoveToNextFrame();
 	OEngine::Get()->CurrentFrameResource->Fence = CommandQueue->Signal();
 	OEngine::Get()->FlushGPU();

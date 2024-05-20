@@ -179,15 +179,15 @@ vector<CD3DX12_STATIC_SAMPLER_DESC> Utils::GetStaticSamplers()
 D3D12_RESOURCE_STATES Utils::ResourceBarrier(ID3D12GraphicsCommandList* List, SResourceInfo* Resource, D3D12_RESOURCE_STATES Before, D3D12_RESOURCE_STATES After)
 {
 	D3D12_RESOURCE_STATES localBefore = Resource->CurrentState;
-
+	auto context = Resource->Context.lock();
 	if (localBefore != Before)
 	{
-		LOG(Debug, Warning, "ResourceBarrier: Resource state mismatch on resource {}!", Resource->Context->GetName());
+		LOG(Debug, Warning, "ResourceBarrier: Resource state mismatch on resource {}!", context->GetName());
 	}
 
 	if (localBefore == After)
 	{
-		LOG(Debug, Warning, "ResourceBarrier: Resource states must be different {}!", Resource->Context->GetName());
+		LOG(Debug, Warning, "ResourceBarrier: Resource states must be different {}!", context->GetName());
 		return localBefore;
 	}
 	Resource->CurrentState = After;
@@ -199,13 +199,14 @@ D3D12_RESOURCE_STATES Utils::ResourceBarrier(ID3D12GraphicsCommandList* List, SR
 
 D3D12_RESOURCE_STATES Utils::ResourceBarrier(ID3D12GraphicsCommandList* List, SResourceInfo* Resource, D3D12_RESOURCE_STATES After)
 {
+	auto context = Resource->Context.lock();
 	if (Resource->CurrentState == After)
 	{
-		LOG(Debug, Warning, "ResourceBarrier: Resource states must be different {}!", Resource->Context->GetName());
+		LOG(Debug, Warning, "ResourceBarrier: Resource states must be different {}!", context->GetName());
 		return After;
 	}
 
-	LOG(Debug, Log, "ResourceBarrier: Transitioning resource {}", Resource->Context->GetName());
+	LOG(Debug, Log, "ResourceBarrier: Transitioning resource {}", context->GetName());
 	auto old = Resource->CurrentState;
 	const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(Resource->Resource.Get(), Resource->CurrentState, After);
 	Resource->CurrentState = After;
@@ -213,7 +214,7 @@ D3D12_RESOURCE_STATES Utils::ResourceBarrier(ID3D12GraphicsCommandList* List, SR
 	return old;
 }
 
-void Utils::BuildRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>& RootSignature, const D3D12_ROOT_SIGNATURE_DESC& Desc)
+void Utils::BuildRootSignature(const shared_ptr<ODevice>& Device, ComPtr<ID3D12RootSignature>& RootSignature, const D3D12_ROOT_SIGNATURE_DESC& Desc)
 {
 	// Create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
 	ComPtr<ID3DBlob> serializedRootSig = nullptr;
@@ -227,7 +228,7 @@ void Utils::BuildRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>
 	CreateRootSignature(Device, RootSignature, serializedRootSig, errorBlob);
 }
 
-void Utils::BuildRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>& RootSignature, const D3D12_VERSIONED_ROOT_SIGNATURE_DESC& Desc)
+void Utils::BuildRootSignature(const shared_ptr<ODevice>& Device, ComPtr<ID3D12RootSignature>& RootSignature, const D3D12_VERSIONED_ROOT_SIGNATURE_DESC& Desc)
 {
 	// Create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
 	ComPtr<ID3DBlob> serializedRootSig = nullptr;
@@ -239,17 +240,17 @@ void Utils::BuildRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>
 	CreateRootSignature(Device, RootSignature, serializedRootSig, errorBlob);
 }
 
-void Utils::CreateRootSignature(ID3D12Device* Device, ComPtr<ID3D12RootSignature>& RootSignature, const ComPtr<ID3DBlob>& SerializedRootSig, const ComPtr<ID3DBlob>& ErrorBlob)
+void Utils::CreateRootSignature(const shared_ptr<ODevice>& Device, ComPtr<ID3D12RootSignature>& RootSignature, const ComPtr<ID3DBlob>& SerializedRootSig, const ComPtr<ID3DBlob>& ErrorBlob)
 {
 	if (ErrorBlob != nullptr)
 	{
 		::OutputDebugStringA(static_cast<char*>(ErrorBlob->GetBufferPointer()));
 	}
 
-	THROW_IF_FAILED(Device->CreateRootSignature(0,
-	                                            SerializedRootSig->GetBufferPointer(),
-	                                            SerializedRootSig->GetBufferSize(),
-	                                            IID_PPV_ARGS(&RootSignature)));
+	THROW_IF_FAILED(Device->GetDevice()->CreateRootSignature(0,
+	                                                         SerializedRootSig->GetBufferPointer(),
+	                                                         SerializedRootSig->GetBufferSize(),
+	                                                         IID_PPV_ARGS(&RootSignature)));
 }
 
 DXGI_FORMAT Utils::MaskToFormat(const uint32_t Mask)
@@ -285,12 +286,13 @@ bool Utils::MatricesEqual(const DirectX::XMFLOAT4X4& mat1, const DirectX::XMFLOA
 	return true;
 }
 
-SResourceInfo Utils::CreateResource(IRenderObject* Owner, const wstring& AppendName, ID3D12Device* Device, const D3D12_HEAP_TYPE HeapProperties, const D3D12_RESOURCE_DESC& Desc, const D3D12_RESOURCE_STATES InitialState, const D3D12_CLEAR_VALUE* ClearValue)
+TResourceInfo Utils::CreateResource(const weak_ptr<IRenderObject>& Owner, const wstring& AppendName, ID3D12Device* Device, const D3D12_HEAP_TYPE HeapProperties, const D3D12_RESOURCE_DESC& Desc, const D3D12_RESOURCE_STATES InitialState, const D3D12_CLEAR_VALUE* ClearValue)
 {
+	auto owner = Owner.lock();
 	SResourceInfo info{
 		.CurrentState = InitialState,
 		.Context = Owner,
-		.Name = Owner->GetName() + L"_" + AppendName
+		.Name = owner->GetName() + L"_" + AppendName
 	};
 	const auto defaultHeap = CD3DX12_HEAP_PROPERTIES(HeapProperties);
 	THROW_IF_FAILED(Device->CreateCommittedResource(&defaultHeap,
@@ -300,21 +302,22 @@ SResourceInfo Utils::CreateResource(IRenderObject* Owner, const wstring& AppendN
 	                                                ClearValue,
 	                                                IID_PPV_ARGS(&info.Resource)));
 	info.Resource->SetName(info.Name.c_str());
-	return info;
+	return make_shared<SResourceInfo>(info);
 }
-SResourceInfo Utils::CreateResource(IRenderObject* Owner, const wstring& AppendName, ID3D12Device* Device, D3D12_HEAP_TYPE HeapProperties, const D3D12_RESOURCE_DESC& Desc, D3D12_RESOURCE_STATES InitialState, ID3D12GraphicsCommandList* CMDList, const D3D12_CLEAR_VALUE* ClearValue)
+TResourceInfo Utils::CreateResource(const weak_ptr<IRenderObject>& Owner, const wstring& AppendName, ID3D12Device* Device, D3D12_HEAP_TYPE HeapProperties, const D3D12_RESOURCE_DESC& Desc, D3D12_RESOURCE_STATES InitialState, ID3D12GraphicsCommandList* CMDList, const D3D12_CLEAR_VALUE* ClearValue)
 {
 	auto resource = CreateResource(Owner, AppendName, Device, HeapProperties, Desc, D3D12_RESOURCE_STATE_COMMON, ClearValue);
-	ResourceBarrier(CMDList, &resource, D3D12_RESOURCE_STATE_COMMON, InitialState);
+	ResourceBarrier(CMDList, resource.get(), D3D12_RESOURCE_STATE_COMMON, InitialState);
 	return resource;
 }
 
-SResourceInfo Utils::CreateResource(IRenderObject* Owner, const wstring& AppendName, ID3D12Device* Device, D3D12_RESOURCE_FLAGS Flags, D3D12_RESOURCE_STATES InitialState, const D3D12_HEAP_PROPERTIES& HeapProps, const uint64_t Size)
+TResourceInfo Utils::CreateResource(const weak_ptr<IRenderObject>& Owner, const wstring& AppendName, ID3D12Device* Device, D3D12_RESOURCE_FLAGS Flags, D3D12_RESOURCE_STATES InitialState, const D3D12_HEAP_PROPERTIES& HeapProps, const uint64_t Size)
 {
+	auto lock = Owner.lock();
 	SResourceInfo info{
 		.CurrentState = InitialState,
 		.Context = Owner,
-		.Name = Owner->GetName() + L"_" + AppendName
+		.Name = lock->GetName() + L"_" + AppendName
 	};
 
 	D3D12_RESOURCE_DESC bufDesc = {};
@@ -337,5 +340,5 @@ SResourceInfo Utils::CreateResource(IRenderObject* Owner, const wstring& AppendN
 	                                                nullptr,
 	                                                IID_PPV_ARGS(&info.Resource)));
 	info.Resource->SetName(info.Name.c_str());
-	return info;
+	return make_shared<SResourceInfo>(info);
 }

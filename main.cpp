@@ -3,7 +3,7 @@
 #ifndef _DEBUG
 #define _DEBUG
 #endif
-
+#define ENABLE_PROFILER
 #include "Profiler.h"
 
 #include <Application.h>
@@ -12,7 +12,6 @@
 
 int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLine, int nCmdShow)
 {
-	ENABLE_PROFILER
 	int returnCode = 0;
 
 	const HMODULE hModule = GetModuleHandleW(NULL);

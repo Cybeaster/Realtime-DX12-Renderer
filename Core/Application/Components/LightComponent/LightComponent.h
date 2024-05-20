@@ -73,8 +73,8 @@ public:
 	void Tick(UpdateEventArgs Arg) override;
 	void SetDirectionalLight(const SDirectionalLightPayload& Light);
 	void InitFrameResource(const TUploadBufferData<HLSL::DirectionalLight>& Spot);
-	void SetCSM(OCSM* InCSM);
-	OCSM* GetCSM() const;
+	void SetCSM(const weak_ptr<OCSM>& InCSM);
+	shared_ptr<OCSM> GetCSM() const;
 	void SetShadowMapIndices(array<UINT, MAX_CSM_PER_FRAME> Maps);
 
 	HLSL::DirectionalLight& GetDirectionalLight();
@@ -90,7 +90,7 @@ private:
 	float CascadeSplitLambda = 0.65;
 	TUploadBufferData<HLSL::DirectionalLight> DirLightBufferInfo;
 	HLSL::DirectionalLight DirectionalLight;
-	OCSM* CSM = nullptr;
+	weak_ptr<OCSM> CSM;
 };
 
 //Point light component
@@ -111,7 +111,7 @@ public:
 private:
 	HLSL::PointLight PointLight = {};
 	TUploadBufferData<HLSL::PointLight> PointLightBufferInfo;
-	OShadowMap* ShadowMap = {};
+	weak_ptr<OShadowMap> ShadowMap = {};
 };
 
 class OSpotLightComponent final : public OLightComponent
@@ -127,10 +127,10 @@ public:
 	void SetPassConstant(SPassConstants& OutConstant) override;
 	void SetLightSourceData() override;
 	HLSL::SpotLight& GetSpotLight();
-	void SetShadowMap(OShadowMap* InShadow);
+	void SetShadowMap(const shared_ptr<OShadowMap>& InShadow);
 
 private:
 	TUploadBufferData<HLSL::SpotLight> SpotLightBufferInfo;
 	HLSL::SpotLight SpotLight = {};
-	OShadowMap* ShadowMap = {};
+	weak_ptr<OShadowMap> ShadowMap = {};
 };

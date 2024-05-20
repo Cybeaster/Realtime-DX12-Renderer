@@ -115,18 +115,18 @@ void ODirectionalLightComponent::Tick(UpdateEventArgs Arg)
 	MarkDirty();
 }
 
-void ODirectionalLightComponent::SetCSM(OCSM* InCSM)
+void ODirectionalLightComponent::SetCSM(const weak_ptr<OCSM>& InCSM)
 {
 	CSM = InCSM;
 	for (size_t i = 0; i < 3; i++)
 	{
-		DirectionalLight.ShadowMapData[i].ShadowMapIndex = CSM->GetShadowMap(i)->GetShadowMapIndex();
+		DirectionalLight.ShadowMapData[i].ShadowMapIndex = CSM.lock()->GetShadowMap(i).lock()->GetShadowMapIndex();
 	}
 }
 
-OCSM* ODirectionalLightComponent::GetCSM() const
+shared_ptr<OCSM> ODirectionalLightComponent::GetCSM() const
 {
-	return CSM;
+	return CSM.lock();
 }
 
 void ODirectionalLightComponent::SetCascadeLambda(float InLambda)
@@ -143,7 +143,7 @@ float ODirectionalLightComponent::GetCascadeLambda() const
 
 void ODirectionalLightComponent::UpdateCascadeSplits()
 {
-	const auto camera = OEngine::Get()->GetWindow()->GetCamera();
+	const auto camera = OEngine::Get()->GetWindow().lock()->GetCamera();
 	const float nearClip = camera.lock()->GetNearZ();
 	const float farClip = camera.lock()->GetFarZ();
 	const float clipRange = farClip - nearClip;
@@ -250,7 +250,7 @@ void OSpotLightComponent::SetPassConstant(SPassConstants& OutConstant)
 ODirectionalLightComponent::ODirectionalLightComponent(uint32_t InIdx)
     : DirLightBufferInfo(InIdx)
 {
-	const auto camera = OEngine::Get()->GetWindow()->GetCamera();
+	const auto camera = OEngine::Get()->GetWindow().lock()->GetCamera();
 
 	UpdateCascadeSplits();
 }
@@ -259,7 +259,7 @@ void ODirectionalLightComponent::SetLightSourceData()
 {
 	PROFILE_SCOPE()
 
-	if (CSM == nullptr)
+	if (CSM.expired())
 	{
 		LOG(Render, Error, "CSM is nullptr");
 	}
@@ -268,7 +268,7 @@ void ODirectionalLightComponent::SetLightSourceData()
 
 	const auto zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 	const auto lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-	const auto camera = OEngine::Get()->GetWindow()->GetCamera();
+	const auto camera = OEngine::Get()->GetWindow().lock()->GetCamera();
 
 	auto lightDir = XMVector3Normalize(XMLoadFloat3(&DirectionalLight.Direction));
 	auto lightPos = lightDir;
@@ -293,7 +293,7 @@ void ODirectionalLightComponent::SetLightSourceData()
 	float lastSplitDist = 0.0f;
 	for (int i = 0; i < MAX_CSM_PER_FRAME; i++)
 	{
-		if (!CSM->GetShadowMap(i)->bDrawShadowMap)
+		if (!CSM.lock()->GetShadowMap(i).lock()->bDrawShadowMap)
 		{
 			continue;
 		}
@@ -338,19 +338,27 @@ void ODirectionalLightComponent::SetLightSourceData()
 		scale /= texelSize;
 		scale = std::ceil(scale);
 		radius = scale * texelSize / 2.0f;
-		const auto eye = center + (lightDir * -radius);
-		const auto lightView = MatrixLookAt(eye, center, lightUp);
+
+		XMFLOAT3 eye;
+		Put(eye, center + (lightDir * -radius));
+
+		// Snap eye position to texel size
+		eye.x = std::round(eye.x / texelSize) * texelSize;
+		eye.y = std::round(eye.y / texelSize) * texelSize;
+		eye.z = std::round(eye.z / texelSize) * texelSize;
+
+		const auto lightView = MatrixLookAt(Load(eye), center, lightUp);
 		const auto invLightView = Inverse(lightView);
-		float depth = 5000;
+		float depth = OEngine::Get()->GetSceneBounds().Radius * 4;
 
 		const auto lightProj = MatrixOrthographicOffCenter(-radius, radius, -radius, radius, -depth, depth);
 		const auto lightViewProj = lightView * lightProj;
 		const auto invLightViewProj = Inverse(lightViewProj);
 		BoundingOrientedBox worldbound;
-		worldbound.Extents = XMFLOAT3(radius + 1000, depth, radius + 1000);
+		worldbound.Extents = XMFLOAT3(radius + 100 * RadiusScale, depth, radius + 100 * RadiusScale);
 		Put(worldbound.Orientation, XMQuaternionRotationMatrix(lightView));
 		Put(worldbound.Center, center);
-		if (CSM->GetShadowMap(i)->bDrawBoundingGeometry)
+		if (CSM.lock()->GetShadowMap(i).lock()->bDrawBoundingGeometry)
 		{
 			OEngine::Get()->DrawDebugBox(worldbound.Center, worldbound.Extents, worldbound.Orientation, colors[i], 0.1);
 		}
@@ -359,7 +367,7 @@ void ODirectionalLightComponent::SetLightSourceData()
 		BoundingOrientedBox localBound;
 		worldbound.Transform(localBound, lightView);
 		OBoundingOrientedBox boundingBox{ localBound };
-		CSM->GetShadowMap(i)->UpdateBoundingGeometry(&boundingBox, lightView);
+		CSM.lock()->GetShadowMap(i).lock()->UpdateBoundingGeometry(&boundingBox, lightView);
 
 		const XMMATRIX T{
 			0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f
@@ -377,7 +385,7 @@ void ODirectionalLightComponent::SetLightSourceData()
 		const XMMATRIX S = lightViewProj * T;
 		Put(DirectionalLight.ShadowMapData[i].Transform, Transpose(S));
 
-		CSM->GetShadowMap(i)->SetPassConstants(passConstants);
+		CSM.lock()->GetShadowMap(i).lock()->SetPassConstants(passConstants);
 		lastSplitDist = CascadeSplits[i];
 	}
 }
@@ -424,8 +432,9 @@ void OSpotLightComponent::SetLightSourceData()
 	BoundingFrustum frustum;
 	BoundingFrustum::CreateFromMatrix(frustum, projection);
 	OBoundingFrustum boundingFrustum{ frustum };
-	ShadowMap->UpdateBoundingGeometry(&boundingFrustum, view);
-	ShadowMap->SetPassConstants(passConstants);
+	auto lock = ShadowMap.lock();
+	lock->UpdateBoundingGeometry(&boundingFrustum, view);
+	lock->SetPassConstants(passConstants);
 }
 
 HLSL::SpotLight& OSpotLightComponent::GetSpotLight()
@@ -433,7 +442,7 @@ HLSL::SpotLight& OSpotLightComponent::GetSpotLight()
 	return SpotLight;
 }
 
-void OSpotLightComponent::SetShadowMap(OShadowMap* InShadow)
+void OSpotLightComponent::SetShadowMap(const shared_ptr<OShadowMap>& InShadow)
 {
 	ShadowMap = InShadow;
 }

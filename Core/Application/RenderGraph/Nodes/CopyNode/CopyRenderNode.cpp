@@ -7,7 +7,8 @@
 ORenderTargetBase* OCopyRenderNode::Execute(ORenderTargetBase* RenderTarget)
 {
 	PROFILE_SCOPE();
-	CommandQueue->SetRenderTarget(OutTexture);
-	CommandQueue->CopyResourceTo(OutTexture, RenderTarget);
-	return OutTexture;
+	auto lock = OutTexture.lock();
+	CommandQueue->SetRenderTarget(lock.get());
+	CommandQueue->CopyResourceTo(lock.get(), RenderTarget);
+	return lock.get();
 }

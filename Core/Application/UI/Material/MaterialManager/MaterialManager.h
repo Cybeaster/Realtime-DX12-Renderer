@@ -7,14 +7,14 @@ class OMaterialManager;
 class OMaterialManagerWidget : public OPickerTableWidget
 {
 public:
-	OMaterialManagerWidget(OMaterialManager* _MaterialManager);
+	OMaterialManagerWidget(weak_ptr<OMaterialManager> InMaterialManager);
 
 	void DrawTable() override;
 	void DrawProperty() override;
 
 private:
 	SMaterial* CurrentMaterial = nullptr;
-	OMaterialManager* MaterialManager = nullptr;
+	weak_ptr<OMaterialManager> MaterialManager;
 
 	float SplitterPercent = 0.25f;
 	bool ResizingSplitter = false;

@@ -1,6 +1,6 @@
 #include "Samplers.hlsl"
-
-cbuffer cbSsao : register(b0)
+#include "Types.hlsl"
+cbuffer CB_SSAO : register(b0)
 {
     float4x4 gProj;
     float4x4 gInvProj;
@@ -21,9 +21,9 @@ cbuffer cbSsao : register(b0)
 
 
 // Nonnumeric values cannot be added to a cbuffer.
-Texture2D gNormalMap    : register(t0);
-Texture2D gDepthMap     : register(t1);
-Texture2D gRandomVecMap : register(t2);
+Texture2D NORMAL_MAP    : register(t0);
+Texture2D DEPTH_MAP     : register(t1);
+Texture2D RANDOM_VEC_MAP : register(t2);
 
 static const int gSampleCount = 128;
 
@@ -96,9 +96,13 @@ float4 PS(VertexOut pin) : SV_Target
 	// q -- a random offset from p.
 	// r -- a potential occluder that might occlude p.
 
-	// Get viewspace normal and z-coord of this pixel.  
-    float3 n = normalize(gNormalMap.SampleLevel(gsamPointClamp, pin.TexC, 0.0f).xyz);
-    float pz = gDepthMap.SampleLevel(gsamDepthMap, pin.TexC, 0.0f).r;
+
+	// TODO: use Load() instead of sampler
+	// TODO: move this to compute shader
+
+	// Get viewspace normal and z-coord of this pixel.
+    float3 n = normalize(NORMAL_MAP.SampleLevel(gsamPointClamp, pin.TexC, 0.0f).xyz);
+    float pz = DEPTH_MAP.SampleLevel(gsamDepthMap, pin.TexC, 0.0f).r;
     pz = NdcDepthToViewDepth(pz);
 
 	//
@@ -110,7 +114,7 @@ float4 PS(VertexOut pin) : SV_Target
 	float3 p = (pz/pin.PosV.z)*pin.PosV;
 	
 	// Extract random vector and map from [0,1] --> [-1, +1].
-	float3 randVec = 2.0f*gRandomVecMap.SampleLevel(gsamLinearWrap, 4.0f*pin.TexC, 0.0f).rgb - 1.0f;
+	float3 randVec = 2.0f*RANDOM_VEC_MAP.SampleLevel(gsamLinearWrap, 4.0f*pin.TexC, 0.0f).rgb - 1.0f;
 
 	float occlusionSum = 0.0f;
 	
@@ -136,7 +140,7 @@ float4 PS(VertexOut pin) : SV_Target
 		// the depth of q, as q is just an arbitrary point near p and might
 		// occupy empty space).  To find the nearest depth we look it up in the depthmap.
 
-		float rz = gDepthMap.SampleLevel(gsamDepthMap, projQ.xy, 0.0f).r;
+		float rz = DEPTH_MAP.SampleLevel(gsamDepthMap, projQ.xy, 0.0f).r;
         rz = NdcDepthToViewDepth(rz);
 
 		// Reconstruct full view space position r = (rx,ry,rz).  We know r

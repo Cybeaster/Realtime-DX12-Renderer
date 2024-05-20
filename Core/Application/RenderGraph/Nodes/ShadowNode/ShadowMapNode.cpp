@@ -8,15 +8,16 @@ ORenderTargetBase* OShadowMapNode::Execute(ORenderTargetBase* RenderTarget)
 {
 	PROFILE_SCOPE();
 	auto pso = FindPSOInfo(PSO);
-	for (auto map : OEngine::Get()->GetShadowMaps())
+	for (auto weak : OEngine::Get()->GetShadowMaps())
 	{
+		auto map = weak.lock();
 		if (map->ConsumeUpdate() && map->IsValid())
 		{
-			CommandQueue->SetRenderTarget(map);
-			CommandQueue->ResourceBarrier(map, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+			CommandQueue->SetRenderTarget(map.get());
+			CommandQueue->ResourceBarrier(map.get(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
 			CommandQueue->SetResource("cbPass", map->GetPassConstantAddresss(), pso);
 			OEngine::Get()->DrawRenderItems(pso, SRenderLayers::Opaque, map->GetCulledInstancesInfo());
-			CommandQueue->ResourceBarrier(map, D3D12_RESOURCE_STATE_GENERIC_READ);
+			CommandQueue->ResourceBarrier(map.get(), D3D12_RESOURCE_STATE_GENERIC_READ);
 		}
 	}
 	OEngine::Get()->SetWindowViewport(); // TODO remove this to other place

@@ -7,7 +7,7 @@ class OLightComponent;
 class OShadowMap : public ORenderTargetBase
 {
 public:
-	OShadowMap(ID3D12Device* Device, UINT ShadowMapSize, DXGI_FORMAT Format);
+	OShadowMap(const weak_ptr<ODevice>& Device, UINT ShadowMapSize, DXGI_FORMAT Format);
 
 	void BuildDescriptors() override;
 	void BuildResource() override;
@@ -20,7 +20,7 @@ public:
 	uint32_t GetNumSRVRequired() const override;
 	uint32_t GetNumPassesRequired() const override;
 	D3D12_GPU_VIRTUAL_ADDRESS GetPassConstantAddresss() const; // TODO propagate to base class
-	void PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList, uint32_t SubtargetIdx = 0) override;
+	void PrepareRenderTarget(OCommandQueue* Queue, bool ClearRenderTarget, bool ClearDepth, uint32_t SubtargetIdx = 0) override;
 	void UpdatePass(const TUploadBufferData<SPassConstants>& Data) override;
 	void SetShadowMapIndex(uint32_t Idx);
 	void Update(const UpdateEventArgs& Event) override;
@@ -37,6 +37,7 @@ public:
 
 	bool bDrawBoundingGeometry = false;
 	bool bDrawShadowMap = true;
+
 private:
 	optional<TUUID> ShadowMapInstancesBufferId;
 	SCulledInstancesInfo InstancesInfo;
@@ -44,7 +45,7 @@ private:
 	SPassConstants PassConstant;
 	SDescriptorPair SRV;
 	SDescriptorPair DSV;
-	SResourceInfo RenderTarget;
+	TResourceInfo RenderTarget;
 	TUploadBufferData<SPassConstants> PassConstantBuffer;
 	std::optional<uint32_t> ShadowMapIndex;
 	UINT MapSize = 0;

@@ -19,7 +19,13 @@ void OLightComponentWidget::Draw()
 		{
 			auto component = Cast<ODirectionalLightComponent>(LightComponent);
 			auto& dirLight = component->GetDirectionalLight();
-			dirty |= ImGui::DragFloat3("Direction", &dirLight.Direction.x, 0.01, -1.0, 1.0);
+			auto angles = NormalizedToAngles(dirLight.Direction);
+			if (ImGui::DragFloat3("Direction", &angles.x, 1, -180, 180))
+			{
+				dirty = true;
+				dirLight.Direction = AnglesToNormalized(angles);
+			}
+
 			dirty |= ImGui::ColorEdit3("Color", &dirLight.Intensity.x);
 			auto lambda = component->GetCascadeLambda();
 			if (ImGui::DragFloat("Cascade Lambda", &lambda, 0.01f, 0.0f, 1.0f))
@@ -29,8 +35,9 @@ void OLightComponentWidget::Draw()
 			ImGui::DragFloat("Radius Scale", &component->RadiusScale, 0.01f, 0.1f, 10.0f);
 			if (ImGui::Begin("Shadow Maps"))
 			{
-				for (const auto map : component->GetCSM()->GetShadowMaps())
+				for (const auto weak : component->GetCSM()->GetShadowMaps())
 				{
+					auto map = weak.lock();
 					auto format = std::format("Shadow Map {}", map->GetShadowMapIndex());
 					auto enabledFormat = std::format("Enable Shadow Map {}", map->GetShadowMapIndex());
 					ImGui::SeparatorText(format.c_str());

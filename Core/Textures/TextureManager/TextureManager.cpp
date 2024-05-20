@@ -15,7 +15,6 @@ OTextureManager::OTextureManager(ID3D12Device* Device, OCommandQueue* Queue)
     : Device(Device), CommandQueue(Queue)
 {
 	Parser = make_unique<OTexturesParser>(OApplication::Get()->GetConfigPath("TexturesConfigPath"));
-	LoadLocalTextures();
 }
 
 uint32_t OTextureManager::GetNum2DTextures() const
@@ -56,14 +55,14 @@ void OTextureManager::LoadLocalTextures()
 
 	for (const auto& texture : Parser->LoadTextures())
 	{
-		texture->HeapIdx = Textures.size();
-		TexturesHeapIndicesTable.insert(texture->HeapIdx);
+		TexturesHeapIndicesTable.insert(texture->TextureIndex);
 		THROW_IF_FAILED(DirectX::CreateDDSTextureFromFile12(Device,
 		                                                    CommandQueue->GetCommandList().Get(),
 		                                                    OApplication::Get()->GetResourcePath(texture->FileName).c_str(),
 		                                                    texture->Resource.Resource,
 		                                                    texture->UploadHeap.Resource));
-		texture->Resource.Init(this, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		auto weak = weak_from_this();
+		texture->Resource.Init(weak, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 		texture->Resource.Resource->SetName(texture->FileName.c_str());
 
 		CommandQueue->ResourceBarrier(&texture->Resource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
@@ -90,7 +89,7 @@ void OTextureManager::SaveLocalTextures()
 	Parser->AddTextures(textures);
 }
 
-wstring OTextureManager::GetName()
+wstring OTextureManager::GetName() const
 {
 	return Name;
 }
@@ -158,14 +157,10 @@ STexture* OTextureManager::CreateTexture(const string& Name, wstring FileName)
 	auto texture = make_unique<STexture>();
 	texture->Name = name;
 	texture->FileName = FileName;
-	texture->HeapIdx = Textures.size();
-	CWIN_LOG(TexturesHeapIndicesTable.contains(texture->HeapIdx), Engine, Error, "Texture heap index already exists! {}", texture->HeapIdx);
-	CWIN_LOG(texture->HeapIdx > TEXTURE_MAPS_NUM, Engine, Error, "Texture index is out of range!");
-	TexturesHeapIndicesTable.insert(texture->HeapIdx);
 
 	auto res = DirectX::LoadTexture(FileName, Device, CommandQueue->GetCommandList().Get(), texture->Resource.Resource, texture->UploadHeap.Resource, path.extension() == ".dds");
 	CWIN_LOG(!SUCCEEDED(res), Engine, Error, "Failed to load texture from file: {}", FileName);
-	texture->Resource.Init(this, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	texture->Resource.Init(weak_from_this(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	texture->Resource.Resource->SetName(path.filename().c_str());
 	if (texture->Type == ETextureType::Height)
 	{
@@ -220,4 +215,9 @@ STexture* OTextureManager::FindOrCreateTexture(string Name, wstring FileName)
 		return texture;
 	}
 	return CreateTexture(Name, FileName);
+}
+
+void OTextureManager::InitRenderObject()
+{
+	LoadLocalTextures();
 }

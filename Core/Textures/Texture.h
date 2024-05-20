@@ -19,6 +19,24 @@ struct STextureViewType
 
 ENUM(ETextureType, Diffuse, Normal, Height, Occlusion, Roughness)
 
+inline wstring ToString(ETextureType Type)
+{
+	switch (Type)
+	{
+	case ETextureType::Diffuse:
+		return L"Diffuse";
+	case ETextureType::Normal:
+		return L"Normal";
+	case ETextureType::Height:
+		return L"Height";
+	case ETextureType::Occlusion:
+		return L"Occlusion";
+	case ETextureType::Roughness:
+		return L"Roughness";
+	default:
+		return L"Unknown";
+	}
+}
 struct STexture
 {
 	virtual ~STexture() = default;
@@ -28,7 +46,9 @@ struct STexture
 	SResourceInfo Resource;
 	SResourceInfo UploadHeap;
 	string ViewType = STextureViewType::Texture2D;
-	int64_t HeapIdx = -1;
+	//Index for accessing the texture in the local array in shader
+	int64_t TextureIndex = -1;
+	SDescriptorPair SRV;
 	ETextureType Type = ETextureType::Diffuse;
 	virtual D3D12_SHADER_RESOURCE_VIEW_DESC GetSRVDesc() const;
 };

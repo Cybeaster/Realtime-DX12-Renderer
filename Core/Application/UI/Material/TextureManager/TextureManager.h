@@ -7,7 +7,7 @@ class OTextureManager;
 class OTextureManagerWidget final : public OPickerTableWidget
 {
 public:
-	OTextureManagerWidget(OTextureManager* Other);
+	OTextureManagerWidget(weak_ptr<OTextureManager> Other);
 	void Draw() override;
 
 public:
@@ -15,6 +15,6 @@ public:
 	void DrawProperty() override;
 
 private:
-	OTextureManager* TextureManager = nullptr;
+	weak_ptr<OTextureManager> TextureManager;
 	STexture* CurrentTexture = nullptr;
 };

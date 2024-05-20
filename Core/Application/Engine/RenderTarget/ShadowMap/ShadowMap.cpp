@@ -24,10 +24,10 @@ void OShadowMap::BuildResource()
 	optClear.DepthStencil.Depth = 1.0f;
 	optClear.DepthStencil.Stencil = 0;
 
-	RenderTarget = Utils::CreateResource(this, L"ShadowMap_RenderTarget", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_GENERIC_READ, &optClear);
+	RenderTarget = Utils::CreateResource(weak_from_this(), L"ShadowMap_RenderTarget", Device.lock()->GetDevice(), D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_GENERIC_READ, &optClear);
 }
 
-OShadowMap::OShadowMap(ID3D12Device* Device, UINT ShadowMapSize, DXGI_FORMAT Format)
+OShadowMap::OShadowMap(const weak_ptr<ODevice>& Device, UINT ShadowMapSize, DXGI_FORMAT Format)
     : ORenderTargetBase(Device, ShadowMapSize, ShadowMapSize, Format, EResourceHeapType::Default), MapSize(ShadowMapSize)
 {
 	Name = L"ShadowMap";
@@ -35,6 +35,7 @@ OShadowMap::OShadowMap(ID3D12Device* Device, UINT ShadowMapSize, DXGI_FORMAT For
 
 void OShadowMap::BuildDescriptors()
 {
+	auto device = Device.lock();
 	// Create SRV to resource so we can sample the shadow map in a shader program.
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -44,7 +45,7 @@ void OShadowMap::BuildDescriptors()
 	srvDesc.Texture2D.MipLevels = 1;
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 	srvDesc.Texture2D.PlaneSlice = 0;
-	Device->CreateShaderResourceView(RenderTarget.Resource.Get(), &srvDesc, SRV.CPUHandle);
+	device->CreateShaderResourceView(RenderTarget, srvDesc, SRV);
 
 	// Create DSV to resource so we can render to the shadow map.
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
@@ -52,7 +53,7 @@ void OShadowMap::BuildDescriptors()
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 	dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	dsvDesc.Texture2D.MipSlice = 0;
-	Device->CreateDepthStencilView(RenderTarget.Resource.Get(), &dsvDesc, DSV.CPUHandle);
+	device->CreateDepthStencilView(RenderTarget, dsvDesc, DSV);
 }
 
 void OShadowMap::BuildDescriptors(IDescriptor* Descriptor)
@@ -79,10 +80,10 @@ SDescriptorPair OShadowMap::GetDSV(uint32_t SubtargetIdx) const
 
 SResourceInfo* OShadowMap::GetResource()
 {
-	return &RenderTarget;
+	return RenderTarget.get();
 }
 
-void OShadowMap::PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList, uint32_t SubtargetIdx)
+void OShadowMap::PrepareRenderTarget(OCommandQueue* Queue, bool ClearRenderTarget, bool ClearDepth, uint32_t SubtargetIdx)
 {
 	if (PreparedTaregts.contains(SubtargetIdx))
 	{
@@ -90,9 +91,10 @@ void OShadowMap::PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList, uin
 	}
 	PreparedTaregts.insert(SubtargetIdx);
 	auto depthStencilView = GetDSV(SubtargetIdx);
-	Utils::ResourceBarrier(CommandList, GetResource(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
-	CommandList->ClearDepthStencilView(depthStencilView.CPUHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-	CommandList->OMSetRenderTargets(0, nullptr, true, &depthStencilView.CPUHandle);
+	Utils::ResourceBarrier(Queue->GetCommandList().Get(), GetResource(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	Queue->ClearDepthStencil(depthStencilView);
+	Queue->SetRenderToDSVOnly(depthStencilView);
+	LOG(Engine, Log, "Setting render target in {} with address: null and depth stencil: [{}]", GetName(), TEXT(depthStencilView.CPUHandle.ptr));
 }
 
 void OShadowMap::UpdatePass(const TUploadBufferData<SPassConstants>& Data)

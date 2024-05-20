@@ -15,14 +15,14 @@ void ODefaultRenderNode::SetupCommonResources()
 	auto pso = FindPSOInfo(PSO);
 	CommandQueue->SetPipelineState(pso);
 	CommandQueue->SetResource(STRINGIFY_MACRO(CB_PASS), resource->PassCB->GetGPUAddress(), pso);
-	CommandQueue->SetResource("gMaterialData", resource->MaterialBuffer->GetGPUAddress(), pso);
-	CommandQueue->SetResource("gTextureMaps", OEngine::Get()->GetDescriptorHeap()->GetGPUDescriptorHandleForHeapStart(), pso);
-	CommandQueue->SetResource("gCubeMap", GetSkyTextureSRV(), pso);
-	CommandQueue->SetResource("gDirectionalLights", resource->DirectionalLightBuffer->GetGPUAddress(), pso);
-	CommandQueue->SetResource("gPointLights", resource->PointLightBuffer->GetGPUAddress(), pso);
-	CommandQueue->SetResource("gSpotLights", resource->SpotLightBuffer->GetGPUAddress(), pso);
-	CommandQueue->SetResource("gShadowMaps", OEngine::Get()->GetRenderGroupStartAddress(ERenderGroup::ShadowTextures), pso);
-	CommandQueue->SetResource("gSsaoMap", OEngine::Get()->GetSSAORT()->GetAmbientMap0SRV().GPUHandle, pso);
+	CommandQueue->SetResource(STRINGIFY_MACRO(MATERIAL_DATA), resource->MaterialBuffer->GetGPUAddress(), pso);
+	CommandQueue->SetResource(STRINGIFY_MACRO(TEXTURE_MAPS), OEngine::Get()->TexturesStartAddress.GPUHandle, pso);
+	CommandQueue->SetResource(STRINGIFY_MACRO(CUBE_MAP), GetSkyTextureSRV(), pso);
+	CommandQueue->SetResource(STRINGIFY_MACRO(DIRECTIONAL_LIGHTS), resource->DirectionalLightBuffer->GetGPUAddress(), pso);
+	CommandQueue->SetResource(STRINGIFY_MACRO(POINT_LIGHTS), resource->PointLightBuffer->GetGPUAddress(), pso);
+	CommandQueue->SetResource(STRINGIFY_MACRO(SPOT_LIGHTS), resource->SpotLightBuffer->GetGPUAddress(), pso);
+	CommandQueue->SetResource(STRINGIFY_MACRO(SHADOW_MAPS), OEngine::Get()->GetRenderGroupStartAddress(ERenderGroup::ShadowTextures), pso);
+	CommandQueue->SetResource(STRINGIFY_MACRO(SSAO_MAP), OEngine::Get()->GetSSAORT().lock()->GetAmbientMap0SRV().GPUHandle, pso);
 }
 
 void ODefaultRenderNode::Initialize(const SNodeInfo& OtherNodeInfo, OCommandQueue* OtherCommandQueue,

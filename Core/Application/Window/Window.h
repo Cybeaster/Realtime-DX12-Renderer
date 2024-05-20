@@ -26,7 +26,6 @@ struct SWindowInfo
 class OEngine;
 
 class OWindow : public ORenderTargetBase
-    , public std::enable_shared_from_this<OWindow>
 {
 public:
 	virtual ~OWindow() = default;
@@ -35,7 +34,7 @@ public:
 
 	OWindow(HWND hWnd, const SWindowInfo& InWindowInfo);
 	void InitRenderObject();
-	const wstring& GetName() const;
+	wstring GetName() const override;
 	uint32_t GetWidth() const;
 	uint32_t GetHeight() const;
 	UINT GetCurrentBackBufferIndex() const;
@@ -49,10 +48,9 @@ public:
 	/**
 	 * Get the render target view for the current back buffer.
 	 */
-	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView() const;
 	SResourceInfo* GetCurrentBackBuffer();
 	SResourceInfo* GetCurrentDepthStencilBuffer();
-
+	void UpdateCameraClip(float NewFar);
 	void SetVSync(bool vSync);
 	float GetAspectRatio() const;
 	/**
@@ -79,7 +77,7 @@ public:
 	HWND GetHWND() const;
 	uint64_t FenceValues[SRenderConstants::RenderBuffersCount];
 
-	SResourceInfo DepthBuffer;
+	TResourceInfo DepthBuffer;
 
 	void MoveToNextFrame();
 	const ComPtr<IDXGISwapChain4>& GetSwapChain();
@@ -120,6 +118,8 @@ public:
 	uint32_t GetNumRTVRequired() const override;
 	SDescriptorPair GetRTV(uint32_t SubtargetIdx = 0) const override;
 	SDescriptorPair GetDSV(uint32_t SubtargetIdx = 0) const override;
+	uint32_t GetNumSRVRequired() const override;
+	SDescriptorPair GetSRVDepth() const;
 	SResourceInfo* GetResource() override;
 
 protected:
@@ -140,8 +140,9 @@ public:
 	void BuildDescriptors() override;
 
 private:
-	SDescriptorPair RTVHandle; // TODO use instead
+	array<SDescriptorPair, SRenderConstants::RenderBuffersCount> RTVHandles;
 	SDescriptorPair DSVHandle;
+	SDescriptorPair SRVDepthHandle;
 
 	shared_ptr<OInputHandler> InputHandler;
 	shared_ptr<OCamera> Camera;
@@ -154,7 +155,7 @@ private:
 	uint64_t FrameCounter = 0;
 
 	ComPtr<IDXGISwapChain4> SwapChain;
-	SResourceInfo BackBuffers[SRenderConstants::RenderBuffersCount];
+	TResourceInfo BackBuffers[SRenderConstants::RenderBuffersCount];
 
 	SWindowInfo WindowInfo;
 

@@ -5,7 +5,7 @@
 class OCommandQueue;
 struct SRenderTargetParams
 {
-	ID3D12Device* Device;
+	weak_ptr<ODevice> Device;
 	UINT Width;
 	UINT Height;
 	DXGI_FORMAT Format;
@@ -15,7 +15,7 @@ struct SRenderTargetParams
 class ORenderTargetBase : public ORenderObjectBase
 {
 public:
-	ORenderTargetBase(ID3D12Device* Device,
+	ORenderTargetBase(const weak_ptr<ODevice>& Device,
 	                  UINT Width, UINT Height,
 	                  DXGI_FORMAT Format, EResourceHeapType HeapType)
 	    : Width(Width), Height(Height), Format(Format), Device(Device), ORenderObjectBase(HeapType)
@@ -46,13 +46,14 @@ public:
 	TUUID GetID() override;
 	void SetID(TUUID) override;
 	void SetViewport(ID3D12GraphicsCommandList* List) const;
-	virtual void PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList, uint32_t SubtargetIdx = 0);
+	virtual void PrepareRenderTarget(OCommandQueue* Queue, bool ClearRenderTarget, bool ClearDepth, uint32_t SubtargetIdx = 0);
 
 	void UnsetRenderTarget(OCommandQueue* CommandQueue);
-	wstring GetName() override
+	wstring GetName() const override
 	{
 		return Name;
 	}
+
 	LONG GetWidth() const;
 	LONG GetHeight() const;
 
@@ -65,7 +66,7 @@ protected:
 	LONG Height = 0;
 	DXGI_FORMAT Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 
-	ID3D12Device* Device = nullptr;
+	weak_ptr<ODevice> Device;
 	unordered_set<uint32_t> PreparedTaregts;
 	wstring Name = L"";
 };
@@ -73,7 +74,7 @@ protected:
 class OOffscreenTexture : public ORenderTargetBase
 {
 public:
-	OOffscreenTexture(ID3D12Device* Device,
+	OOffscreenTexture(const weak_ptr<ODevice>& Device,
 	                  UINT Width, UINT Height,
 	                  DXGI_FORMAT Format);
 
@@ -102,5 +103,5 @@ private:
 	SDescriptorPair RTVHandle;
 
 	// Two for ping-ponging the textures.
-	SResourceInfo RenderTarget;
+	TResourceInfo RenderTarget;
 };

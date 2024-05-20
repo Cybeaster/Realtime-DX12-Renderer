@@ -451,6 +451,55 @@ inline DirectX::XMMATRIX BuildOrthographicMatrix(const DirectX::BoundingFrustum&
 	return MatrixOrthographicOffCenter(left, right, bottom, top, nearZ, farZ);
 }
 
+inline DirectX ::XMFLOAT3 NormalizedToAngles(const DirectX::XMFLOAT3 InRad)
+{
+	return { InRad.x * 180, InRad.y * 180, InRad.z * 180 };
+}
+
+inline DirectX::XMFLOAT3 AnglesToNormalized(const DirectX::XMFLOAT3 InDeg)
+{
+	return { InDeg.x / 180.f, InDeg.y / 180.f, InDeg.z / 180.f };
+}
+
+inline DirectX::XMFLOAT3 NormalizedToAngles(const DirectX::XMVECTOR& InRad)
+{
+	using namespace DirectX;
+	XMFLOAT3 euler;
+	XMStoreFloat3(&euler, InRad * 180);
+	return euler;
+}
+
+inline DirectX::XMVECTOR NormalizedToQuaternion(const DirectX::XMFLOAT3& InRad)
+{
+	using namespace DirectX;
+	DirectX::XMFLOAT3 euler = InRad * XM_PI;
+	return XMQuaternionRotationRollPitchYaw(euler.x, euler.y, euler.z);
+}
+
+inline DirectX::XMVECTOR EulerToQuaternion(const DirectX::XMFLOAT3& InRad)
+{
+	using namespace DirectX;
+	return XMQuaternionRotationRollPitchYaw(InRad.x, InRad.y, InRad.z);
+}
+
+// Converts a quaternion to a direction vector
+inline DirectX::XMFLOAT3 QuaternionToDirection(const DirectX::XMVECTOR& quat)
+{
+	using namespace DirectX;
+	// Default forward vector
+	XMVECTOR forward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+	XMVECTOR dir = XMVector3Rotate(forward, quat);
+	XMFLOAT3 direction;
+	XMStoreFloat3(&direction, dir);
+	return direction;
+}
+
+// Converts a quaternion to a direction vector
+inline DirectX::XMFLOAT3 QuaternionToDirection(const DirectX::XMFLOAT4& quat)
+{
+	return QuaternionToDirection(Load(quat));
+}
+
 inline DirectX::BoundingOrientedBox TransformBoundingBoxToViewSpace(const DirectX::BoundingOrientedBox& box, const DirectX::XMMATRIX& viewMatrix)
 {
 	using namespace DirectX;

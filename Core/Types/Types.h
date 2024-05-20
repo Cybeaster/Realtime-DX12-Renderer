@@ -1,5 +1,6 @@
 #pragma once
 
+#include "boost/enable_shared_from_this.hpp"
 #include "boost/signals2.hpp"
 #include "boost/unordered_map.hpp"
 #include "boost/unordered_set.hpp"
@@ -24,6 +25,7 @@
 #endif
 
 struct ORenderItem;
+using boost::enable_shared_from_this;
 using boost::function;
 using boost::make_shared;
 using boost::optional;

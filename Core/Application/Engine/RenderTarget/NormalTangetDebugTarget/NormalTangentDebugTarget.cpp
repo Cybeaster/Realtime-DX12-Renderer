@@ -18,11 +18,11 @@ void ONormalTangentDebugTarget::BuildResource()
 	rtvDesc.Format = SRenderConstants::BackBufferFormat;
 	rtvDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
-	Target = Utils::CreateResource(this, L"NormalTangentDebugTarget", Device, D3D12_HEAP_TYPE_DEFAULT, rtvDesc, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	Target = Utils::CreateResource(weak_from_this(), L"NormalTangentDebugTarget", Device.lock()->GetDevice(), D3D12_HEAP_TYPE_DEFAULT, rtvDesc, D3D12_RESOURCE_STATE_RENDER_TARGET);
 }
 SResourceInfo* ONormalTangentDebugTarget::GetResource()
 {
-	return &Target;
+	return Target.get();
 }
 SDescriptorPair ONormalTangentDebugTarget::GetSRV(uint32_t SubtargetIdx) const
 {
@@ -33,7 +33,7 @@ SDescriptorPair ONormalTangentDebugTarget::GetRTV(uint32_t SubtargetIdx) const
 	return RTV;
 }
 
-ONormalTangentDebugTarget::ONormalTangentDebugTarget(ID3D12Device* Device, int Width, int Height, DXGI_FORMAT Format)
+ONormalTangentDebugTarget::ONormalTangentDebugTarget(const weak_ptr<ODevice>& Device, int Width, int Height, DXGI_FORMAT Format)
     : ORenderTargetBase(Device, Width, Height, Format, EResourceHeapType::Default)
 {
 }
@@ -54,6 +54,7 @@ void ONormalTangentDebugTarget::InitRenderObject()
 
 void ONormalTangentDebugTarget::BuildDescriptors()
 {
+	auto device = Device.lock();
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.Format = Format;
@@ -61,7 +62,7 @@ void ONormalTangentDebugTarget::BuildDescriptors()
 	srvDesc.TextureCube.MostDetailedMip = 0;
 	srvDesc.TextureCube.MipLevels = 1;
 	srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
-	Device->CreateShaderResourceView(Target.Resource.Get(), &srvDesc, SRV.CPUHandle);
+	device->CreateShaderResourceView(Target, srvDesc, SRV);
 
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc;
 	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
@@ -71,5 +72,5 @@ void ONormalTangentDebugTarget::BuildDescriptors()
 	rtvDesc.Texture2DArray.FirstArraySlice = 0;
 	rtvDesc.Texture2DArray.ArraySize = 1;
 
-	Device->CreateRenderTargetView(Target.Resource.Get(), &rtvDesc, RTV.CPUHandle);
+	device->CreateRenderTargetView(Target, rtvDesc, RTV);
 }

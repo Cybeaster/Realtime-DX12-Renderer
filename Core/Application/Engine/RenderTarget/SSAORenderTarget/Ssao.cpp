@@ -31,18 +31,18 @@ void OSSAORenderTarget::BuildDescriptors()
 	srvDesc.Format = Format;
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.MipLevels = 1;
-
-	Device->CreateShaderResourceView(NormalMap.Resource.Get(), &srvDesc, NormalMapSRV.CPUHandle);
+	auto device = Device.lock();
+	device->CreateShaderResourceView(NormalMap, srvDesc, NormalMapSRV);
 
 	srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-	Device->CreateShaderResourceView(DepthMap.Resource.Get(), &srvDesc, DepthMapSRV.CPUHandle);
+	device->CreateShaderResourceView(DepthMap, srvDesc, DepthMapSRV);
 
 	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	Device->CreateShaderResourceView(RandomVectorMap.Resource.Get(), &srvDesc, RandomVectorMapSRV.CPUHandle);
+	device->CreateShaderResourceView(RandomVectorMap, srvDesc, RandomVectorMapSRV);
 
 	srvDesc.Format = SRenderConstants::AmbientMapFormat;
-	Device->CreateShaderResourceView(AmbientMap0.Resource.Get(), &srvDesc, AmbientMap0SRV.CPUHandle);
-	Device->CreateShaderResourceView(AmbientMap1.Resource.Get(), &srvDesc, AmbientMap1SRV.CPUHandle);
+	device->CreateShaderResourceView(AmbientMap0, srvDesc, AmbientMap0SRV);
+	device->CreateShaderResourceView(AmbientMap1, srvDesc, AmbientMap1SRV);
 
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
 	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
@@ -50,11 +50,11 @@ void OSSAORenderTarget::BuildDescriptors()
 	rtvDesc.Texture2D.MipSlice = 0;
 	rtvDesc.Texture2D.PlaneSlice = 0;
 
-	Device->CreateRenderTargetView(NormalMap.Resource.Get(), &rtvDesc, NormalMapRTV.CPUHandle);
+	device->CreateRenderTargetView(NormalMap, rtvDesc, NormalMapRTV);
 
 	rtvDesc.Format = SRenderConstants::AmbientMapFormat;
-	Device->CreateRenderTargetView(AmbientMap0.Resource.Get(), nullptr, AmbientMap0RTV.CPUHandle);
-	Device->CreateRenderTargetView(AmbientMap1.Resource.Get(), nullptr, AmbientMap1RTV.CPUHandle);
+	device->CreateRenderTargetView(AmbientMap0, AmbientMap0RTV);
+	device->CreateRenderTargetView(AmbientMap1, AmbientMap1RTV);
 }
 
 void OSSAORenderTarget::BuildResource()
@@ -65,14 +65,15 @@ void OSSAORenderTarget::BuildResource()
 	AmbientMap1 = nullptr;
 
 	auto desc = GetResourceDesc();
-
+	auto device = Device.lock();
 	float normalClearColor[] = { 0.0f, 0.0f, 1.0f, 0.0f };
 	CD3DX12_CLEAR_VALUE optClear(Format, normalClearColor);
-	NormalMap = Utils::CreateResource(this, L"NormalMap", Device, D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ, &optClear);
+	auto weak = weak_from_this();
+	NormalMap = Utils::CreateResource(weak, L"NormalMap", device->GetDevice(), D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ, &optClear);
 
 	desc.Format = DXGI_FORMAT_R24G8_TYPELESS;
 	desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-	DepthMap = Utils::CreateResource(this, L"DepthMap", Device, D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ);
+	DepthMap = Utils::CreateResource(weak, L"DepthMap", device->GetDevice(), D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ);
 
 	desc.Width = Width / 2;
 	desc.Height = Height / 2;
@@ -81,8 +82,8 @@ void OSSAORenderTarget::BuildResource()
 	float ambientClearColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	optClear = CD3DX12_CLEAR_VALUE(SRenderConstants::AmbientMapFormat, ambientClearColor);
 
-	AmbientMap0 = Utils::CreateResource(this, L"AmbientMap0", Device, D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ, &optClear);
-	AmbientMap1 = Utils::CreateResource(this, L"AmbientMap1", Device, D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ, &optClear);
+	AmbientMap0 = Utils::CreateResource(weak, L"AmbientMap0", device->GetDevice(), D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ, &optClear);
+	AmbientMap1 = Utils::CreateResource(weak, L"AmbientMap1", device->GetDevice(), D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ, &optClear);
 }
 
 void OSSAORenderTarget::BuildOffsetVectors()
@@ -128,10 +129,12 @@ void OSSAORenderTarget::BuildRandomVectorTexture()
 	desc.Height = 256;
 	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-	RandomVectorMap = Utils::CreateResource(this, L"RandomVectorMap", Device, D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ);
+	auto device = Device.lock();
+	auto weak = weak_from_this();
+	RandomVectorMap = Utils::CreateResource(weak, L"RandomVectorMap", device->GetDevice(), D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ);
 	const UINT num2DSubresources = desc.DepthOrArraySize * desc.MipLevels;
-	const UINT64 uploadBufferSize = GetRequiredIntermediateSize(RandomVectorMap.Resource.Get(), 0, num2DSubresources);
-	RandomVectorMapUploadBuffer = Utils::CreateResource(this, L"RandomVectorMapUploadBuffer", Device, D3D12_HEAP_TYPE_UPLOAD, CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize), D3D12_RESOURCE_STATE_GENERIC_READ);
+	const UINT64 uploadBufferSize = GetRequiredIntermediateSize(RandomVectorMap->Resource.Get(), 0, num2DSubresources);
+	RandomVectorMapUploadBuffer = Utils::CreateResource(weak, L"RandomVectorMapUploadBuffer", device->GetDevice(), D3D12_HEAP_TYPE_UPLOAD, CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize), D3D12_RESOURCE_STATE_GENERIC_READ);
 
 	XMCOLOR initData[256 * 256];
 	for (int i = 0; i < 256; ++i)
@@ -150,18 +153,19 @@ void OSSAORenderTarget::BuildRandomVectorTexture()
 
 	auto queue = OEngine::Get()->GetCommandQueue();
 	queue->TryResetCommandList();
-	queue->ResourceBarrier(&RandomVectorMap, D3D12_RESOURCE_STATE_COPY_DEST);
-	UpdateSubresources(queue->GetCommandList().Get(), RandomVectorMap.Resource.Get(), RandomVectorMapUploadBuffer.Resource.Get(), 0, 0, num2DSubresources, &subResourceData);
-	queue->ResourceBarrier(&RandomVectorMap, D3D12_RESOURCE_STATE_GENERIC_READ);
+	queue->ResourceBarrier(RandomVectorMap.get(), D3D12_RESOURCE_STATE_COPY_DEST);
+	UpdateSubresources(queue->GetCommandList().Get(), RandomVectorMap->Resource.Get(), RandomVectorMapUploadBuffer->Resource.Get(), 0, 0, num2DSubresources, &subResourceData);
+	queue->ResourceBarrier(RandomVectorMap.get(), D3D12_RESOURCE_STATE_GENERIC_READ);
 	queue->ExecuteCommandList();
 }
 
 void OSSAORenderTarget::InitRenderObject()
 {
+	auto weak = weak_from_this();
 	ORenderTargetBase::InitRenderObject();
-	HBlurCB = make_unique<OUploadBuffer<SConstantBufferBlurData>>(Device, 1, true, this);
+	HBlurCB = make_unique<OUploadBuffer<SConstantBufferBlurData>>(Device, 1, true, weak);
 	HBlurCB->CopyData(0, SConstantBufferBlurData{ 0 });
-	VBlurCB = make_unique<OUploadBuffer<SConstantBufferBlurData>>(Device, 1, true, this);
+	VBlurCB = make_unique<OUploadBuffer<SConstantBufferBlurData>>(Device, 1, true, weak);
 	VBlurCB->CopyData(0, SConstantBufferBlurData{ 1 });
 	BuildResource();
 	BuildOffsetVectors();
@@ -248,15 +252,15 @@ SResourceInfo* OSSAORenderTarget::GetSubresource(uint32_t Idx)
 {
 	if (Idx == NormalSubtarget)
 	{
-		return &NormalMap;
+		return NormalMap.get();
 	}
 	else if (Idx == AmbientSubtarget0)
 	{
-		return &AmbientMap0;
+		return AmbientMap0.get();
 	}
 	else if (Idx == AmbientSubtarget1)
 	{
-		return &AmbientMap1;
+		return AmbientMap1.get();
 	}
 	return nullptr;
 }
@@ -273,12 +277,12 @@ uint32_t OSSAORenderTarget::GetNumSRVRequired() const
 
 SResourceInfo* OSSAORenderTarget::GetRandomVectorMap()
 {
-	return &RandomVectorMap;
+	return RandomVectorMap.get();
 }
 
 SResourceInfo* OSSAORenderTarget::GetNormalMap()
 {
-	return &NormalMap;
+	return NormalMap.get();
 }
 
 SDescriptorPair OSSAORenderTarget::GetNormalMapSRV() const
@@ -313,30 +317,30 @@ SDescriptorPair OSSAORenderTarget::GetAmbientMap1RTV() const
 
 SResourceInfo* OSSAORenderTarget::GetAmbientMap0()
 {
-	return &AmbientMap0;
+	return AmbientMap0.get();
 }
 
 SResourceInfo* OSSAORenderTarget::GetDepthMap()
 {
-	return &DepthMap;
+	return DepthMap.get();
 }
 
-void OSSAORenderTarget::PrepareRenderTarget(ID3D12GraphicsCommandList* CommandList, uint32_t SubtargetIdx)
+void OSSAORenderTarget::PrepareRenderTarget(OCommandQueue* Queue, bool ClearRenderTarget, bool ClearDepth, uint32_t SubtargetIdx)
 {
 	if (SubtargetIdx == NormalSubtarget)
 	{
-		auto dsv = GetDSV().CPUHandle;
-		CommandList->ClearRenderTargetView(NormalMapRTV.CPUHandle, DirectX::Colors::LightSteelBlue, 0, nullptr);
-		CommandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-		CommandList->OMSetRenderTargets(1, &NormalMapRTV.CPUHandle, true, &dsv);
+		Queue->ClearRenderTarget(NormalMapRTV, SColor::Blue);
+		Queue->ClearDepthStencil(GetDSV());
+		Queue->SetRenderTargets(NormalMapRTV, GetDSV());
+		LOG(Engine, Log, "Setting render target with address: [{}] in [{}] and depth stencil: [{}]", TEXT(NormalMapRTV.Index), GetName(), TEXT(GetDSV().Index));
 	}
 	else if (SubtargetIdx == AmbientSubtarget0)
 	{
-		CommandList->RSSetViewports(1, &Viewport);
-		CommandList->RSSetScissorRects(1, &ScissorRect);
+		Queue->SetViewportScissors(Viewport, ScissorRect);
 		float clearValue[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-		CommandList->ClearRenderTargetView(AmbientMap0RTV.CPUHandle, clearValue, 0, nullptr);
-		CommandList->OMSetRenderTargets(1, &AmbientMap0RTV.CPUHandle, true, nullptr);
+		Queue->ClearRenderTarget(AmbientMap0RTV, SColor::White);
+		Queue->SetRenderToRTVOnly(AmbientMap0RTV);
+		LOG(Engine, Log, "Setting render target with address: [{}] in [{}]and depth stencil: null", TEXT(AmbientMap0RTV.CPUHandle.ptr), GetName());
 	}
 }
 

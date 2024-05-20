@@ -4,7 +4,7 @@
 class OCubeRenderTarget : public ORenderTargetBase
 {
 public:
-	OCubeRenderTarget(ID3D12Device* Device, int Width, int Height, DXGI_FORMAT Format, const DirectX::XMUINT2 Res);
+	OCubeRenderTarget(const weak_ptr<ODevice>& Device, int Width, int Height, DXGI_FORMAT Format, const DirectX::XMUINT2 Res);
 	OCubeRenderTarget(const SRenderTargetParams& Params, DirectX::XMUINT2 Res);
 	OCubeRenderTarget(const OCubeRenderTarget& rhs) = delete;
 	OCubeRenderTarget& operator=(const OCubeRenderTarget& rhs) = delete;
@@ -26,7 +26,7 @@ public:
 
 	void InitRenderObject() override;
 	uint32_t GetNumPassesRequired() const override;
-	SResourceInfo* GetResource() override { return &RenderTarget; }
+	SResourceInfo* GetResource() override { return RenderTarget.get(); }
 
 protected:
 	DirectX::XMUINT2 Resolution;
@@ -35,8 +35,8 @@ protected:
 private:
 	void BuildResource() override;
 	void BuildDescriptors() override;
-	SResourceInfo RenderTarget;
-	SResourceInfo CubeDepthStencilBuffer;
+	TResourceInfo RenderTarget;
+	TResourceInfo CubeDepthStencilBuffer;
 
 	SDescriptorPair SRVHandle;
 	SDescriptorPair DSVHandle;

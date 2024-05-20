@@ -2,7 +2,7 @@
 
 #include "Statics.h"
 
-SFrameResource::SFrameResource(ID3D12Device* Device, IRenderObject* Owner)
+SFrameResource::SFrameResource(weak_ptr<ODevice> Device, weak_ptr<IRenderObject> Owner)
     : Owner(Owner), Device(Device)
 {
 	CameraMatrixBuffer = OUploadBuffer<HLSL::CameraMatrixBuffer>::Create(Device, 1, true, Owner, L"_CameraMatrixBuffer");

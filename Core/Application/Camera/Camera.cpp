@@ -125,6 +125,14 @@ void OCamera::SetLens(float _FovY, float _Aspect, float Zn, float Zf)
 	Frustum.ConstructFromGeometry(frustum);
 	UpdateViewMatrix();
 }
+void OCamera::SetNewFar(float NewFar)
+{
+	if (FarZ - NewFar > EPSILON)
+	{
+		FarZ = NewFar;
+		SetLens(FovY, Aspect, NearZ, FarZ);
+	}
+}
 
 void OCamera::Strafe(float D)
 {

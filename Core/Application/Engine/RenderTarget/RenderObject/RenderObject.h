@@ -13,6 +13,7 @@ struct IDescriptor
 
 struct SDescriptorPair
 {
+	weak_ptr<SResourceInfo> Resource;
 	CD3DX12_CPU_DESCRIPTOR_HANDLE CPUHandle = {};
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GPUHandle = {};
 	uint32_t Index = UINT32_MAX;
@@ -31,6 +32,11 @@ struct TDescriptorHandle
 	{
 		CPUHandle.ptr = 0;
 		GPUHandle.ptr = 0;
+	}
+
+	auto GetPairEntry() const
+	{
+		return SDescriptorPair{ {}, CPUHandle, GPUHandle, CurrentOffset };
 	}
 
 	void Offset(CD3DX12_CPU_DESCRIPTOR_HANDLE& OutCPUHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& OutGPUHandle, uint32_t& OutIndex)
@@ -53,7 +59,8 @@ struct TDescriptorHandle
 		Offset(OutHandle.CPUHandle, OutHandle.GPUHandle, OutHandle.Index);
 	}
 
-	void Offset(vector<SDescriptorPair>& OutHandle, uint32_t NumDesc)
+	template<typename Container>
+	void Offset(Container& OutHandle, const uint32_t NumDesc)
 	{
 		for (uint32_t i = 0; i < NumDesc; i++)
 		{
@@ -69,7 +76,8 @@ struct TDescriptorHandle
 		}
 	}
 
-	void Offset(vector<SDescriptorPair>& OutHandle)
+	template<typename Container>
+	void Offset(Container& OutHandle)
 	{
 		for (auto& handle : OutHandle)
 		{
@@ -89,24 +97,25 @@ struct TDescriptorHandle
 			GPUHandle.Offset(Value, DescSize);
 		}
 		Check();
-		return { oldCPU, oldGPU, oldOffset };
+		//We don't have the resource being described here yet
+		return { {}, oldCPU, oldGPU, oldOffset };
 	}
 
 	void Check() const
 	{
 		if (CurrentOffset > MaxOffset)
 		{
-			LOG(Render, Error, "Descriptor heap overflow");
+			LOG(Render, Critical, "Descriptor heap overflow");
 		}
 
 		if (!bIsInitized)
 		{
-			LOG(Render, Error, "Descriptor heap not initized");
+			LOG(Render, Critical, "Descriptor heap not initized");
 		}
 
 		if (MaxOffset == 0)
 		{
-			LOG(Render, Error, "Descriptor heap max count not initized");
+			LOG(Render, Critical, "Descriptor heap max count not initized");
 		}
 	}
 
@@ -189,7 +198,7 @@ using SResourceHeapBitFlag = uint32_t;
 /**
  * @brief Object being render to the screen, may demand SRV, RTV, DSV, and pass constants
  */
-class IRenderObject
+class IRenderObject : public enable_shared_from_this<IRenderObject>
 {
 public:
 	virtual ~IRenderObject() = default;
@@ -209,7 +218,7 @@ public:
 	virtual void Update(const UpdateEventArgs& Event) {}
 	virtual TUUID GetID() { return {}; }
 	virtual void SetID(TUUID ID) {}
-	virtual wstring GetName() { return { L"UNIMPLEMENTED" }; }
+	virtual wstring GetName() const { return { L"UNIMPLEMENTED" }; }
 	virtual EResourceHeapType GetHeapType() { return EResourceHeapType::Default; }
 };
 
@@ -234,3 +243,12 @@ protected:
 	TUUID ID = {};
 	EResourceHeapType HeapType = EResourceHeapType::Default;
 };
+
+inline wstring ToString(const SResourceInfo* Resource)
+{
+	if (Resource == nullptr)
+	{
+		return L"Resource: nullptr";
+	}
+	return L"Resource: " + Resource->Name + L"Owner: " + Resource->Context.lock()->GetName() + L"State: " + ToString(Resource->CurrentState);
+}

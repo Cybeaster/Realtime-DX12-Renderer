@@ -11,7 +11,7 @@ using namespace Microsoft::WRL;
 OWindow::OWindow(HWND hWnd, const SWindowInfo& InWindowInfo)
     : ORenderTargetBase(WindowInfo.ClientWidth, WindowInfo.ClientHeight, Default), Hwnd(hWnd), WindowInfo{ InWindowInfo }
 {
-	Camera = make_shared<OCamera>(OCamera(this));
+	Camera = make_shared<OCamera>(this);
 	Name = WindowInfo.Name;
 }
 
@@ -26,8 +26,9 @@ void OWindow::BuildEssentials()
 	const auto engine = OEngine::Get();
 	auto device = engine->GetDevice();
 	SwapChain = CreateSwapChain();
-	engine->DefaultGlobalHeap.DSVHandle.Offset();
-	engine->DefaultGlobalHeap.RTVHandle.Offset(SRenderConstants::RenderBuffersCount);
+	DSVHandle = engine->DefaultGlobalHeap.DSVHandle.Offset();
+	SRVDepthHandle = engine->DefaultGlobalHeap.SRVHandle.Offset();
+	engine->DefaultGlobalHeap.RTVHandle.Offset(RTVHandles);
 	UpdateRenderTargetViews();
 	ResizeDepthBuffer();
 }
@@ -46,7 +47,7 @@ void OWindow::BuildDescriptors(IDescriptor* Descriptor)
 	BuildDescriptors();
 }
 
-const wstring& OWindow::GetName() const
+wstring OWindow::GetName() const
 {
 	return WindowInfo.Name;
 }
@@ -73,21 +74,19 @@ UINT OWindow::Present()
 	return CurrentBackBufferIndex;
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE OWindow::CurrentBackBufferView() const
-{
-	return CD3DX12_CPU_DESCRIPTOR_HANDLE(OEngine::Get()->DefaultGlobalHeap.RTVHeap->GetCPUDescriptorHandleForHeapStart(),
-	                                     CurrentBackBufferIndex,
-	                                     OEngine::Get()->RTVDescriptorSize);
-}
-
 SResourceInfo* OWindow::GetCurrentBackBuffer()
 {
-	return &BackBuffers[CurrentBackBufferIndex];
+	return BackBuffers[CurrentBackBufferIndex].get();
 }
 
 SResourceInfo* OWindow::GetCurrentDepthStencilBuffer()
 {
-	return &DepthBuffer;
+	return DepthBuffer.get();
+}
+
+void OWindow::UpdateCameraClip(float NewFar)
+{
+	Camera->SetNewFar(NewFar);
 }
 
 void OWindow::SetVSync(bool vSync)
@@ -294,22 +293,6 @@ const ComPtr<IDXGISwapChain4>& OWindow::GetSwapChain()
 	return SwapChain;
 }
 
-void OWindow::TransitionResource(ComPtr<ID3D12GraphicsCommandList> CommandList, ComPtr<ID3D12Resource> Resource, D3D12_RESOURCE_STATES BeforeState, D3D12_RESOURCE_STATES AfterState)
-{
-	const CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(Resource.Get(), BeforeState, AfterState);
-	CommandList->ResourceBarrier(1, &barrier);
-}
-
-void OWindow::ClearRTV(ComPtr<ID3D12GraphicsCommandList> CommandList, D3D12_CPU_DESCRIPTOR_HANDLE RTV, FLOAT* ClearColor)
-{
-	CommandList->ClearRenderTargetView(RTV, ClearColor, 0, nullptr);
-}
-
-void OWindow::ClearDepth(ComPtr<ID3D12GraphicsCommandList> CommandList, D3D12_CPU_DESCRIPTOR_HANDLE DSV, FLOAT Depth)
-{
-	CommandList->ClearDepthStencilView(DSV, D3D12_CLEAR_FLAG_DEPTH, Depth, 0, 0, nullptr);
-}
-
 void OWindow::OnUpdateWindowSize(ResizeEventArgs& Event)
 {
 	WindowInfo.ClientHeight = Event.Height;
@@ -330,7 +313,7 @@ void OWindow::ResetBuffers()
 		for (int i = 0; i < SRenderConstants::RenderBuffersCount; ++i)
 		{
 			// Flush any GPU commands that might be referencing the back buffers
-			BackBuffers[i].Resource.Reset();
+			BackBuffers[i]->Resource.Reset();
 		}
 
 		THROW_IF_FAILED(SwapChain->ResizeBuffers(SRenderConstants::RenderBuffersCount, WindowInfo.ClientWidth, WindowInfo.ClientHeight, SRenderConstants::BackBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
@@ -363,16 +346,22 @@ uint32_t OWindow::GetNumRTVRequired() const
 
 SDescriptorPair OWindow::GetRTV(uint32_t SubtargetIdx) const
 {
-	SDescriptorPair pair;
-	pair.CPUHandle = CurrentBackBufferView();
-
-	return pair; // TODO - return the correct RTV
+	return RTVHandles[CurrentBackBufferIndex];
 }
+
 SDescriptorPair OWindow::GetDSV(uint32_t SubtargetIdx) const
 {
-	SDescriptorPair pair;
-	pair.CPUHandle = OEngine::Get()->DefaultGlobalHeap.DSVHeap->GetCPUDescriptorHandleForHeapStart();
-	return pair; // TODO - return the correct DSV
+	return DSVHandle;
+}
+
+uint32_t OWindow::GetNumSRVRequired() const
+{
+	return 1;
+}
+
+SDescriptorPair OWindow::GetSRVDepth() const
+{
+	return SRVDepthHandle;
 }
 
 SResourceInfo* OWindow::GetResource()
@@ -443,17 +432,17 @@ ComPtr<IDXGISwapChain4> OWindow::CreateSwapChain()
 
 void OWindow::UpdateRenderTargetViews()
 {
-	const auto device = OEngine::Get()->GetDevice();
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(OEngine::Get()->DefaultGlobalHeap.RTVHeap->GetCPUDescriptorHandleForHeapStart());
+	const auto device = Device.lock();
 
 	for (int i = 0; i < SRenderConstants::RenderBuffersCount; i++)
 	{
-		THROW_IF_FAILED(SwapChain->GetBuffer(i, IID_PPV_ARGS(&BackBuffers[i].Resource)));
-		device->CreateRenderTargetView(BackBuffers[i].Resource.Get(), nullptr, rtvHandle);
-		BackBuffers[i].CurrentState = D3D12_RESOURCE_STATE_PRESENT;
-		BackBuffers[i].Context = this;
-		BackBuffers[i].Resource->SetName(Name.c_str());
-		rtvHandle.Offset(OEngine::Get()->RTVDescriptorSize);
+		ComPtr<ID3D12Resource> resource;
+		if (FAILED(SwapChain->GetBuffer(i, IID_PPV_ARGS(&resource))))
+		{
+			LOG(Engine, Critical, "Failed to get swap chain buffer.");
+		}
+		BackBuffers[i] = SResourceInfo::MakeResourceInfo(Name, weak_from_this(), resource, D3D12_RESOURCE_STATE_PRESENT);
+		device->CreateRenderTargetView(BackBuffers[i], RTVHandles[i]);
 	}
 }
 
@@ -465,8 +454,12 @@ void OWindow::ResizeDepthBuffer()
 	auto list = engine->GetCommandQueue()->GetCommandList();
 	UINT quality;
 	auto mxaaEnabled = engine->GetMSAAState(quality);
-	DepthBuffer.Resource.Reset();
-	const auto device = engine->GetDevice();
+	if (DepthBuffer)
+	{
+		DepthBuffer->Resource.Reset();
+	}
+
+	auto device = Device.lock();
 
 	// Create the depth/stencil buffer and view.
 	D3D12_RESOURCE_DESC depthStencilDesc;
@@ -487,9 +480,9 @@ void OWindow::ResizeDepthBuffer()
 	optClear.DepthStencil.Depth = 1.0f;
 	optClear.DepthStencil.Stencil = 0;
 
-	DepthBuffer = Utils::CreateResource(this,
+	DepthBuffer = Utils::CreateResource(weak_from_this(),
 	                                    L"DepthBuffer",
-	                                    device.Get(),
+	                                    device->GetDevice(),
 	                                    D3D12_HEAP_TYPE_DEFAULT,
 	                                    depthStencilDesc,
 	                                    D3D12_RESOURCE_STATE_DEPTH_WRITE,
@@ -502,7 +495,16 @@ void OWindow::ResizeDepthBuffer()
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 	dsvDesc.Format = SRenderConstants::DepthBufferFormat;
 	dsvDesc.Texture2D.MipSlice = 0;
-	device->CreateDepthStencilView(DepthBuffer.Resource.Get(), &dsvDesc, OEngine::Get()->DefaultGlobalHeap.DSVHeap->GetCPUDescriptorHandleForHeapStart());
+	device->CreateDepthStencilView(DepthBuffer, dsvDesc, DSVHandle);
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels = 1;
+	device->CreateShaderResourceView(DepthBuffer, srvDesc, SRVDepthHandle);
+
 	engine->GetCommandQueue()->ExecuteCommandListAndWait();
 }
 

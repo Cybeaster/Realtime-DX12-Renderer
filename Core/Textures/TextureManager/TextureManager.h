@@ -22,14 +22,14 @@ public:
 	STexture* FindTextureByPath(wstring Path) const;
 	STexture* FindOrCreateTexture(wstring FileName);
 	STexture* FindOrCreateTexture(string Name, wstring FileName);
-
+	void InitRenderObject() override;
 	TTexturesMap& GetTextures() { return Textures; }
 	uint32_t GetNum2DTextures() const;
 	uint32_t GetNum3DTextures() const;
 	uint32_t GetNumTotalTextures() const;
 	void LoadLocalTextures();
 	void SaveLocalTextures();
-	wstring GetName() override;
+	wstring GetName() const override;
 	const uint32_t MaxNumberOf2DTextures = 50;
 
 private:
@@ -37,6 +37,7 @@ private:
 	void RemoveAllTextures();
 	void RemoveTexture(const string& Name);
 	void RemoveTexture(const wstring& Path);
+
 private:
 	wstring Name = L"TextureManager";
 	unique_ptr<OTexturesParser> Parser;

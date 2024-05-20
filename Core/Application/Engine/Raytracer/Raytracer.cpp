@@ -24,9 +24,10 @@ SAccelerationStructureBuffers ORaytracer::CreateBottomLevelAS(vector<pair<ComPtr
 	uint64_t resultSize = 0;
 
 	BLASGenerator.ComputeASBufferSizes(Device->GetDevice(), false, &scratchSize, &resultSize);
+	auto weak = weak_from_this();
 
 	SAccelerationStructureBuffers buffers;
-	buffers.Scratch = Utils::CreateResource(this,
+	buffers.Scratch = Utils::CreateResource(weak,
 	                                        L"Scratch_Buffer",
 	                                        Device->GetDevice(),
 	                                        D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
@@ -34,7 +35,7 @@ SAccelerationStructureBuffers ORaytracer::CreateBottomLevelAS(vector<pair<ComPtr
 	                                        SRenderConstants::DefaultHeapProperties,
 	                                        scratchSize);
 
-	buffers.Result = Utils::CreateResource(this,
+	buffers.Result = Utils::CreateResource(weak,
 	                                       L"Result_Buffer",
 	                                       Device->GetDevice(),
 	                                       D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
@@ -43,8 +44,8 @@ SAccelerationStructureBuffers ORaytracer::CreateBottomLevelAS(vector<pair<ComPtr
 	                                       resultSize);
 
 	BLASGenerator.Generate(Queue->GetCommandListAs<ID3D12GraphicsCommandList4>(),
-	                       buffers.Scratch.Resource.Get(),
-	                       buffers.Result.Resource.Get(),
+	                       buffers.Scratch->Resource.Get(),
+	                       buffers.Result->Resource.Get(),
 	                       false);
 	return buffers;
 }
@@ -59,22 +60,22 @@ void ORaytracer::CreateTopLevelAS(const vector<pair<ComPtr<ID3D12Resource>, Dire
 	}
 	UINT64 scratchSize, resultSize, instanceDescsSize;
 	TopLevelASGenerator.ComputeASBufferSizes(Device->GetDevice(), true, &scratchSize, &resultSize, &instanceDescsSize);
-
-	TopLevelASBuffers.Scratch = Utils::CreateResource(this,
+	auto weak = weak_from_this();
+	TopLevelASBuffers.Scratch = Utils::CreateResource(weak,
 	                                                  L"TLAS_Scratch",
 	                                                  Device->GetDevice(),
 	                                                  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
 	                                                  D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
 	                                                  SRenderConstants::DefaultHeapProperties,
 	                                                  scratchSize);
-	TopLevelASBuffers.Result = Utils::CreateResource(this,
+	TopLevelASBuffers.Result = Utils::CreateResource(weak,
 	                                                 L"TLAS_Result",
 	                                                 Device->GetDevice(),
 	                                                 D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
 	                                                 D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE,
 	                                                 SRenderConstants::DefaultHeapProperties,
 	                                                 resultSize);
-	TopLevelASBuffers.InstanceDesc = Utils::CreateResource(this,
+	TopLevelASBuffers.InstanceDesc = Utils::CreateResource(weak,
 	                                                       L"TLAS_InstanceDesc",
 	                                                       Device->GetDevice(),
 	                                                       D3D12_RESOURCE_FLAG_NONE,
@@ -83,9 +84,9 @@ void ORaytracer::CreateTopLevelAS(const vector<pair<ComPtr<ID3D12Resource>, Dire
 	                                                       instanceDescsSize);
 
 	TopLevelASGenerator.Generate(Queue->GetCommandListAs<ID3D12GraphicsCommandList4>(),
-	                             TopLevelASBuffers.Scratch.Resource.Get(),
-	                             TopLevelASBuffers.Result.Resource.Get(),
-	                             TopLevelASBuffers.InstanceDesc.Resource.Get());
+	                             TopLevelASBuffers.Scratch->Resource.Get(),
+	                             TopLevelASBuffers.Result->Resource.Get(),
+	                             TopLevelASBuffers.InstanceDesc->Resource.Get());
 }
 
 void ORaytracer::CreateAccelerationStructure()
@@ -100,7 +101,7 @@ bool ORaytracer::Init(ODevice* InDevice, OCommandQueue* InQueue)
 	BuildPipeline();
 	return true;
 }
-wstring ORaytracer::GetName()
+wstring ORaytracer::GetName() const
 {
 	return L"Raytracer";
 }

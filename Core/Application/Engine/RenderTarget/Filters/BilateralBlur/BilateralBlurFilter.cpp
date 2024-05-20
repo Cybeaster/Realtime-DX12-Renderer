@@ -4,11 +4,17 @@
 
 #include "DirectX/ShaderTypes.h"
 
-OBilateralBlurFilter::OBilateralBlurFilter(ID3D12Device* Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format)
+OBilateralBlurFilter::OBilateralBlurFilter(const weak_ptr<ODevice>& Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format)
     : OFilterBase(Device, Other, Width, Height, Format)
 {
-	BlurBuffer = OUploadBuffer<SBilateralBlur>::Create(Device, 1, true, this);
-	BufferConstants = OUploadBuffer<SBufferConstants>::Create(Device, 1, true, this);
+}
+void OBilateralBlurFilter::InitRenderObject()
+{
+	OFilterBase::InitRenderObject();
+	auto weak = weak_from_this();
+
+	BlurBuffer = OUploadBuffer<SBilateralBlur>::Create(Device, 1, true, weak);
+	BufferConstants = OUploadBuffer<SBufferConstants>::Create(Device, 1, true, weak);
 	FilterName = L"BilateralBlurFilter";
 }
 
@@ -30,10 +36,10 @@ void OBilateralBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
 
 void OBilateralBlurFilter::OutputTo(SResourceInfo* Destination)
 {
-	Queue->CopyResourceTo(Destination, &OutputTexture);
+	Queue->CopyResourceTo(Destination, OutputTexture.get());
 }
 
-void OBilateralBlurFilter::BuildDescriptors() const
+void OBilateralBlurFilter::BuildDescriptors()
 {
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -46,12 +52,12 @@ void OBilateralBlurFilter::BuildDescriptors() const
 	uavDesc.Format = Format;
 	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 	uavDesc.Texture2D.MipSlice = 0;
+	auto device = Device.lock();
+	device->CreateShaderResourceView(OutputTexture, srvDesc, BlurOutputSrvHandle);
+	device->CreateUnorderedAccessView(OutputTexture, uavDesc, BlurOutputUavHandle);
 
-	Device->CreateShaderResourceView(OutputTexture.Resource.Get(), &srvDesc, BlurOutputSrvHandle.CPUHandle);
-	Device->CreateUnorderedAccessView(OutputTexture.Resource.Get(), nullptr, &uavDesc, BlurOutputUavHandle.CPUHandle);
-
-	Device->CreateShaderResourceView(InputTexture.Resource.Get(), &srvDesc, BlurInputSrvHandle.CPUHandle);
-	Device->CreateUnorderedAccessView(InputTexture.Resource.Get(), nullptr, &uavDesc, BlurInputUavHandle.CPUHandle);
+	device->CreateShaderResourceView(InputTexture, srvDesc, BlurInputSrvHandle);
+	device->CreateUnorderedAccessView(InputTexture, uavDesc, BlurInputUavHandle);
 }
 
 void OBilateralBlurFilter::BuildResource()
@@ -70,9 +76,10 @@ void OBilateralBlurFilter::BuildResource()
 	texDesc.SampleDesc.Quality = 0;
 	texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-
-	OutputTexture = Utils::CreateResource(this, L"OutupTexture", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
-	InputTexture = Utils::CreateResource(this, L"InputTexture", Device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
+	auto device = Device.lock()->GetDevice();
+	auto weak = weak_from_this();
+	OutputTexture = Utils::CreateResource(weak, L"OutupTexture", device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
+	InputTexture = Utils::CreateResource(weak, L"InputTexture", device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
 }
 
 void OBilateralBlurFilter::Execute(const SPSODescriptionBase* PSO, SResourceInfo* Input)
@@ -85,15 +92,15 @@ void OBilateralBlurFilter::Execute(const SPSODescriptionBase* PSO, SResourceInfo
 	PSO->RootSignature->SetResource("BilateralBlur", BlurBuffer->GetGPUAddress(), cmd);
 	PSO->RootSignature->SetResource("BufferConstants", BufferConstants->GetGPUAddress(), cmd);
 
-	Queue->CopyResourceTo(&InputTexture, Input);
+	Queue->CopyResourceTo(InputTexture.get(), Input);
 
-	ResourceBarrier(cmd, &InputTexture, D3D12_RESOURCE_STATE_GENERIC_READ);
-	ResourceBarrier(cmd, &OutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	ResourceBarrier(cmd, InputTexture.get(), D3D12_RESOURCE_STATE_GENERIC_READ);
+	ResourceBarrier(cmd, OutputTexture.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 	PSO->RootSignature->SetResource("Input", BlurInputSrvHandle.GPUHandle, cmd);
 	PSO->RootSignature->SetResource("Output", BlurOutputUavHandle.GPUHandle, cmd);
 
 	cmd->Dispatch(Width / 32 + 1, Height / 32 + 1, 1);
 
-	ResourceBarrier(cmd, &OutputTexture, D3D12_RESOURCE_STATE_GENERIC_READ);
-	ResourceBarrier(cmd, &InputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	ResourceBarrier(cmd, OutputTexture.get(), D3D12_RESOURCE_STATE_GENERIC_READ);
+	ResourceBarrier(cmd, InputTexture.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 }

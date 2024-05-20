@@ -45,7 +45,7 @@ bool OEngine::Initialize()
 {
 	PROFILE_SCOPE()
 
-	Device = make_unique<ODevice>();
+	Device = make_shared<ODevice>();
 	if (!Device->Init())
 	{
 		WIN_LOG(Engine, Error, "Failed to create device!");
@@ -79,8 +79,9 @@ void OEngine::InitManagers()
 	InitPipelineManager();
 	InitRenderGraph();
 	MeshGenerator = make_unique<OMeshGenerator>(Device->GetDevice(), GetCommandQueue());
-	TextureManager = make_unique<OTextureManager>(Device->GetDevice(), GetCommandQueue());
-	MaterialManager = make_unique<OMaterialManager>();
+	TextureManager = make_shared<OTextureManager>(Device->GetDevice(), GetCommandQueue());
+	TextureManager->InitRenderObject();
+	MaterialManager = make_shared<OMaterialManager>();
 	MaterialManager->LoadMaterialsFromCache();
 	MaterialManager->MaterialsRebuld.AddMember(this, &OEngine::TryRebuildFrameResource);
 	SceneManager = make_unique<OSceneManager>();
@@ -98,12 +99,12 @@ void OEngine::PostInitialize()
 
 void OEngine::BuildSSAO()
 {
-	SSAORT = BuildRenderObject<OSSAORenderTarget>(RenderTargets, Device->GetDevice(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::NormalMapFormat);
+	SSAORT = BuildRenderObject<OSSAORenderTarget>(RenderTargets, Device, Window->GetWidth(), Window->GetHeight(), SRenderConstants::NormalMapFormat);
 }
 
 void OEngine::BuildNormalTangentDebugTarget()
 {
-	NormalTangentDebugTarget = BuildRenderObject<ONormalTangentDebugTarget>(RenderTargets, Device->GetDevice(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
+	NormalTangentDebugTarget = BuildRenderObject<ONormalTangentDebugTarget>(RenderTargets, Device, Window->GetWidth(), Window->GetHeight(), SRenderConstants::BackBufferFormat);
 }
 
 void OEngine::BuildFilters()
@@ -117,8 +118,24 @@ TUUID OEngine::AddRenderObject(ERenderGroup Group, IRenderObject* RenderObject)
 {
 	const auto uuid = GenerateUUID();
 	RenderObject->SetID(uuid);
-	RenderObjects[uuid] = unique_ptr<IRenderObject>(RenderObject);
+	RenderObjects[uuid] = shared_ptr<IRenderObject>(RenderObject);
 	if (RenderGroups.contains(Group)) // to do make it more generic
+	{
+		RenderGroups[Group].push_back(uuid);
+	}
+	else
+	{
+		RenderGroups[Group] = { uuid };
+	}
+	return uuid;
+}
+
+TUUID OEngine::AddRenderObject(ERenderGroup Group, const shared_ptr<IRenderObject>& RenderObject)
+{
+	auto uuid = GenerateUUID();
+	RenderObject->SetID(uuid);
+	RenderObjects[uuid] = RenderObject;
+	if (RenderGroups.contains(Group))
 	{
 		RenderGroups[Group].push_back(uuid);
 	}
@@ -132,17 +149,17 @@ TUUID OEngine::AddRenderObject(ERenderGroup Group, IRenderObject* RenderObject)
 void OEngine::BuildOffscreenRT()
 {
 	PROFILE_SCOPE();
-	OffscreenRT = BuildRenderObject<OOffscreenTexture>(RenderTargets, Device->GetDevice(), GetWindow()->GetWidth(), GetWindow()->GetHeight(), SRenderConstants::BackBufferFormat);
+	OffscreenRT = BuildRenderObject<OOffscreenTexture>(RenderTargets, Device, Window->GetWidth(), Window->GetHeight(), SRenderConstants::BackBufferFormat);
 }
 
-ODynamicCubeMapRenderTarget* OEngine::BuildCubeRenderTarget(XMFLOAT3 Center)
+weak_ptr<ODynamicCubeMapRenderTarget> OEngine::BuildCubeRenderTarget(XMFLOAT3 Center)
 {
 	auto resulution = SRenderConstants::CubeMapDefaultResolution;
 	SRenderTargetParams cubeParams{};
 	cubeParams.Width = resulution.x;
 	cubeParams.Height = resulution.y;
 	cubeParams.Format = SRenderConstants::BackBufferFormat;
-	cubeParams.Device = Device->GetDevice();
+	cubeParams.Device = Device;
 	cubeParams.HeapType = EResourceHeapType::Default;
 	CubeRenderTarget = BuildRenderObject<ODynamicCubeMapRenderTarget>(ERenderGroup::RenderTargets, cubeParams, Center, resulution);
 	return CubeRenderTarget;
@@ -201,8 +218,8 @@ void OEngine::UpdateMaterialCB() const
 				auto setTexIdx = [](HLSL::TextureData& Out, const STexturePath& Path) {
 					if (Path.IsValid())
 					{
-						Out.TextureIndex = Path.Texture->HeapIdx;
-						Out.bIsEnabled = Path.Texture->HeapIdx > 0 ? 1 : 0;
+						Out.TextureIndex = Path.Texture->TextureIndex;
+						Out.bIsEnabled = Path.Texture->TextureIndex > 0 ? 1 : 0;
 					}
 				};
 
@@ -282,18 +299,17 @@ void OEngine::DrawRenderItemsImpl(const SDrawPayload& Payload)
 	auto cmd = GetCommandQueue()->GetCommandList();
 	auto graphicsPSO = Cast<SPSOGraphicsDescription>(Payload.Description);
 	auto& layerRenderItems = GetRenderItems(Payload.RenderLayer);
-	for (const auto& val : Payload.InstanceBuffer->Items | std::views::values)
+	for (const auto& val : layerRenderItems)
 	{
-		auto [item, startInstanceLocation, visibleInstanceCount] = val;
-		if (item.expired())
+		if (!Payload.InstanceBuffer->Items.contains(val) && !Payload.bForceDrawAll)
 		{
-			layerRenderItems.erase(item);
 			continue;
 		}
 
-		//do not process those items that are not in the layer being drawn
-		if (!layerRenderItems.contains(item))
+		auto [item, startInstanceLocation, visibleInstanceCount] = Payload.InstanceBuffer->Items.at(val);
+		if (item.expired())
 		{
+			layerRenderItems.erase(item);
 			continue;
 		}
 
@@ -341,19 +357,18 @@ void OEngine::DrawAABBOfRenderItems(SPSODescriptionBase* Desc)
 	commandList->DrawInstanced(1, CameraRenderedItems.InstanceCount, 0, 0);
 }
 
-OOffscreenTexture* OEngine::GetOffscreenRT() const
+weak_ptr<OOffscreenTexture> OEngine::GetOffscreenRT() const
 {
 	return OffscreenRT;
 }
 
 void OEngine::DrawFullScreenQuad(SPSODescriptionBase* Desc)
 {
-	SDrawPayload payload;
-	payload.Description = Desc;
-	payload.RenderLayer = SRenderLayers::OneFullscreenQuad;
-	payload.bForceDrawAll = true;
-	payload.InstanceBuffer = &CameraRenderedItems;
-	DrawRenderItemsImpl(payload);
+	const auto commandList = GetCommandQueue()->GetCommandList();
+	commandList->IASetVertexBuffers(0, 0, nullptr);
+	commandList->IASetIndexBuffer(nullptr);
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	commandList->DrawInstanced(6, 1, 0, 0);
 };
 
 void OEngine::DrawOnePoint()
@@ -379,7 +394,7 @@ void OEngine::DrawBox(SPSODescriptionBase* Desc)
 
 void OEngine::InitUIManager()
 {
-	UIManager->InitContext(Device->GetDevice(), Window->GetHWND(), SRenderConstants::NumFrameResources, GetDescriptorHeap().Get(), DefaultGlobalHeap, this);
+	UIManager.lock()->InitContext(Device->GetDevice(), Window->GetHWND(), SRenderConstants::NumFrameResources, GetDescriptorHeap().Get(), DefaultGlobalHeap, this);
 }
 
 void OEngine::InitCompiler()
@@ -412,7 +427,7 @@ void OEngine::TryCreateFrameResources()
 	{
 		for (int i = 0; i < SRenderConstants::NumFrameResources; ++i)
 		{
-			auto frameResource = make_unique<SFrameResource>(Device->GetDevice(), GetWindow());
+			auto frameResource = make_unique<SFrameResource>(Device, GetWindow());
 			FrameResources.push_back(std::move(frameResource));
 		}
 	}
@@ -449,14 +464,14 @@ void OEngine::SetFogRange(float Range)
 	MainPassCB.FogRange = Range;
 }
 
-OWindow* OEngine::GetWindow() const
+weak_ptr<OWindow> OEngine::GetWindow() const
 {
 	return Window;
 }
 
-Microsoft::WRL::ComPtr<ID3D12Device2> OEngine::GetDevice() const
+weak_ptr<ODevice> OEngine::GetDevice() const
 {
-	return Device->GetDevice();
+	return Device;
 }
 
 void OEngine::FlushGPU() const
@@ -503,7 +518,7 @@ void OEngine::BuildDescriptorHeaps()
 		SetObjectDescriptor(heap);
 	};
 
-	build(DefaultGlobalHeap, EResourceHeapType::Default, L"GlobalHeap", UIManager->GetNumSRVRequired() + TEXTURE_MAPS_NUM + 2);
+	build(DefaultGlobalHeap, EResourceHeapType::Default, L"GlobalHeap", UIManager.lock()->GetNumSRVRequired() + TEXTURE_MAPS_NUM + 2);
 }
 
 void OEngine::PostTestInit()
@@ -522,7 +537,6 @@ void OEngine::PostTestInit()
 	GetCommandQueue()->ExecuteCommandListAndWait();
 	HasInitializedTests = true;
 	SceneBounds.Center = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	SceneBounds.Radius = 5000; // todo estimate manually
 }
 
 OCommandQueue* OEngine::GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type)
@@ -578,6 +592,7 @@ void OEngine::UpdateBoundingSphere()
 	{
 		SceneBounds.Radius = std::max(SceneBounds.Radius, std::max({ val->Bounds.Extents.x, val->Bounds.Extents.y, val->Bounds.Extents.z }));
 	}
+	Window->UpdateCameraClip(SceneBounds.Radius * 2);
 }
 
 void OEngine::RebuildFrameResource(uint32_t Count)
@@ -632,7 +647,9 @@ void OEngine::Draw(UpdateEventArgs& Args)
 void OEngine::Render(UpdateEventArgs& Args)
 {
 	PROFILE_SCOPE()
-	Args.IsUIInfocus = UIManager->IsInFocus();
+	auto manager = UIManager.lock();
+
+	Args.IsUIInfocus = manager->IsInFocus();
 
 	TickTimer = Args.Timer;
 	RenderGraph->Execute();
@@ -641,8 +658,9 @@ void OEngine::Render(UpdateEventArgs& Args)
 
 void OEngine::Update(UpdateEventArgs& Args)
 {
+	auto manager = UIManager.lock();
 	PROFILE_SCOPE()
-	Args.IsUIInfocus = UIManager->IsInFocus();
+	Args.IsUIInfocus = manager->IsInFocus();
 	OnUpdate(Args);
 	SceneManager->Update(Args);
 }
@@ -709,7 +727,7 @@ void OEngine::UpdateCameraCB()
 	}
 }
 
-OUIManager* OEngine::GetUIManager() const
+weak_ptr<OUIManager> OEngine::GetUIManager() const
 {
 	return UIManager;
 }
@@ -810,7 +828,7 @@ void OEngine::UpdateSSAOCB()
 {
 	PROFILE_SCOPE();
 	SSsaoConstants constants;
-
+	auto ssao = SSAORT.lock();
 	XMMATRIX T(
 	    0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f);
 
@@ -823,19 +841,19 @@ void OEngine::UpdateSSAOCB()
 
 	for (int i = 0; i < 14; i++)
 	{
-		constants.OffsetVectors[i] = SSAORT->GetOffsetVectors()[i];
+		constants.OffsetVectors[i] = ssao->GetOffsetVectors()[i];
 	}
 
-	auto blurWeights = SSAORT->CalcGaussWeights();
+	auto blurWeights = ssao->CalcGaussWeights();
 	constants.BlurWeights[0] = XMFLOAT4(&blurWeights[0]);
 	constants.BlurWeights[1] = XMFLOAT4(&blurWeights[4]);
 	constants.BlurWeights[2] = XMFLOAT4(&blurWeights[8]);
-	constants.InvRenderTargetSize = XMFLOAT2(1.0f / (SSAORT->GetWidth() / 2), 1.0f / (SSAORT->GetHeight() / 2));
+	constants.InvRenderTargetSize = XMFLOAT2(1.0f / (ssao->GetWidth() / 2), 1.0f / (ssao->GetHeight() / 2));
 
-	constants.OcclusionRadius = SSAORT->OcclusionRadius;
-	constants.OcclusionFadeStart = SSAORT->OcclusionFadeStart;
-	constants.OcclusionFadeEnd = SSAORT->OcclusionFadeEnd;
-	constants.SurfaceEpsilon = SSAORT->SurfaceEpsilon;
+	constants.OcclusionRadius = ssao->OcclusionRadius;
+	constants.OcclusionFadeStart = ssao->OcclusionFadeStart;
+	constants.OcclusionFadeEnd = ssao->OcclusionFadeEnd;
+	constants.SurfaceEpsilon = ssao->SurfaceEpsilon;
 	CurrentFrameResource->SsaoCB->CopyData(0, constants);
 }
 
@@ -903,68 +921,75 @@ void OEngine::DrawDebugFrustum(const DirectX::XMFLOAT4X4& InvViewProjection, con
 
 void OEngine::OnKeyPressed(KeyEventArgs& Args)
 {
-	Args.IsUIInfocus = UIManager->IsInFocus();
-	if (auto window = GetWindowByHWND(Args.WindowHandle))
+	auto manager = UIManager.lock();
+
+	Args.IsUIInfocus = manager->IsInFocus();
+	auto window = GetWindowByHWND(Args.WindowHandle);
+	if (!window.expired())
 	{
-		window->OnKeyPressed(Args);
+		window.lock()->OnKeyPressed(Args);
 	}
 
-	if (UIManager)
-	{
-		UIManager->OnKeyboardKeyPressed(Args);
-	}
+	manager->OnKeyboardKeyPressed(Args);
 }
 
 void OEngine::OnKeyReleased(KeyEventArgs& Args)
 {
-	Args.IsUIInfocus = UIManager->IsInFocus();
-	if (auto window = GetWindowByHWND(Args.WindowHandle))
-	{
-		window->OnKeyReleased(Args);
-	}
+	auto manager = UIManager.lock();
 
-	if (UIManager)
+	Args.IsUIInfocus = manager->IsInFocus();
+	auto window = GetWindowByHWND(Args.WindowHandle);
+	if (!window.expired())
 	{
-		UIManager->OnKeyboardKeyReleased(Args);
+		window.lock()->OnKeyReleased(Args);
 	}
+	manager->OnKeyboardKeyReleased(Args);
 }
 
 void OEngine::OnMouseMoved(MouseMotionEventArgs& Args)
 {
-	Args.IsUIInfocus = UIManager->IsInFocus();
-	if (const auto window = GetWindowByHWND(Args.WindowHandle))
+	auto manager = UIManager.lock();
+
+	Args.IsUIInfocus = manager->IsInFocus();
+	const auto window = GetWindowByHWND(Args.WindowHandle);
+	if (!window.expired())
 	{
-		window->OnMouseMoved(Args);
+		window.lock()->OnMouseMoved(Args);
 	}
 }
 
 void OEngine::OnMouseButtonPressed(MouseButtonEventArgs& Args)
 {
-	Args.IsUIInfocus = UIManager->IsInFocus();
-	UIManager->OnMouseButtonPressed(Args);
-	if (const auto window = GetWindowByHWND(Args.WindowHandle))
+	auto manager = UIManager.lock();
+	Args.IsUIInfocus = manager->IsInFocus();
+	manager->OnMouseButtonPressed(Args);
+	const auto window = GetWindowByHWND(Args.WindowHandle);
+	if (!window.expired())
 	{
-		window->OnMouseButtonPressed(Args);
+		window.lock()->OnMouseButtonPressed(Args);
 	}
 }
 
 void OEngine::OnMouseButtonReleased(MouseButtonEventArgs& Args)
 {
-	Args.IsUIInfocus = UIManager->IsInFocus();
-	UIManager->OnMouseButtonReleased(Args);
-	if (const auto window = GetWindowByHWND(Args.WindowHandle))
+	auto manager = UIManager.lock();
+	Args.IsUIInfocus = manager->IsInFocus();
+	manager->OnMouseButtonReleased(Args);
+	const auto window = GetWindowByHWND(Args.WindowHandle);
+	if (!window.expired())
 	{
-		window->OnMouseButtonReleased(Args);
+		window.lock()->OnMouseButtonReleased(Args);
 	}
 }
 
 void OEngine::OnMouseWheel(MouseWheelEventArgs& Args)
 {
 	LOG(Engine, Log, "Engine::OnMouseWheel")
-	UIManager->OnMouseWheel(Args);
-	if (const auto window = GetWindowByHWND(Args.WindowHandle))
+	UIManager.lock()->OnMouseWheel(Args);
+	const auto window = GetWindowByHWND(Args.WindowHandle);
+	if (!window.expired())
 	{
-		window->OnMouseWheel(Args);
+		window.lock()->OnMouseWheel(Args);
 	}
 }
 
@@ -973,13 +998,14 @@ void OEngine::OnResizeRequest(HWND& WindowHandle)
 	PROFILE_SCOPE();
 	LOG(Engine, Log, "Engine::OnResize")
 	const auto window = GetWindowByHWND(WindowHandle);
-	ResizeEventArgs args = { window->GetWidth(), window->GetHeight(), WindowHandle };
+	auto lock = window.lock();
+	ResizeEventArgs args = { lock->GetWidth(), lock->GetHeight(), WindowHandle };
 
-	window->OnResize(args);
+	lock->OnResize(args);
 
-	if (UIManager) // TODO pass all the render targets through automatically
+	if (!UIManager.expired()) // TODO pass all the render targets through automatically
 	{
-		UIManager->OnResize(args);
+		UIManager.lock()->OnResize(args);
 	}
 
 	if (const auto blurFilter = GetBlurFilter())
@@ -992,9 +1018,9 @@ void OEngine::OnResizeRequest(HWND& WindowHandle)
 		sobel->OnResize(args.Width, args.Height);
 	}
 
-	if (OffscreenRT)
+	if (!OffscreenRT.expired())
 	{
-		OffscreenRT->OnResize(args);
+		OffscreenRT.lock()->OnResize(args);
 	}
 
 	if (const auto bilateralFilter = GetBilateralBlurFilter())
@@ -1002,21 +1028,21 @@ void OEngine::OnResizeRequest(HWND& WindowHandle)
 		bilateralFilter->OnResize(args.Width, args.Height);
 	}
 
-	for (auto shadowMaps : ShadowMaps)
+	for (const auto& shadowMaps : ShadowMaps)
 	{
-		shadowMaps->OnResize(args);
+		shadowMaps.lock()->OnResize(args);
 	}
 
-	if (SSAORT)
+	if (!SSAORT.expired())
 	{
-		SSAORT->OnResize(args);
+		SSAORT.lock()->OnResize(args);
 	}
 }
 
 void OEngine::OnUpdateWindowSize(ResizeEventArgs& Args)
 {
 	const auto window = GetWindowByHWND(Args.WindowHandle);
-	window->OnUpdateWindowSize(Args);
+	window.lock()->OnUpdateWindowSize(Args);
 }
 
 void OEngine::SetWindowViewport()
@@ -1024,7 +1050,7 @@ void OEngine::SetWindowViewport()
 	Window->SetViewport(GetCommandQueue()->GetCommandList().Get());
 }
 
-OSSAORenderTarget* OEngine::GetSSAORT() const
+weak_ptr<OSSAORenderTarget> OEngine::GetSSAORT() const
 {
 	return SSAORT;
 }
@@ -1049,7 +1075,7 @@ void OEngine::FillExpectedShadowMaps()
 	int32_t currSize = MAX_SHADOW_MAPS - ShadowMaps.size();
 	while (currSize > 0)
 	{
-		BuildRenderObject<OShadowMap>(ShadowTextures, Device->GetDevice(), SRenderConstants::ShadowMapSize, DXGI_FORMAT_R24G8_TYPELESS);
+		BuildRenderObject<OShadowMap>(ShadowTextures, Device, SRenderConstants::ShadowMapSize, DXGI_FORMAT_R24G8_TYPELESS);
 		currSize--;
 	}
 }
@@ -1067,15 +1093,17 @@ void OEngine::FillDescriptorHeaps()
 {
 	PROFILE_SCOPE();
 	// Textures, SRV offset only
-	uint32_t texturesOffset = 0;
+	uint32_t texturesCounter = 0;
 	auto whiteTex = TextureManager->FindTextureByName("white1x1");
 	auto buildSRV = [&, whiteTex](STexture* Texture) {
-		auto pair = DefaultGlobalHeap.SRVHandle.Offset();
 		Texture = Texture ? Texture : whiteTex;
+		auto pair = DefaultGlobalHeap.SRVHandle.Offset();
 		auto resourceSRV = Texture->GetSRVDesc();
+		LOG(Render, Log, "Building SRV for texture: {} of type {} at srv address {} ", TEXT(Texture->Name), TEXT(Texture->Type), TEXT(pair.Index));
 		Device->GetDevice()->CreateShaderResourceView(Texture->Resource.Resource.Get(), &resourceSRV, pair.CPUHandle);
-		Texture->HeapIdx = texturesOffset;
-		texturesOffset++;
+		Texture->TextureIndex = texturesCounter;
+		Texture->SRV = pair;
+		texturesCounter++;
 	};
 
 	auto build2DTextures = [&]() {
@@ -1087,15 +1115,14 @@ void OEngine::FillDescriptorHeaps()
 			}
 			buildSRV(texture.get());
 		}
-
-		while (texturesOffset < TEXTURE_MAPS_NUM)
+		while (texturesCounter < TEXTURE_MAPS_NUM)
 		{
 			buildSRV(nullptr);
 		}
 	};
 
 	auto build3DTextures = [&]() {
-		for (const auto& texture : TextureManager->GetTextures() | std::views::values) // make a separate srv heap for 3d textures
+		for (const auto& texture : TextureManager->GetTextures() | std::views::values)
 		{
 			if (texture->ViewType == STextureViewType::Texture2D)
 			{
@@ -1105,6 +1132,8 @@ void OEngine::FillDescriptorHeaps()
 		}
 	};
 
+	auto handle = DefaultGlobalHeap.SRVHandle;
+	TexturesStartAddress = handle.Offset();
 	build2DTextures();
 	build3DTextures();
 
@@ -1209,7 +1238,7 @@ void OEngine::SetObjectDescriptor(SRenderObjectHeap& Heap)
 	Heap.Init(CBVSRVUAVDescriptorSize, RTVDescriptorSize, DSVDescriptorSize);
 }
 
-OWindow* OEngine::GetWindowByHWND(HWND Handler)
+weak_ptr<OWindow> OEngine::GetWindowByHWND(HWND Handler)
 {
 	const auto window = WindowsMap.find(Handler);
 	if (window != WindowsMap.end())
@@ -1218,7 +1247,7 @@ OWindow* OEngine::GetWindowByHWND(HWND Handler)
 	}
 	LOG(Engine, Error, "Window not found!");
 
-	return nullptr;
+	return {};
 }
 
 void OEngine::Destroy()
@@ -1318,14 +1347,14 @@ ORenderItem* OEngine::GetPickedItem() const
 	return PickedItem;
 }
 
-ODynamicCubeMapRenderTarget* OEngine::GetCubeRenderTarget() const
+weak_ptr<ODynamicCubeMapRenderTarget> OEngine::GetCubeRenderTarget() const
 {
 	return CubeRenderTarget;
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE OEngine::GetSRVDescHandleForTexture(STexture* Texture) const
 {
-	return GetSRVDescHandle(Texture->HeapIdx);
+	return Texture->SRV.GPUHandle;
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE OEngine::GetSRVDescHandle(int64_t Index) const
@@ -1648,7 +1677,7 @@ ORenderGraph* OEngine::GetRenderGraph() const
 	return RenderGraph.get();
 }
 
-ONormalTangentDebugTarget* OEngine::GetNormalTangentDebugTarget() const
+weak_ptr<ONormalTangentDebugTarget> OEngine::GetNormalTangentDebugTarget() const
 {
 	return NormalTangentDebugTarget;
 }
@@ -1794,12 +1823,12 @@ weak_ptr<ORenderItem> OEngine::BuildRenderItemFromMesh(const weak_ptr<SMeshGeome
 	return newItem;
 }
 
-OShadowMap* OEngine::CreateShadowMap()
+weak_ptr<OShadowMap> OEngine::CreateShadowMap()
 {
 	uint32_t componentNum = ShadowMaps.size();
-	auto newMap = BuildRenderObject<OShadowMap>(ShadowTextures, Device->GetDevice(), SRenderConstants::ShadowMapSize, DXGI_FORMAT_R24G8_TYPELESS);
+	auto newMap = BuildRenderObject<OShadowMap>(ShadowTextures, Device, SRenderConstants::ShadowMapSize, DXGI_FORMAT_R24G8_TYPELESS);
 	ShadowMaps.push_back(newMap);
-	newMap->SetShadowMapIndex(componentNum);
+	newMap.lock()->SetShadowMapIndex(componentNum);
 	return newMap;
 }
 
@@ -1808,7 +1837,7 @@ OSpotLightComponent* OEngine::AddSpotLightComponent(ORenderItem* Item)
 	uint32_t componentNum = LightComponents.size();
 	const auto res = Item->AddComponent<OSpotLightComponent>(componentNum);
 	LightComponents.push_back(res);
-	res->SetShadowMap(CreateShadowMap());
+	res->SetShadowMap(CreateShadowMap().lock());
 	return res;
 }
 
@@ -1817,9 +1846,9 @@ OPointLightComponent* OEngine::AddPointLightComponent(ORenderItem* Item)
 	uint32_t componentNum = LightComponents.size();
 	const auto res = Item->AddComponent<OPointLightComponent>(componentNum);
 	LightComponents.push_back(res);
-	auto newShadow = BuildRenderObject<OShadowMap>(ShadowTextures, Device->GetDevice(), SRenderConstants::ShadowMapSize, DXGI_FORMAT_R24G8_TYPELESS);
+	auto newShadow = BuildRenderObject<OShadowMap>(ShadowTextures, Device, SRenderConstants::ShadowMapSize, DXGI_FORMAT_R24G8_TYPELESS);
 	ShadowMaps.push_back(newShadow);
-	newShadow->SetShadowMapIndex(componentNum);
+	newShadow.lock()->SetShadowMapIndex(componentNum);
 	return res;
 }
 
@@ -1828,7 +1857,7 @@ ODirectionalLightComponent* OEngine::AddDirectionalLightComponent(ORenderItem* I
 	uint32_t componentNum = LightComponents.size();
 	auto light = Item->AddComponent<ODirectionalLightComponent>(componentNum);
 	LightComponents.push_back(light);
-	auto csm = BuildRenderObject<OCSM>(None, Device->GetDevice(), DXGI_FORMAT_R24G8_TYPELESS);
+	auto csm = BuildRenderObject<OCSM>(None, Device, DXGI_FORMAT_R24G8_TYPELESS);
 	light->SetCSM(csm);
 	return light;
 }
@@ -1898,7 +1927,7 @@ void OEngine::BindMesh(const SMeshGeometry* Mesh)
 	list->IASetVertexBuffers(0, 1, &vertexBufferView);
 }
 
-vector<OShadowMap*>& OEngine::GetShadowMaps()
+vector<weak_ptr<OShadowMap>>& OEngine::GetShadowMaps()
 {
 	return ShadowMaps;
 }

@@ -54,7 +54,7 @@ cbuffer CB_PASS : register(b0)
 bool IsTangentValid(float3 TangentW)
 {
     float sum = abs(TangentW.x) + abs(TangentW.y) + abs(TangentW.z);
-	return sum > EPSILON;
+    return sum > EPSILON;
 }
 
 float3 NormalSampleToWorldSpace(float3 NormalMapSample, float3 UnitNormalW, float3 TangentW)
@@ -90,7 +90,7 @@ float3 ComputeHeightMap(MaterialData matData, float3 NormalW, float3 TangentW, f
 
 bool IsShadowCoordsWithinRange(float3 ShadowCoords)
 {
-	 return all(ShadowCoords.xy >= 0) && all(ShadowCoords.xy <= 1);
+	 return all(ShadowCoords.xy >= SHADOW_EPSILON) && all(ShadowCoords.xy <= 1 - SHADOW_EPSILON);
 }
 
 float2 GetShadowMapResolution(uint TexID)
@@ -168,7 +168,7 @@ float CalcShadowFactor(float3 ShadowPosH,uint ShadowMapIndex)
     for(int i = 0; i < 9; ++i)
     {
        percentLit += shadowMap.SampleCmpLevelZero(gsamShadow,
-                  ShadowPosH.xy + offsets[i], depth).r;
+                  ShadowPosH.xy + offsets[i], depth + 0.005).r;
     }
     return percentLit / 9.0f;
 }

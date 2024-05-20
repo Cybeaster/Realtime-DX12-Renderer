@@ -2,7 +2,7 @@
 
 #include "Engine/Engine.h"
 
-OCSM::OCSM(ID3D12Device* Device, DXGI_FORMAT Format)
+OCSM::OCSM(const weak_ptr<ODevice>& Device, DXGI_FORMAT Format)
     : ORenderTargetBase(Device, SRenderConstants::ShadowMapSize, SRenderConstants::ShadowMapSize, Format, Default)
 {
 	for (uint32_t i = 0; i < 3; i++)
@@ -26,15 +26,15 @@ SResourceInfo* OCSM::GetResource()
 
 SResourceInfo* OCSM::GetSubresource(uint32_t Idx)
 {
-	return ShadowMaps[Idx]->GetResource();
+	return ShadowMaps[Idx].lock()->GetResource();
 }
 
-OShadowMap* OCSM::GetShadowMap(uint32_t Idx)
+weak_ptr<OShadowMap> OCSM::GetShadowMap(uint32_t Idx)
 {
 	return ShadowMaps[Idx];
 }
 
-const array<OShadowMap*, 3>& OCSM::GetShadowMaps() const
+const array<weak_ptr<OShadowMap>, 3>& OCSM::GetShadowMaps() const
 {
 	return ShadowMaps;
 }

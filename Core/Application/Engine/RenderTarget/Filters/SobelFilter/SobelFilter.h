@@ -3,7 +3,7 @@
 class OSobelFilter : public OFilterBase
 {
 public:
-	OSobelFilter(ID3D12Device* Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format);
+	OSobelFilter(const weak_ptr<ODevice>& Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format);
 	OSobelFilter(const OSobelFilter& rhs) = delete;
 	OSobelFilter& operator=(const OSobelFilter& rhs) = delete;
 
@@ -14,7 +14,7 @@ public:
 		return 3;
 	}
 
-	void BuildDescriptors() const override;
+	void BuildDescriptors() override;
 	void BuildResource() override;
 
 	bool Execute(SPSODescriptionBase* PSO, ORenderTargetBase* InTarget);
@@ -40,18 +40,15 @@ public:
 		return InputSRVHandle;
 	}
 
-	auto GetOutput()
-	{
-		return &Output;
-	}
+	SResourceInfo* GetOutput() const;
 
 private:
 	SDescriptorPair OutputSRVHandle;
 	SDescriptorPair OutputUAVHandle;
 	SDescriptorPair InputSRVHandle;
 
-	SResourceInfo Output;
-	SResourceInfo Input;
+	TResourceInfo Output;
+	TResourceInfo Input;
 	bool bEnabled = true;
 	bool PureSobel = false;
 };

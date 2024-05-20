@@ -31,7 +31,7 @@ struct SSsaoConstants
 
 struct SFrameResource
 {
-	SFrameResource(ID3D12Device* Device, IRenderObject* Owner);
+	SFrameResource(weak_ptr<ODevice> Device, weak_ptr<IRenderObject> Owner);
 
 	SFrameResource(const SFrameResource&) = delete;
 
@@ -64,7 +64,7 @@ struct SFrameResource
 	// Fence value to mark commands up to this fence point. This lets us
 	// check if these frame resources are still in use by the GPU.
 	UINT64 Fence = 0;
-	IRenderObject* Owner = nullptr;
-	ID3D12Device* Device = nullptr;
+	weak_ptr<IRenderObject> Owner;
+	weak_ptr<ODevice> Device;
 	UUID CameraBufferId;
 };

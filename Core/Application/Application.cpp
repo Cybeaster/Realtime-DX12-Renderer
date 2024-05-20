@@ -23,7 +23,7 @@ void OApplication::Destory()
 	Application = nullptr;
 }
 
-OWindow* OApplication::CreateWindow() const
+shared_ptr<OWindow> OApplication::CreateWindow() const
 {
 	RECT windowRect = {
 		0,
@@ -48,8 +48,8 @@ OWindow* OApplication::CreateWindow() const
 		MessageBoxA(NULL, "Failed to create window.", "Error", MB_OK | MB_ICONERROR);
 		return nullptr;
 	}
-	auto window = new OWindow(hWnd, DefaultWindowInfo);
-	return window;
+	return make_shared<OWindow>(hWnd, DefaultWindowInfo);
+	;
 }
 
 void OApplication::Quit(int ExitCode)
@@ -130,7 +130,7 @@ void OApplication::CalculateFrameStats()
 		float mspf = 1000.f / fps;
 
 		const std::wstring windowText = SLogUtils::Format(L"FPS: {} MSPF: {}", fps, mspf);
-		SetWindowTextW(Engine->GetWindow()->GetHWND(), windowText.c_str());
+		SetWindowTextW(Engine->GetWindow().lock()->GetHWND(), windowText.c_str());
 		frameCount = 0;
 		timeElapsed += 1.0f;
 	}

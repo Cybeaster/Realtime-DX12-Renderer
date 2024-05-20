@@ -5,7 +5,7 @@
 #include "MaterialManager/MaterialManager.h"
 #include "imgui_internal.h"
 
-OMaterialManagerWidget::OMaterialManagerWidget(OMaterialManager* _MaterialManager)
+OMaterialManagerWidget::OMaterialManagerWidget(weak_ptr<OMaterialManager> _MaterialManager)
     : MaterialManager(_MaterialManager)
 {
 	HeadderName = "Material Manager";
@@ -15,7 +15,7 @@ OMaterialManagerWidget::OMaterialManagerWidget(OMaterialManager* _MaterialManage
 
 void OMaterialManagerWidget::DrawTable()
 {
-	for (auto& material : MaterialManager->GetMaterials())
+	for (auto& material : MaterialManager.lock()->GetMaterials())
 	{
 		if (ImGui::Selectable(material.first.c_str()))
 		{
@@ -45,7 +45,7 @@ void OMaterialManagerWidget::DrawProperty()
 
 		if (isMatChanged)
 		{
-			MaterialManager->OnMaterialChanged(CurrentMaterial->Name);
+			MaterialManager.lock()->OnMaterialChanged(CurrentMaterial->Name);
 		}
 		ImGui::SeparatorText("Diffuse Texture");
 		const auto& diffuse = CurrentMaterial->DiffuseMap;

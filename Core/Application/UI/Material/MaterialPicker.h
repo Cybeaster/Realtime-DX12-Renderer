@@ -8,8 +8,8 @@ class OMaterialPickerWidget : public IWidget
 {
 public:
 	DECLARE_DELEGATE(SMaterialUpdate, weak_ptr<SMaterial>);
-	OMaterialPickerWidget(OMaterialManager* _MaterialManager)
-	    : MaterialManager(_MaterialManager) {}
+	OMaterialPickerWidget(const weak_ptr<OMaterialManager>& InMaterialManager)
+	    : MaterialManager(InMaterialManager) {}
 
 	void Draw() override;
 
@@ -21,5 +21,5 @@ private:
 	uint32_t MaxMaterialsInColumn = 5;
 	uint32_t MinWidthPerColumn = 100;
 	weak_ptr<SMaterial> CurrentMaterial;
-	OMaterialManager* MaterialManager = nullptr;
+	weak_ptr<OMaterialManager> MaterialManager;
 };
