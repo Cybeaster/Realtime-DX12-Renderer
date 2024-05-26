@@ -146,7 +146,7 @@ float4 PS(VertexOut pin)
 	}
 
 	//float4 ambient =  ambientAccess * gAmbientLight * float4(diffuseAlbedo,1.0);
-	float4 ambient =  saturate((ambientAccess * gAmbientLight) + float4(diffuseAlbedo,1.0));
+	float4 ambient = (float4(gAmbientLight.xyz,1.0f) * FLOAT4(gAmbientLight.w) + float4(diffuseAlbedo,1.0)) * ambientAccess;
 
 	float4 litColor = ambient + float4(directLighting, 1.0f);
 

@@ -93,3 +93,10 @@ void OSSAONode::BlurSSAO(OSSAORenderTarget::ESubtargets OutputTarget, const SDes
 	OEngine::Get()->DrawFullScreenQuad(pso);
 	CommandQueue->ResourceBarrier(output, D3D12_RESOURCE_STATE_GENERIC_READ);
 }
+
+void OSSAONode::Update()
+{
+	ORenderNode::Update();
+	const auto ssao = OEngine::Get()->GetSSAORT().lock();
+	ssao->SetEnabled(GetNodeInfo().bEnable);
+}

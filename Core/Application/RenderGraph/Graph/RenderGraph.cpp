@@ -72,6 +72,7 @@ void ORenderGraph::Execute()
 		CommandQueue->SetAndClearRenderTarget(texture);
 		while (currentNode != nullptr)
 		{
+			currentNode->Update();
 			if (!currentNode->GetNodeInfo().bEnable)
 			{
 				currentNode = GetNext(currentNode);

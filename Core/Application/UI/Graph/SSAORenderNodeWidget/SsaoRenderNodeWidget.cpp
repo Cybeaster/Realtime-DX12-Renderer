@@ -12,7 +12,6 @@ void OSSAORenderNodeWidget::Draw()
 {
 	ORenderNodeWidgetBase::Draw();
 	auto engine = OEngine::Get();
-	engine->GetMainPassCB().SSAOEnabled = Node->GetNodeInfo().bEnable;
 	const auto rt = engine->GetSSAORT().lock();
 	ImGui::SeparatorText("SSAO Parameters");
 	ImGui::DragFloat("OcclusionRadius", &rt->OcclusionRadius, 0.01f, 0.0f, OSSAORenderTarget::MaxBlurRadius);

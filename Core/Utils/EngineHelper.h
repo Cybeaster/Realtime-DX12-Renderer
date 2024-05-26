@@ -162,6 +162,7 @@ inline auto CreateLightSource(const SSpotLightPayload& Params)
 
 	SRenderItemParams params;
 	params.MaterialParams.Material = FindMaterial("White");
+	params.OverrideLayer = SRenderLayers::LightObjects;
 	auto ri = engine->BuildRenderItemFromMesh(std::move(mesh), params);
 	auto component = engine->AddSpotLightComponent(ri.lock().get());
 	component->SetSpotLight(Params);
@@ -175,6 +176,7 @@ inline auto CreateLightSource(const SDirectionalLightPayload& Params)
 	auto mesh = generator->CreateSphereMesh("Directional Light Source", 0.5f, 20, 20);
 	SRenderItemParams params;
 	params.MaterialParams.Material = FindMaterial("White");
+	params.OverrideLayer = SRenderLayers::LightObjects;
 	auto ri = engine->BuildRenderItemFromMesh(std::move(mesh), params);
 	auto component = engine->AddDirectionalLightComponent(ri.lock().get());
 	component->SetDirectionalLight(Params);
@@ -188,6 +190,8 @@ inline auto CreateLightSource(const string& Category, const SPointLightPayload& 
 	auto mesh = generator->CreateSphereMesh("Point Light Source", 0.5f, 20, 20);
 	SRenderItemParams params;
 	params.MaterialParams.Material = FindMaterial("White");
+	params.OverrideLayer = SRenderLayers::LightObjects;
+
 	auto ri = engine->BuildRenderItemFromMesh(std::move(mesh), params);
 	auto component = engine->AddPointLightComponent(ri.lock().get());
 	component->SetPointLight(Params);

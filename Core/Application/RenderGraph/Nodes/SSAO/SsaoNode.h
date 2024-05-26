@@ -14,4 +14,5 @@ public:
 	void DrawSSAO();
 	void BlurSSAO();
 	void BlurSSAO(OSSAORenderTarget::ESubtargets OutputTarget, const SDescriptorPair* InputSRV, const SDescriptorPair* OutputRTV);
+	void Update() override;
 };

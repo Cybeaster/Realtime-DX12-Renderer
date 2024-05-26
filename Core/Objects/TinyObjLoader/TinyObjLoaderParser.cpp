@@ -117,37 +117,39 @@ bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, 
 
 			// per-face material
 			const auto id = shapes[s].mesh.material_ids[0];
-			const auto& material = materials[id];
+			if (id >= 0 && id < materials.size())
+			{
+				const auto& material = materials[id];
 
-			auto diff = OApplication::GetTexturesPath(Path, UTF8ToWString(material.diffuse_texname));
-			auto norm = OApplication::GetTexturesPath(Path, UTF8ToWString(material.normal_texname));
-			auto height = OApplication::GetTexturesPath(Path, UTF8ToWString(material.bump_texname));
-			auto alpha = OApplication::GetTexturesPath(Path, UTF8ToWString(material.alpha_texname));
-			auto ambient = OApplication::GetTexturesPath(Path, UTF8ToWString(material.ambient_texname));
-			auto specular = OApplication::GetTexturesPath(Path, UTF8ToWString(material.specular_texname));
+				auto diff = OApplication::GetTexturesPath(Path, UTF8ToWString(material.diffuse_texname));
+				auto norm = OApplication::GetTexturesPath(Path, UTF8ToWString(material.normal_texname));
+				auto height = OApplication::GetTexturesPath(Path, UTF8ToWString(material.bump_texname));
+				auto alpha = OApplication::GetTexturesPath(Path, UTF8ToWString(material.alpha_texname));
+				auto ambient = OApplication::GetTexturesPath(Path, UTF8ToWString(material.ambient_texname));
+				auto specular = OApplication::GetTexturesPath(Path, UTF8ToWString(material.specular_texname));
 
-			data.Material.Name = material.name;
-			data.Material.DiffuseMap = diff;
-			data.Material.NormalMap = height;
-			data.Material.AlphaMap = alpha;
-			data.Material.AmbientMap = ambient;
-			data.Material.SpecularMap = specular;
-			HLSL::MaterialData surf = {
-				.AmbientAlbedo = { material.ambient[0], material.ambient[1], material.ambient[2] },
-				.DiffuseAlbedo = { material.diffuse[0], material.diffuse[1], material.diffuse[2] },
-				.SpecularAlbedo = { material.specular[0], material.specular[1], material.specular[2] },
-				.Transmittance = { material.transmittance[0], material.transmittance[1], material.transmittance[2] },
-				.Emission = { material.emission[0], material.emission[1], material.emission[2] },
-				.Shininess = material.shininess,
-				.IndexOfRefraction = material.ior,
-				.Dissolve = material.dissolve,
-				.Illumination = material.illum,
-				.Roughness = material.roughness,
-				.Metalness = material.metallic,
-				.Sheen = material.sheen
-			};
-
-			data.Material.MaterialSurface = surf;
+				data.Material.Name = material.name;
+				data.Material.DiffuseMap = diff;
+				data.Material.NormalMap = height;
+				data.Material.AlphaMap = alpha;
+				data.Material.AmbientMap = ambient;
+				data.Material.SpecularMap = specular;
+				HLSL::MaterialData surf = {
+					.AmbientAlbedo = { material.ambient[0], material.ambient[1], material.ambient[2] },
+					.DiffuseAlbedo = { material.diffuse[0], material.diffuse[1], material.diffuse[2] },
+					.SpecularAlbedo = { material.specular[0], material.specular[1], material.specular[2] },
+					.Transmittance = { material.transmittance[0], material.transmittance[1], material.transmittance[2] },
+					.Emission = { material.emission[0], material.emission[1], material.emission[2] },
+					.Shininess = material.shininess,
+					.IndexOfRefraction = material.ior,
+					.Dissolve = material.dissolve,
+					.Illumination = material.illum,
+					.Roughness = material.roughness,
+					.Metalness = material.metallic,
+					.Sheen = material.sheen
+				};
+				data.Material.MaterialSurface = surf;
+			}
 			payload.TotalIndices += data.Indices32.size();
 			payload.TotalVertices += static_cast<uint32_t>(data.Vertices.size());
 			payload.Data.push_back(std::move(data));

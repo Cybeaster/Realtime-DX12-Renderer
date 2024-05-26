@@ -66,8 +66,11 @@ public:
 	float OcclusionFadeEnd = 1.0f;
 	float SurfaceEpsilon = 0.05f;
 	float GauseWeightSigma = 2.5f;
+	void SetEnabled(bool bEnable);
+	bool IsEnabled() const;
 
 private:
+	bool Enabled = true;
 	TUploadBuffer<SConstantBufferBlurData> HBlurCB;
 	TUploadBuffer<SConstantBufferBlurData> VBlurCB;
 

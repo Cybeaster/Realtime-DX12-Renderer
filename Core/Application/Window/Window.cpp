@@ -331,7 +331,7 @@ void OWindow::SetCameraLens()
 {
 	if (Camera)
 	{
-		Camera->SetLens(0.25 * DirectX::XM_PI, GetAspectRatio(), 1.0f, 10000.0f);
+		Camera->SetLens(0.25 * DirectX::XM_PI, GetAspectRatio(), SRenderConstants::CameraNearZ, 1000.0f);
 	}
 }
 uint32_t OWindow::GetNumDSVRequired() const

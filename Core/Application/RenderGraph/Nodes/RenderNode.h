@@ -25,6 +25,7 @@ public:
 	void SetPSO(const SPSOType& PSOType) const;
 	SPSODescriptionBase* FindPSOInfo(SPSOType Name) const;
 	void SetNodeEnabled(bool bEnable);
+	virtual void Update() {}
 
 protected:
 	OCommandQueue* CommandQueue = nullptr;

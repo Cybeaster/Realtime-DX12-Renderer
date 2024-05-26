@@ -4,6 +4,7 @@
 #define ZERO_FLOAT4 float4(0.0f, 0.0f, 0.0f, 0.0f)
 #define ONE_FLOAT4 float4(1.0f, 1.0f, 1.0f, 1.0f)
 #define FLOAT3(x) float3(x, x, x)
+#define FLOAT4(x) float4(x, x, x, x)
 #define FLOAT4X4(x) float4x4(x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x)
 #define INV_PI 0.31830988618f
 #define PI 3.14159265359f

@@ -1640,11 +1640,11 @@ void OEngine::UpdateMainPass(const STimer& Timer)
 	MainPassCB.EyePosW = camera->GetPosition3f();
 	MainPassCB.RenderTargetSize = XMFLOAT2(static_cast<float>(Window->GetWidth()), static_cast<float>(Window->GetHeight()));
 	MainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / Window->GetWidth(), 1.0f / Window->GetHeight());
-	MainPassCB.NearZ = 0.1f;
+	MainPassCB.NearZ = Window->GetCamera().lock()->GetNearZ();
 	MainPassCB.FarZ = 10000.0f;
 	MainPassCB.TotalTime = Timer.GetTime();
 	MainPassCB.DeltaTime = Timer.GetDeltaTime();
-
+	MainPassCB.SSAOEnabled = SSAORT.lock()->IsEnabled();
 	GetNumLights(MainPassCB.NumPointLights, MainPassCB.NumSpotLights, MainPassCB.NumDirLights);
 	const auto currPassCB = CurrentFrameResource->PassCB.get();
 	currPassCB->CopyData(0, MainPassCB);

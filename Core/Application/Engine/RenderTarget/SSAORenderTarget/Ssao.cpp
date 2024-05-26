@@ -376,6 +376,16 @@ D3D12_GPU_VIRTUAL_ADDRESS OSSAORenderTarget::GetVBlurCBAddress() const
 	return VBlurCB->GetGPUAddress();
 }
 
+void OSSAORenderTarget::SetEnabled(bool bEnable)
+{
+	Enabled = bEnable;
+}
+
+bool OSSAORenderTarget::IsEnabled() const
+{
+	return Enabled;
+}
+
 SResourceInfo* OSSAORenderTarget::GetResource()
 {
 	return nullptr;

@@ -10,7 +10,8 @@ void OLightWidget::Draw()
 	if (ImGui::CollapsingHeader("Light"))
 	{
 		ImGui::SeparatorText("Ambient Light");
-		ImGui::ColorEdit4("Ambient Color", &AmbientColor.x);
+		ImGui::ColorEdit3("Ambient Color", &AmbientColor.x);
+		ImGui::DragFloat("Ambient Intensity", &AmbientColor.w, 0.01f, 0.0f, 1.0f);
 	}
 }
 void OLightWidget::InitWidget()
@@ -20,6 +21,5 @@ void OLightWidget::InitWidget()
 void OLightWidget::Update()
 {
 	IWidget::Update();
-
 	Engine->SetAmbientLight(AmbientColor);
 }
