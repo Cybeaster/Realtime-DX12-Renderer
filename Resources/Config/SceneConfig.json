@@ -1,6 +1,6 @@
 {
   "Scene": {
-    "CurrentScene": "Sponza"
+    "CurrentScene": "MoriKnob"
   },
   "Scenes": [
     {
@@ -170,6 +170,54 @@
             "R": 1.0,
             "G": 1.0,
             "B": 1.0
+          }
+        }
+      ]
+    },
+    {
+      "Name": "MoriKnob",
+      "Sky": "grasscube1024",
+      "Objects": [
+        {
+          "ObjectName": "Resources/Models/mori_knob/testObj.obj"
+        }
+      ],
+      "Lights": [
+        {
+          "Type": "Directional",
+          "Direction": {
+            "X": 0.1,
+            "Y": -1.0,
+            "Z": 0.0
+          },
+          "Intensity": {
+            "R": 1.0,
+            "G": 0.9,
+            "B": 0.5
+          }
+        }
+      ]
+    },
+    {
+      "Name": "Dragon",
+      "Sky": "grasscube1024",
+      "Objects": [
+        {
+          "ObjectName": "Resources/Models/dragon/dragon.obj"
+        }
+      ],
+      "Lights": [
+        {
+          "Type": "Directional",
+          "Direction": {
+            "X": 0.1,
+            "Y": -1.0,
+            "Z": 0.0
+          },
+          "Intensity": {
+            "R": 1.0,
+            "G": 0.9,
+            "B": 0.5
           }
         }
       ]

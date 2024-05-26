@@ -19,6 +19,7 @@ void OSSAORenderTarget::BuildDescriptors(IDescriptor* Descriptor)
 		descriptor->RTVHandle.Offset(AmbientMap0RTV);
 		descriptor->SRVHandle.Offset(AmbientMap1SRV);
 		descriptor->RTVHandle.Offset(AmbientMap1RTV);
+		descriptor->DSVHandle.Offset(DepthMapDSV);
 		BuildDescriptors();
 	}
 }
@@ -55,6 +56,14 @@ void OSSAORenderTarget::BuildDescriptors()
 	rtvDesc.Format = SRenderConstants::AmbientMapFormat;
 	device->CreateRenderTargetView(AmbientMap0, AmbientMap0RTV);
 	device->CreateRenderTargetView(AmbientMap1, AmbientMap1RTV);
+
+	// Create descriptor to mip level 0 of entire resource using the format of the resource.
+	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	dsvDesc.Format = SRenderConstants::DepthBufferFormat;
+	dsvDesc.Texture2D.MipSlice = 0;
+	device->CreateDepthStencilView(DepthMap, dsvDesc, DepthMapDSV);
 }
 
 void OSSAORenderTarget::BuildResource()
@@ -73,7 +82,13 @@ void OSSAORenderTarget::BuildResource()
 
 	desc.Format = DXGI_FORMAT_R24G8_TYPELESS;
 	desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-	DepthMap = Utils::CreateResource(weak, L"DepthMap", device->GetDevice(), D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ);
+
+	D3D12_CLEAR_VALUE depthClear;
+	depthClear.Format = SRenderConstants::DepthBufferFormat;
+	depthClear.DepthStencil.Depth = 1.0f;
+	depthClear.DepthStencil.Stencil = 0;
+
+	DepthMap = Utils::CreateResource(weak, L"DepthMap", device->GetDevice(), D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ, &depthClear);
 
 	desc.Width = Width / 2;
 	desc.Height = Height / 2;
@@ -195,6 +210,10 @@ void OSSAORenderTarget::OnResize(const ResizeEventArgs& Args)
 	}
 	BuildDescriptors();
 }
+SDescriptorPair OSSAORenderTarget::GetDSV(uint32_t SubtargetIdx) const
+{
+	return DepthMapDSV;
+}
 
 std::array<DirectX::XMFLOAT4, 14> OSSAORenderTarget::GetOffsetVectors()
 {
@@ -274,6 +293,10 @@ uint32_t OSSAORenderTarget::GetNumSRVRequired() const
 {
 	return 5;
 }
+uint32_t OSSAORenderTarget::GetNumDSVRequired() const
+{
+	return 1;
+}
 
 SResourceInfo* OSSAORenderTarget::GetRandomVectorMap()
 {
@@ -337,7 +360,6 @@ void OSSAORenderTarget::PrepareRenderTarget(OCommandQueue* Queue, bool ClearRend
 	else if (SubtargetIdx == AmbientSubtarget0)
 	{
 		Queue->SetViewportScissors(Viewport, ScissorRect);
-		float clearValue[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 		Queue->ClearRenderTarget(AmbientMap0RTV, SColor::White);
 		Queue->SetRenderToRTVOnly(AmbientMap0RTV);
 		LOG(Engine, Log, "Setting render target with address: [{}] in [{}]and depth stencil: null", TEXT(AmbientMap0RTV.CPUHandle.ptr), GetName());

@@ -5,9 +5,16 @@
       {
         "Name": "Shadow",
         "PSO": "ShadowMap",
-        "NextNode": "OpaqueDynamicReflections",
+        "NextNode": "SSAO",
         "RenderLayer": "Shadow",
         "Enabled": true
+      },
+      {
+        "Name": "SSAO",
+        "PSO": "SSAO",
+        "NextNode": "OpaqueDynamicReflections",
+        "RenderLayer": "SSAO",
+        "Enabled": false
       },
       {
         "Name": "OpaqueDynamicReflections",
@@ -19,16 +26,9 @@
       {
         "Name": "Opaque",
         "PSO": "Opaque",
-        "NextNode": "SSAO",
+        "NextNode": "TangentNormalDebug",
         "RenderLayer": "Opaque",
         "Enabled": true
-      },
-      {
-        "Name": "SSAO",
-        "PSO": "SSAO",
-        "NextNode": "TangentNormalDebug",
-        "RenderLayer": "SSAO",
-        "Enabled": false
       },
       {
         "Name": "TangentNormalDebug",
@@ -70,14 +70,14 @@
         "PSO": "Opaque",
         "NextNode": "FrustumDebug",
         "RenderLayer": "LightObjects",
-        "Enabled": true
+        "Enabled": false
       },
       {
         "Name": "FrustumDebug",
         "PSO": "FrustumDebug",
         "NextNode": "ShadowDebug",
         "RenderLayer": "FrustumDebug",
-        "Enabled": true
+        "Enabled": false
       },
       {
         "Name": "ShadowDebug",
@@ -98,7 +98,7 @@
         "PSO": "DebugBox",
         "NextNode": "PostProcess",
         "RenderLayer": "DebugBox",
-        "Enabled": true
+        "Enabled": false
       },
       {
         "Name": "PostProcess",

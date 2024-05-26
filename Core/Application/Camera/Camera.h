@@ -17,7 +17,7 @@ class OCamera
 public:
 	OCamera(OWindow* _Window);
 	OCamera();
-	const float MaxCameraSpeed = 800;
+	float MaxCameraSpeed = 800;
 
 	// Get/Set world camera position.
 	DirectX::XMVECTOR GetPosition() const;

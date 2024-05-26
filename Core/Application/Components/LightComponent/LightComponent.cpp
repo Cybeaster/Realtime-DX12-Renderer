@@ -349,7 +349,7 @@ void ODirectionalLightComponent::SetLightSourceData()
 
 		const auto lightView = MatrixLookAt(Load(eye), center, lightUp);
 		const auto invLightView = Inverse(lightView);
-		float depth = OEngine::Get()->GetSceneBounds().Radius * 4;
+		float depth = OEngine::Get()->GetSceneBounds().Radius * 2;
 
 		const auto lightProj = MatrixOrthographicOffCenter(-radius, radius, -radius, radius, -depth, depth);
 		const auto lightViewProj = lightView * lightProj;

@@ -272,24 +272,38 @@ void OCommandQueue::ClearRenderTarget(const SDescriptorPair& RTV, const SColor C
 void OCommandQueue::ClearDepthStencil(const SDescriptorPair& DSV) const
 {
 	LOG(Render, Log, "Clearing depth stencil of {} with index", TEXT(DSV.Resource.lock().get()), TEXT(DSV.Index));
+	auto resource = DSV.Resource.lock();
+	if (resource->CurrentState != D3D12_RESOURCE_STATE_DEPTH_WRITE)
+	{
+		LOG(Render, Error, "Depth stencil resource is not in the correct state!");
+		ResourceBarrier(resource.get(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	}
 	CommandList->ClearDepthStencilView(DSV.CPUHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 }
 
 void OCommandQueue::SetRenderTargets(const SDescriptorPair& RTV, const SDescriptorPair& DSV) const
 {
-	LOG(Render, Log, "Setting render target: {} and depth stencil: {}", TEXT(RTV.Resource.lock().get()), TEXT(DSV.Resource.lock().get()));
+	auto dsvResource = DSV.Resource.lock();
+	auto rtvResource = RTV.Resource.lock();
+	LOG(Render, Log, "Setting render target: {} and depth stencil: {}", TEXT(rtvResource.get()), TEXT(dsvResource.get()));
+	ResourceBarrier(dsvResource.get(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	ResourceBarrier(rtvResource.get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 	CommandList->OMSetRenderTargets(1, &RTV.CPUHandle, true, &DSV.CPUHandle);
 }
 
 void OCommandQueue::SetRenderToRTVOnly(const SDescriptorPair& RTV) const
 {
 	LOG(Render, Log, "Setting only render target: {}", TEXT(RTV.Resource.lock().get()));
+	auto rtvResource = RTV.Resource.lock();
+	ResourceBarrier(rtvResource.get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 	CommandList->OMSetRenderTargets(1, &RTV.CPUHandle, true, nullptr);
 }
 
 void OCommandQueue::SetRenderToDSVOnly(const SDescriptorPair& DSV) const
 {
 	LOG(Render, Log, "Setting only depth stencil: {}", TEXT(DSV.Resource.lock().get()));
+	auto dsvResource = DSV.Resource.lock();
+	ResourceBarrier(dsvResource.get(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
 	CommandList->OMSetRenderTargets(0, nullptr, true, &DSV.CPUHandle);
 }
 

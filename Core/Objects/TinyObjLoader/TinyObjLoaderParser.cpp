@@ -35,11 +35,6 @@ bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, 
 	auto& materials = reader.GetMaterials();
 	MeshData.Data.reserve(shapes.size());
 
-	auto threads = std::thread::hardware_concurrency();
-	auto bunch = shapes.size() / threads;
-	uint32_t start = 0;
-	uint32_t end = bunch;
-
 	std::vector<std::future<SMeshPayloadData>> futures;
 	auto compute = [&](uint32_t start, uint32_t end) {
 		SMeshPayloadData payload;
@@ -160,11 +155,25 @@ bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, 
 		return payload;
 	};
 
-	for (size_t i = 0; i < threads; i++)
+	auto threads = std::thread::hardware_concurrency();
+	if (shapes.size() <= threads)
 	{
-		futures.push_back(std::async(std::launch::async, compute, start, end));
-		start = end;
-		end += bunch;
+		for (size_t s = 0; s < shapes.size(); s++)
+		{
+			futures.push_back(std::async(std::launch::async, compute, s, s + 1));
+		}
+	}
+	else
+	{
+		auto bunch = shapes.size() / threads;
+		uint32_t start = 0;
+		uint32_t end = bunch;
+		for (size_t i = 0; i < threads; i++)
+		{
+			futures.push_back(std::async(std::launch::async, compute, start, end));
+			start = end;
+			end += bunch;
+		}
 	}
 
 	for (auto& future : futures)
@@ -175,7 +184,7 @@ bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, 
 		MeshData.Data.insert(MeshData.Data.end(), payload.Data.begin(), payload.Data.end());
 	}
 
-	return true;
+	return MeshData.TotalVertices > 0;
 }
 
 //TODO Implement parallel

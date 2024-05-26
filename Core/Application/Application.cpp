@@ -91,7 +91,7 @@ OApplication::OApplication()
 void OApplication::InitWindowClass() const
 {
 	SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-#if defined(_DEBUG)
+#if ENABLE_DEBUG_LAYER
 	// Always enable the debug layer before doing anything DX12 related
 	// so all possible errors generated while creating DX12 objects
 	// are caught by the debug layer.

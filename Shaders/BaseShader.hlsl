@@ -94,15 +94,6 @@ float4 PS(VertexOut pin)
 	float3 toEyeW = normalize(gEyePosW - pin.PosW);
 	float distToEye = length(toEyeW);
 
-
-	//SSAO
-	float ambientAccess = 1;
-	if (gSSAOEnabled)
-	{
-		pin.SsaoPosH /= pin.SsaoPosH.w;
-		ambientAccess = gSsaoMap.Sample(gsamLinearWrap, pin.SsaoPosH.xy, 0.0f).r;
-	}
-
 	//diffuse incorporating metalness
 	Material mat = { diffuseAlbedo * (1.0f - matData.Metalness), f0.rgb, matData.Shininess, 1 -  (matData.Shininess / 100) };
 	BumpedData data = SampleNormalMap(pin.NormalW, pin.TangentW, matData, pin.TexC);
@@ -145,7 +136,18 @@ float4 PS(VertexOut pin)
 	//return float4(bumpedNormalW.rgb, 1.0);
 
 	// Light terms.
-	float4 ambient =  ambientAccess * gAmbientLight * float4(diffuseAlbedo,1.0);
+
+	//SSAO
+	float ambientAccess = 1;
+	if (gSSAOEnabled)
+	{
+		pin.SsaoPosH /= pin.SsaoPosH.w;
+		ambientAccess = gSsaoMap.Sample(gsamLinearWrap, pin.SsaoPosH.xy, 0.0f).r;
+	}
+
+	//float4 ambient =  ambientAccess * gAmbientLight * float4(diffuseAlbedo,1.0);
+	float4 ambient =  saturate((ambientAccess * gAmbientLight) + float4(diffuseAlbedo,1.0));
+
 	float4 litColor = ambient + float4(directLighting, 1.0f);
 
 #ifdef FOG

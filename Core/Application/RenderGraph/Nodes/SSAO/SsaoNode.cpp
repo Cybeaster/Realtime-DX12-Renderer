@@ -15,10 +15,14 @@ ORenderTargetBase* OSSAONode::Execute(ORenderTargetBase* RenderTarget)
 	return RenderTarget;
 }
 
+weak_ptr<OSSAORenderTarget> OSSAONode::GetSSAORT() const
+{
+	return OEngine::Get()->GetSSAORT();
+}
+
 void OSSAONode::DrawNormals()
 {
 	auto ssao = OEngine::Get()->GetSSAORT().lock();
-	OEngine::Get()->GetWindow().lock()->SetViewport(CommandQueue->GetCommandList().Get());
 	CommandQueue->ResourceBarrier(ssao->GetNormalMap(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 	CommandQueue->SetRenderTarget(ssao.get(), OSSAORenderTarget::ESubtargets::NormalSubtarget);
 	auto pso = FindPSOInfo(SPSOTypes::DrawNormals);
@@ -38,11 +42,10 @@ void OSSAONode::DrawSSAO()
 	auto frameResource = OEngine::Get()->CurrentFrameResource;
 	auto ssao = OEngine::Get()->GetSSAORT().lock();
 	auto pso = FindPSOInfo(SPSOTypes::SSAO);
-	CommandQueue->ResourceBarrier(ssao->GetAmbientMap0(), D3D12_RESOURCE_STATE_RENDER_TARGET);
-	CommandQueue->CopyResourceTo(ssao->GetDepthMap(), OEngine::Get()->GetWindow().lock()->GetCurrentDepthStencilBuffer());
+	CommandQueue->ResourceBarrier(ssao->GetDepthMap(), D3D12_RESOURCE_STATE_GENERIC_READ);
 	CommandQueue->SetRenderTarget(ssao.get(), OSSAORenderTarget::ESubtargets::AmbientSubtarget0);
 	CommandQueue->SetPipelineState(pso);
-	CommandQueue->SetResource(STRINGIFY_MACRO(CB_PASS), frameResource->SsaoCB->GetGPUAddress(), pso);
+	CommandQueue->SetResource(STRINGIFY_MACRO(CB_SSAO), frameResource->SsaoCB->GetGPUAddress(), pso);
 	CommandQueue->SetResource(STRINGIFY_MACRO(NORMAL_MAP), ssao->GetNormalMapSRV().GPUHandle, pso);
 	CommandQueue->SetResource(STRINGIFY_MACRO(RANDOM_VEC_MAP), ssao->GetRandomVectorMapSRV().GPUHandle, pso);
 	CommandQueue->SetResource(STRINGIFY_MACRO(DEPTH_MAP), ssao->GetDepthMapSRV().GPUHandle, pso);
@@ -73,6 +76,7 @@ void OSSAONode::BlurSSAO()
 		CommandQueue->SetResource(STRINGIFY_MACRO(CB_ROOT_CONSTANTS), ssao->GetVBlurCBAddress(), pso);
 		BlurSSAO(OSSAORenderTarget::ESubtargets::AmbientSubtarget0, &srv1, &rtv0);
 	}
+	CommandQueue->ResourceBarrier(ssao->GetDepthMap(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
 }
 
 void OSSAONode::BlurSSAO(OSSAORenderTarget::ESubtargets OutputTarget, const SDescriptorPair* InputSRV, const SDescriptorPair* OutputRTV)

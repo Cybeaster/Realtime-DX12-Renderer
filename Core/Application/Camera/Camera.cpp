@@ -131,6 +131,7 @@ void OCamera::SetNewFar(float NewFar)
 	{
 		FarZ = NewFar;
 		SetLens(FovY, Aspect, NearZ, FarZ);
+		MaxCameraSpeed = FarZ;
 	}
 }
 
@@ -222,7 +223,7 @@ void OCamera::UpdateViewMatrix()
 }
 void OCamera::UpdateCameraSpeed(float Delta)
 {
-	CameraSpeed += Delta * 5;
+	CameraSpeed += Delta * MaxCameraSpeed * 0.01;
 	CameraSpeed = std::clamp(CameraSpeed, 0.f, MaxCameraSpeed);
 }
 void OCamera::SetCameraSpeed(const float Speed)

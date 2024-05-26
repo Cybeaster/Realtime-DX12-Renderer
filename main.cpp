@@ -10,6 +10,8 @@
 #include <Shlwapi.h>
 #include <Windows.h>
 
+#define ENABLE_DEBUG_LAYER 0
+
 int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLine, int nCmdShow)
 {
 	int returnCode = 0;

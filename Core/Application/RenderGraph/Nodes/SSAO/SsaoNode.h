@@ -9,6 +9,7 @@ class OSSAONode : public ORenderNode
 	ORenderTargetBase* Execute(ORenderTargetBase* RenderTarget) override;
 
 public:
+	weak_ptr<OSSAORenderTarget> GetSSAORT() const;
 	void DrawNormals();
 	void DrawSSAO();
 	void BlurSSAO();

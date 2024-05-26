@@ -33,7 +33,7 @@ public:
 	void InitRenderObject() override;
 	void BuildViewport() override;
 	void OnResize(const ResizeEventArgs& Args) override;
-
+	SDescriptorPair GetDSV(uint32_t SubtargetIdx = 0) const override;
 	std::array<DirectX::XMFLOAT4, 14> GetOffsetVectors();
 	vector<float> CalcGaussWeights() const;
 	static constexpr int MaxBlurRadius = 5;
@@ -41,7 +41,7 @@ public:
 
 	uint32_t GetNumRTVRequired() const override;
 	uint32_t GetNumSRVRequired() const override;
-
+	uint32_t GetNumDSVRequired() const override;
 	SResourceInfo* GetResource() override;
 	SResourceInfo* GetRandomVectorMap();
 	SResourceInfo* GetNormalMap();
@@ -81,6 +81,7 @@ private:
 	SDescriptorPair NormalMapSRV;
 	SDescriptorPair NormalMapRTV;
 	SDescriptorPair DepthMapSRV;
+	SDescriptorPair DepthMapDSV;
 	SDescriptorPair RandomVectorMapSRV;
 
 	SDescriptorPair AmbientMap0SRV;
