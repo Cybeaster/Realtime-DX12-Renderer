@@ -25,11 +25,7 @@ SSceneSettings OSceneReader::LoadScene()
 			if (type == "Directional")
 			{
 				SDirectionalLightPayload dirLight;
-				dirLight.Direction = {
-					light.second.get_child("Direction").get<float>("X"),
-					light.second.get_child("Direction").get<float>("Y"),
-					light.second.get_child("Direction").get<float>("Z")
-				};
+				GetFloat3(light.second, "Direction", dirLight.Direction); //todo optimize boilerplate
 				dirLight.Intensity = {
 					light.second.get_child("Intensity").get<float>("R"),
 					light.second.get_child("Intensity").get<float>("G"),
@@ -40,11 +36,7 @@ SSceneSettings OSceneReader::LoadScene()
 			else if (type == "Spot")
 			{
 				SSpotLightPayload spotLight;
-				spotLight.Direction = {
-					light.second.get_child("Direction").get<float>("X"),
-					light.second.get_child("Direction").get<float>("Y"),
-					light.second.get_child("Direction").get<float>("Z")
-				};
+				GetFloat3(light.second, "Direction", spotLight.Direction);
 				spotLight.Intensity = {
 					light.second.get_child("Intensity").get<float>("R"),
 					light.second.get_child("Intensity").get<float>("G"),

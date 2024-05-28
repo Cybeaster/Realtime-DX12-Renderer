@@ -24,7 +24,7 @@ public:
 	void OutputTo(SResourceInfo* Destination);
 	void BuildDescriptors() override;
 	void BuildResource() override;
-	void Execute(const SPSODescriptionBase* PSO,
+	bool Execute(const SPSODescriptionBase* PSO,
 	             SResourceInfo*);
 
 	void Execute(SResourceInfo*);

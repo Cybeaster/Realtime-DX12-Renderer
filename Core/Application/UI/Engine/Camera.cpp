@@ -16,7 +16,7 @@ void OCameraWidget::Draw()
 	{
 		if (ImGui::TreeNode("Camera Speed & Sensivity"))
 		{
-			if (ImGui::SliderFloat("Speed", &CameraSpeed, 5.f, GetCamera()->MaxCameraSpeed))
+			if (ImGui::SliderFloat("Speed", &CameraSpeed, 0.1f, GetCamera()->MaxCameraSpeed))
 			{
 				bUpdateSpeed = true;
 			}
@@ -26,7 +26,8 @@ void OCameraWidget::Draw()
 			}
 			ImGui::TreePop();
 		}
-
+		auto rotation = GetCamera()->GetRotation3f();
+		ImGui::Text("Camera Rotation: %f, %f, %f", rotation.x, rotation.y, rotation.z);
 		ImGui::Text("Camera Position: %f, %f, %f", GetCamera()->GetPosition3f().x, GetCamera()->GetPosition3f().y, GetCamera()->GetPosition3f().z);
 		ImGui::Text("Camera Right: %f, %f, %f", GetCamera()->GetRight3f().x, GetCamera()->GetRight3f().y, GetCamera()->GetRight3f().z);
 		ImGui::Text("Camera Up: %f, %f, %f", GetCamera()->GetUp3f().x, GetCamera()->GetUp3f().y, GetCamera()->GetUp3f().z);

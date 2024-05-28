@@ -1,6 +1,7 @@
 #include "UiManager.h"
 
 #include "Engine/Engine.h"
+#include "UI/Animations/AnimationListWidget.h"
 #include "UI/Effects/FogWidget.h"
 #include "UI/Effects/Light/LightWidget.h"
 #include "UI/Engine/Camera.h"
@@ -51,7 +52,6 @@ void OUIManager::Draw()
 	OHierarchicalWidgetBase::Draw();
 
 	ImGui::End();
-	ImGui::ShowDemoWindow();
 	ImGui::Render();
 }
 
@@ -80,6 +80,7 @@ void OUIManager::InitWidgets(OEngine* Engine)
 	MakeWidget<ORenderGraphWidget>(Engine->GetRenderGraph());
 	MakeWidget<OPerfomanceWidget>();
 	MakeWidget<OShaderSettings>();
+	MakeWidget<OAnimationListWidget>(Engine->GetAnimationManager());
 }
 
 void OUIManager::OnMouseButtonPressed(MouseButtonEventArgs& Args)

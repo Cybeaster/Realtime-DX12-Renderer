@@ -56,8 +56,8 @@ void OLightComponentWidget::Draw()
 					ImGui::Text(typeName.c_str());
 					ImGui::Image(PtrCast(map->GetSRV().GPUHandle.ptr), ImVec2(250, 250));
 				}
-				ImGui::End();
 			}
+			ImGui::End();
 			break;
 		}
 		case ELightType::Point:

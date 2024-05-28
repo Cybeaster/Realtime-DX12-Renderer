@@ -1,6 +1,6 @@
 {
   "Scene": {
-    "CurrentScene": "Dragon"
+    "CurrentScene": "BistroExterior"
   },
   "Scenes": [
     {
@@ -202,6 +202,81 @@
       "Name": "Dragon",
       "Sky": "grasscube1024",
       "Objects": [
+        {
+          "ObjectName": "Resources/Models/dragon/dragon.obj"
+        }
+      ],
+      "Lights": [
+        {
+          "Type": "Directional",
+          "Direction": {
+            "X": 0.1,
+            "Y": -1.0,
+            "Z": 0.0
+          },
+          "Intensity": {
+            "R": 1.0,
+            "G": 0.9,
+            "B": 0.5
+          }
+        }
+      ]
+    },
+    {
+      "Name": "Skull",
+      "Sky": "grasscube1024",
+      "Objects": [
+        {
+          "ObjectName": "Resources/Models/skull/skull.obj"
+        }
+      ],
+      "Lights": [
+        {
+          "Type": "Directional",
+          "Direction": {
+            "X": 0.1,
+            "Y": -1.0,
+            "Z": 0.0
+          },
+          "Intensity": {
+            "R": 1.0,
+            "G": 0.9,
+            "B": 0.5
+          }
+        }
+      ]
+    },
+    {
+      "Name": "Budda",
+      "Sky": "grasscube1024",
+      "Objects": [
+        {
+          "ObjectName": "Resources/Models/budda/buddha.obj"
+        }
+      ],
+      "Lights": [
+        {
+          "Type": "Directional",
+          "Direction": {
+            "X": 0.1,
+            "Y": -1.0,
+            "Z": 0.0
+          },
+          "Intensity": {
+            "R": 1.0,
+            "G": 0.9,
+            "B": 0.5
+          }
+        }
+      ]
+    },
+    {
+      "Name": "Budda_Dragon",
+      "Sky": "grasscube1024",
+      "Objects": [
+        {
+          "ObjectName": "Resources/Models/budda/buddha.obj"
+        },
         {
           "ObjectName": "Resources/Models/dragon/dragon.obj"
         }

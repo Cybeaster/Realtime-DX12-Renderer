@@ -33,7 +33,7 @@ public:
 
 	void BuildDescriptors(IDescriptor* Descriptor) override;
 
-	void Execute(
+	bool Execute(
 	    const SPSODescriptionBase* HorizontalBlurPSO,
 	    const SPSODescriptionBase* VerticalBlurPSO,
 	    SResourceInfo* Input);

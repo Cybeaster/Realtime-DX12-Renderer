@@ -40,16 +40,19 @@ void OPostProcessNode::DrawSobel(ORenderTargetBase* RenderTarget)
 void OPostProcessNode::DrawBlurFilter(ORenderTargetBase* RenderTarget)
 {
 	auto engine = OEngine::Get();
-	engine->GetBlurFilter()->Execute(
-	    FindPSOInfo(SPSOTypes::HorizontalBlur),
-	    FindPSOInfo(SPSOTypes::VerticalBlur),
-	    RenderTarget->GetResource());
-	engine->GetBlurFilter()->OutputTo(RenderTarget->GetResource());
-
+	if (engine->GetBlurFilter()->Execute(
+	        FindPSOInfo(SPSOTypes::HorizontalBlur),
+	        FindPSOInfo(SPSOTypes::VerticalBlur),
+	        RenderTarget->GetResource()))
+	{
+		engine->GetBlurFilter()->OutputTo(RenderTarget->GetResource());
+	}
 
 	SetPSO(SPSOTypes::BilateralBlur);
-	engine->GetBilateralBlurFilter()->Execute(FindPSOInfo(SPSOTypes::BilateralBlur), RenderTarget->GetResource());
-	engine->GetBilateralBlurFilter()->OutputTo(RenderTarget->GetResource());
+	if (engine->GetBilateralBlurFilter()->Execute(FindPSOInfo(SPSOTypes::BilateralBlur), RenderTarget->GetResource()))
+	{
+		engine->GetBilateralBlurFilter()->OutputTo(RenderTarget->GetResource());
+	}
 }
 
 void OPostProcessNode::DrawComposite(D3D12_GPU_DESCRIPTOR_HANDLE Input, D3D12_GPU_DESCRIPTOR_HANDLE Input2) const

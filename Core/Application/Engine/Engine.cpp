@@ -1,6 +1,7 @@
 
 #include "Engine.h"
 
+#include "Animations/AnimationManager.h"
 #include "Application.h"
 #include "Camera/Camera.h"
 #include "DirectX/FrameResource.h"
@@ -10,12 +11,17 @@
 #include "Engine/RenderTarget/ShadowMap/ShadowMap.h"
 #include "EngineHelper.h"
 #include "Exception.h"
+#include "GraphicsPipelineManager/GraphicsPipelineManager.h"
 #include "Logger.h"
 #include "MathUtils.h"
+#include "MeshGenerator/MeshGenerator.h"
 #include "Profiler.h"
+#include "RenderGraph/Graph/RenderGraph.h"
+#include "RenderTarget/Filters/Blur/BlurFilter.h"
+#include "RenderTarget/Filters/SobelFilter/SobelFilter.h"
 #include "TextureConstants.h"
-#include "UI/Effects/FogWidget.h"
-#include "UI/Effects/Light/LightWidget.h"
+#include "TextureManager/TextureManager.h"
+#include "UI/UIManager/UiManager.h"
 #include "Window/Window.h"
 
 #include <DirectXMath.h>
@@ -85,6 +91,7 @@ void OEngine::InitManagers()
 	MaterialManager->LoadMaterialsFromCache();
 	MaterialManager->MaterialsRebuld.AddMember(this, &OEngine::TryRebuildFrameResource);
 	SceneManager = make_unique<OSceneManager>();
+	AnimationManager = make_unique<OAnimationManager>();
 }
 
 void OEngine::PostInitialize()
@@ -592,7 +599,7 @@ void OEngine::UpdateBoundingSphere()
 	{
 		SceneBounds.Radius = std::max(SceneBounds.Radius, std::max({ val->Bounds.Extents.x, val->Bounds.Extents.y, val->Bounds.Extents.z }));
 	}
-	Window->UpdateCameraClip(SceneBounds.Radius * 2);
+	Window->UpdateCameraClip(GetSceneBounds().Radius * 2);
 }
 
 void OEngine::RebuildFrameResource(uint32_t Count)
@@ -1685,6 +1692,11 @@ weak_ptr<ONormalTangentDebugTarget> OEngine::GetNormalTangentDebugTarget() const
 void OEngine::ReloadShaders()
 {
 	ReloadShadersRequested = true;
+}
+
+OAnimationManager* OEngine::GetAnimationManager() const
+{
+	return AnimationManager;
 }
 
 uint32_t OEngine::GetDesiredCountOfSRVs(SResourceHeapBitFlag Flag) const

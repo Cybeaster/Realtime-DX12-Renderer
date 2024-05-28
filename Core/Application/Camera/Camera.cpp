@@ -1,6 +1,8 @@
 
 #include "Camera.h"
 
+#include "Animations/Animations.h"
+#include "Engine/Engine.h"
 #include "Window/Window.h"
 
 using namespace DirectX;
@@ -176,6 +178,7 @@ void OCamera::RotateY(float Angle)
 
 void OCamera::UpdateViewMatrix()
 {
+	PerformCameraAnimation(OEngine::Get()->GetDeltaTime());
 	if (bViewDirty)
 	{
 		XMVECTOR R = XMLoadFloat3(&Right);
@@ -228,7 +231,7 @@ void OCamera::UpdateCameraSpeed(float Delta)
 }
 void OCamera::SetCameraSpeed(const float Speed)
 {
-	CameraSpeed = std::max(Speed, 5.f);
+	CameraSpeed = std::max(Speed, 0.1f);
 }
 
 void OCamera::SetCameraSensivity(float Sensetivity)
@@ -276,6 +279,24 @@ void OCamera::FillPassConstant(SPassConstants& OutOther) const
 	OutOther.EyePosW = GetPosition3f();
 }
 
+void OCamera::PerformCameraAnimation(const float Delta)
+{
+	if (!Animation.expired() && !Animation.lock()->IsFinished())
+	{
+		bViewDirty = true;
+		STransform current;
+		current.Position = Position;
+		current.Rotation = GetRotation3f();
+		const auto [position, rotation, scale] = Animation.lock()->PerfomAnimation(current, Delta);
+		Position = position;
+
+		const XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
+		XMStoreFloat3(&Right, rotationMatrix.r[0]);
+		XMStoreFloat3(&Up, rotationMatrix.r[1]);
+		XMStoreFloat3(&Target, rotationMatrix.r[2]);
+	}
+}
+
 DirectX::XMVECTOR OCamera::GetUp() const
 {
 	return XMLoadFloat3(&Up);
@@ -294,6 +315,22 @@ DirectX::XMVECTOR OCamera::GetLook() const
 DirectX::XMFLOAT3 OCamera::GetLook3f() const
 {
 	return Target;
+}
+
+DirectX::XMFLOAT3 OCamera::GetRotation3f() const
+{
+	float yaw;
+	float pitch = std::asin(-Target.y);
+	if (std::cos(pitch) > 0.0001f)
+	{
+		yaw = std::atan2(Target.x, Target.z);
+	}
+	else
+	{
+		yaw = std::atan2(-Right.z, Right.x);
+	}
+	float roll = std::atan2(Up.x, Up.y);
+	return XMFLOAT3(pitch, yaw, roll);
 }
 
 float OCamera::GetNearZ() const

@@ -34,6 +34,19 @@ public:
 		return Tree.get<string>(Value);
 	}
 
+	static bool GetFloat3(const boost::property_tree::ptree& Tree, const string& Value, DirectX::XMFLOAT3& Out)
+	{
+		auto vec = Tree.get_child_optional(Value);
+		if (vec.has_value())
+		{
+			Out.x = vec->get<float>("X");
+			Out.y = vec->get<float>("Y");
+			Out.z = vec->get<float>("Z");
+			return true;
+		}
+		return false;
+	}
+
 	template<typename T>
 	T GetRoot(const std::string& Key) const
 	{

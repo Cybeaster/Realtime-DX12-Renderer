@@ -82,8 +82,13 @@ void OBilateralBlurFilter::BuildResource()
 	InputTexture = Utils::CreateResource(weak, L"InputTexture", device, D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
 }
 
-void OBilateralBlurFilter::Execute(const SPSODescriptionBase* PSO, SResourceInfo* Input)
+bool OBilateralBlurFilter::Execute(const SPSODescriptionBase* PSO, SResourceInfo* Input)
 {
+	if (BlurCount == 0)
+	{
+		return false;
+	}
+	
 	using namespace Utils;
 	PSO->RootSignature->ActivateRootSignature(Queue->GetCommandList().Get());
 	auto cmd = Queue->GetCommandList().Get();
@@ -103,4 +108,5 @@ void OBilateralBlurFilter::Execute(const SPSODescriptionBase* PSO, SResourceInfo
 
 	ResourceBarrier(cmd, OutputTexture.get(), D3D12_RESOURCE_STATE_GENERIC_READ);
 	ResourceBarrier(cmd, InputTexture.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	return true;
 }

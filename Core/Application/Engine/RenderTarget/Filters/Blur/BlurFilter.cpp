@@ -83,11 +83,15 @@ void OGaussianBlurFilter::BuildResource()
 	InputMap = Utils::CreateResource(weak, L"InputMap", device->GetDevice(), D3D12_HEAP_TYPE_DEFAULT, texDesc, D3D12_RESOURCE_STATE_COMMON);
 }
 
-void OGaussianBlurFilter::Execute(
+bool OGaussianBlurFilter::Execute(
     const SPSODescriptionBase* HorizontalBlurPSO,
     const SPSODescriptionBase* VerticalBlurPSO,
     SResourceInfo* Input)
 {
+	if (BlurCount == 0)
+	{
+		return false;
+	}
 	using namespace Utils;
 	const auto weights = CalcGaussWeights(Sigma);
 	const auto blurRadius = static_cast<int32_t>(weights.size() / 2);
@@ -149,6 +153,7 @@ void OGaussianBlurFilter::Execute(
 		ResourceBarrier(cmdList, BlurMap0.get(), D3D12_RESOURCE_STATE_GENERIC_READ);
 		ResourceBarrier(cmdList, BlurMap1.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 	}
+	return true;
 }
 
 vector<float> OGaussianBlurFilter::CalcGaussWeights(float Sigma) const

@@ -1,4 +1,5 @@
 #pragma once
+#include "Animations/AnimationManager.h"
 #include "Color.h"
 #include "Device/Device.h"
 #include "DirectX/BoundingGeometry.h"
@@ -353,6 +354,7 @@ private:
 	unique_ptr<ORenderGraph> RenderGraph;
 	unique_ptr<OSceneManager> SceneManager;
 	unique_ptr<OMeshGenerator> MeshGenerator;
+	unique_ptr<OAnimationManager> AnimationManager;
 
 	shared_ptr<OTextureManager> TextureManager;
 	shared_ptr<OMaterialManager> MaterialManager;
@@ -386,6 +388,7 @@ public:
 	ORenderGraph* GetRenderGraph() const;
 	weak_ptr<ONormalTangentDebugTarget> GetNormalTangentDebugTarget() const;
 	void ReloadShaders();
+	shared_ptr<OAnimationManager> GetAnimationManager() const;
 	weak_ptr<OShadowMap> CreateShadowMap();
 	unordered_set<shared_ptr<ORenderItem>> PendingRemoveItems;
 };

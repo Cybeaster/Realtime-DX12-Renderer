@@ -12,6 +12,7 @@ OWindow::OWindow(HWND hWnd, const SWindowInfo& InWindowInfo)
     : ORenderTargetBase(WindowInfo.ClientWidth, WindowInfo.ClientHeight, Default), Hwnd(hWnd), WindowInfo{ InWindowInfo }
 {
 	Camera = make_shared<OCamera>(this);
+	SetCameraLens();
 	Name = WindowInfo.Name;
 }
 
@@ -280,7 +281,7 @@ void OWindow::OnMouseButtonReleased(MouseButtonEventArgs& Event)
 
 void OWindow::OnMouseWheel(MouseWheelEventArgs& Event)
 {
-	Camera->UpdateCameraSpeed(Event.WheelDelta);
+	//Camera->UpdateCameraSpeed(Event.WheelDelta);
 }
 
 void OWindow::MoveToNextFrame()
@@ -331,7 +332,7 @@ void OWindow::SetCameraLens()
 {
 	if (Camera)
 	{
-		Camera->SetLens(0.25 * DirectX::XM_PI, GetAspectRatio(), SRenderConstants::CameraNearZ, 1000.0f);
+		Camera->SetLens(0.25 * DirectX::XM_PI, GetAspectRatio(), SRenderConstants::CameraNearZ, OEngine::Get()->GetSceneBounds().Radius * 2);
 	}
 }
 uint32_t OWindow::GetNumDSVRequired() const

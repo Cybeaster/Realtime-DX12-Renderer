@@ -117,7 +117,7 @@ float4 PS(VertexOut pin)
 	if(gNumDirLights > 0)
 	{
 		DirectionalLight curLight = gDirectionalLights[0];
-        directLighting += directionalShadowFactor * ComputeDirectionalLight_BRDF(curLight, mat, bumpedNormalW, toEyeW);
+        directLighting += directionalShadowFactor * ComputeDirectionalLight_BlinnPhong(curLight, mat, bumpedNormalW, toEyeW);
         idx++;
     }
 
@@ -130,7 +130,7 @@ float4 PS(VertexOut pin)
 	//	idx++;
 	//}
 
-	directLighting *= 10;
+
 	//return float4(pin.NormalW.rgb, 1.0f);
    // return float4(pin.TangentW.rgb,1.0);
 	//return float4(bumpedNormalW.rgb, 1.0);
@@ -146,9 +146,9 @@ float4 PS(VertexOut pin)
 	}
 
 	//float4 ambient =  ambientAccess * gAmbientLight * float4(diffuseAlbedo,1.0);
-	float4 ambient = (float4(gAmbientLight.xyz,1.0f) * FLOAT4(gAmbientLight.w) + float4(diffuseAlbedo,1.0)) * ambientAccess;
 
-	float4 litColor = ambient + float4(directLighting, 1.0f);
+	float4 ambient = (float4(gAmbientLight.xyz,1.0f) * FLOAT4(gAmbientLight.w) * float4(diffuseAlbedo,1.0));
+	float4 litColor = (ambient + float4(directLighting, 1.0f))*ambientAccess;
 
 #ifdef FOG
 	float fogAmount = saturate((distToEye - gFogStart) / gFogRange);

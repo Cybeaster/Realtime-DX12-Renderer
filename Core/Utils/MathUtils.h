@@ -29,6 +29,11 @@ inline DirectX::XMFLOAT4X4 Identity4x4()
 }
 //clang-format on
 
+inline auto Abs(const DirectX::XMVECTOR& Vec)
+{
+	return DirectX::XMVectorAbs(Vec);
+}
+
 template<typename Type>
 inline auto Lerp(float T, const Type& A, const Type& B)
 {

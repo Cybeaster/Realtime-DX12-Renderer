@@ -39,7 +39,7 @@ struct SLogCategories
 	LOG_CATEGORY Camera = L"Camera";
 	LOG_CATEGORY Audio = L"Audio";
 	LOG_CATEGORY Physics = L"Physics";
-	LOG_CATEGORY Animation = L"Animation";
+	LOG_CATEGORY Animation = L"Animations";
 	LOG_CATEGORY Config = L"Config";
 	LOG_CATEGORY TinyObjLoader = L"TinyObjLoader";
 };

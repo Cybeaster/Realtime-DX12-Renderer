@@ -8,6 +8,7 @@
 
 #include <tuple>
 
+class OAnimation;
 struct SPassConstants;
 class OWindow;
 class OCamera
@@ -17,7 +18,7 @@ class OCamera
 public:
 	OCamera(OWindow* _Window);
 	OCamera();
-	float MaxCameraSpeed = 800;
+	float MaxCameraSpeed = 150;
 
 	// Get/Set world camera position.
 	DirectX::XMVECTOR GetPosition() const;
@@ -34,7 +35,7 @@ public:
 	DirectX::XMFLOAT3 GetUp3f() const;
 	DirectX::XMVECTOR GetLook() const;
 	DirectX::XMFLOAT3 GetLook3f() const;
-
+	DirectX::XMFLOAT3 GetRotation3f() const;
 	// Get frustum properties.
 	float GetNearZ() const;
 	float GetFarZ() const;
@@ -80,6 +81,8 @@ public:
 	FOnCameraUpdate OnCameraUpdate;
 
 private:
+	void PerformCameraAnimation(float Delta);
+	weak_ptr<OAnimation> Animation;
 	DirectX::XMFLOAT3 Position = { 0.0f, 0.0f, 0.0f };
 	DirectX::XMFLOAT3 Target = { 0.0f, 0.0f, 1.0f };
 	DirectX::XMFLOAT3 Up = { 0.0f, 1.0f, 0.0f };

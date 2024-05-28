@@ -265,6 +265,16 @@ set(SRC_FILES
         Core/Application/RenderGraph/Graph/GraphSettings.h
         Core/Application/UI/Graph/MainPassNode/MainPassNodeWidget.cpp
         Core/Application/UI/Graph/MainPassNode/MainPassNodeWidget.h
+        Core/Types/Transform.h
+        Core/Application/Animations/Animations.cpp
+        Core/Application/Animations/Animations.h
+        Core/ConfigReader/AnimationsReader/AnimationsReader.cpp
+        Core/ConfigReader/AnimationsReader/AnimationsReader.h
+        Core/ConfigReader/AnimationsReader/AnimationsReader.h
+        Core/Application/Animations/AnimationManager.h
+        Core/Application/Animations/AnimationManager.cpp
+        Core/Application/UI/Animations/AnimationListWidget.h
+        Core/Application/UI/Animations/AnimationListWidget.cpp
 )
 
 
