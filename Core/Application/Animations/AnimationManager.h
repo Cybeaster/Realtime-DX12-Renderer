@@ -12,6 +12,7 @@ public:
 	~OAnimationManager();
 	const TAnimations& GetAllAnimations() const;
 	void SaveAnimations();
+	void LoadAnimations();
 
 private:
 	unique_ptr<OAnimationsReader> AnimationsReader;

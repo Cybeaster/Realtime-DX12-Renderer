@@ -388,7 +388,7 @@ public:
 	ORenderGraph* GetRenderGraph() const;
 	weak_ptr<ONormalTangentDebugTarget> GetNormalTangentDebugTarget() const;
 	void ReloadShaders();
-	shared_ptr<OAnimationManager> GetAnimationManager() const;
+	OAnimationManager* GetAnimationManager() const;
 	weak_ptr<OShadowMap> CreateShadowMap();
 	unordered_set<shared_ptr<ORenderItem>> PendingRemoveItems;
 };

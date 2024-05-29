@@ -68,7 +68,7 @@ public:
 
 	void UpdateViewMatrix();
 	void UpdateCameraSpeed(float Delta);
-
+	void SetCameraAnimation(const shared_ptr<OAnimation>& InAnimation);
 	void SetCameraSpeed(float Speed);
 	void SetCameraSensivity(float Sensetivity);
 	float GetCameraSpeed() const;
@@ -77,7 +77,8 @@ public:
 
 	std::tuple<DirectX::XMVECTOR /*ray_origin*/, DirectX::XMVECTOR /*ray dir*/, DirectX::XMMATRIX /*invView*/> Pick(int32_t Sx, int32_t Sy) const;
 	void FillPassConstant(SPassConstants& OutOther) const;
-
+	void StopAnimation() const;
+	void PauseAnimation() const;
 	FOnCameraUpdate OnCameraUpdate;
 
 private:

@@ -7,7 +7,7 @@ class OAnimationManager;
 class OAnimationListWidget : public OPickerTableWidget
 {
 public:
-	OAnimationListWidget(const shared_ptr<OAnimationManager>& InAnimationManager)
+	OAnimationListWidget(OAnimationManager* InAnimationManager)
 	    : AnimationManager(InAnimationManager)
 	{
 		HeadderName = "Animations Manager";
@@ -19,6 +19,6 @@ public:
 	void DrawProperty() override;
 
 private:
-	weak_ptr<OAnimationManager> AnimationManager;
+	OAnimationManager* AnimationManager;
 	weak_ptr<OAnimation> CurrentAnimation;
 };

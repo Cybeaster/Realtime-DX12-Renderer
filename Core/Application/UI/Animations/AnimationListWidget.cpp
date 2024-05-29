@@ -6,10 +6,15 @@
 
 void OAnimationListWidget::DrawTable()
 {
-	const auto& animations = AnimationManager.lock()->GetAllAnimations();
+	const auto& animations = AnimationManager->GetAllAnimations();
 	if (ImGui::Button("Save Animation"))
 	{
-		AnimationManager.lock()->SaveAnimations();
+		AnimationManager->SaveAnimations();
+	}
+
+	if (ImGui::Button("Reload Animation"))
+	{
+		AnimationManager->LoadAnimations();
 	}
 
 	for (const auto& [name, anim] : animations)
@@ -33,9 +38,14 @@ void OAnimationListWidget::DrawProperty()
 		for (size_t i = 0; i < frames.size(); i++)
 		{
 			ImGui::Text("Frame %d", i);
-			ImGui::InputFloat3("Translation", &frames[i].Transform.Position.x);
-			ImGui::InputFloat3("Rotation", &frames[i].Transform.Rotation.x);
-			ImGui::InputFloat3("Scale", &frames[i].Transform.Scale.x);
+			auto translationText = "%%Translation##" + std::to_string(i);
+			auto rotationText = "Rotation##" + std::to_string(i);
+			auto scaleText = "Scale##" + std::to_string(i);
+			auto durationText = "Duration##" + std::to_string(i);
+			ImGui::InputFloat3(translationText.c_str(), &frames[i].Transform.Position.x);
+			ImGui::InputFloat3(rotationText.c_str(), &frames[i].Transform.Rotation.x);
+			ImGui::InputFloat3(scaleText.c_str(), &frames[i].Transform.Scale.x);
+			ImGui::InputFloat(durationText.c_str(), &frames[i].Duration);
 		}
 	}
 	else

@@ -3,6 +3,7 @@
 
 #include <DirectXMath.h>
 
+class OAnimation;
 class OCamera;
 class OCameraWidget : public IWidget
 {
@@ -23,6 +24,6 @@ private:
 	float CameraSpeed;
 	float CameraSensivity;
 	DirectX::XMFLOAT4X4 View;
-
+	weak_ptr<OAnimation> Animation;
 	weak_ptr<OCamera> Camera;
 };

@@ -525,6 +525,16 @@ inline DirectX::BoundingOrientedBox TransformBoundingBoxToViewSpace(const Direct
 	return viewSpaceBox;
 }
 
+inline DirectX::XMFLOAT3 Normalize(const DirectX::XMFLOAT3& v)
+{
+	using namespace DirectX;
+	XMVECTOR vec = XMLoadFloat3(&v);
+	vec = XMVector3Normalize(vec);
+	XMFLOAT3 normalized;
+	XMStoreFloat3(&normalized, vec);
+	return normalized;
+}
+
 inline bool operator==(const DirectX::XMFLOAT3 A, const DirectX::XMFLOAT3 B)
 {
 	return abs(A.x - B.x) < EPSILON && abs(A.y - B.y) < EPSILON && abs(A.z - B.z) < EPSILON;

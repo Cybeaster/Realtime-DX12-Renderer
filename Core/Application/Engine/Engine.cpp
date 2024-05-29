@@ -1696,7 +1696,7 @@ void OEngine::ReloadShaders()
 
 OAnimationManager* OEngine::GetAnimationManager() const
 {
-	return AnimationManager;
+	return AnimationManager.get();
 }
 
 uint32_t OEngine::GetDesiredCountOfSRVs(SResourceHeapBitFlag Flag) const

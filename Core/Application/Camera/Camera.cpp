@@ -229,6 +229,13 @@ void OCamera::UpdateCameraSpeed(float Delta)
 	CameraSpeed += Delta * MaxCameraSpeed * 0.01;
 	CameraSpeed = std::clamp(CameraSpeed, 0.f, MaxCameraSpeed);
 }
+
+void OCamera::SetCameraAnimation(const shared_ptr<OAnimation>& InAnimation)
+{
+	InAnimation->StartAnimation({ Position, GetRotation3f(), { 1, 1, 1 } });
+	Animation = InAnimation;
+}
+
 void OCamera::SetCameraSpeed(const float Speed)
 {
 	CameraSpeed = std::max(Speed, 0.1f);
@@ -279,16 +286,33 @@ void OCamera::FillPassConstant(SPassConstants& OutOther) const
 	OutOther.EyePosW = GetPosition3f();
 }
 
+void OCamera::StopAnimation() const
+{
+	if (!Animation.expired())
+	{
+		Animation.lock()->StopAnimation();
+	}
+}
+
+void OCamera::PauseAnimation() const
+{
+	if (!Animation.expired())
+	{
+		Animation.lock()->PauseAnimation();
+	}
+}
+
 void OCamera::PerformCameraAnimation(const float Delta)
 {
-	if (!Animation.expired() && !Animation.lock()->IsFinished())
+	if (!Animation.expired() && !Animation.lock()->IsFinished() && Animation.lock()->IsPlaying())
 	{
 		bViewDirty = true;
 		STransform current;
 		current.Position = Position;
 		current.Rotation = GetRotation3f();
-		const auto [position, rotation, scale] = Animation.lock()->PerfomAnimation(current, Delta);
+		const auto [position, rotation, scale] = Animation.lock()->PerfomAnimation(Delta);
 		Position = position;
+		LOG(Camera, Log, "New Animation camera position: {}", TEXT(Position));
 
 		const XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
 		XMStoreFloat3(&Right, rotationMatrix.r[0]);
@@ -319,18 +343,19 @@ DirectX::XMFLOAT3 OCamera::GetLook3f() const
 
 DirectX::XMFLOAT3 OCamera::GetRotation3f() const
 {
-	float yaw;
-	float pitch = std::asin(-Target.y);
-	if (std::cos(pitch) > 0.0001f)
-	{
-		yaw = std::atan2(Target.x, Target.z);
-	}
-	else
-	{
-		yaw = std::atan2(-Right.z, Right.x);
-	}
-	float roll = std::atan2(Up.x, Up.y);
-	return XMFLOAT3(pitch, yaw, roll);
+	// Normalize the input vectors
+	XMFLOAT3 normTarget = Normalize(Target);
+	XMFLOAT3 normUp = Normalize(Up);
+
+	// Calculate Yaw
+	const auto yaw = atan2(normTarget.x, normTarget.z);
+
+	// Calculate Pitch
+	float targetLengthXZ = sqrt(normTarget.x * normTarget.x + normTarget.z * normTarget.z);
+	const auto pitch = atan2(normTarget.y, targetLengthXZ);
+	auto converter = 180 / XM_PI;
+	const auto roll = atan2(-normUp.x, normUp.y);
+	return { pitch * converter + 180, yaw * converter + 180, roll * converter + 180 };
 }
 
 float OCamera::GetNearZ() const

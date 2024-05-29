@@ -1,6 +1,7 @@
 #include "Camera.h"
 
 #include "Camera/Camera.h"
+#include "Engine/Engine.h"
 
 OCameraWidget::OCameraWidget(const weak_ptr<OCamera>& Other)
     : Camera(Other)
@@ -32,6 +33,32 @@ void OCameraWidget::Draw()
 		ImGui::Text("Camera Right: %f, %f, %f", GetCamera()->GetRight3f().x, GetCamera()->GetRight3f().y, GetCamera()->GetRight3f().z);
 		ImGui::Text("Camera Up: %f, %f, %f", GetCamera()->GetUp3f().x, GetCamera()->GetUp3f().y, GetCamera()->GetUp3f().z);
 		ImGui::Text("Camera Look: %f, %f, %f", GetCamera()->GetLook3f().x, GetCamera()->GetLook3f().y, GetCamera()->GetLook3f().z);
+		if (ImGui::Button("Pick Animation"))
+		{
+			ImGui::OpenPopup("CameraPicker");
+		}
+		if (ImGui::Button("Stop Animation"))
+		{
+			Camera.lock()->StopAnimation();
+		}
+		if (ImGui::Button("Pause Animation"))
+		{
+			Camera.lock()->PauseAnimation();
+		}
+
+		if (ImGui::BeginPopup("CameraPicker"))
+		{
+			const auto& animations = OEngine::Get()->GetAnimationManager()->GetAllAnimations();
+			for (const auto& [name, anim] : animations)
+			{
+				if (ImGui::Selectable(WStringToUTF8(name).c_str()))
+				{
+					Animation = anim;
+					Camera.lock()->SetCameraAnimation(anim);
+				}
+			}
+			ImGui::EndPopup();
+		}
 	}
 }
 

@@ -7,11 +7,7 @@
 OAnimationManager::OAnimationManager()
 {
 	AnimationsReader = make_unique<OAnimationsReader>(OApplication::Get()->GetConfigPath("AnimationsConfigPath"));
-	auto animations = AnimationsReader->ReadAnimations();
-	for (const auto& anim : animations)
-	{
-		Animations[anim->GetName()] = anim;
-	}
+	LoadAnimations();
 }
 OAnimationManager::~OAnimationManager()
 {
@@ -30,4 +26,14 @@ void OAnimationManager::SaveAnimations()
 		animations.push_back(anim);
 	}
 	AnimationsReader->SaveAnimations(animations);
+}
+
+void OAnimationManager::LoadAnimations()
+{
+	Animations.clear();
+	auto animations = AnimationsReader->ReadAnimations();
+	for (const auto& anim : animations)
+	{
+		Animations[anim->GetName()] = anim;
+	}
 }

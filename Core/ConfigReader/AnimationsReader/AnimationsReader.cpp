@@ -7,6 +7,7 @@ OAnimationsReader::~OAnimationsReader()
 }
 vector<shared_ptr<OAnimation>> OAnimationsReader::ReadAnimations()
 {
+	ReloadConfig();
 	vector<shared_ptr<OAnimation>> result;
 	for (const auto& val : PTree.get_child("Animations") | std::views::values)
 	{
@@ -34,6 +35,8 @@ vector<shared_ptr<OAnimation>> OAnimationsReader::ReadAnimations()
 void OAnimationsReader::SaveAnimations(const vector<shared_ptr<OAnimation>>& Animations)
 {
 	PTree.clear();
+	PTree.put("Animations", "");
+	auto animations = PTree.get_child("Animations");
 	for (const auto& anim : Animations)
 	{
 		boost::property_tree::ptree animTree;
@@ -58,7 +61,8 @@ void OAnimationsReader::SaveAnimations(const vector<shared_ptr<OAnimation>>& Ani
 			frames.push_back(std::make_pair("", frameTree));
 		}
 		animTree.add_child("Frames", frames);
-		PTree.add_child("Animations", animTree);
+		animations.push_back(std::make_pair("", animTree));
 	}
+	PTree.put_child("Animations", animations);
 	write_json(FileName, PTree);
 }
