@@ -1,5 +1,5 @@
 # DirectX 12 Renderer
-### Rendering engine using DirectX 12 for backend.
+### Render engine with DirectX 12 for backend.
 
 ####  Full list of features:
 ##### Post Processing
