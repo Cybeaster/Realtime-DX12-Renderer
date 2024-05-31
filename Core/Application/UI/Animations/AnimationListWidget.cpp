@@ -38,14 +38,25 @@ void OAnimationListWidget::DrawProperty()
 		for (size_t i = 0; i < frames.size(); i++)
 		{
 			ImGui::Text("Frame %d", i);
-			auto translationText = "%%Translation##" + std::to_string(i);
+			auto translationText = "Translation##" + std::to_string(i);
 			auto rotationText = "Rotation##" + std::to_string(i);
 			auto scaleText = "Scale##" + std::to_string(i);
 			auto durationText = "Duration##" + std::to_string(i);
-			ImGui::InputFloat3(translationText.c_str(), &frames[i].Transform.Position.x);
-			ImGui::InputFloat3(rotationText.c_str(), &frames[i].Transform.Rotation.x);
-			ImGui::InputFloat3(scaleText.c_str(), &frames[i].Transform.Scale.x);
-			ImGui::InputFloat(durationText.c_str(), &frames[i].Duration);
+			auto pos = lock->GetFrames()[i].Transform.GetFloat3Position();
+			auto rot = lock->GetFrames()[i].Transform.GetFloat3Rotation();
+			auto scale = lock->GetFrames()[i].Transform.GetFloat3Scale();
+			if (ImGui::InputFloat3(translationText.c_str(), &pos.x))
+			{
+				frames[i].Transform.SetPosition(pos);
+			}
+			if (ImGui::InputFloat3(rotationText.c_str(), &rot.x))
+			{
+				frames[i].Transform.SetFloat3Rotation(rot);
+			}
+			if (ImGui::InputFloat3(scaleText.c_str(), &scale.x))
+			{
+				frames[i].Transform.SetFloat3Scale(scale);
+			}
 		}
 	}
 	else

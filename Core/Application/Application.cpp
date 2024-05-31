@@ -1,6 +1,7 @@
 #include "Application.h"
 
 #include "Camera/Camera.h"
+#include "Defines.h"
 #include "Engine/Engine.h"
 #include "Exception.h"
 

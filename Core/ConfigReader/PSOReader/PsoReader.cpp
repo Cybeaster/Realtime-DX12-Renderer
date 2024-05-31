@@ -535,7 +535,7 @@ DXGI_FORMAT OPSOReader::GetFormat(const boost::property_tree::ptree& Node)
 	{
 		return GetFormat(optional.value());
 	}
-	return DXGI_FORMAT_D24_UNORM_S8_UINT;
+	return SRenderConstants::DepthBufferDSVFormat;
 }
 
 DXGI_FORMAT OPSOReader::GetFormat(const string& FormatString)

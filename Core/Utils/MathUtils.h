@@ -535,6 +535,24 @@ inline DirectX::XMFLOAT3 Normalize(const DirectX::XMFLOAT3& v)
 	return normalized;
 }
 
+inline DirectX::XMVECTOR Normalize(const DirectX::XMVECTOR& v)
+{
+	return DirectX::XMVector3Normalize(v);
+}
+
+inline auto DegreesToRadians(const DirectX::XMFLOAT3& InDeg)
+{
+	return DirectX::XMFLOAT3(InDeg.x * (DirectX::XM_PI / 180.0f), InDeg.y * (DirectX::XM_PI / 180.0f), InDeg.z * (DirectX::XM_PI / 180.0f));
+}
+
+inline auto DegreesToRadians(const DirectX::XMVECTOR InDeg)
+{
+	DirectX::XMFLOAT3 inDeg3;
+	Put(inDeg3, InDeg);
+	inDeg3 = DegreesToRadians(inDeg3);
+	return Load(inDeg3);
+}
+
 inline bool operator==(const DirectX::XMFLOAT3 A, const DirectX::XMFLOAT3 B)
 {
 	return abs(A.x - B.x) < EPSILON && abs(A.y - B.y) < EPSILON && abs(A.z - B.z) < EPSILON;

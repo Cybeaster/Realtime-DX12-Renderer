@@ -8,35 +8,45 @@
 STransform OAnimation::PerfomAnimation(const float DeltaTime)
 {
 	using namespace Utils::Math;
-	const auto currentAnimPos = Load(Frames[CurrentIndex].Transform.Position);
-	const auto currentAnimRot = Load(Frames[CurrentIndex].Transform.Rotation);
-	const auto currentAnimScale = Load(Frames[CurrentIndex].Transform.Scale);
+	const auto currentAnimPos = Frames[CurrentIndex].Transform.Position;
+	const auto currentAnimRot = DegreesToRadians(Frames[CurrentIndex].Transform.Rotation);
+	const auto currentAnimScale = Frames[CurrentIndex].Transform.Scale;
+
+	const auto startAnimPos = StartTransform.Position;
+	const auto startAnimRot = StartTransform.Rotation;
+	const auto startAnimScale = StartTransform.Scale;
 	const auto duration = Frames[CurrentIndex].Duration;
+
 	ElapsedTime += DeltaTime;
-	float interpolationFactor = (ElapsedTime / duration);
-	const bool hasEndedFrame = ElapsedTime >= duration;
-	if (hasEndedFrame)
+	bool hasTimedOut = ElapsedTime >= duration;
+	float interpolationFactor = hasTimedOut ? 1 : (ElapsedTime / duration);
+
+	const auto newRot = XMQuaternionSlerp(startAnimRot,
+	                                      XMQuaternionRotationRollPitchYawFromVector(currentAnimRot),
+	                                      interpolationFactor);
+
+	const auto newPos = XMVectorLerp(startAnimPos, currentAnimPos, interpolationFactor);
+	const auto newScale = XMVectorLerp(startAnimScale, currentAnimScale, interpolationFactor);
+	if (hasTimedOut)
 	{
-		interpolationFactor = 1;
-		ElapsedTime = 0.0f;
 		StartTransform = Frames[CurrentIndex].Transform;
+		StartTransform.Rotation = newRot;
 		CurrentIndex++;
+		ElapsedTime = 0.0f;
 	}
-	const auto newPos = XMVectorLerp(Load(StartTransform.Position), currentAnimPos, interpolationFactor);
-	const auto newRot = XMVectorLerp(Load(StartTransform.Rotation), currentAnimRot, interpolationFactor);
-	const auto newScale = XMVectorLerp(Load(StartTransform.Scale), currentAnimScale, interpolationFactor);
+
 	auto float3Pos = XMFLOAT3();
 	Put(float3Pos, newPos);
 
-	auto float3Rot = XMFLOAT3();
-	Put(float3Rot, newRot);
+	auto float4Rot = XMFLOAT4();
+	Put(float4Rot, newRot);
 
 	auto float3Scale = XMFLOAT3();
 	Put(float3Scale, newScale);
 
 	OEngine::Get()->DrawDebugBox(float3Pos, { 100, 100, 100 }, { 1, 0, 0, 1 }, SColor::Red, 5);
 
-	return { float3Pos, float3Rot, float3Scale };
+	return STransform{ float3Pos, float4Rot, float3Scale };
 }
 
 bool OAnimation::IsFinished() const

@@ -117,7 +117,7 @@ float4 PS(VertexOut pin)
 	if(gNumDirLights > 0)
 	{
 		DirectionalLight curLight = gDirectionalLights[0];
-        directLighting += directionalShadowFactor * ComputeDirectionalLight_BlinnPhong(curLight, mat, bumpedNormalW, toEyeW);
+        directLighting += directionalShadowFactor * ComputeDirectionalLight_BRDF(curLight, mat, bumpedNormalW, toEyeW);
         idx++;
     }
 
@@ -129,13 +129,6 @@ float4 PS(VertexOut pin)
 	//	directLighting += shadowFactor[idx] * ComputeSpotLight_BlinnPhong(gSpotLights[k], mat, pin.PosW, bumpedNormalW, toEyeW) * light.Intensity;
 	//	idx++;
 	//}
-
-
-	//return float4(pin.NormalW.rgb, 1.0f);
-   // return float4(pin.TangentW.rgb,1.0);
-	//return float4(bumpedNormalW.rgb, 1.0);
-
-	// Light terms.
 
 	//SSAO
 	float ambientAccess = 1;

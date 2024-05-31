@@ -59,12 +59,17 @@ struct SRenderConstants
 
 	inline static constexpr D3D_DRIVER_TYPE DriverType = D3D_DRIVER_TYPE_HARDWARE;
 	inline static constexpr DXGI_FORMAT BackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-	inline static constexpr DXGI_FORMAT DepthBufferFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
+	inline static constexpr DXGI_FORMAT DepthBufferResourceFormat = DXGI_FORMAT_R32_TYPELESS;
+	inline static constexpr DXGI_FORMAT DepthBufferDSVFormat = DXGI_FORMAT_D32_FLOAT;
+	inline static constexpr DXGI_FORMAT DepthBufferSRVFormat = DXGI_FORMAT_R32_FLOAT;
+	inline static constexpr DXGI_FORMAT DepthClearValueFormat = DXGI_FORMAT_D32_FLOAT;
+
 	inline static constexpr uint32_t NumFrameResources = 3;
 	inline static constexpr uint32_t MaxLights = 16;
 	inline static constexpr uint32_t RenderBuffersCount = 2;
 	inline static constexpr DirectX::XMUINT2 CubeMapDefaultResolution = { 1024, 1024 };
-	inline static constexpr float CameraNearZ = 0.1f;
+	inline static constexpr float CameraNearZ = 1.f;
 	inline static constexpr float CameraFarZ = 5000.f;
 
 	inline static constexpr uint32_t MaxDiffuseMapsPerMaterial = 3;

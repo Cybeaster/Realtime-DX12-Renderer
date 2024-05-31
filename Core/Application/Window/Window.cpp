@@ -186,6 +186,8 @@ void OWindow::OnRender(const UpdateEventArgs& Event)
 
 void OWindow::Update(const UpdateEventArgs& Event)
 {
+	Camera->UpdateViewMatrix();
+
 	if (Event.IsUIInfocus)
 	{
 		return;
@@ -208,7 +210,6 @@ void OWindow::Update(const UpdateEventArgs& Event)
 	{
 		Camera->Strafe(time);
 	}
-	Camera->UpdateViewMatrix();
 }
 
 void OWindow::OnKeyPressed(KeyEventArgs& Event)
@@ -332,7 +333,7 @@ void OWindow::SetCameraLens()
 {
 	if (Camera)
 	{
-		Camera->SetLens(0.25 * DirectX::XM_PI, GetAspectRatio(), SRenderConstants::CameraNearZ, OEngine::Get()->GetSceneBounds().Radius * 2);
+		Camera->SetLens(0.25 * DirectX::XM_PI, GetAspectRatio(), SRenderConstants::CameraNearZ, std::max(OEngine::Get()->GetSceneBounds().Radius * 1.5f, SRenderConstants::CameraFarZ * 2));
 	}
 }
 uint32_t OWindow::GetNumDSVRequired() const
@@ -470,14 +471,14 @@ void OWindow::ResizeDepthBuffer()
 	depthStencilDesc.Height = GetHeight();
 	depthStencilDesc.DepthOrArraySize = 1;
 	depthStencilDesc.MipLevels = 1;
-	depthStencilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+	depthStencilDesc.Format = SRenderConstants::DepthBufferResourceFormat;
 	depthStencilDesc.SampleDesc.Count = mxaaEnabled ? 4 : 1;
 	depthStencilDesc.SampleDesc.Quality = mxaaEnabled ? (quality - 1) : 0;
 	depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
 	D3D12_CLEAR_VALUE optClear;
-	optClear.Format = SRenderConstants::DepthBufferFormat;
+	optClear.Format = SRenderConstants::DepthClearValueFormat;
 	optClear.DepthStencil.Depth = 1.0f;
 	optClear.DepthStencil.Stencil = 0;
 
@@ -494,14 +495,14 @@ void OWindow::ResizeDepthBuffer()
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
 	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-	dsvDesc.Format = SRenderConstants::DepthBufferFormat;
+	dsvDesc.Format = SRenderConstants::DepthBufferDSVFormat;
 	dsvDesc.Texture2D.MipSlice = 0;
 	device->CreateDepthStencilView(DepthBuffer, dsvDesc, DSVHandle);
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	srvDesc.Format = SRenderConstants::DepthBufferSRVFormat;
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.MipLevels = 1;
 	device->CreateShaderResourceView(DepthBuffer, srvDesc, SRVDepthHandle);

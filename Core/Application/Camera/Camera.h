@@ -35,7 +35,9 @@ public:
 	DirectX::XMFLOAT3 GetUp3f() const;
 	DirectX::XMVECTOR GetLook() const;
 	DirectX::XMFLOAT3 GetLook3f() const;
-	DirectX::XMFLOAT3 GetRotation3f() const;
+	DirectX::XMFLOAT3 GetRotation3fEulerAngles() const;
+	DirectX::XMFLOAT3 GetRotation3fEulerRadians() const;
+
 	// Get frustum properties.
 	float GetNearZ() const;
 	float GetFarZ() const;

@@ -31,14 +31,14 @@ void OCubeRenderTarget::BuildDepthStencilBuffer()
 	depthStencilDesc.Height = Resolution.y;
 	depthStencilDesc.DepthOrArraySize = 1;
 	depthStencilDesc.MipLevels = 1;
-	depthStencilDesc.Format = SRenderConstants::DepthBufferFormat;
+	depthStencilDesc.Format = SRenderConstants::DepthBufferResourceFormat;
 	depthStencilDesc.SampleDesc.Count = 1;
 	depthStencilDesc.SampleDesc.Quality = 0;
 	depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
 	D3D12_CLEAR_VALUE optClear;
-	optClear.Format = SRenderConstants::DepthBufferFormat;
+	optClear.Format = SRenderConstants::DepthClearValueFormat;
 	optClear.DepthStencil.Depth = 1.0f;
 	optClear.DepthStencil.Stencil = 0;
 	auto cmd = OEngine::Get()->GetCommandQueue()->GetCommandList().Get();

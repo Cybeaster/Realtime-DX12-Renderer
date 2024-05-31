@@ -27,7 +27,7 @@ void OCameraWidget::Draw()
 			}
 			ImGui::TreePop();
 		}
-		auto rotation = GetCamera()->GetRotation3f();
+		auto rotation = GetCamera()->GetRotation3fEulerAngles();
 		ImGui::Text("Camera Rotation: %f, %f, %f", rotation.x, rotation.y, rotation.z);
 		ImGui::Text("Camera Position: %f, %f, %f", GetCamera()->GetPosition3f().x, GetCamera()->GetPosition3f().y, GetCamera()->GetPosition3f().z);
 		ImGui::Text("Camera Right: %f, %f, %f", GetCamera()->GetRight3f().x, GetCamera()->GetRight3f().y, GetCamera()->GetRight3f().z);

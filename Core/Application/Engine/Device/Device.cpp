@@ -100,7 +100,12 @@ void ODevice::CreateDepthStencilView(const TResourceInfo& Resource, const D3D12_
 void ODevice::CreateDepthStencilView(const TResourceInfo& Resource, SDescriptorPair& DescriptorPair) const
 {
 	DescriptorPair.Resource = Resource;
-	Device->CreateDepthStencilView(Resource->Resource.Get(), nullptr, DescriptorPair.CPUHandle);
+	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	dsvDesc.Format = SRenderConstants::DepthBufferDSVFormat;
+	dsvDesc.Texture2D.MipSlice = 0;
+	Device->CreateDepthStencilView(Resource->Resource.Get(), &dsvDesc, DescriptorPair.CPUHandle);
 }
 
 ComPtr<ID3D12Device5> ODevice::CreateDevice(const ComPtr<IDXGIAdapter4>& Adapter)

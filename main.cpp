@@ -1,16 +1,10 @@
 #define WIN32_LEAN_AND_MEAN
 
-#ifndef _DEBUG
-#define _DEBUG
-#endif
-#define ENABLE_PROFILER
 #include "Profiler.h"
 
 #include <Application.h>
 #include <Shlwapi.h>
 #include <Windows.h>
-
-#define ENABLE_DEBUG_LAYER 0
 
 int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLine, int nCmdShow)
 {

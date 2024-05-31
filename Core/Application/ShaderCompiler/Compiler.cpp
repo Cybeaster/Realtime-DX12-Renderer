@@ -61,7 +61,7 @@ void OShaderCompiler::SetCompilationArgs(const SShaderDefinition& Definition, co
 		CompilationArgs.push_back(UTF8ToWString(macro.Definition));
 	}
 
-	if constexpr (_DEBUG)
+	if constexpr (DEBUG)
 	{
 		CompilationArgs.push_back(DXC_ARG_DEBUG);
 		CompilationArgs.push_back(DXC_ARG_SKIP_OPTIMIZATIONS);

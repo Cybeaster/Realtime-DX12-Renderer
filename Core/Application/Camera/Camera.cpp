@@ -161,8 +161,14 @@ void OCamera::Pitch(float Angle)
 {
 	// Rotate up and look vector about the right vector.
 	XMMATRIX R = XMMatrixRotationAxis(XMLoadFloat3(&Right), Angle * CameraSensivity);
-	XMStoreFloat3(&Up, XMVector3TransformNormal(XMLoadFloat3(&Up), R));
-	XMStoreFloat3(&Target, XMVector3TransformNormal(XMLoadFloat3(&Target), R));
+	XMVECTOR upVec = XMVector3TransformNormal(XMLoadFloat3(&Up), R);
+	XMVECTOR targetVec = XMVector3TransformNormal(XMLoadFloat3(&Target), R);
+
+	// Normalize and orthogonalize
+	targetVec = XMVector3Normalize(targetVec);
+	upVec = XMVector3Normalize(XMVector3Cross(XMLoadFloat3(&Right), targetVec));
+	XMStoreFloat3(&Up, upVec);
+	XMStoreFloat3(&Target, targetVec);
 	bViewDirty = true;
 }
 
@@ -170,9 +176,18 @@ void OCamera::RotateY(float Angle)
 {
 	// Rotate the basis vectors about the world y-axis.
 	const XMMATRIX R = XMMatrixRotationY(Angle * CameraSensivity);
-	XMStoreFloat3(&Right, XMVector3TransformNormal(XMLoadFloat3(&Right), R));
-	XMStoreFloat3(&Up, XMVector3TransformNormal(XMLoadFloat3(&Up), R));
-	XMStoreFloat3(&Target, XMVector3TransformNormal(XMLoadFloat3(&Target), R));
+	XMVECTOR rightVec = XMVector3TransformNormal(XMLoadFloat3(&Right), R);
+	XMVECTOR upVec = XMVector3TransformNormal(XMLoadFloat3(&Up), R);
+	XMVECTOR targetVec = XMVector3TransformNormal(XMLoadFloat3(&Target), R);
+
+	// Normalize and orthogonalize
+	targetVec = XMVector3Normalize(targetVec);
+	rightVec = XMVector3Normalize(rightVec);
+	upVec = XMVector3Normalize(XMVector3Cross(targetVec, rightVec));
+
+	XMStoreFloat3(&Right, rightVec);
+	XMStoreFloat3(&Up, upVec);
+	XMStoreFloat3(&Target, targetVec);
 	bViewDirty = true;
 }
 
@@ -232,8 +247,33 @@ void OCamera::UpdateCameraSpeed(float Delta)
 
 void OCamera::SetCameraAnimation(const shared_ptr<OAnimation>& InAnimation)
 {
-	InAnimation->StartAnimation({ Position, GetRotation3f(), { 1, 1, 1 } });
+	XMMATRIX rotationMatrix(
+	    XMLoadFloat3(&Right),
+	    XMLoadFloat3(&Up),
+	    XMLoadFloat3(&Target),
+	    XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f));
+
+	STransform current;
+	current.Position = Load(Position);
+	current.Rotation = XMQuaternionRotationMatrix(rotationMatrix);
+	current.Scale = Load(XMFLOAT3{ 1, 1, 1 });
+	InAnimation->StartAnimation(current);
 	Animation = InAnimation;
+}
+
+void OCamera::PerformCameraAnimation(const float Delta)
+{
+	if (!Animation.expired() && !Animation.lock()->IsFinished() && Animation.lock()->IsPlaying())
+	{
+		bViewDirty = true;
+		const auto [position, rotation, scale] = Animation.lock()->PerfomAnimation(Delta);
+		Put(Position, position);
+		LOG(Camera, Log, "New Animation camera position: {}", TEXT(Position));
+		const XMMATRIX rotationMatrix = XMMatrixRotationQuaternion(rotation);
+		XMStoreFloat3(&Right, Normalize(rotationMatrix.r[0]));
+		XMStoreFloat3(&Up, Normalize(rotationMatrix.r[1]));
+		XMStoreFloat3(&Target, Normalize(rotationMatrix.r[2]));
+	}
 }
 
 void OCamera::SetCameraSpeed(const float Speed)
@@ -302,25 +342,6 @@ void OCamera::PauseAnimation() const
 	}
 }
 
-void OCamera::PerformCameraAnimation(const float Delta)
-{
-	if (!Animation.expired() && !Animation.lock()->IsFinished() && Animation.lock()->IsPlaying())
-	{
-		bViewDirty = true;
-		STransform current;
-		current.Position = Position;
-		current.Rotation = GetRotation3f();
-		const auto [position, rotation, scale] = Animation.lock()->PerfomAnimation(Delta);
-		Position = position;
-		LOG(Camera, Log, "New Animation camera position: {}", TEXT(Position));
-
-		const XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
-		XMStoreFloat3(&Right, rotationMatrix.r[0]);
-		XMStoreFloat3(&Up, rotationMatrix.r[1]);
-		XMStoreFloat3(&Target, rotationMatrix.r[2]);
-	}
-}
-
 DirectX::XMVECTOR OCamera::GetUp() const
 {
 	return XMLoadFloat3(&Up);
@@ -341,7 +362,13 @@ DirectX::XMFLOAT3 OCamera::GetLook3f() const
 	return Target;
 }
 
-DirectX::XMFLOAT3 OCamera::GetRotation3f() const
+DirectX::XMFLOAT3 OCamera::GetRotation3fEulerAngles() const
+{
+	auto converter = 180 / XM_PI;
+	return GetRotation3fEulerRadians() * converter;
+}
+
+DirectX::XMFLOAT3 OCamera::GetRotation3fEulerRadians() const
 {
 	// Normalize the input vectors
 	XMFLOAT3 normTarget = Normalize(Target);
@@ -353,9 +380,8 @@ DirectX::XMFLOAT3 OCamera::GetRotation3f() const
 	// Calculate Pitch
 	float targetLengthXZ = sqrt(normTarget.x * normTarget.x + normTarget.z * normTarget.z);
 	const auto pitch = atan2(normTarget.y, targetLengthXZ);
-	auto converter = 180 / XM_PI;
 	const auto roll = atan2(-normUp.x, normUp.y);
-	return { pitch * converter + 180, yaw * converter + 180, roll * converter + 180 };
+	return { pitch, yaw, roll };
 }
 
 float OCamera::GetNearZ() const

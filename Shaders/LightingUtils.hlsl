@@ -126,7 +126,7 @@ float3 ComputeDirectionalLight_BRDF(DirectionalLight L, Material Mat, float3 Nor
 {
 
 	float3 lightStrength = L.Intensity * max(dot(-L.Direction, Normal), 0.0f);
-	return BRDF(ToEye, -L.Direction, Normal, Mat) * lightStrength * 10 ; //todo move to constant
+	return BRDF(ToEye, -L.Direction, Normal, Mat) * lightStrength * 5 ; //todo move to constant
 }
 
 float3 ComputeSpotLight_BRDF(SpotLight L, Material Mat,float3 Position, float3 Normal, float3 ToEye)

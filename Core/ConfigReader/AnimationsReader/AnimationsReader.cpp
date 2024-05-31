@@ -2,6 +2,7 @@
 #include "AnimationsReader.h"
 
 #include "Animations/Animations.h"
+#include "MathUtils.h"
 OAnimationsReader::~OAnimationsReader()
 {
 }
@@ -17,9 +18,19 @@ vector<shared_ptr<OAnimation>> OAnimationsReader::ReadAnimations()
 		{
 			SAnimationFrame animFrame;
 			STransform transform;
-			GetFloat3(frame, "Position", transform.Position);
-			GetFloat3(frame, "Rotation", transform.Rotation);
-			GetFloat3(frame, "Scale", transform.Scale);
+
+			DirectX::XMFLOAT3 position;
+			GetFloat3(frame, "Position", position);
+			transform.Position = Load(position);
+
+			DirectX::XMFLOAT3 rotation;
+			GetFloat3(frame, "Rotation", rotation);
+			transform.Rotation = Load(rotation);
+
+			DirectX::XMFLOAT3 scale;
+			GetFloat3(frame, "Scale", scale);
+			transform.Scale = Load(scale);
+
 			animFrame.Transform = transform;
 			animFrame.Duration = frame.get<float>("Duration");
 			frames.push_back(animFrame);
@@ -46,17 +57,20 @@ void OAnimationsReader::SaveAnimations(const vector<shared_ptr<OAnimation>>& Ani
 		{
 			boost::property_tree::ptree frameTree;
 			frameTree.put("Duration", frame.Duration);
-			frameTree.put("Position.X", frame.Transform.Position.x);
-			frameTree.put("Position.Y", frame.Transform.Position.y);
-			frameTree.put("Position.Z", frame.Transform.Position.z);
+			auto pos = frame.Transform.GetFloat3Position();
+			frameTree.put("Position.X", pos.x);
+			frameTree.put("Position.Y", pos.y);
+			frameTree.put("Position.Z", pos.z);
 
-			frameTree.put("Rotation.X", frame.Transform.Rotation.x);
-			frameTree.put("Rotation.Y", frame.Transform.Rotation.y);
-			frameTree.put("Rotation.Z", frame.Transform.Rotation.z);
+			auto rot = frame.Transform.GetFloat3Rotation();
+			frameTree.put("Rotation.X", rot.x);
+			frameTree.put("Rotation.Y", rot.y);
+			frameTree.put("Rotation.Z", rot.z);
 
-			frameTree.put("Scale.X", frame.Transform.Scale.x);
-			frameTree.put("Scale.Y", frame.Transform.Scale.y);
-			frameTree.put("Scale.Z", frame.Transform.Scale.z);
+			auto scale = frame.Transform.GetFloat3Scale();
+			frameTree.put("Scale.X", scale.x);
+			frameTree.put("Scale.Y", scale.y);
+			frameTree.put("Scale.Z", scale.z);
 
 			frames.push_back(std::make_pair("", frameTree));
 		}

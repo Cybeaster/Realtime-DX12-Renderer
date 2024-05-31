@@ -85,6 +85,7 @@ public:
 	void UpdateCascadeSplits();
 
 	float RadiusScale = 1.f;
+	DirectX::XMFLOAT3 AnimationDelta = { 0.0f, 0.0f, 0.0f };
 
 private:
 	float CascadeSplitLambda = 0.65;

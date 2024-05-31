@@ -35,7 +35,7 @@ void OSSAORenderTarget::BuildDescriptors()
 	auto device = Device.lock();
 	device->CreateShaderResourceView(NormalMap, srvDesc, NormalMapSRV);
 
-	srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	srvDesc.Format = SRenderConstants::DepthBufferSRVFormat;
 	device->CreateShaderResourceView(DepthMap, srvDesc, DepthMapSRV);
 
 	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -61,7 +61,7 @@ void OSSAORenderTarget::BuildDescriptors()
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
 	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-	dsvDesc.Format = SRenderConstants::DepthBufferFormat;
+	dsvDesc.Format = SRenderConstants::DepthBufferDSVFormat;
 	dsvDesc.Texture2D.MipSlice = 0;
 	device->CreateDepthStencilView(DepthMap, dsvDesc, DepthMapDSV);
 }
@@ -80,11 +80,11 @@ void OSSAORenderTarget::BuildResource()
 	auto weak = weak_from_this();
 	NormalMap = Utils::CreateResource(weak, L"NormalMap", device->GetDevice(), D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ, &optClear);
 
-	desc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+	desc.Format = SRenderConstants::DepthBufferResourceFormat;
 	desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
 	D3D12_CLEAR_VALUE depthClear;
-	depthClear.Format = SRenderConstants::DepthBufferFormat;
+	depthClear.Format = SRenderConstants::DepthClearValueFormat;
 	depthClear.DepthStencil.Depth = 1.0f;
 	depthClear.DepthStencil.Stencil = 0;
 

@@ -32,6 +32,7 @@ void OLightComponentWidget::Draw()
 			{
 				component->SetCascadeLambda(lambda);
 			}
+			ImGui::DragFloat3("Light Rotation Delta", &component->AnimationDelta.x, 0.1f, 1.f, 1.f);
 			ImGui::DragFloat("Radius Scale", &component->RadiusScale, 0.01f, 0.1f, 10.0f);
 			if (ImGui::Begin("Shadow Maps"))
 			{

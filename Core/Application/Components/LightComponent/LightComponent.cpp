@@ -109,10 +109,28 @@ void ODirectionalLightComponent::InitFrameResource(const TUploadBufferData<HLSL:
 void ODirectionalLightComponent::SetPassConstant(SPassConstants& OutConstant)
 {
 }
+
 void ODirectionalLightComponent::Tick(UpdateEventArgs Arg)
 {
 	OLightComponent::Tick(Arg);
 	MarkDirty();
+	auto angles = NormalizedToAngles(DirectionalLight.Direction);
+
+	auto light = angles + AnimationDelta * Arg.Timer.GetDeltaTime();
+	auto isInRange = [](float val) { return val >= -180 && val <= 180; };
+	if (!isInRange(light.x))
+	{
+		AnimationDelta.x *= -1;
+	}
+	if (!isInRange(light.y))
+	{
+		AnimationDelta.y *= -1;
+	}
+	if (!isInRange(light.z))
+	{
+		AnimationDelta.z *= -1; //todo optimize
+	}
+	DirectionalLight.Direction = AnglesToNormalized(light);
 }
 
 void ODirectionalLightComponent::SetCSM(const weak_ptr<OCSM>& InCSM)

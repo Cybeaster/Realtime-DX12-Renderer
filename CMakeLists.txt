@@ -275,6 +275,7 @@ set(SRC_FILES
         Core/Application/Animations/AnimationManager.cpp
         Core/Application/UI/Animations/AnimationListWidget.h
         Core/Application/UI/Animations/AnimationListWidget.cpp
+        Core/Types/Defines.h
 )
 
 
