@@ -1,7 +1,10 @@
-# DirectX 12 Renderer
-### Render engine with DirectX 12 for backend.
+# **DirectX 12 Renderer**
+## Render engine with DirectX 12 for backend.
 
-####  Full list of features:
+Engine with > 30k lines of code that loads .obj files from config.
+**Supports various post-process effects, lighting, reflections and other. All features are interactible through ImGui UI interface**
+
+###  Full list of features:
 ##### Post Processing
 - Gaussian blur
 - Bilateral blur
@@ -30,7 +33,7 @@
 - Debug shaders
 - UI settings
 
-#### Build
+### How to Build
 1. Clone repository.
 2. Download [vcpkg](https://github.com/microsoft/vcpkg).
 3. Add environment VCPKG_ROOT variable with path to vcpkg directory.
