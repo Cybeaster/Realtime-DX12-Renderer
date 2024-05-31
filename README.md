@@ -1,17 +1,38 @@
-### DirectX 12 Renderer
+# DirectX 12 Renderer
+### Rendering engine using DirectX 12 for backend.
 
-Rendering engine using DirectX 12 for backend.
-[ImGUI is used for UI](https://github.com/Cybeaster/RenderEngine/blob/water_hot_fix/Examples/UI.jpg), boost.ptree for configurations. Models, shaders, materials and textures are loaded from config file.
+####  Full list of features:
+##### Post Processing
+- Gaussian blur
+- Bilateral blur
+- Sobel filter
+- Screen space ambient occlusion
+##### Lighting
+- Shadow mapping
+- Normal mapping
+- Cascade shadows (With Orthographic frustum culling)
+- Directional, Spot, Point lights
+- BlinnPhong BRDF
+- Disney BRDF
+##### Color
+- Gamma correction
+- ACES Tone mapping
+##### Other
+- Planar Reflections
+- Cube mapping
+- Shader reflection
+- Shader Hot Reload
+- Material editor
+- Dynamic Render graph
+- Automatic PSO resolve
+- Configuration files
+- Camera animations
+- Debug shaders
+- UI settings
 
-Currently implemented features:
-- Shadow mapping.
-- Normal mapping.
-- Screen space ambient occlusion.
-- [Post processing effects: Gaussian blur, Billateral Blur Sobel edge detection.](https://drive.google.com/file/d/1YM6GdQ5hukTIhE-3AtOEX8KABRpBkVZm/view?usp=sharing)
-- [Dynamic reflections.](https://drive.google.com/file/d/1zCIDPchba3Ko1v2GmD2S5vg1SAfXeg4o/view?usp=sharing)
-![image](https://github.com/Cybeaster/RenderEngine/assets/47248969/857d38ed-56ef-4649-98fe-ae2eaab5c273)
-- Shader reflection.
-- Render graph.
-- Automatic PSO resolve.
-- [Instancing and frustrum culling](https://drive.google.com/file/d/1Z7vXUyYQZE_7-uyFwP-7GL9H2_HDX9qW/view?usp=sharing).
-- [Dynamic vertex reflection.](https://drive.google.com/file/d/12eK0NMm6P9Zf7aiqsnVzBvXj3NG-vHbU/view?usp=sharing)
+#### Build
+1. Clone repository.
+2. Download [vcpkg](https://github.com/microsoft/vcpkg).
+3. Add environment VCPKG_ROOT variable with path to vcpkg directory.
+4. Install cmake and Visual Studio 2019/2022.
+5. Run setup.cmd
