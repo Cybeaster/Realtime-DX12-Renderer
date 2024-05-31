@@ -7,22 +7,22 @@ Engine with > 30k lines of code that loads .obj files from config.
 _All features are interactible through ImGui UI interface._
 
 ## Full list of features:
-##### Post Processing
+### Post Processing
 - Gaussian blur
 - Bilateral blur
 - Sobel filter
 - Screen space ambient occlusion
-##### Lighting
+### Lighting
 - Shadow mapping
 - Normal mapping
 - Cascade shadows (With Orthographic frustum culling)
 - Directional, Spot, Point lights
 - BlinnPhong BRDF
 - Disney BRDF
-##### Color
+### Color
 - Gamma correction
 - ACES Tone mapping
-##### Other
+### Other
 - Planar Reflections
 - Cube mapping
 - Shader reflection
