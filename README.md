@@ -35,6 +35,11 @@ _All features are interactible through ImGui UI interface._
 - Debug shaders
 - UI settings
 
+## Planned:
+- Full support DXR 1.1 and realtime raytracing
+- Light mapping
+- SSR
+
 ### How to Build
 1. Clone repository.
 2. Download [vcpkg](https://github.com/microsoft/vcpkg).
