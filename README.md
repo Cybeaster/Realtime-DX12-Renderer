@@ -1,8 +1,9 @@
 # **DirectX 12 Renderer**
 ## Render engine with DirectX 12 for backend.
 
-Engine with > 30k lines of code that loads .obj files from config.
-**Supports various post-process effects, lighting, reflections and other. All features are interactible through ImGui UI interface**
+Engine with > 30k lines of code that loads .obj files from config.  
+**Supports various post-process effects, lighting, reflections and other.**
+__All features are interactible through ImGui UI interface.__
 
 ###  Full list of features:
 ##### Post Processing
