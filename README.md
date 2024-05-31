@@ -6,7 +6,7 @@ Engine with > 30k lines of code that loads .obj files from config.
 
 _All features are interactible through ImGui UI interface._
 
-###  Full list of features:
+## Full list of features:
 ##### Post Processing
 - Gaussian blur
 - Bilateral blur
@@ -40,7 +40,7 @@ _All features are interactible through ImGui UI interface._
 - Light mapping
 - SSR
 
-### How to Build
+## How to Build
 1. Clone repository.
 2. Download [vcpkg](https://github.com/microsoft/vcpkg).
 3. Add environment VCPKG_ROOT variable with path to vcpkg directory.
