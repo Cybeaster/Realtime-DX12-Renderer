@@ -62,14 +62,3 @@ struct SMaterial
 private:
 	static vector<uint32_t> GetTextureIndices(const vector<STexturePath>& Textures);
 };
-
-struct SMaterialParams
-{
-	SMaterialParams() = default;
-	SMaterialParams(const weak_ptr<SMaterial>& InMaterial)
-	    : Material(InMaterial) {}
-
-	weak_ptr<SMaterial> Material;
-	DirectX::XMFLOAT2 DisplacementMapTexelSize = { 1, 1 };
-	float GridSpatialStep = 1.0f;
-};

@@ -85,9 +85,8 @@ float4 PS(VertexOut pin)
 	pin.NormalW = normalize(pin.NormalW);
 	pin.TangentW = normalize(pin.TangentW);
 
-
-
 	float reflectance = CalcFresnelR0(matData.IndexOfRefraction); //TODO fix if IndexOfRefraction == 0
+	float4 cubeMapColor = gCubeMap.Sample(gsamLinearClamp, pin.NormalW) * reflectance;
     float3 f0 = lerp(F0_COEFF * SQUARE(reflectance), diffuseAlbedo,  matData.Metalness);
 
 	// Vector from point being lit to eye.

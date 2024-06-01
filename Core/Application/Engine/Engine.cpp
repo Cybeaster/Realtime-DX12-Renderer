@@ -169,6 +169,13 @@ weak_ptr<ODynamicCubeMapRenderTarget> OEngine::BuildCubeRenderTarget(XMFLOAT3 Ce
 	cubeParams.Device = Device;
 	cubeParams.HeapType = EResourceHeapType::Default;
 	CubeRenderTarget = BuildRenderObject<ODynamicCubeMapRenderTarget>(ERenderGroup::RenderTargets, cubeParams, Center, resulution);
+
+	SRenderItemParams params;
+	params.Displayable = true;
+	params.OverrideLayer = SRenderLayers::OpaqueDynamicReflections;
+	params.SetScale({ 100, 100, 100 });
+	params.Material = FindMaterial("Mirror");
+	auto sphere = CreateSphereRenderItem("Sphere", params);
 	return CubeRenderTarget;
 }
 
@@ -419,7 +426,7 @@ void OEngine::InitPipelineManager()
 void OEngine::BuildCustomGeometry()
 {
 	SRenderItemParams params;
-	params.MaterialParams = FindMaterial("White");
+	params.Material = FindMaterial("White");
 	params.NumberOfInstances = 1;
 	params.bFrustumCoolingEnabled = false;
 	params.OverrideLayer = SRenderLayers::OneFullscreenQuad;
@@ -1751,7 +1758,7 @@ weak_ptr<ORenderItem> OEngine::BuildRenderItemFromMesh(shared_ptr<SMeshGeometry>
 
 weak_ptr<ORenderItem> OEngine::BuildRenderItemFromMesh(weak_ptr<SMeshGeometry> Mesh, const SRenderItemParams& Params)
 {
-	if (Params.MaterialParams.Material.expired() || Params.MaterialParams.Material.lock()->MaterialCBIndex == -1)
+	if (Params.Material.expired() || Params.Material.lock()->MaterialCBIndex == -1)
 	{
 		LOG(Geometry, Warning, "Material not specified!");
 	}
@@ -1787,9 +1794,9 @@ weak_ptr<ORenderItem> OEngine::BuildRenderItemFromMesh(const weak_ptr<SMeshGeome
 		matIdx = mat->MaterialCBIndex;
 		layer = Params.OverrideLayer.value_or(mat->RenderLayer);
 	}
-	else if (!Params.MaterialParams.Material.expired())
+	else if (!Params.Material.expired())
 	{
-		matIdx = Params.MaterialParams.Material.lock()->MaterialCBIndex;
+		matIdx = Params.Material.lock()->MaterialCBIndex;
 		layer = Params.OverrideLayer.value_or(SRenderLayers::Opaque);
 	}
 	auto submeshLock = submesh.lock();

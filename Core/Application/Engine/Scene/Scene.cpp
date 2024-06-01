@@ -15,7 +15,7 @@ void OScene::Load() const
 	//create objects
 
 	SRenderItemParams skyParams;
-	skyParams.MaterialParams = FindMaterial("GrassSky");
+	skyParams.Material = FindMaterial("GrassSky");
 	skyParams.NumberOfInstances = 1;
 	skyParams.bFrustumCoolingEnabled = false;
 	skyParams.OverrideLayer = SRenderLayers::Sky;
@@ -28,7 +28,7 @@ void OScene::Load() const
 	                       skyParams);
 
 	SRenderItemParams objectsParams;
-	objectsParams.MaterialParams = FindMaterial("White");
+	objectsParams.Material = FindMaterial("White");
 	objectsParams.NumberOfInstances = 1;
 	objectsParams.bFrustumCoolingEnabled = true;
 	objectsParams.Pickable = false;
@@ -58,7 +58,7 @@ void OScene::Load() const
 	}
 
 	SRenderItemParams params;
-	params.MaterialParams = FindMaterial("White");
+	params.Material = FindMaterial("White");
 	params.NumberOfInstances = 1;
 	params.bFrustumCoolingEnabled = false;
 	params.OverrideLayer = SRenderLayers::ShadowDebug;
