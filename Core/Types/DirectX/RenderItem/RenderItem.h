@@ -83,17 +83,17 @@ T* ORenderItem::AddComponent(Args&&... Arg)
 
 struct SRenderItemParams
 {
-	SRenderItemParams(weak_ptr<SMaterial> Material)
-	    : MaterialParams(Material) {}
+	SRenderItemParams(const weak_ptr<SMaterial>& InMaterial)
+	    : Material(InMaterial) {}
 	SRenderItemParams() = default;
 
-	SRenderItemParams(weak_ptr<SMaterial> Material, size_t Instances)
-	    : MaterialParams(Material), NumberOfInstances(Instances) {}
+	SRenderItemParams(const weak_ptr<SMaterial>& InMaterial, size_t Instances)
+	    : Material(InMaterial), NumberOfInstances(Instances) {}
 
 	std::optional<SRenderLayer> OverrideLayer;
 
 	string Submesh;
-	SMaterialParams MaterialParams;
+	weak_ptr<SMaterial> Material;
 	size_t NumberOfInstances = 1;
 	bool bFrustumCoolingEnabled = false;
 	bool Pickable = false;

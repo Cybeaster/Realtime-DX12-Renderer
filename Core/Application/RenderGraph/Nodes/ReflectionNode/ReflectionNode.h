@@ -5,5 +5,6 @@
 class OReflectionNode : public ODefaultRenderNode
 {
 public:
+	void SetupCommonResources() override;
 	ORenderTargetBase* Execute(ORenderTargetBase* RenderTarget) override;
 };

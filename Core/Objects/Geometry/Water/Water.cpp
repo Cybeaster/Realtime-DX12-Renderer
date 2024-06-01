@@ -9,7 +9,7 @@ void OWaterRenderObject::InitRenderObject()
 	params.NumberOfInstances = 1;
 	params.bFrustumCoolingEnabled = false;
 	params.Pickable = false;
-	params.MaterialParams.Material = FindMaterial("Water01");
+	params.Material = FindMaterial("Water01");
 	params.OverrideLayer = SRenderLayers::Water;
 	WaterItem = CreateGridRenderItem(
 	    "Water",
