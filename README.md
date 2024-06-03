@@ -41,7 +41,7 @@ _All features are interactible through ImGui UI interface._
 - SSR
 
 ## How to Build
-1. Clone repository.
+1. `git clone --recurse-submodules git@github.com:Cybeaster/Realtime-DX12-Renderer.git`
 2. Download [vcpkg](https://github.com/microsoft/vcpkg).
 3. Add environment VCPKG_ROOT variable with path to vcpkg directory.
 4. Install cmake and Visual Studio 2019/2022.
