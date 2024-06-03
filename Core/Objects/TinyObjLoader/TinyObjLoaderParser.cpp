@@ -136,17 +136,19 @@ bool OTinyObjParser::ParseMesh(const wstring& Path, SMeshPayloadData& MeshData, 
 				data.Material.SpecularMap = specular;
 				HLSL::MaterialData surf = {
 					.AmbientAlbedo = { material.ambient[0], material.ambient[1], material.ambient[2] },
-					.DiffuseAlbedo = { material.diffuse[0], material.diffuse[1], material.diffuse[2] },
-					.SpecularAlbedo = { material.specular[0], material.specular[1], material.specular[2] },
-					.Transmittance = { material.transmittance[0], material.transmittance[1], material.transmittance[2] },
-					.Emission = { material.emission[0], material.emission[1], material.emission[2] },
 					.Shininess = material.shininess,
+					.DiffuseAlbedo = { material.diffuse[0], material.diffuse[1], material.diffuse[2] },
 					.IndexOfRefraction = material.ior,
+					.SpecularAlbedo = { material.specular[0], material.specular[1], material.specular[2] },
 					.Dissolve = material.dissolve,
+					.Transmittance = { material.transmittance[0], material.transmittance[1], material.transmittance[2] },
 					.Illumination = material.illum,
+					.Emission = { material.emission[0], material.emission[1], material.emission[2] },
 					.Roughness = material.roughness,
 					.Metalness = material.metallic,
-					.Sheen = material.sheen
+					.Sheen = material.sheen,
+					.Reflection = 0.0
+
 				};
 				data.Material.MaterialSurface = surf;
 			}

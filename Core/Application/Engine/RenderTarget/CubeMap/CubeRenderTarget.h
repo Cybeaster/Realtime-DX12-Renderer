@@ -27,17 +27,18 @@ public:
 	void InitRenderObject() override;
 	uint32_t GetNumPassesRequired() const override;
 	SResourceInfo* GetResource() override { return RenderTarget.get(); }
+	virtual void SetBoundRenderItem(const shared_ptr<ORenderItem>& Item);
 
 protected:
 	DirectX::XMUINT2 Resolution;
 	void BuildDepthStencilBuffer();
+	weak_ptr<ORenderItem> RenderItem;
 
 private:
 	void BuildResource() override;
 	void BuildDescriptors() override;
 	TResourceInfo RenderTarget;
 	TResourceInfo CubeDepthStencilBuffer;
-
 	SDescriptorPair SRVHandle;
 	SDescriptorPair DSVHandle;
 	vector<SDescriptorPair> RTVHandle;

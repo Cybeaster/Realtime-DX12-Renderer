@@ -19,6 +19,11 @@ uint32_t OCubeRenderTarget::GetNumPassesRequired() const
 	return 6;
 }
 
+void OCubeRenderTarget::SetBoundRenderItem(const shared_ptr<ORenderItem>& Item)
+{
+	RenderItem = Item;
+}
+
 void OCubeRenderTarget::BuildDepthStencilBuffer()
 {
 	auto device = Device.lock();

@@ -69,7 +69,7 @@ struct SRenderConstants
 	inline static constexpr uint32_t MaxLights = 16;
 	inline static constexpr uint32_t RenderBuffersCount = 2;
 	inline static constexpr DirectX::XMUINT2 CubeMapDefaultResolution = { 1024, 1024 };
-	inline static constexpr float CameraNearZ = 1.f;
+	inline static constexpr float CameraNearZ = 0.1f;
 	inline static constexpr float CameraFarZ = 5000.f;
 
 	inline static constexpr uint32_t MaxDiffuseMapsPerMaterial = 3;

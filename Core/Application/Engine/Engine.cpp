@@ -159,7 +159,7 @@ void OEngine::BuildOffscreenRT()
 	OffscreenRT = BuildRenderObject<OOffscreenTexture>(RenderTargets, Device, Window->GetWidth(), Window->GetHeight(), SRenderConstants::BackBufferFormat);
 }
 
-weak_ptr<ODynamicCubeMapRenderTarget> OEngine::BuildCubeRenderTarget(XMFLOAT3 Center)
+weak_ptr<ODynamicCubeMapRenderTarget> OEngine::BuildCubeRenderTarget()
 {
 	auto resulution = SRenderConstants::CubeMapDefaultResolution;
 	SRenderTargetParams cubeParams{};
@@ -167,15 +167,17 @@ weak_ptr<ODynamicCubeMapRenderTarget> OEngine::BuildCubeRenderTarget(XMFLOAT3 Ce
 	cubeParams.Height = resulution.y;
 	cubeParams.Format = SRenderConstants::BackBufferFormat;
 	cubeParams.Device = Device;
-	cubeParams.HeapType = EResourceHeapType::Default;
-	CubeRenderTarget = BuildRenderObject<ODynamicCubeMapRenderTarget>(ERenderGroup::RenderTargets, cubeParams, Center, resulution);
+	cubeParams.HeapType = Default;
+	CubeRenderTarget = BuildRenderObject<ODynamicCubeMapRenderTarget>(ERenderGroup::RenderTargets, cubeParams, resulution);
 
 	SRenderItemParams params;
 	params.Displayable = true;
 	params.OverrideLayer = SRenderLayers::OpaqueDynamicReflections;
 	params.SetScale({ 100, 100, 100 });
+	params.SetPosition({ 0, 700, 0 });
 	params.Material = FindMaterial("Mirror");
 	auto sphere = CreateSphereRenderItem("Sphere", params);
+	CubeRenderTarget.lock()->SetBoundRenderItem(sphere.lock());
 	return CubeRenderTarget;
 }
 

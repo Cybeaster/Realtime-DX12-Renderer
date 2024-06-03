@@ -21,7 +21,7 @@
         "PSO": "Opaque",
         "NextNode": "Opaque",
         "RenderLayer": "OpaqueDynamicReflections",
-        "Enabled": false
+        "Enabled": true
       },
       {
         "Name": "Opaque",

@@ -166,8 +166,13 @@ void OGeometryEntityWidget::InitWidget()
 		const XMMATRIX transformMatrix = matScale * matRotation * matTranslation;
 		XMStoreFloat4x4(&SelectedInstanceData->HlslData.World, transformMatrix);
 		SelectedInstanceData->HlslData.Position = Position;
-		Put(SelectedInstanceData->HlslData.Rotation, XMQuaternionRotationRollPitchYaw(Rotation.x, Rotation.y, Rotation.z));
+		SelectedInstanceData->HlslData.Rotation = { Rotation.x, Rotation.y, Rotation.z, 0 };
 		SelectedInstanceData->HlslData.Scale = Scale;
+		STransform transform;
+		transform.Position = Load(Position);
+		transform.Rotation = Load(Rotation);
+		transform.Scale = Load(Scale);
+		SelectedInstanceData->PositionChanged.Broadcast(transform);
 	});
 
 	MaterialPickerWidget->GetOnMaterialUpdateDelegate().Add([this](const weak_ptr<SMaterial>& Material) {

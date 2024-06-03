@@ -5,6 +5,7 @@
 #include "Components/RenderItemComponentBase.h"
 #include "DirectX/MeshGeometry.h"
 #include "Logger.h"
+#include "Transform.h"
 
 struct SFrameResource;
 
@@ -14,8 +15,24 @@ struct SRenderItemGeometry
 
 struct SInstanceData
 {
+	DECLARE_DELEGATE(SPositionChanged, STransform);
+	SInstanceData() = default;
+	SInstanceData(const SInstanceData& In)
+	{
+		HlslData = In.HlslData;
+		Lifetime = In.Lifetime;
+	}
+
+	SInstanceData& operator=(const SInstanceData& In)
+	{
+		HlslData = In.HlslData;
+		Lifetime = In.Lifetime;
+		return *this;
+	}
+
 	HLSL::InstanceData HlslData;
 	std::optional<float> Lifetime;
+	SPositionChanged PositionChanged;
 };
 
 /**
@@ -23,8 +40,6 @@ struct SInstanceData
  */
 struct ORenderItem
 {
-	DECLARE_DELEGATE(SPositionChanged, void);
-
 	ORenderItem() = default;
 	ORenderItem(ORenderItem&&) = default;
 	ORenderItem(const ORenderItem&) = default;

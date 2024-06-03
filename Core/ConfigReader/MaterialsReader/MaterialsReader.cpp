@@ -36,6 +36,7 @@ std::unordered_map<string, shared_ptr<SMaterial>> OMaterialsConfigParser::LoadMa
 		material->MaterialData.DiffuseAlbedo.z = diffChild.get<float>("z");
 
 		material->MaterialData.Roughness = data.get<float>("Roughness");
+		material->MaterialData.Reflection = data.get_optional<float>("Reflection").value_or(0.0f);
 		Materials[material->Name] = std::move(material);
 	}
 	return std::move(Materials);

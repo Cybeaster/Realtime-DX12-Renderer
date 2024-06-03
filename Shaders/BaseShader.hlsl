@@ -86,7 +86,6 @@ float4 PS(VertexOut pin)
 	pin.TangentW = normalize(pin.TangentW);
 
 	float reflectance = CalcFresnelR0(matData.IndexOfRefraction); //TODO fix if IndexOfRefraction == 0
-	float4 cubeMapColor = gCubeMap.Sample(gsamLinearClamp, pin.NormalW) * reflectance;
     float3 f0 = lerp(F0_COEFF * SQUARE(reflectance), diffuseAlbedo,  matData.Metalness);
 
 	// Vector from point being lit to eye.
@@ -138,9 +137,16 @@ float4 PS(VertexOut pin)
 	}
 
 	//float4 ambient =  ambientAccess * gAmbientLight * float4(diffuseAlbedo,1.0);
+	if (matData.Reflection > 0)
+	{
+		float3 reflection = reflect(-toEyeW, bumpedNormalW);
+		reflection.y = -reflection.y;
+		float3 reflectionColor = gCubeMap.Sample(gsamLinearClamp, reflection).rgb;
+		directLighting += matData.Reflection * reflectionColor;
+	}
 
 	float4 ambient = (float4(gAmbientLight.xyz,1.0f) * FLOAT4(gAmbientLight.w) * float4(diffuseAlbedo,1.0));
-	float4 litColor = (ambient + float4(directLighting, 1.0f))*ambientAccess;
+	float4 litColor = (ambient + float4(directLighting, 1.0f)) * ambientAccess;
 
 #ifdef FOG
 	float fogAmount = saturate((distToEye - gFogStart) / gFogRange);

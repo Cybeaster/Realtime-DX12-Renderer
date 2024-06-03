@@ -10,7 +10,7 @@ void OScene::InitScene(const SSceneInfo& SceneInfo)
 
 void OScene::Load() const
 {
-	OEngine::Get()->BuildCubeRenderTarget({ 0, 2, 0 });
+	OEngine::Get()->BuildCubeRenderTarget();
 
 	//create objects
 

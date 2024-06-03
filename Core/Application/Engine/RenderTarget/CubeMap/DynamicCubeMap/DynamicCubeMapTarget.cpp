@@ -5,44 +5,10 @@
 
 void ODynamicCubeMapRenderTarget::InitRenderObject()
 {
-	using namespace DirectX;
 	OCubeRenderTarget::InitRenderObject();
-
-	auto x = Position.x;
-	auto y = Position.y;
-	auto z = Position.z;
-
-	XMFLOAT3 worldUp = { 0.0f, 1.0f, 0.0f };
-
-	// Look along each coordinate axis.
-	XMFLOAT3 targets[6] = {
-		XMFLOAT3(x + 1.0f, y, z), // +X
-		XMFLOAT3(x - 1.0f, y, z), // -X
-		XMFLOAT3(x, y + 1.0f, z), // +Y
-		XMFLOAT3(x, y - 1.0f, z), // -Y
-		XMFLOAT3(x, y, z + 1.0f), // +Z
-		XMFLOAT3(x, y, z - 1.0f) // -Z
-	};
-
-	// Use world up vector (0,1,0) for all directions except +Y/-Y.  In these cases, we
-	// are looking down +Y or -Y, so we need a different "up" vector.
-	XMFLOAT3 ups[6] = {
-		XMFLOAT3(0.0f, 1.0f, 0.0f), // +X
-		XMFLOAT3(0.0f, 1.0f, 0.0f), // -X
-		XMFLOAT3(0.0f, 0.0f, -1.0f), // +Y
-		XMFLOAT3(0.0f, 0.0f, +1.0f), // -Y
-		XMFLOAT3(0.0f, 1.0f, 0.0f), // +Z
-		XMFLOAT3(0.0f, 1.0f, 0.0f) // -Z
-	};
-	Cameras.resize(GetNumRTVRequired());
-	for (int i = 0; i < GetNumRTVRequired(); ++i)
-	{
-		Cameras[i] = make_unique<OCamera>();
-		Cameras[i]->LookAt(Position, targets[i], ups[i]);
-		Cameras[i]->SetLens(0.5f * XM_PI, 1.0f, SRenderConstants::CameraNearZ, SRenderConstants::CameraFarZ);
-		Cameras[i]->UpdateViewMatrix();
-	}
+	CalculateCameras();
 }
+
 void ODynamicCubeMapRenderTarget::UpdatePass(const TUploadBufferData<SPassConstants>& Data)
 {
 	OCubeRenderTarget::UpdatePass(Data);
@@ -64,5 +30,54 @@ void ODynamicCubeMapRenderTarget::UpdatePass(const TUploadBufferData<SPassConsta
 		data.EndIndex = end;
 		data.Buffer = Data.Buffer;
 		PassConstants.push_back(data);
+	}
+}
+
+void ODynamicCubeMapRenderTarget::SetBoundRenderItem(const shared_ptr<ORenderItem>& Item)
+{
+	OCubeRenderTarget::SetBoundRenderItem(Item);
+	Item->GetDefaultInstance()->PositionChanged.Add([this](STransform Transform) {
+		// Update the render item's world matrix.
+		Position = RenderItem.lock()->GetDefaultInstance()->HlslData.Position;
+		CalculateCameras();
+	});
+}
+
+void ODynamicCubeMapRenderTarget::CalculateCameras()
+{
+	using namespace DirectX;
+
+	auto x = Position.x;
+	auto y = Position.y;
+	auto z = Position.z;
+
+	// Look along each coordinate axis.
+	XMFLOAT3 targets[6] = {
+		XMFLOAT3(x + 1.0f, y, z), // +X
+		XMFLOAT3(x - 1.0f, y, z), // -X
+		XMFLOAT3(x, y + 1.0f, z), // +Y
+		XMFLOAT3(x, y - 1.0f, z), // -Y
+		XMFLOAT3(x, y, z + 1.0f), // +Z
+		XMFLOAT3(x, y, z - 1.0f) // -Z
+	};
+
+	// Use world up vector (0,1,0) for all directions except +Y/-Y.  In these cases, we
+	// are looking down +Y or -Y, so we need a different "up" vector.
+	XMFLOAT3 ups[6] = {
+		XMFLOAT3(0.0f, 1.0f, 0.0f), // +X
+		XMFLOAT3(0.0f, 1.0f, 0.0f), // -X
+		XMFLOAT3(0.0f, 0.0f, -1.0f), // +Y
+		XMFLOAT3(0.0f, 0.0f, +1.0f), // -Y
+		XMFLOAT3(0.0f, 1.0f, 0.0f), // +Z
+		XMFLOAT3(0.0f, 1.0f, 0.0f) // -Z
+	};
+	Cameras.clear();
+	Cameras.resize(GetNumRTVRequired());
+	for (int i = 0; i < GetNumRTVRequired(); ++i)
+	{
+		Cameras[i] = make_unique<OCamera>();
+		Cameras[i]->LookAt(Position, targets[i], ups[i]);
+		Cameras[i]->SetLens(0.5f * XM_PI, 1.0f, SRenderConstants::CameraNearZ, SRenderConstants::CameraFarZ);
+		Cameras[i]->UpdateViewMatrix();
 	}
 }

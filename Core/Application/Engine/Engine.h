@@ -254,7 +254,7 @@ public:
 
 	SOnFrameResourceChanged OnFrameResourceChanged;
 	weak_ptr<ODynamicCubeMapRenderTarget> GetCubeRenderTarget() const;
-	weak_ptr<ODynamicCubeMapRenderTarget> BuildCubeRenderTarget(DirectX::XMFLOAT3 Center);
+	weak_ptr<ODynamicCubeMapRenderTarget> BuildCubeRenderTarget();
 
 	void DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, bool ForceDrawAll = false);
 	void DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, const SCulledInstancesInfo* InstanceBuffer);

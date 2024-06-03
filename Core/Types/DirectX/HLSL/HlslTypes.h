@@ -60,20 +60,25 @@ struct TextureData
 struct MaterialData
 {
 	float3 AmbientAlbedo;
-	float3 DiffuseAlbedo;
-	float3 SpecularAlbedo;
-	float3 Transmittance;
-	float3 Emission;
 	float Shininess;
+
+	float3 DiffuseAlbedo;
 	float IndexOfRefraction;
+
+	float3 SpecularAlbedo;
 	float Dissolve;
+
+	float3 Transmittance;
 	int Illumination;
+
+	float3 Emission;
 	float Roughness;
+
 	float Metalness;
 	float Sheen;
-
+	float Reflection;
+	float pad;
 	float4x4 MatTransform;
-
 	TextureData DiffuseMap;
 	TextureData NormalMap;
 	TextureData HeightMap;
