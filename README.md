@@ -5,7 +5,7 @@ Engine with > 30k lines of code that loads .obj files from config.
 **Supports various post-process effects, lighting, reflections and other.**  
 
 _All features are interactible through ImGui UI interface._  
-#### You can watch the demo on YouTube: [Link](https://www.youtube.com/watch?v=UZ2pt5CyjZQ)
+#### You can watch the demo on YouTube: [Link](https://www.youtube.com/watch?v=VI4b0bAk0jk)
 ## Full list of features:
 ### Post Processing
 - Gaussian blur
