@@ -35,6 +35,7 @@ namespace HLSL
 #define STRINGIFY_MACRO(x) STRINGIFY(x)
 #define CB_SSAO cbSsao
 #define CB_PASS cbPass
+#define TLAS gTLAS
 #define CB_ROOT_CONSTANTS cbRootConstants
 #define CUBE_MAP gCubeMap
 #define TEXTURE_MAPS gTextureMaps
@@ -51,6 +52,7 @@ namespace HLSL
 #define NORMAL_MAP gNormalMap
 #define RANDOM_VEC_MAP gRandomVecMap
 #define DEPTH_MAP gDepthMap
+#define OUTPUT gOutput
 struct TextureData
 {
 	uint bIsEnabled;
@@ -190,6 +192,40 @@ struct HitInfo
 struct Attributes
 {
 	float2 Bary;
+};
+
+struct CameraCBuffer
+{
+	float4x4 gView;
+	float4x4 gInvView;
+	float4x4 gProj;
+	float4x4 gInvProj;
+	float4x4 gViewProj;
+	float4x4 gInvViewProj;
+	float4x4 gViewProjTex;
+	float3 gEyePosW;
+
+	float FOV; // Use this to pad gEyePosW to 16 bytes
+
+	float2 gRenderTargetSize;
+	float2 gInvRenderTargetSize;
+	float gNearZ;
+	float gFarZ;
+	float gTotalTime;
+	float gDeltaTime;
+	float4 gAmbientLight;
+	float4 gFogColor;
+	float gFogStart;
+	float gFogRange;
+
+	uint gNumDirLights;
+
+	float AspectRatio; // Padding to align following uints
+	uint gNumPointLights;
+	uint gNumSpotLights;
+	float FocusDistance; // Padding to ensure the cbuffer ends on a 16-byte boundary
+	float Aperture; // Padding to ensure the cbuffer ends on a 16-byte boundary
+	bool gSSAOEnabled;
 };
 
 #ifndef HLSL

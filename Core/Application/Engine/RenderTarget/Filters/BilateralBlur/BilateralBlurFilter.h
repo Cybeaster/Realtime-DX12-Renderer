@@ -17,7 +17,7 @@ public:
 		uint32_t TextureHeight;
 	};
 
-	OBilateralBlurFilter(const weak_ptr<ODevice>& Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format);
+	OBilateralBlurFilter(const weak_ptr<ODevice>& Device, const shared_ptr<OCommandQueue>& Other, UINT Width, UINT Height, DXGI_FORMAT Format);
 	void InitRenderObject() override;
 	void BuildDescriptors(IDescriptor* Descriptor) override;
 

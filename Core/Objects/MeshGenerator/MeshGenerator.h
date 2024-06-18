@@ -14,7 +14,7 @@ enum class EParserType
 class OMeshGenerator
 {
 public:
-	OMeshGenerator(ID3D12Device* Device, OCommandQueue* CommandList)
+	OMeshGenerator(ID3D12Device* Device, const shared_ptr<OCommandQueue>& CommandList)
 	    : Device(Device)
 	    , CommandQueue(CommandList)
 	{
@@ -34,5 +34,5 @@ public:
 private:
 	OGeometryGenerator Generator;
 	ID3D12Device* Device;
-	OCommandQueue* CommandQueue;
+	weak_ptr<OCommandQueue> CommandQueue;
 };

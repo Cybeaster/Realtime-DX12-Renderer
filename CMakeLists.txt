@@ -276,6 +276,10 @@ set(SRC_FILES
         Core/Application/UI/Animations/AnimationListWidget.h
         Core/Application/UI/Animations/AnimationListWidget.cpp
         Core/Types/Defines.h
+        Core/Types/UISettings.h
+        Core/Application/RenderGraph/Nodes/Raytracing/RaytracingNode.cpp
+        Core/Application/RenderGraph/Nodes/Raytracing/RaytracingNode.h
+        Core/Application/RenderGraph/Nodes/Raytracing/RaytracingNode.h
 )
 
 

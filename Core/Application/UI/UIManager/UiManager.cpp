@@ -12,6 +12,7 @@
 #include "UI/Graph/RenderGraphWidget.h"
 #include "UI/Material/MaterialManager/MaterialManager.h"
 #include "UI/Material/TextureManager/TextureManager.h"
+#include "UISettings.h"
 #include "Window/Window.h"
 #include "backends/imgui_impl_dx12.h"
 #include "backends/imgui_impl_win32.h"
@@ -46,7 +47,9 @@ void OUIManager::Draw()
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
-	ImGui::SetNextWindowSize(ImVec2(MangerWidth, MangerHeight));
+	ImGui::SetNextWindowSize(ImVec2(SUISettings::Size.x, SUISettings::Size.y));
+	ImGuiIO& io = ImGui::GetIO();
+	io.FontGlobalScale = SUISettings::FontScaleFactor;
 	ImGui::Begin("Main Menu");
 
 	OHierarchicalWidgetBase::Draw();

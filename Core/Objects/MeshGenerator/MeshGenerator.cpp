@@ -112,17 +112,18 @@ unique_ptr<SMeshGeometry> OMeshGenerator::CreateMesh(const SMeshPayloadData& Dat
 	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
 	geo->VertexBufferGPU = Utils::CreateDefaultBuffer(Device,
-	                                                  CommandQueue->GetCommandList().Get(),
+	                                                  CommandQueue.lock()->GetCommandList().Get(),
 	                                                  vertices.data(),
 	                                                  vbByteSize,
 	                                                  geo->VertexBufferUploader);
 
 	geo->IndexBufferGPU = Utils::CreateDefaultBuffer(Device,
-	                                                 CommandQueue->GetCommandList().Get(),
+	                                                 CommandQueue.lock()->GetCommandList().Get(),
 	                                                 indices.data(),
 	                                                 ibByteSize,
 	                                                 geo->IndexBufferUploader);
-
+	geo->NumVertices = static_cast<UINT>(vertices.size());
+	geo->NumIndices = static_cast<UINT>(indices.size());
 	geo->VertexByteStride = sizeof(SVertex);
 	geo->VertexBufferByteSize = vbByteSize;
 	geo->IndexFormat = DXGI_FORMAT_R32_UINT;

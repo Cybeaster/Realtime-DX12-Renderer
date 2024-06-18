@@ -2,7 +2,7 @@
 
 #include "DirectX/ShaderTypes.h"
 
-OSobelFilter::OSobelFilter(const weak_ptr<ODevice>& Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format)
+OSobelFilter::OSobelFilter(const weak_ptr<ODevice>& Device, const shared_ptr<OCommandQueue>& Other, UINT Width, UINT Height, DXGI_FORMAT Format)
     : OFilterBase(Device, Other, Width, Height, Format)
 {
 	FilterName = L"SobelFilter";
@@ -60,10 +60,10 @@ bool OSobelFilter::Execute(SPSODescriptionBase* PSO, ORenderTargetBase* InTarget
 	{
 		return false;
 	}
-
-	Queue->CopyResourceTo(Input.get(), InTarget->GetResource());
-	auto cmd = Queue->GetCommandList().Get();
-	Queue->SetPipelineState(PSO);
+	auto queue = Queue.lock();
+	queue->CopyResourceTo(Input.get(), InTarget->GetResource());
+	auto cmd = queue->GetCommandList().Get();
+	queue->SetPipelineState(PSO);
 
 	auto root = PSO->RootSignature;
 	root->SetResource("Input", InputSRVHandle.GPUHandle, cmd);

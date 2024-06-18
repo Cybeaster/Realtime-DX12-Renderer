@@ -4,7 +4,7 @@
 #include "Engine/Device/Device.h"
 #include "Logger.h"
 
-OGaussianBlurFilter::OGaussianBlurFilter(const shared_ptr<ODevice>& Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format)
+OGaussianBlurFilter::OGaussianBlurFilter(const shared_ptr<ODevice>& Device, const shared_ptr<OCommandQueue>& Other, UINT Width, UINT Height, DXGI_FORMAT Format)
     : OFilterBase(Device, Other, Width, Height, Format)
 {
 }
@@ -17,7 +17,7 @@ void OGaussianBlurFilter::InitRenderObject()
 }
 void OGaussianBlurFilter::OutputTo(SResourceInfo* Destination)
 {
-	Queue->CopyResourceTo(Destination, BlurMap0.get());
+	Queue.lock()->CopyResourceTo(Destination, BlurMap0.get());
 }
 
 void OGaussianBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
@@ -108,13 +108,13 @@ bool OGaussianBlurFilter::Execute(
 	                   weights[8],
 	                   weights[9],
 	                   weights[10] });
-
+	auto queue = Queue.lock();
 	auto rootSig = VerticalBlurPSO->RootSignature;
-	auto cmdList = Queue->GetCommandList().Get();
-	rootSig->ActivateRootSignature(Queue->GetCommandList().Get());
+	auto cmdList = queue->GetCommandList().Get();
+	rootSig->ActivateRootSignature(queue->GetCommandList().Get());
 	rootSig->SetResource("cbSettings", Buffer->GetUploadResource()->Resource->GetGPUVirtualAddress(), cmdList);
 
-	Queue->CopyResourceTo(InputMap.get(), Input);
+	queue->CopyResourceTo(InputMap.get(), Input);
 	ResourceBarrier(cmdList, InputMap.get(), D3D12_RESOURCE_STATE_COPY_SOURCE);
 	ResourceBarrier(cmdList, BlurMap0.get(), D3D12_RESOURCE_STATE_COPY_DEST);
 
@@ -127,22 +127,22 @@ bool OGaussianBlurFilter::Execute(
 	{
 		// Horizontal blur
 		cmdList->SetPipelineState(HorizontalBlurPSO->PSO.Get());
-		rootSig->SetResource("Input", SRV0Handle.GPUHandle, Queue->GetCommandList().Get());
-		rootSig->SetResource("Output", UAV1Handle.GPUHandle, Queue->GetCommandList().Get());
+		rootSig->SetResource("Input", SRV0Handle.GPUHandle, queue->GetCommandList().Get());
+		rootSig->SetResource("Output", UAV1Handle.GPUHandle, queue->GetCommandList().Get());
 
 		// How many groups do we need to dispatch to cover a row of pixels, where each
 		// group covers 256 pixels (the 256 is defined in the ComputeShader).
 
 		const UINT numGroupsX = (UINT)ceilf(Width / 256.0f);
-		Queue->GetCommandList().Get()->Dispatch(numGroupsX, Height, 1);
+		queue->GetCommandList().Get()->Dispatch(numGroupsX, Height, 1);
 
-		ResourceBarrier(Queue->GetCommandList().Get(), BlurMap0.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		ResourceBarrier(Queue->GetCommandList().Get(), BlurMap1.get(), D3D12_RESOURCE_STATE_GENERIC_READ);
+		ResourceBarrier(queue->GetCommandList().Get(), BlurMap0.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		ResourceBarrier(queue->GetCommandList().Get(), BlurMap1.get(), D3D12_RESOURCE_STATE_GENERIC_READ);
 
 		// vertical BLur
-		Queue->GetCommandList().Get()->SetPipelineState(VerticalBlurPSO->PSO.Get());
-		rootSig->SetResource("Input", SRV1Handle.GPUHandle, Queue->GetCommandList().Get());
-		rootSig->SetResource("Output", UAV0Handle.GPUHandle, Queue->GetCommandList().Get());
+		queue->GetCommandList().Get()->SetPipelineState(VerticalBlurPSO->PSO.Get());
+		rootSig->SetResource("Input", SRV1Handle.GPUHandle, queue->GetCommandList().Get());
+		rootSig->SetResource("Output", UAV0Handle.GPUHandle, queue->GetCommandList().Get());
 
 		// How many groups do we need to dispatch to cover a row of pixels, where each
 		// group covers 256 pixels (the 256 is defined in the ComputeShader).

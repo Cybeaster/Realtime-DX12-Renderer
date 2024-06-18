@@ -3,7 +3,7 @@
 class OSobelFilter : public OFilterBase
 {
 public:
-	OSobelFilter(const weak_ptr<ODevice>& Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format);
+	OSobelFilter(const weak_ptr<ODevice>& Device, const shared_ptr<OCommandQueue>& Other, UINT Width, UINT Height, DXGI_FORMAT Format);
 	OSobelFilter(const OSobelFilter& rhs) = delete;
 	OSobelFilter& operator=(const OSobelFilter& rhs) = delete;
 

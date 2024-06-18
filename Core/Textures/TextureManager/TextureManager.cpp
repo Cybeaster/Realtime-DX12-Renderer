@@ -11,7 +11,7 @@
 #include <ranges>
 #include <unordered_set>
 
-OTextureManager::OTextureManager(ID3D12Device* Device, OCommandQueue* Queue)
+OTextureManager::OTextureManager(ID3D12Device* Device, shared_ptr<OCommandQueue> Queue)
     : Device(Device), CommandQueue(Queue)
 {
 	Parser = make_unique<OTexturesParser>(OApplication::Get()->GetConfigPath("TexturesConfigPath"));
@@ -50,14 +50,15 @@ uint32_t OTextureManager::GetNumTotalTextures() const
 
 void OTextureManager::LoadLocalTextures()
 {
-	CommandQueue->TryResetCommandList();
+	auto queue = CommandQueue.lock();
+	queue->TryResetCommandList();
 	RemoveAllTextures();
 
 	for (const auto& texture : Parser->LoadTextures())
 	{
 		TexturesHeapIndicesTable.insert(texture->TextureIndex);
 		THROW_IF_FAILED(DirectX::CreateDDSTextureFromFile12(Device,
-		                                                    CommandQueue->GetCommandList().Get(),
+		                                                    queue->GetCommandList().Get(),
 		                                                    OApplication::Get()->GetResourcePath(texture->FileName).c_str(),
 		                                                    texture->Resource.Resource,
 		                                                    texture->UploadHeap.Resource));
@@ -65,11 +66,11 @@ void OTextureManager::LoadLocalTextures()
 		texture->Resource.Init(weak, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 		texture->Resource.Resource->SetName(texture->FileName.c_str());
 
-		CommandQueue->ResourceBarrier(&texture->Resource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+		queue->ResourceBarrier(&texture->Resource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
 		LOG(Engine, Log, "Texture created from config: Name : {}, Path: {}", TEXT(texture->Name), texture->FileName);
 		AddTexture(make_unique<STexture>(*texture));
 	}
-	CommandQueue->ExecuteCommandListAndWait();
+	queue->ExecuteCommandListAndWait();
 }
 
 void OTextureManager::RemoveAllTextures()
@@ -157,14 +158,14 @@ STexture* OTextureManager::CreateTexture(const string& Name, wstring FileName)
 	auto texture = make_unique<STexture>();
 	texture->Name = name;
 	texture->FileName = FileName;
-
-	auto res = DirectX::LoadTexture(FileName, Device, CommandQueue->GetCommandList().Get(), texture->Resource.Resource, texture->UploadHeap.Resource, path.extension() == ".dds");
+	auto queue = CommandQueue.lock();
+	auto res = DirectX::LoadTexture(FileName, Device, queue->GetCommandList().Get(), texture->Resource.Resource, texture->UploadHeap.Resource, path.extension() == ".dds");
 	CWIN_LOG(!SUCCEEDED(res), Engine, Error, "Failed to load texture from file: {}", FileName);
 	texture->Resource.Init(weak_from_this(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	texture->Resource.Resource->SetName(path.filename().c_str());
 	if (texture->Type == ETextureType::Height)
 	{
-		CommandQueue->ResourceBarrier(&texture->Resource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+		queue->ResourceBarrier(&texture->Resource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
 	}
 
 	LOG(Engine, Log, "Texture created: Name : {}, Path: {}", TEXT(name), FileName);

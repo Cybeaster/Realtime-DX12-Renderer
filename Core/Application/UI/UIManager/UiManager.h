@@ -40,6 +40,4 @@ private:
 	bool bIsInFocus = false;
 	ImGuiIO* IO = nullptr;
 	wstring Name = L"UI Manager";
-	float MangerWidth = 400;
-	float MangerHeight = 800;
 };

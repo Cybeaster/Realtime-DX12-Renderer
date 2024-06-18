@@ -46,7 +46,7 @@ public:
 	void SetResource(const string& Name, D3D12_GPU_VIRTUAL_ADDRESS Resource, SPSODescriptionBase* PSO);
 	void SetResource(const string& Name, D3D12_GPU_DESCRIPTOR_HANDLE Resource, SPSODescriptionBase* PSO);
 	void SetHeap(SRenderObjectHeap* Heap);
-
+	void Dispatch(UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ) const;
 	template<typename T>
 	T* GetCommandListAs();
 
@@ -95,5 +95,5 @@ T* OCommandQueue::GetCommandListAs()
 		LOG(Engine, Error, "Failed to get command list as type!");
 		return nullptr;
 	}
-	return Cast<T>(CommandList.Get());
+	return result;
 }

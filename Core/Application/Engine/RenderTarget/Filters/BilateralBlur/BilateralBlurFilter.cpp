@@ -4,7 +4,7 @@
 
 #include "DirectX/ShaderTypes.h"
 
-OBilateralBlurFilter::OBilateralBlurFilter(const weak_ptr<ODevice>& Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format)
+OBilateralBlurFilter::OBilateralBlurFilter(const weak_ptr<ODevice>& Device, const shared_ptr<OCommandQueue>& Other, UINT Width, UINT Height, DXGI_FORMAT Format)
     : OFilterBase(Device, Other, Width, Height, Format)
 {
 }
@@ -36,7 +36,7 @@ void OBilateralBlurFilter::BuildDescriptors(IDescriptor* Descriptor)
 
 void OBilateralBlurFilter::OutputTo(SResourceInfo* Destination)
 {
-	Queue->CopyResourceTo(Destination, OutputTexture.get());
+	Queue.lock()->CopyResourceTo(Destination, OutputTexture.get());
 }
 
 void OBilateralBlurFilter::BuildDescriptors()
@@ -88,16 +88,17 @@ bool OBilateralBlurFilter::Execute(const SPSODescriptionBase* PSO, SResourceInfo
 	{
 		return false;
 	}
-	
+
 	using namespace Utils;
-	PSO->RootSignature->ActivateRootSignature(Queue->GetCommandList().Get());
-	auto cmd = Queue->GetCommandList().Get();
+	auto lock = Queue.lock();
+	PSO->RootSignature->ActivateRootSignature(lock->GetCommandList().Get());
+	auto cmd = lock->GetCommandList().Get();
 	BlurBuffer->CopyData(0, { SpatialSigma, IntensitySigma, BlurCount });
 	BufferConstants->CopyData(0, { Width, Height });
 	PSO->RootSignature->SetResource("BilateralBlur", BlurBuffer->GetGPUAddress(), cmd);
 	PSO->RootSignature->SetResource("BufferConstants", BufferConstants->GetGPUAddress(), cmd);
 
-	Queue->CopyResourceTo(InputTexture.get(), Input);
+	lock->CopyResourceTo(InputTexture.get(), Input);
 
 	ResourceBarrier(cmd, InputTexture.get(), D3D12_RESOURCE_STATE_GENERIC_READ);
 	ResourceBarrier(cmd, OutputTexture.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);

@@ -16,6 +16,7 @@
 #include "MaterialManager/MaterialManager.h"
 #include "MeshGenerator/MeshGenerator.h"
 #include "Profiler.h"
+#include "Raytracer/Raytracer.h"
 #include "RenderGraph/Graph/RenderGraph.h"
 #include "RenderTarget/CSM/Csm.h"
 #include "RenderTarget/CubeMap/DynamicCubeMap/DynamicCubeMapTarget.h"
@@ -125,7 +126,7 @@ public:
 	void DrawDebugFrustum(const DirectX::XMFLOAT4X4& InvViewProjection, SColor Color, float Duration);
 
 	ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(UINT NumDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE Type, const wstring& Name, D3D12_DESCRIPTOR_HEAP_FLAGS Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE) const;
-	OCommandQueue* GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type = D3D12_COMMAND_LIST_TYPE_DIRECT);
+	shared_ptr<OCommandQueue> GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type = D3D12_COMMAND_LIST_TYPE_DIRECT);
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GetRenderGroupStartAddress(ERenderGroup Group);
 
 	void OnEnd() const;
@@ -294,7 +295,7 @@ protected:
 	void UpdateFrameResource();
 	void InitRenderGraph();
 	uint32_t GetLightComponentsCount() const;
-	void CheckRaytracingSupport();
+	void CreateRaytracer();
 
 private:
 	void UpdateCameraCB();
@@ -355,13 +356,13 @@ private:
 	unique_ptr<OSceneManager> SceneManager;
 	unique_ptr<OMeshGenerator> MeshGenerator;
 	unique_ptr<OAnimationManager> AnimationManager;
-
+	shared_ptr<ORaytracer> Raytracer;
 	shared_ptr<OTextureManager> TextureManager;
 	shared_ptr<OMaterialManager> MaterialManager;
 
-	unique_ptr<OCommandQueue> DirectCommandQueue;
-	unique_ptr<OCommandQueue> ComputeCommandQueue;
-	unique_ptr<OCommandQueue> CopyCommandQueue;
+	shared_ptr<OCommandQueue> DirectCommandQueue;
+	shared_ptr<OCommandQueue> ComputeCommandQueue;
+	shared_ptr<OCommandQueue> CopyCommandQueue;
 
 	vector<OLightComponent*> LightComponents;
 	vector<weak_ptr<OShadowMap>> ShadowMaps;

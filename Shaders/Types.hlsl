@@ -15,6 +15,9 @@
 #define HLSL
 #include "../Core/Types/DirectX/HLSL/HlslTypes.h"
 
+
+
+
 void Swap(inout float A, inout float B)
 {
 	float temp = A;
@@ -46,4 +49,41 @@ float3 AcesFitted(float3 v) {
 	v = mul(ACESInputMat, v);
 	v = RttAndOdtFit(v);
 	return mul(ACESOutputMatrix, v);
+}
+
+float GetRandomFloat(uint seed)
+{
+    seed = (seed ^ 61) ^ (seed >> 16);
+    seed = seed + (seed << 3);
+    seed = seed ^ (seed >> 4);
+    seed = seed * 0x27d4eb2d;
+    seed = seed ^ (seed >> 15);
+    seed = 1103515245 * (seed) + 12345;
+
+    return (float)(seed) * 2.3283064365386963e-10f;
+}
+
+uint HashUINT(inout uint x)
+{
+    x = (x ^ 61) ^ (x >> 16);
+    x = x + (x << 3);
+    x = x ^ (x >> 4);
+    x = x * 0x27d4eb2d;
+    x = x ^ (x >> 15);
+    return x;
+}
+
+float2 RandomPointInHexagon(inout Seed)
+{
+    float2 hexPoints[3];
+	hexPoints[0] = float2(-1.0f, 0.0f);
+	hexPoints[1] = float2(0.5f, 0.866f);
+	hexPoints[2] = float2(0.5f, -0.866f);
+
+    int x = floor(GetRandomFloat(Seed) * 3.0f);
+    float2 v1 = hexPoints[x];
+    float2 v2 = hexPoints[(x + 1) % 3];
+    float p1 = GetRandomFloat(Seed);
+    float p2 = GetRandomFloat(Seed);
+    return float2(p1 * v1.x + p2 * v2.x, p1 * v1.y + p2 * v2.y);
 }

@@ -71,7 +71,7 @@ bool OEngine::Initialize()
 		LOG(Engine, Error, "Failed to create device");
 	}
 
-	CheckRaytracingSupport();
+	CreateRaytracer();
 	InitCompiler();
 	CreateWindow();
 	PostInitialize();
@@ -513,8 +513,9 @@ int OEngine::InitScene()
 	LOG(Engine, Log, "Engine::Run")
 
 	GetCommandQueue()->TryResetCommandList();
-	SceneManager->LoadScenes();
-	BuildCustomGeometry();
+	SceneManager->LoadScenes(); // Create all the render items and materials
+	BuildCustomGeometry(); // Builds some geometry for debug purposes
+	Raytracer->CreateAccelerationStructures(AllRenderItems);
 	GetCommandQueue()->ExecuteCommandListAndWait();
 
 	PostTestInit();
@@ -550,23 +551,24 @@ void OEngine::PostTestInit()
 	GetCommandQueue()->TryResetCommandList();
 	FillDescriptorHeaps();
 	InitUIManager();
+
 	GetCommandQueue()->ExecuteCommandListAndWait();
 	HasInitializedTests = true;
 	SceneBounds.Center = XMFLOAT3(0.0f, 0.0f, 0.0f);
 }
 
-OCommandQueue* OEngine::GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type)
+shared_ptr<OCommandQueue> OEngine::GetCommandQueue(D3D12_COMMAND_LIST_TYPE Type)
 {
 	switch (Type)
 	{
 	case D3D12_COMMAND_LIST_TYPE_DIRECT:
-		return DirectCommandQueue.get();
+		return DirectCommandQueue;
 		break;
 	case D3D12_COMMAND_LIST_TYPE_COMPUTE:
-		return ComputeCommandQueue.get();
+		return ComputeCommandQueue;
 		break;
 	case D3D12_COMMAND_LIST_TYPE_COPY:
-		return CopyCommandQueue.get();
+		return CopyCommandQueue;
 		break;
 	}
 	return nullptr;
@@ -699,7 +701,7 @@ void OEngine::UpdateFrameResource()
 void OEngine::InitRenderGraph()
 {
 	RenderGraph = make_unique<ORenderGraph>();
-	RenderGraph->Initialize(PipelineManager.get(), GetCommandQueue());
+	RenderGraph->Initialize(PipelineManager.get(), GetCommandQueue().get());
 }
 
 uint32_t OEngine::GetLightComponentsCount() const
@@ -707,7 +709,7 @@ uint32_t OEngine::GetLightComponentsCount() const
 	return 10; // todo fix
 }
 
-void OEngine::CheckRaytracingSupport()
+void OEngine::CreateRaytracer()
 {
 	if (!Device)
 	{
@@ -720,7 +722,10 @@ void OEngine::CheckRaytracingSupport()
 	if (options5.RaytracingTier < D3D12_RAYTRACING_TIER_1_0)
 	{
 		LOG(Engine, Error, "Raytracing not supported on this device!")
+		return;
 	}
+	Raytracer = make_shared<ORaytracer>();
+	Raytracer->Init(Device, GetCommandQueue());
 }
 IDXGIFactory4* OEngine::GetFactory()
 {

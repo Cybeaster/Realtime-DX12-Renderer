@@ -18,36 +18,7 @@ StructuredBuffer<DirectionalLight> gDirectionalLights : register(t4, space4);
 
 cbuffer CB_PASS : register(b0)
 {
-	float4x4 gView;
-	float4x4 gInvView;
-	float4x4 gProj;
-	float4x4 gInvProj;
-	float4x4 gViewProj;
-	float4x4 gInvViewProj;
-	float4x4 gViewProjTex;
-	float3 gEyePosW;
-
-	float cbPerPassPad1; // Use this to pad gEyePosW to 16 bytes
-
-	float2 gRenderTargetSize;
-	float2 gInvRenderTargetSize;
-	float gNearZ;
-	float gFarZ;
-	float gTotalTime;
-	float gDeltaTime;
-	float4 gAmbientLight;
-	float4 gFogColor;
-	float gFogStart;
-	float gFogRange;
-
-	uint gNumDirLights;
-
-	float cbPerPassPad2; // Padding to align following uints
-	uint gNumPointLights;
-	uint gNumSpotLights;
-	float cbPerPassPad3; // Padding to ensure the cbuffer ends on a 16-byte boundary
-	float cbPerPassPad4; // Padding to ensure the cbuffer ends on a 16-byte boundary
-	bool gSSAOEnabled;
+	CameraCBuffer cbCamera;
 };
 
 

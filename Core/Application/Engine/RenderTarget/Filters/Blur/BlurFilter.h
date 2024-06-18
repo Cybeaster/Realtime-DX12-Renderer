@@ -25,7 +25,7 @@ struct SConstantBlurSettings
 class OGaussianBlurFilter : public OFilterBase
 {
 public:
-	OGaussianBlurFilter(const shared_ptr<ODevice>& Device, OCommandQueue* Other, UINT Width, UINT Height, DXGI_FORMAT Format);
+	OGaussianBlurFilter(const shared_ptr<ODevice>& Device, const shared_ptr<OCommandQueue>& Other, UINT Width, UINT Height, DXGI_FORMAT Format);
 	OGaussianBlurFilter(const OGaussianBlurFilter& rhs) = delete;
 	OGaussianBlurFilter& operator=(const OGaussianBlurFilter& rhs) = delete;
 	void InitRenderObject() override;

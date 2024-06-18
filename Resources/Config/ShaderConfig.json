@@ -281,35 +281,13 @@
       ]
     },
     {
-      "Path": "Shaders/Raytracing/Hit.hlsl",
-      "Name": "RTHit",
+      "Path": "Shaders/Raytracing/Raytracer.hlsl",
+      "Name": "Raytracer",
       "Pipeline": [
         {
-          "Type": "ClosestHit",
-          "EntryPoint": "ClosestHit",
-          "TargetProfile": "lib_6_3"
-        }
-      ]
-    },
-    {
-      "Path": "Shaders/Raytracing/Miss.hlsl",
-      "Name": "RTMiss",
-      "Pipeline": [
-        {
-          "Type": "Miss",
-          "EntryPoint": "Miss",
-          "TargetProfile": "lib_6_3"
-        }
-      ]
-    },
-    {
-      "Path": "Shaders/Raytracing/RayGen.hlsl",
-      "Name": "RTRayGen",
-      "Pipeline": [
-        {
-          "Type": "RayGen",
+          "Type": "Compute",
           "EntryPoint": "RayGen",
-          "TargetProfile": "lib_6_3"
+          "TargetProfile": "cs_6_0"
         }
       ]
     },

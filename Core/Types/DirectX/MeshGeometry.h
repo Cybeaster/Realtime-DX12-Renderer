@@ -30,6 +30,8 @@ struct SMeshGeometry
 
 	UINT VertexByteStride = 0;
 	UINT VertexBufferByteSize = 0;
+	UINT NumVertices = 0;
+	UINT NumIndices = 0;
 	DXGI_FORMAT IndexFormat = DXGI_FORMAT_R16_UINT;
 	UINT IndexBufferByteSize = 0;
 

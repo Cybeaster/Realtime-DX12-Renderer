@@ -353,3 +353,8 @@ void OCommandQueue::SetHeap(SRenderObjectHeap* Heap)
 	ID3D12DescriptorHeap* heaps[] = { Heap->SRVHeap.Get() };
 	GetCommandList()->SetDescriptorHeaps(_countof(heaps), heaps);
 }
+
+void OCommandQueue::Dispatch(UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ) const
+{
+	CommandList->Dispatch(ThreadGroupCountX, ThreadGroupCountY, ThreadGroupCountZ);
+}
