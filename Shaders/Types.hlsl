@@ -73,7 +73,7 @@ uint HashUINT(inout uint x)
     return x;
 }
 
-float2 RandomPointInHexagon(inout Seed)
+float2 RandomPointInHexagon(inout uint Seed)
 {
     float2 hexPoints[3];
 	hexPoints[0] = float2(-1.0f, 0.0f);

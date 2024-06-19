@@ -46,8 +46,8 @@ void GS(point GSInput input[1], inout LineStream<GSOutput> OutputStream) {
 	// Output the lines
 	for (int i = 0; i < 24; i += 2) {
 		GSOutput start, end;
-		start.Pos = mul(float4(corners[indices[i]], 1.0f), gViewProj);
-		end.Pos = mul(float4(corners[indices[i+1]], 1.0f), gViewProj);
+		start.Pos = mul(float4(corners[indices[i]], 1.0f), cbCamera.ViewProj);
+		end.Pos = mul(float4(corners[indices[i+1]], 1.0f), cbCamera.ViewProj);
 		OutputStream.Append(start);
 		OutputStream.Append(end);
 		OutputStream.RestartStrip();

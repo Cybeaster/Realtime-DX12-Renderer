@@ -118,7 +118,7 @@ void GS(point VertexOut gin[1],
 	//
 
 	float3 up = float3(0.0f, 1.0f, 0.0f);
-	float3 look = gEyePosW - gin[0].CenterW;
+	float3 look = cbCamera.EyePosW - gin[0].CenterW;
 	look.y = 0.0f; // y-axis aligned, so project to xz-plane
 	look = normalize(look);
 	float3 right = cross(up, look);
@@ -152,7 +152,7 @@ void GS(point VertexOut gin[1],
 	[unroll]
 	for(int i = 0; i < 4; ++i)
 	{
-		gout.PosH     = mul(v[i], gViewProj);
+		gout.PosH     = mul(v[i], cbCamera.ViewProj);
 		gout.PosW     = v[i].xyz;
 		gout.NormalW  = look;
 		gout.TexC     = texC[i];
@@ -179,12 +179,12 @@ float4 PS(GeometryOut pin) : SV_Target
     pin.NormalW = normalize(pin.NormalW);
 
     // Vector from point being lit to eye.
-	float3 toEyeW = gEyePosW - pin.PosW;
+	float3 toEyeW = cbCamera.EyePosW - pin.PosW;
 	float distToEye = length(toEyeW);
 	toEyeW /= distToEye; // normalize
 
     // Light terms.
-    float4 ambient = gAmbientLight*diffuseAlbedo;
+    float4 ambient = cb.Camera.AmbientLight*diffuseAlbedo;
 
     const float shininess = 1.0f - gRoughness;
     Material mat = { diffuseAlbedo, gFresnelR0, shininess };
@@ -195,8 +195,8 @@ float4 PS(GeometryOut pin) : SV_Target
     float4 litColor = ambient + directLight;
 
 #ifdef FOG
-	float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
-	litColor = lerp(litColor, gFogColor, fogAmount);
+	float fogAmount = saturate((distToEye - cbCamera.FogStart) / cbCamera.FogRange);
+	litColor = lerp(litColor, cbCamera.FogColor, fogAmount);
 #endif
 
     // Common convention to take alpha from diffuse albedo.

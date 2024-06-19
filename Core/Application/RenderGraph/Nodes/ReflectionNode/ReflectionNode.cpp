@@ -43,7 +43,7 @@ ORenderTargetBase* OReflectionNode::Execute(ORenderTargetBase* RenderTarget)
 	}
 	Utils::ResourceBarrier(cmdList.Get(), cube->GetResource(), D3D12_RESOURCE_STATE_GENERIC_READ);
 	OEngine::Get()->SetWindowViewport(); // TODO remove this to other place
-	CommandQueue->SetResource(STRINGIFY_MACRO(CB_PASS), OEngine::Get()->CurrentFrameResource->PassCB->GetGPUAddress(), pso);
+	CommandQueue->SetResource(STRINGIFY_MACRO(CB_PASS), OEngine::Get()->CurrentFrameResource->CameraBuffer->GetGPUAddress(), pso);
 	CommandQueue->SetResource(STRINGIFY_MACRO(CUBE_MAP), cube->GetSRV().GPUHandle, pso);
 	CommandQueue->SetRenderTarget(RenderTarget);
 	OEngine::Get()->DrawRenderItems(pso, GetNodeInfo().RenderLayer);

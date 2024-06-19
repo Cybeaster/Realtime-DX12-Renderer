@@ -109,7 +109,7 @@ VertexOut VS(VertexIn vin)
     vout.NormalW = mul(vin.NormalL, (float3x3)gWorld);
 
     // Transform to homogeneous clip space.
-    vout.PosH = mul(posW, gViewProj);
+    vout.PosH = mul(posW, cbCamera.ViewProj);
 
 	// Output vertex attributes for interpolation across triangle.
 	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gTexTransform);
@@ -158,7 +158,7 @@ VertexOut Midpoint(VertexOut v0, VertexOut v1)
 	// Interpolate texture coordinates
 	mid.TexC = (v0.TexC + v1.TexC) * 0.5;
 
-	mid.PosH = mul(float4(mid.PosW, 1.0f), gViewProj);
+	mid.PosH = mul(float4(mid.PosW, 1.0f), cbCamera.ViewProj);
 
 	return mid;
 }
@@ -224,7 +224,7 @@ void SubdivideIcosahedron(VertexOut v0, VertexOut v1, VertexOut v2, inout Triang
 void GS(triangle VertexOut gin[3], uint primID : SV_PrimitiveID, inout TriangleStream<GeometryOut> stream)
 {
 	// Calculate the distance from the camera to the center of the triangle
-	float distance = length((gin[0].PosW + gin[1].PosW + gin[2].PosW) / 3 - gEyePosW);
+	float distance = length((gin[0].PosW + gin[1].PosW + gin[2].PosW) / 3 - cbCamera.EyePosW);
 	int lod = DetermineLOD(distance);
 
 	// Subdivide the icosahedron based on the level of detail
@@ -246,11 +246,11 @@ float4 PS(GeometryOut pin) : SV_Target
 	// Interpolating normal can unnormalize it, so renormalize it.
 	pin.NormalW = normalize(pin.NormalW);
 	// Vector from point being lit to eye.
-	float3 toEyeW = gEyePosW - pin.PosW;
+	float3 toEyeW = cbCamera.EyePosW - pin.PosW;
 	float distToEye = length(toEyeW);
 	toEyeW /= distToEye; // normalize
 	// Light terms.
-	float4 ambient = gAmbientLight*diffuseAlbedo;
+	float4 ambient = cbCamera.AmbientLight*diffuseAlbedo;
 	const float shininess = 1.0f - gRoughness;
 
 	Material mat = { diffuseAlbedo, gFresnelR0, shininess };
@@ -259,8 +259,8 @@ float4 PS(GeometryOut pin) : SV_Target
 	pin.NormalW, toEyeW, shadowFactor);
 	float4 litColor = ambient + directLight;
 #ifdef FOG
-	float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
-	litColor = lerp(litColor, gFogColor, fogAmount);
+	float fogAmount = saturate((distToEye - cbCamera.FogStart) / cbCamera.FogRange);
+	litColor = lerp(litColor, cbCamera.FogColor, fogAmount);
 #endif
 	// Common convention to take alpha from diffuse albedo.
 	litColor.a = diffuseAlbedo.a;

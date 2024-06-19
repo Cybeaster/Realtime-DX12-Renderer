@@ -16,5 +16,5 @@ void OFrustumDebugNode::SetupCommonResources()
 	auto resource = OEngine::Get()->CurrentFrameResource;
 	auto pso = FindPSOInfo(PSO);
 	CommandQueue->SetPipelineState(pso);
-	CommandQueue->SetResource(STRINGIFY_MACRO(CB_PASS), resource->PassCB->GetGPUAddress(), pso);
+	CommandQueue->SetResource(STRINGIFY_MACRO(CB_PASS), resource->CameraBuffer->GetGPUAddress(), pso);
 }

@@ -31,6 +31,6 @@ void OShadowMapNode::SetupCommonResources()
 	auto resource = OEngine::Get()->CurrentFrameResource;
 	auto pso = FindPSOInfo(PSO);
 	CommandQueue->SetPipelineState(pso);
-	CommandQueue->SetResource("cbPass", resource->PassCB->GetGPUAddress(), pso);
+	CommandQueue->SetResource("cbPass", resource->CameraBuffer->GetGPUAddress(), pso);
 	CommandQueue->SetResource("gMaterialData", resource->MaterialBuffer->GetGPUAddress(), pso);
 }

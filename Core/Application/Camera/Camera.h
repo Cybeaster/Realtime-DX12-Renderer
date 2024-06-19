@@ -9,7 +9,6 @@
 #include <tuple>
 
 class OAnimation;
-struct SPassConstants;
 class OWindow;
 class OCamera
 {
@@ -78,11 +77,12 @@ public:
 	OBoundingFrustum& GetFrustum() { return Frustum; };
 
 	std::tuple<DirectX::XMVECTOR /*ray_origin*/, DirectX::XMVECTOR /*ray dir*/, DirectX::XMMATRIX /*invView*/> Pick(int32_t Sx, int32_t Sy) const;
-	void FillPassConstant(SPassConstants& OutOther) const;
+	void FillPassConstant(HLSL::CameraCBuffer& OutOther) const;
 	void StopAnimation() const;
 	void PauseAnimation() const;
 	FOnCameraUpdate OnCameraUpdate;
-
+	float GetAperture() const;
+	float GetFocusDistance() const;
 private:
 	void PerformCameraAnimation(float Delta);
 	weak_ptr<OAnimation> Animation;
@@ -100,7 +100,8 @@ private:
 	float FovY = 0.0f;
 	float NearWindowHeight = 0.0f;
 	float FarWindowHeight = 0.0f;
-
+	float Aperture = 0.01f;
+	float FocusDistance = 10.0f;
 	DirectX::XMFLOAT4X4 ViewMatrix;
 	DirectX::XMFLOAT4X4 ProjectionMatrix;
 

@@ -52,7 +52,7 @@ struct SFrameResource
 	void SetFrusturmCorners();
 	void RebuildInstanceBuffers(UINT InstanceCount) const;
 	OUploadBuffer<HLSL::InstanceData>* AddNewInstanceBuffer(const wstring& Name, UINT InstanceCount, TUUID Id);
-	TUploadBuffer<SPassConstants> PassCB = nullptr;
+	TUploadBuffer<HLSL::CameraCBuffer> CameraBuffer = nullptr;
 	TUploadBuffer<HLSL::MaterialData> MaterialBuffer = nullptr;
 	unordered_map<TUUID, TUploadBuffer<HLSL::InstanceData>> InstanceBuffers;
 	TUploadBuffer<SSsaoConstants> SsaoCB = nullptr;

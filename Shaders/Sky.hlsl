@@ -20,13 +20,13 @@ VertexOut VS(VertexIn vin, uint InstanceID
 	VertexOut vout;
 	vout.PositionL = vin.Position;
 	float4 posW = mul(float4(vin.Position, 1.0f), inst.World);
-	posW.xyz += gEyePosW;
-	vout.PositionH = mul(posW, gViewProj).xyww;
+	posW.xyz += cbCamera.EyePosW;
+	vout.PositionH = mul(posW, cbCamera.ViewProj).xyww;
 	return vout;
 }
 
 float4 PS(VertexOut pin)
     : SV_Target
 {
-	return gCubeMap.Sample(gsamLinearWrap, pin.PositionL) * (gAmbientLight * 5.f);
+	return gCubeMap.Sample(gsamLinearWrap, pin.PositionL) * (cbCamera.AmbientLight * 5.f);
 }

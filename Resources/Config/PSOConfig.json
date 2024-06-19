@@ -468,6 +468,17 @@
       ]
     },
     {
+      "Name": "Raytracer",
+      "RootSignature": "Raytracer",
+      "Type": "Compute",
+      "ShaderPipeline": {
+        "ComputeShader": "Raytracer"
+      },
+      "Flags": [
+        "None"
+      ]
+    },
+    {
       "Name": "Composite",
       "RootSignature": "Composite",
       "Type": "Graphics",

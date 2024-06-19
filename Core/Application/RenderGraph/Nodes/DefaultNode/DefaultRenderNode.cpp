@@ -14,7 +14,7 @@ void ODefaultRenderNode::SetupCommonResources()
 	OEngine::Get()->SetDescriptorHeap(EResourceHeapType::Default);
 	auto pso = FindPSOInfo(PSO);
 	CommandQueue->SetPipelineState(pso);
-	CommandQueue->SetResource(STRINGIFY_MACRO(CB_PASS), resource->PassCB->GetGPUAddress(), pso);
+	CommandQueue->SetResource(STRINGIFY_MACRO(CB_PASS), resource->CameraBuffer->GetGPUAddress(), pso);
 	CommandQueue->SetResource(STRINGIFY_MACRO(MATERIAL_DATA), resource->MaterialBuffer->GetGPUAddress(), pso);
 	CommandQueue->SetResource(STRINGIFY_MACRO(TEXTURE_MAPS), OEngine::Get()->TexturesStartAddress.GPUHandle, pso);
 	CommandQueue->SetResource(STRINGIFY_MACRO(CUBE_MAP), GetSkyTextureSRV(), pso);

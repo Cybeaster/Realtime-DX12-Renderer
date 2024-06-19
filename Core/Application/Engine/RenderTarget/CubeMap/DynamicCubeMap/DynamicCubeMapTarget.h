@@ -9,12 +9,12 @@ public:
 	    : OCubeRenderTarget(Params, Res) { Name = L"DynamicCubeMap"; }
 
 	void InitRenderObject() override;
-	void UpdatePass(const TUploadBufferData<SPassConstants>& Data) override;
+	void UpdatePass(const TUploadBufferData<HLSL::CameraCBuffer>& Data) override;
 
 	D3D12_GPU_VIRTUAL_ADDRESS GetPassConstantAddresss(int Index) const //TODO propagate to base class
 	{
 		auto& pass = PassConstants[Index];
-		return pass.Buffer->GetGPUAddress() + pass.StartIndex * Utils::CalcBufferByteSize(sizeof(SPassConstants));
+		return pass.Buffer->GetGPUAddress() + pass.StartIndex * Utils::CalcBufferByteSize(sizeof(HLSL::CameraCBuffer));
 	}
 	void SetBoundRenderItem(const shared_ptr<ORenderItem>& Item) override;
 	void CalculateCameras();
@@ -22,5 +22,5 @@ public:
 private:
 	DirectX::XMFLOAT3 Position;
 	vector<unique_ptr<OCamera>> Cameras;
-	vector<TUploadBufferData<SPassConstants>> PassConstants;
+	vector<TUploadBufferData<HLSL::CameraCBuffer>> PassConstants;
 };

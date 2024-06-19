@@ -9,7 +9,7 @@ void ODynamicCubeMapRenderTarget::InitRenderObject()
 	CalculateCameras();
 }
 
-void ODynamicCubeMapRenderTarget::UpdatePass(const TUploadBufferData<SPassConstants>& Data)
+void ODynamicCubeMapRenderTarget::UpdatePass(const TUploadBufferData<HLSL::CameraCBuffer>& Data)
 {
 	OCubeRenderTarget::UpdatePass(Data);
 	auto start = Data.StartIndex;
@@ -25,7 +25,7 @@ void ODynamicCubeMapRenderTarget::UpdatePass(const TUploadBufferData<SPassConsta
 		pass.InvRenderTargetSize = DirectX::XMFLOAT2(1 / SCast<float>(Resolution.x), SCast<float>(1 / Resolution.y));
 		Data.Buffer->CopyData(start, pass);
 
-		TUploadBufferData<SPassConstants> data;
+		TUploadBufferData<HLSL::CameraCBuffer> data;
 		data.StartIndex = start;
 		data.EndIndex = end;
 		data.Buffer = Data.Buffer;

@@ -30,7 +30,7 @@ VertexOut VS(VertexIn vin,uint InstanceID : SV_InstanceID)
     float4 posW = mul(float4(vin.PosL, 1.0f), world);
 
     // Transform to homogeneous clip space.
-    vout.PosH = mul(posW, gViewProj);
+    vout.PosH = mul(posW, cbCamera.ViewProj);
 
 	// Output vertex attributes for interpolation across triangle.
 	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), inst.TexTransform);

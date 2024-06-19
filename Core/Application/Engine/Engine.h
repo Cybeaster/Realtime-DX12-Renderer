@@ -188,7 +188,7 @@ public:
 	void SetPipelineState(SPSODescriptionBase* PSOInfo);
 
 	void SetFog(DirectX::XMFLOAT4 Color, float Start, float Range);
-	SPassConstants& GetMainPassCB();
+	HLSL::CameraCBuffer& GetMainPassCB();
 	ComPtr<ID3D12DescriptorHeap>& GetDescriptorHeap();
 
 	vector<D3D12_INPUT_ELEMENT_DESC>& GetDefaultInputLayout();
@@ -259,6 +259,7 @@ public:
 
 	void DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, bool ForceDrawAll = false);
 	void DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLayer, const SCulledInstancesInfo* InstanceBuffer);
+	shared_ptr<ORaytracer> GetRaytracer() const;
 
 private:
 	void DrawRenderItemsImpl(const SDrawPayload& Payload);
@@ -314,7 +315,7 @@ private:
 	OEngine() = default;
 	void UpdateMainPass(const STimer& Timer);
 	void GetNumLights(uint32_t& OutNumPointLights, uint32_t& OutNumSpotLights, uint32_t& OutNumDirLights) const;
-	SPassConstants MainPassCB;
+	HLSL::CameraCBuffer MainPassCB;
 
 	shared_ptr<ODevice> Device;
 

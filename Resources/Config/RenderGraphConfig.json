@@ -103,9 +103,16 @@
       {
         "Name": "PostProcess",
         "PSO": "Opaque",
-        "NextNode": "CopyTarget",
+        "NextNode": "Raytracer",
         "RenderLayer": "PostProcess",
         "Enabled": true
+      },
+      {
+        "Name": "Raytracer",
+        "PSO": "Raytracer",
+        "NextNode": "CopyTarget",
+        "RenderLayer": "None",
+        "Enabled": false
       },
       {
         "Name": "CopyTarget",

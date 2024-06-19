@@ -48,14 +48,14 @@ void GS(triangle GSInput In[3], inout LineStream<GSOutput> OutputStream)
 
 	for (int i = 0; i < 3; ++i)
 	{
-		float4 posH = mul(float4(In[i].PosW, 1.0), gViewProj);
+		float4 posH = mul(float4(In[i].PosW, 1.0), cbCamera.ViewProj);
 		// Position
 		Out.PosH = posH;
 
 		// Normal visualization
 		Out.Color = float4(0, 1, 0, 1);  // Green for normals
 		OutputStream.Append(Out);
-		Out.PosH = mul(float4(In[i].PosW + In[i].NormalW * scale, 1.0), gViewProj);
+		Out.PosH = mul(float4(In[i].PosW + In[i].NormalW * scale, 1.0), cbCamera.ViewProj);
 		OutputStream.Append(Out);
 		OutputStream.RestartStrip();
 
@@ -63,7 +63,7 @@ void GS(triangle GSInput In[3], inout LineStream<GSOutput> OutputStream)
 		Out.PosH = posH;
 		Out.Color = float4(1, 0, 0, 1);  // Red for tangents
 		OutputStream.Append(Out);
-		Out.PosH = mul(float4(In[i].PosW + In[i].TangentW * scale, 1.0), gViewProj);
+		Out.PosH = mul(float4(In[i].PosW + In[i].TangentW * scale, 1.0), cbCamera.ViewProj);
 		OutputStream.Append(Out);
 		OutputStream.RestartStrip();
 	}

@@ -106,7 +106,7 @@ void ODirectionalLightComponent::InitFrameResource(const TUploadBufferData<HLSL:
 	DirLightBufferInfo = Spot;
 }
 
-void ODirectionalLightComponent::SetPassConstant(SPassConstants& OutConstant)
+void ODirectionalLightComponent::SetPassConstant(HLSL::CameraCBuffer& OutConstant)
 {
 }
 
@@ -261,7 +261,7 @@ ELightType OSpotLightComponent::GetLightType() const
 	return ELightType::Spot;
 }
 
-void OSpotLightComponent::SetPassConstant(SPassConstants& OutConstant)
+void OSpotLightComponent::SetPassConstant(HLSL::CameraCBuffer& OutConstant)
 {
 }
 
@@ -391,7 +391,7 @@ void ODirectionalLightComponent::SetLightSourceData()
 			0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f
 		};
 
-		SPassConstants passConstants;
+		HLSL::CameraCBuffer passConstants;
 		Put(passConstants.View, Transpose(lightView));
 		Put(passConstants.Proj, Transpose(lightProj));
 		Put(passConstants.ViewProj, Transpose(lightViewProj));
@@ -429,7 +429,7 @@ void OSpotLightComponent::SetLightSourceData()
 	// Create the view matrix for the spotlight
 	const auto view = MatrixLookAt(lightPos, lightTarget, lightUp);
 	const auto projection = MatrixPerspective(XMConvertToRadians(SpotLight.ConeAngle * 2), 1.0f, nearZ, farZ);
-	SPassConstants passConstants;
+	HLSL::CameraCBuffer passConstants;
 	const XMMATRIX S = view * projection * T;
 	const auto invView = Inverse(view);
 	const auto invProj = Inverse(projection);
@@ -469,7 +469,7 @@ void OPointLightComponent::InitFrameResource(const TUploadBufferData<HLSL::Point
 {
 	PointLightBufferInfo = Spot;
 }
-void OPointLightComponent::SetPassConstant(SPassConstants& OutConstant)
+void OPointLightComponent::SetPassConstant(HLSL::CameraCBuffer& OutConstant)
 {
 }
 

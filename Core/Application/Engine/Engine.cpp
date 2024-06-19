@@ -71,9 +71,9 @@ bool OEngine::Initialize()
 		LOG(Engine, Error, "Failed to create device");
 	}
 
-	CreateRaytracer();
 	InitCompiler();
 	CreateWindow();
+	CreateRaytracer();
 	PostInitialize();
 	InitManagers();
 
@@ -206,6 +206,11 @@ void OEngine::DrawRenderItems(SPSODescriptionBase* Desc, const string& RenderLay
 	}
 	SDrawPayload payload(Desc, RenderLayer, InstanceBuffer, false);
 	DrawRenderItemsImpl(payload);
+}
+
+shared_ptr<ORaytracer> OEngine::GetRaytracer() const
+{
+	return Raytracer;
 }
 
 void OEngine::UpdateMaterialCB() const
@@ -513,10 +518,11 @@ int OEngine::InitScene()
 	LOG(Engine, Log, "Engine::Run")
 
 	GetCommandQueue()->TryResetCommandList();
-	SceneManager->LoadScenes(); // Create all the render items and materials
-	BuildCustomGeometry(); // Builds some geometry for debug purposes
-	Raytracer->CreateAccelerationStructures(AllRenderItems);
+	SceneManager->LoadScenes();
+	BuildCustomGeometry();
 	GetCommandQueue()->ExecuteCommandListAndWait();
+
+	Raytracer->CreateAccelerationStructures(AllRenderItems);
 
 	PostTestInit();
 
@@ -551,7 +557,6 @@ void OEngine::PostTestInit()
 	GetCommandQueue()->TryResetCommandList();
 	FillDescriptorHeaps();
 	InitUIManager();
-
 	GetCommandQueue()->ExecuteCommandListAndWait();
 	HasInitializedTests = true;
 	SceneBounds.Center = XMFLOAT3(0.0f, 0.0f, 0.0f);
@@ -724,7 +729,13 @@ void OEngine::CreateRaytracer()
 		LOG(Engine, Error, "Raytracing not supported on this device!")
 		return;
 	}
-	Raytracer = make_shared<ORaytracer>();
+	SRenderTargetParams params{};
+	params.Width = Window->GetWidth();
+	params.Height = Window->GetHeight();
+	params.Format = SRenderConstants::BackBufferFormat;
+	params.Device = Device;
+	params.HeapType = Default;
+	Raytracer = make_shared<ORaytracer>(params);
 	Raytracer->Init(Device, GetCommandQueue());
 }
 IDXGIFactory4* OEngine::GetFactory()
@@ -761,7 +772,7 @@ void OEngine::RemoveRenderObject(TUUID UUID)
 
 void OEngine::UpdateObjectCB() const
 {
-	auto res = CurrentFrameResource->PassCB.get();
+	auto res = CurrentFrameResource->CameraBuffer.get();
 
 	int32_t idx = 1; // TODO calc frame resource automatically and calc frame resources
 	for (auto& val : RenderObjects | std::views::values)
@@ -777,7 +788,7 @@ void OEngine::UpdateObjectCB() const
 			break;
 		}
 
-		TUploadBufferData<SPassConstants> data;
+		TUploadBufferData<HLSL::CameraCBuffer> data;
 		data.StartIndex = idx;
 		data.EndIndex = idx + SCast<int32_t>(val->GetNumPassesRequired());
 		data.Buffer = res;
@@ -1666,8 +1677,12 @@ void OEngine::UpdateMainPass(const STimer& Timer)
 	MainPassCB.TotalTime = Timer.GetTime();
 	MainPassCB.DeltaTime = Timer.GetDeltaTime();
 	MainPassCB.SSAOEnabled = SSAORT.lock()->IsEnabled();
+	MainPassCB.Aperture = Window->GetCamera().lock()->GetAperture();
+	MainPassCB.FOV = Window->GetCamera().lock()->GetFovY();
+	MainPassCB.FocusDistance = Window->GetCamera().lock()->GetFocusDistance();
+
 	GetNumLights(MainPassCB.NumPointLights, MainPassCB.NumSpotLights, MainPassCB.NumDirLights);
-	const auto currPassCB = CurrentFrameResource->PassCB.get();
+	const auto currPassCB = CurrentFrameResource->CameraBuffer.get();
 	currPassCB->CopyData(0, MainPassCB);
 }
 
@@ -1921,7 +1936,7 @@ void OEngine::SetFog(XMFLOAT4 Color, float Start, float Range)
 	MainPassCB.FogRange = Range;
 }
 
-SPassConstants& OEngine::GetMainPassCB()
+HLSL::CameraCBuffer& OEngine::GetMainPassCB()
 {
 	return MainPassCB;
 }

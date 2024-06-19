@@ -196,36 +196,36 @@ struct Attributes
 
 struct CameraCBuffer
 {
-	float4x4 gView;
-	float4x4 gInvView;
-	float4x4 gProj;
-	float4x4 gInvProj;
-	float4x4 gViewProj;
-	float4x4 gInvViewProj;
-	float4x4 gViewProjTex;
-	float3 gEyePosW;
+	float4x4 View;
+	float4x4 InvView;
+	float4x4 Proj;
+	float4x4 InvProj;
+	float4x4 ViewProj;
+	float4x4 InvViewProj;
+	float4x4 ViewProjTex;
+	float3 EyePosW;
 
-	float FOV; // Use this to pad gEyePosW to 16 bytes
+	float FOV;
 
-	float2 gRenderTargetSize;
-	float2 gInvRenderTargetSize;
-	float gNearZ;
-	float gFarZ;
-	float gTotalTime;
-	float gDeltaTime;
-	float4 gAmbientLight;
-	float4 gFogColor;
-	float gFogStart;
-	float gFogRange;
+	float2 RenderTargetSize;
+	float2 InvRenderTargetSize;
+	float NearZ;
+	float FarZ;
+	float TotalTime;
+	float DeltaTime;
+	float4 AmbientLight;
+	float4 FogColor;
+	float FogStart;
+	float FogRange;
 
-	uint gNumDirLights;
+	uint NumDirLights;
 
-	float AspectRatio; // Padding to align following uints
-	uint gNumPointLights;
-	uint gNumSpotLights;
-	float FocusDistance; // Padding to ensure the cbuffer ends on a 16-byte boundary
-	float Aperture; // Padding to ensure the cbuffer ends on a 16-byte boundary
-	bool gSSAOEnabled;
+	float AspectRatio;
+	uint NumPointLights;
+	uint NumSpotLights;
+	float FocusDistance;
+	float Aperture;
+	bool SSAOEnabled;
 };
 
 #ifndef HLSL

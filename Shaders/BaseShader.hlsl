@@ -57,12 +57,12 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	vout.TangentW = mul(Vin.TangentU, (float3x3)world);
 
 	// Transform to homogeneous clip space.
-	vout.PosH = mul(posW, gViewProj);
+	vout.PosH = mul(posW, cbCamera.ViewProj);
 
 	// Output vertex attributes for interpolation across triangle.
 	float4 texC = mul(float4(Vin.TexC, 0.0f, 1.0f), texTransform);
 	vout.TexC = mul(texC, matData.MatTransform).xy;
-    vout.SsaoPosH = mul(posW, gViewProjTex);
+    vout.SsaoPosH = mul(posW, cbCamera.ViewProjTex);
 
 	return vout;
 }
@@ -89,7 +89,7 @@ float4 PS(VertexOut pin)
     float3 f0 = lerp(F0_COEFF * SQUARE(reflectance), diffuseAlbedo,  matData.Metalness);
 
 	// Vector from point being lit to eye.
-	float3 toEyeW = normalize(gEyePosW - pin.PosW);
+	float3 toEyeW = normalize(cbCamera.EyePosW - pin.PosW);
 	float distToEye = length(toEyeW);
 
 	//diffuse incorporating metalness
@@ -112,7 +112,7 @@ float4 PS(VertexOut pin)
 
     uint idx = 0;
 	float3 directLighting = {0.0f, 0.0f, 0.0f};
-	if(gNumDirLights > 0)
+	if(cbCamera.NumDirLights > 0)
 	{
 		DirectionalLight curLight = gDirectionalLights[0];
         directLighting += directionalShadowFactor * ComputeDirectionalLight_BRDF(curLight, mat, bumpedNormalW, toEyeW);
@@ -130,7 +130,7 @@ float4 PS(VertexOut pin)
 
 	//SSAO
 	float ambientAccess = 1;
-	if (gSSAOEnabled)
+	if (cbCamera.SSAOEnabled)
 	{
 		pin.SsaoPosH /= pin.SsaoPosH.w;
 		ambientAccess = gSsaoMap.Sample(gsamLinearWrap, pin.SsaoPosH.xy, 0.0f).r;
@@ -145,12 +145,12 @@ float4 PS(VertexOut pin)
 		directLighting += matData.Reflection * reflectionColor;
 	}
 
-	float4 ambient = (float4(gAmbientLight.xyz,1.0f) * FLOAT4(gAmbientLight.w) * float4(diffuseAlbedo,1.0));
+	float4 ambient = (float4(cbCamera.AmbientLight.xyz,1.0f) * FLOAT4(cbCamera.AmbientLight.w) * float4(diffuseAlbedo,1.0));
 	float4 litColor = (ambient + float4(directLighting, 1.0f)) * ambientAccess;
 
 #ifdef FOG
-	float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
-	litColor = lerp(litColor, gFogColor, fogAmount); //TODO fix fog
+	float fogAmount = saturate((distToEye - cbCamera.FogStart) / cbCamera.FogRange);
+	litColor = lerp(litColor, cbCamera.FogColor, fogAmount); //TODO fix fog
 #endif
 
 	// Common convention to take alpha from diffuse albedo.

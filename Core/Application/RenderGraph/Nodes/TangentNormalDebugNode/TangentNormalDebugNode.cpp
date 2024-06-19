@@ -8,7 +8,7 @@ void TangentNormalDebugNode::SetupCommonResources()
 {
 	auto pso = FindPSOInfo(PSO);
 	CommandQueue->SetPipelineState(pso);
-	CommandQueue->SetResource("cbPass", OEngine::Get()->CurrentFrameResource->PassCB->GetGPUAddress(), pso);
+	CommandQueue->SetResource("cbPass", OEngine::Get()->CurrentFrameResource->CameraBuffer->GetGPUAddress(), pso);
 }
 
 ORenderTargetBase* TangentNormalDebugNode::Execute(ORenderTargetBase* RenderTarget)

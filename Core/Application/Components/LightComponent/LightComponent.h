@@ -41,7 +41,7 @@ public:
 
 	int NumFramesDirty = SRenderConstants::NumFrameResources;
 
-	virtual void SetPassConstant(SPassConstants& OutConstant) = 0;
+	virtual void SetPassConstant(HLSL::CameraCBuffer& OutConstant) = 0;
 	virtual ELightType GetLightType() const = 0;
 	virtual void UpdateFrameResource(const SFrameResource* FrameResource) = 0;
 
@@ -69,7 +69,7 @@ public:
 	ELightType GetLightType() const override;
 	int32_t GetLightIndex() const override;
 	void UpdateFrameResource(const SFrameResource* FrameResource) override;
-	void SetPassConstant(SPassConstants& OutConstant) override;
+	void SetPassConstant(HLSL::CameraCBuffer& OutConstant) override;
 	void Tick(UpdateEventArgs Arg) override;
 	void SetDirectionalLight(const SDirectionalLightPayload& Light);
 	void InitFrameResource(const TUploadBufferData<HLSL::DirectionalLight>& Spot);
@@ -106,7 +106,7 @@ public:
 	int32_t GetLightIndex() const override;
 	void UpdateFrameResource(const SFrameResource* FrameResource) override;
 	void InitFrameResource(const TUploadBufferData<HLSL::PointLight>& Spot);
-	void SetPassConstant(SPassConstants& OutConstant) override;
+	void SetPassConstant(HLSL::CameraCBuffer& OutConstant) override;
 	void SetLightSourceData() override;
 
 private:
@@ -125,7 +125,7 @@ public:
 	void UpdateFrameResource(const SFrameResource* FrameResource) override;
 	void InitFrameResource(const TUploadBufferData<HLSL::SpotLight>& Spot);
 	ELightType GetLightType() const override;
-	void SetPassConstant(SPassConstants& OutConstant) override;
+	void SetPassConstant(HLSL::CameraCBuffer& OutConstant) override;
 	void SetLightSourceData() override;
 	HLSL::SpotLight& GetSpotLight();
 	void SetShadowMap(const shared_ptr<OShadowMap>& InShadow);

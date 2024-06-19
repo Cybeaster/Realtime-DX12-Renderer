@@ -105,7 +105,10 @@ void OShaderCompiler::ResolveBoundResources(const ComPtr<ID3D12ShaderReflection>
 		case D3D_SIT_STRUCTURED:
 			ResolveStructuredBuffer(bindDesc, OutPipelineInfo, ShaderType);
 			break;
-			// Handle other types as needed, for example, samplers
+		// Handle other types as needed, for example, samplers
+		case D3D_SIT_RTACCELERATIONSTRUCTURE:
+			ResolveStructuredBuffer(bindDesc, OutPipelineInfo, ShaderType);
+			break;
 		}
 	}
 }

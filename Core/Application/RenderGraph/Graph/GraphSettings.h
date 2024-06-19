@@ -6,6 +6,7 @@
 #include "RenderGraph/Nodes/FrustrumDebugNode/FrustumDebugNode.h"
 #include "RenderGraph/Nodes/PostProcessNode/PostProcessNode.h"
 #include "RenderGraph/Nodes/PresentNode/PresentNode.h"
+#include "RenderGraph/Nodes/Raytracing/RaytracingNode.h"
 #include "RenderGraph/Nodes/ReflectionNode/ReflectionNode.h"
 #include "RenderGraph/Nodes/RenderNode.h"
 #include "RenderGraph/Nodes/SSAO/SsaoNode.h"
@@ -35,7 +36,8 @@ static unordered_map<string, SNodeFactory> FactoryMap = {
 		{"TangentNormalDebug", []() { return make_unique<TangentNormalDebugNode>(); }},
 		{"FrustumDebug", []() { return make_unique<OFrustumDebugNode>(); }},
 		{"AABBVisualizer", []() { return make_unique<OAABBVisNode>(); }},
-		{"DebugBox", []() { return make_unique<ODebugGeometryNode>(); }}
+		{"DebugBox", []() { return make_unique<ODebugGeometryNode>(); }},
+		{"Raytracer",[](){return make_unique<ORaytracingNode>(OEngine::Get()->GetRaytracer());}}
 	}
 };
 

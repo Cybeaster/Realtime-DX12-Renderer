@@ -29,7 +29,7 @@ void OSSAONode::DrawNormals()
 	auto resource = OEngine::Get()->CurrentFrameResource;
 
 	CommandQueue->SetPipelineState(pso);
-	CommandQueue->SetResource(STRINGIFY_MACRO(CB_PASS), resource->PassCB->GetGPUAddress(), pso);
+	CommandQueue->SetResource(STRINGIFY_MACRO(CB_PASS), resource->CameraBuffer->GetGPUAddress(), pso);
 	CommandQueue->SetResource(STRINGIFY_MACRO(MATERIAL_DATA), resource->MaterialBuffer->GetGPUAddress(), pso);
 	CommandQueue->SetResource(STRINGIFY_MACRO(TEXTURE_MAPS), OEngine::Get()->TexturesStartAddress.GPUHandle, pso);
 	OEngine::Get()->DrawRenderItems(pso, SRenderLayers::Opaque);

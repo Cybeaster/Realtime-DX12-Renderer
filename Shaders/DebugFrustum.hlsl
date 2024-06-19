@@ -53,10 +53,10 @@ void GS(point GSInput input[1], inout LineStream<GSOutput> OutputStream)
 
     // Draw lines between the corners
     for (int i = 0; i < 24; i += 2) {
-        output.PosH = mul(worldPos[lineIndices[i]], gViewProj); // Transform to camera clip space
+        output.PosH = mul(worldPos[lineIndices[i]], cbCamera.ViewProj); // Transform to camera clip space
         OutputStream.Append(output);
 
-        output.PosH = mul(worldPos[lineIndices[i + 1]], gViewProj); // Transform to camera clip space
+        output.PosH = mul(worldPos[lineIndices[i + 1]], cbCamera.ViewProj); // Transform to camera clip space
         OutputStream.Append(output);
         OutputStream.RestartStrip();
     }

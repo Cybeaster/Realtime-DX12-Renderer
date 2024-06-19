@@ -21,12 +21,12 @@ public:
 	uint32_t GetNumPassesRequired() const override;
 	D3D12_GPU_VIRTUAL_ADDRESS GetPassConstantAddresss() const; // TODO propagate to base class
 	void PrepareRenderTarget(OCommandQueue* Queue, bool ClearRenderTarget, bool ClearDepth, uint32_t SubtargetIdx = 0) override;
-	void UpdatePass(const TUploadBufferData<SPassConstants>& Data) override;
+	void UpdatePass(const TUploadBufferData<HLSL::CameraCBuffer>& Data) override;
 	void SetShadowMapIndex(uint32_t Idx);
 	void Update(const UpdateEventArgs& Event) override;
 	bool ConsumeUpdate();
 	void UpdateLightSourceData();
-	void SetPassConstants(const SPassConstants&);
+	void SetPassConstants(const HLSL::CameraCBuffer&);
 	uint32_t GetShadowMapIndex() const;
 	bool IsValid();
 	UINT GetMapSize() const;
@@ -42,11 +42,11 @@ private:
 	optional<TUUID> ShadowMapInstancesBufferId;
 	SCulledInstancesInfo InstancesInfo;
 	bool bNeedToUpdate = true;
-	SPassConstants PassConstant;
+	HLSL::CameraCBuffer PassConstant;
 	SDescriptorPair SRV;
 	SDescriptorPair DSV;
 	TResourceInfo RenderTarget;
-	TUploadBufferData<SPassConstants> PassConstantBuffer;
+	TUploadBufferData<HLSL::CameraCBuffer> PassConstantBuffer;
 	std::optional<uint32_t> ShadowMapIndex;
 	UINT MapSize = 0;
 	DirectX::XMMATRIX LightView;

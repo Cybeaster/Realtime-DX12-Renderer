@@ -19,7 +19,7 @@ PixelInput VS(VertexInput Vin,uint InstanceID : SV_InstanceID) {
 	float4 posW = mul(float4(Vin.PosL, 1.0f), world);
 
 	// Transform to homogeneous clip space.
-	vout.PosH = mul(posW, gViewProj);
+	vout.PosH = mul(posW, cbCamera.ViewProj);
 	vout.Color  = inst.OverrideColor;
 	return vout;
 }

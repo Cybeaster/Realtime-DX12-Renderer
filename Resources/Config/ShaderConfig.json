@@ -122,7 +122,7 @@
         {
           "Type": "Compute",
           "EntryPoint": "SobelCS",
-          "TargetProfile": "cs_6_0"
+          "TargetProfile": "cs_6_5"
         }
       ]
     },
@@ -286,8 +286,8 @@
       "Pipeline": [
         {
           "Type": "Compute",
-          "EntryPoint": "RayGen",
-          "TargetProfile": "cs_6_0"
+          "EntryPoint": "RayGeneration",
+          "TargetProfile": "cs_6_5"
         }
       ]
     },

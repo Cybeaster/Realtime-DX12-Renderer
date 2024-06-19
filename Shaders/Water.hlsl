@@ -54,9 +54,9 @@ VertexOut VS(VertexIn Vin, uint InstanceID
     float speed3 = 0.4f;
 
     // Compute local wave coordinates for multiple wave patterns
-    float2 coord1 = Vin.TexC * frequency1 + float2(gTotalTime * speed1, 0.0f);
-    float2 coord2 = Vin.TexC * frequency2 + float2(gTotalTime * speed2, 0.0f);
-    float2 coord3 = Vin.TexC * frequency3 + float2(gTotalTime * speed3, 0.0f);
+    float2 coord1 = Vin.TexC * frequency1 + float2(cbCamera.TotalTime * speed1, 0.0f);
+    float2 coord2 = Vin.TexC * frequency2 + float2(cbCamera.TotalTime * speed2, 0.0f);
+    float2 coord3 = Vin.TexC * frequency3 + float2(cbCamera.TotalTime * speed3, 0.0f);
 
     // Apply wave function for each wave pattern
     float wave1 = amplitude1 * sin(coord1.x);
@@ -104,7 +104,7 @@ VertexOut VS(VertexIn Vin, uint InstanceID
 	}
 
 	// Transform to homogeneous clip space.
-	vout.PosH = mul(posW, gViewProj);
+	vout.PosH = mul(posW, cbCamera.ViewProj);
 
 
 
@@ -137,12 +137,12 @@ float4 PS(VertexOut pin)
 	diffuseAlbedo *= SampleDiffuseMap(matData, pin.WaveNormalTex0);
 
 	// Vector from point being lit to eye.
-	float3 toEyeW = gEyePosW - pin.PosW;
+	float3 toEyeW = cbCamera.EyePosW - pin.PosW;
 	float distToEye = length(toEyeW);
 	toEyeW /= distToEye; // normalize
 
 	// Light terms.
-	float4 ambient = gAmbientLight * diffuseAlbedo;
+	float4 ambient = cbCamera.AmbientLight * diffuseAlbedo;
 
 	const float shininess = (1.0f - roughness) * normalMapSample.a;
 	Material mat = { diffuseAlbedo.rgb, fresnelR0, shininess, roughness};
@@ -151,13 +151,13 @@ float4 PS(VertexOut pin)
 	float3 light = {0.0f, 0.0f, 0.0f};
 
 	uint idx = 0;
-	for (uint i = 0; i < gNumDirLights; i++)
+	for (uint i = 0; i < cbCamera.NumDirLights; i++)
 	{
 		light += shadowFactor[idx] * ComputeDirectionalLight_BRDF(gDirectionalLights[i], mat, bumpedNormalW, toEyeW);
 		idx++;
 	}
 
-	for (uint k = 0; k < gNumSpotLights; k++)
+	for (uint k = 0; k < cbCamera.NumSpotLights; k++)
 	{
 		light += shadowFactor[idx] * ComputeSpotLight_BRDF(gSpotLights[k], mat, pin.PosW, bumpedNormalW, toEyeW);
 		idx++;
@@ -171,8 +171,8 @@ float4 PS(VertexOut pin)
 	litColor.rgb += shininess * fresnelFactor * reflectionColor.rgb;
 
 #ifdef FOG
-	float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
-	litColor = lerp(litColor, gFogColor, fogAmount); //TODO fix fog
+	float fogAmount = saturate((distToEye - cbCamera.FogStart) / cbCamera.FogRange);
+	litColor = lerp(litColor, cbCamera.FogColor, fogAmount); //TODO fix fog
 #endif
 	// Common convention to take alpha from diffuse albedo.
 	litColor.a = diffuseAlbedo.a;

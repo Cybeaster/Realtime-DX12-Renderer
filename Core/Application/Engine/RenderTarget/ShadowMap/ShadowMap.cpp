@@ -97,7 +97,7 @@ void OShadowMap::PrepareRenderTarget(OCommandQueue* Queue, bool ClearRenderTarge
 	LOG(Engine, Log, "Setting render target in {} with address: null and depth stencil: [{}]", GetName(), TEXT(depthStencilView.CPUHandle.ptr));
 }
 
-void OShadowMap::UpdatePass(const TUploadBufferData<SPassConstants>& Data)
+void OShadowMap::UpdatePass(const TUploadBufferData<HLSL::CameraCBuffer>& Data)
 {
 	Data.Buffer->CopyData(Data.StartIndex, PassConstant);
 	PassConstantBuffer = Data;
@@ -117,7 +117,7 @@ void OShadowMap::UpdateLightSourceData()
 {
 }
 
-void OShadowMap::SetPassConstants(const SPassConstants& Pass)
+void OShadowMap::SetPassConstants(const HLSL::CameraCBuffer& Pass)
 {
 	PassConstant = Pass;
 	PassConstant.RenderTargetSize = DirectX::XMFLOAT2(static_cast<float>(Width), static_cast<float>(Height));
@@ -197,5 +197,5 @@ void OShadowMap::Update(const UpdateEventArgs& Event)
 
 D3D12_GPU_VIRTUAL_ADDRESS OShadowMap::GetPassConstantAddresss() const
 {
-	return PassConstantBuffer.Buffer->GetGPUAddress() + PassConstantBuffer.StartIndex * Utils::CalcBufferByteSize(sizeof(SPassConstants));
+	return PassConstantBuffer.Buffer->GetGPUAddress() + PassConstantBuffer.StartIndex * Utils::CalcBufferByteSize(sizeof(HLSL::CameraCBuffer));
 }

@@ -18,7 +18,7 @@ VertexOutput VS(VertexInput Input, uint InstanceID : SV_InstanceID)
 	float4x4 world = inst.World;
 
 	float4 posW = mul(float4(Input.PosL, 1.0f), world);
-	output.PosH = mul(posW, gViewProj);
+	output.PosH = mul(posW, cbCamera.ViewProj);
 	output.Color = inst.OverrideColor;
 	return output;
 }

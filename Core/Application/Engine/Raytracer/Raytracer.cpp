@@ -99,6 +99,8 @@ void ORaytracer::CreateTopLevelAS(const vector<pair<TResourceInfo, DirectX::XMMA
 
 void ORaytracer::CreateAccelerationStructures(const unordered_set<shared_ptr<ORenderItem>>& Items)
 {
+	Queue.lock()->TryResetCommandList();
+
 	Instances.clear();
 	PROFILE_BLOCK_START(L"Create BLAS")
 	for (const auto& item : Items)
@@ -115,6 +117,7 @@ void ORaytracer::CreateAccelerationStructures(const unordered_set<shared_ptr<ORe
 	PROFILE_BLOCK_START(L"Create TLAS")
 	CreateTopLevelAS(Instances);
 	PROFILE_BLOCK_END()
+	Queue.lock()->ExecuteCommandListAndWait();
 }
 
 bool ORaytracer::Init(const shared_ptr<ODevice>& InDevice, const shared_ptr<OCommandQueue>& InQueue)
@@ -151,8 +154,8 @@ void ORaytracer::BuildDescriptors(IDescriptor* Descriptor)
 
 SDispatchPayload ORaytracer::GetDispatchPayload() const
 {
-	UINT numGroupsX = (UINT)ceilf(Width / 16.0f);
-	UINT numGroupsY = (UINT)ceilf(Height / 16.0f);
+	LONG numGroupsX = SCast<LONG>(ceilf(Width / 16.0f));
+	LONG numGroupsY = SCast<LONG>(ceilf(Height / 16.0f));
 	return { numGroupsX, numGroupsY, 1 };
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DirectX/HLSL/HlslTypes.h"
 #include "DirectX/ObjectConstants.h"
 #include "Engine/UploadBuffer/UploadBuffer.h"
 #include "Events.h"
@@ -214,7 +215,7 @@ public:
 
 	virtual void OnResize(const ResizeEventArgs& Args){};
 	virtual uint32_t GetNumPassesRequired() const { return 0; }
-	virtual void UpdatePass(const TUploadBufferData<SPassConstants>& Data) {}
+	virtual void UpdatePass(const TUploadBufferData<HLSL::CameraCBuffer>& Data) {}
 	virtual void Update(const UpdateEventArgs& Event) {}
 	virtual TUUID GetID() { return {}; }
 	virtual void SetID(TUUID ID) {}

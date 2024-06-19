@@ -33,7 +33,7 @@ VertexOut VS(VertexIn Vin, uint InstanceID : SV_InstanceID)
     vout.NormalW = mul(Vin.NormalL, (float3x3)world);
     vout.TangentW = mul(Vin.TangentU, (float3x3)world);
     float4 posW = mul(float4(Vin.PosL, 1.0f), world);
-    vout.PosH = mul(posW, gViewProj);
+    vout.PosH = mul(posW, cbCamera.ViewProj);
 
     float4 texC = mul(float4(Vin.TexC, 0.0f, 1.0f), texTransform);
     vout.TexC = mul(texC, matData.MatTransform).xy;
@@ -53,6 +53,6 @@ float4 PS(VertexOut pin) : SV_Target
     // Interpolating normal can unnormalize it, so renormalize it.
     pin.NormalW = normalize(pin.NormalW);
 	// Write normal in view space coordinates
-    float3 normalV = mul(pin.NormalW, (float3x3)gView);
+    float3 normalV = mul(pin.NormalW, (float3x3)cbCamera.View);
     return float4(normalV, 0.0f);
 }

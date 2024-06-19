@@ -2,22 +2,10 @@
 #include "RenderGraph.h"
 
 #include "Application.h"
-#include "Engine/RenderTarget/NormalTangetDebugTarget/NormalTangentDebugTarget.h"
 #include "GraphSettings.h"
 #include "Profiler.h"
-#include "RenderGraph/Nodes/AABBVisualizer/AabbVisNode.h"
-#include "RenderGraph/Nodes/CopyNode/CopyRenderNode.h"
-#include "RenderGraph/Nodes/DebugGeometryNode/ODebugGeometryNode.h"
 #include "RenderGraph/Nodes/DefaultNode/DefaultRenderNode.h"
-#include "RenderGraph/Nodes/FrustrumDebugNode/FrustumDebugNode.h"
-#include "RenderGraph/Nodes/PostProcessNode/PostProcessNode.h"
-#include "RenderGraph/Nodes/PresentNode/PresentNode.h"
-#include "RenderGraph/Nodes/ReflectionNode/ReflectionNode.h"
 #include "RenderGraph/Nodes/SSAO/SsaoNode.h"
-#include "RenderGraph/Nodes/ShadowDebugNode/ShadowDebugNode.h"
-#include "RenderGraph/Nodes/ShadowNode/ShadowMapNode.h"
-#include "RenderGraph/Nodes/TangentNormalDebugNode/TangentNormalDebugNode.h"
-#include "RenderGraph/Nodes/UINode/UiRenderNode.h"
 
 ORenderGraph::ORenderGraph()
 {

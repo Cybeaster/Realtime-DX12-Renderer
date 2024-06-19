@@ -8,7 +8,7 @@ void OAABBVisNode::SetupCommonResources()
 {
 	auto pso = FindPSOInfo(PSO);
 	CommandQueue->SetPipelineState(pso);
-	CommandQueue->SetResource(STRINGIFY_MACRO(CB_PASS), OEngine::Get()->CurrentFrameResource->PassCB->GetGPUAddress(), pso);
+	CommandQueue->SetResource(STRINGIFY_MACRO(CB_PASS), OEngine::Get()->CurrentFrameResource->CameraBuffer->GetGPUAddress(), pso);
 }
 
 ORenderTargetBase* OAABBVisNode::Execute(ORenderTargetBase* RenderTarget)

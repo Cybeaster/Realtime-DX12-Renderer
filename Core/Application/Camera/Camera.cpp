@@ -310,7 +310,7 @@ std::tuple<XMVECTOR /*ray_origin*/, XMVECTOR /*ray dir*/, XMMATRIX /*invView*/> 
 	XMMATRIX invView = XMMatrixInverse(&det, view);
 	return { rayOrigin, rayDir, invView };
 }
-void OCamera::FillPassConstant(SPassConstants& OutOther) const
+void OCamera::FillPassConstant(HLSL::CameraCBuffer& OutOther) const
 {
 	const XMMATRIX viewProj = XMMatrixMultiply(GetView(), GetProj());
 	const XMMATRIX invView = Inverse(GetView());
@@ -340,6 +340,16 @@ void OCamera::PauseAnimation() const
 	{
 		Animation.lock()->PauseAnimation();
 	}
+}
+
+float OCamera::GetAperture() const
+{
+	return Aperture;
+}
+
+float OCamera::GetFocusDistance() const
+{
+	return FocusDistance;
 }
 
 DirectX::XMVECTOR OCamera::GetUp() const

@@ -75,7 +75,7 @@ bool FindDirLightShadowPosition(float4 PosW, out float3 ShadowPosition, out uint
 {
 	LightIndex = 0;
 	ShadowPosition = float3(0.0f,0.0f,0.0f);
-    if(gNumDirLights > 0)
+    if(cbCamera.NumDirLights > 0)
     {
         DirectionalLight light = gDirectionalLights[0];
         for (uint i = 0; i < MAX_CSM_PER_FRAME; ++i)
@@ -96,9 +96,9 @@ bool FindSpotLightShadowPosition(float4 PosW, out float3 ShadowPosition, out uin
 {
 	LightIndex = 0;
 	ShadowPosition = float3(0.0f,0.0f,0.0f);
-    if(gNumSpotLights > 0)
+    if(cbCamera.NumSpotLights > 0)
     {
-        for (uint i = 0; i < gNumSpotLights; ++i)
+        for (uint i = 0; i < cbCamera.NumSpotLights; ++i)
         {
             SpotLight light = gSpotLights[i];
             LightIndex = i;
