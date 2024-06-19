@@ -183,54 +183,6 @@ void ORaytracer::BuildDescriptors()
 	device->CreateUnorderedAccessView(OutputTexture, uavDesc, OutputUAV);
 }
 
-void ORaytracer::BuildPipeline()
-{
-	nv_helpers_dx12::RayTracingPipelineGenerator pipelineGenerator(Device.lock()->GetDevice());
-	auto rootShaderFolder = OApplication::Get()->GetRootShaderFolder();
-	RaygenShader = nv_helpers_dx12::CompileShaderLibrary((rootShaderFolder + L"Raygen.hlsl").c_str());
-	MissShader = nv_helpers_dx12::CompileShaderLibrary((rootShaderFolder + L"Miss.hlsl").c_str());
-	HitShader = nv_helpers_dx12::CompileShaderLibrary((rootShaderFolder + L"Hit.hlsl").c_str());
-
-	pipelineGenerator.AddLibrary(RaygenShader.Get(), { L"Raygen" });
-	pipelineGenerator.AddLibrary(MissShader.Get(), { L"Miss" });
-	pipelineGenerator.AddLibrary(HitShader.Get(), { L"ClosestHit" });
-
-	RaygenRootSignature = CreateRaygenRootSignature();
-	MissRootSignature = CreateMissRootSignature();
-	HitRootSignature = CreateHitRootSignature();
-	pipelineGenerator.AddHitGroup(L"HitGroup", L"ClosestHit");
-
-	pipelineGenerator.AddRootSignatureAssociation(RaygenRootSignature.Get(), { L"Raygen" });
-	pipelineGenerator.AddRootSignatureAssociation(MissRootSignature.Get(), { L"Miss" });
-	pipelineGenerator.AddRootSignatureAssociation(HitRootSignature.Get(), { L"HitGroup" });
-
-	pipelineGenerator.SetMaxPayloadSize(4 * sizeof(float)); // RGB + distance
-	pipelineGenerator.SetMaxAttributeSize(2 * sizeof(float)); // barycentric coordinates
-	pipelineGenerator.SetMaxRecursionDepth(1);
-	Pipeline = pipelineGenerator.Generate();
-	THROW_IF_FAILED(Pipeline->QueryInterface(IID_PPV_ARGS(&PipelineInfo)));
-}
-
-ComPtr<ID3D12RootSignature> ORaytracer::CreateRaygenRootSignature()
-{
-	nv_helpers_dx12::RootSignatureGenerator rsc;
-	rsc.AddHeapRangesParameter(
-	    { { 0 /*u0*/, 1 /*1 descriptor */, 0 /*use the implicit register space 0*/, D3D12_DESCRIPTOR_RANGE_TYPE_UAV /* UAV representing the output buffer*/, 0 /*heap slot where the UAV is defined*/ },
-	      { 0 /*t0*/, 1, 0, D3D12_DESCRIPTOR_RANGE_TYPE_SRV /*Top-level acceleration structure*/, 1 } });
-	return rsc.Generate(Device.lock()->GetDevice(), true);
-}
-
-ComPtr<ID3D12RootSignature> ORaytracer::CreateMissRootSignature()
-{
-	nv_helpers_dx12::RootSignatureGenerator rsc;
-	return rsc.Generate(Device.lock()->GetDevice(), true);
-}
-
-ComPtr<ID3D12RootSignature> ORaytracer::CreateHitRootSignature()
-{
-	nv_helpers_dx12::RootSignatureGenerator rsc;
-	return rsc.Generate(Device.lock()->GetDevice(), true);
-}
 SResourceInfo* ORaytracer::GetResource()
 {
 	return OutputTexture.get();

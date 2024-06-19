@@ -38,14 +38,10 @@ public:
 	auto GetUAV() const { return OutputUAV; }
 	auto GetSRV() const { return OutputSRV; }
 	SDispatchPayload GetDispatchPayload() const;
+
 private:
 	void BuildResource() override;
 	void BuildDescriptors() override;
-	void BuildPipeline();
-
-	ComPtr<ID3D12RootSignature> CreateRaygenRootSignature();
-	ComPtr<ID3D12RootSignature> CreateMissRootSignature();
-	ComPtr<ID3D12RootSignature> CreateHitRootSignature();
 
 public:
 	SResourceInfo* GetResource() override;
