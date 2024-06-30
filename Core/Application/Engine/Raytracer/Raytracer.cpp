@@ -12,16 +12,16 @@ ORaytracer::ORaytracer(const SRenderTargetParams& Params)
 {
 }
 
-SAccelerationStructureBuffers ORaytracer::CreateBottomLevelAS(vector<pair<ComPtr<ID3D12Resource>, uint32_t>> VertexBuffers)
+SAccelerationStructureBuffers ORaytracer::CreateBottomLevelAS(const vector<pair<ComPtr<ID3D12Resource>, uint32_t>>& VertexBuffers, size_t Offset)
 {
 	nv_helpers_dx12::BottomLevelASGenerator BLASGenerator;
 	auto device = Device.lock()->GetDevice();
 	for (const auto& buffer : VertexBuffers)
 	{
 		BLASGenerator.AddVertexBuffer(buffer.first.Get(),
-		                              0,
+		                              Offset * sizeof(HLSL::VertexData),
 		                              buffer.second,
-		                              sizeof(SVertex),
+		                              sizeof(HLSL::VertexData),
 		                              nullptr,
 		                              0);
 	}
@@ -33,6 +33,7 @@ SAccelerationStructureBuffers ORaytracer::CreateBottomLevelAS(vector<pair<ComPtr
 
 	SAccelerationStructureBuffers buffers;
 	buffers.Scratch = Utils::CreateResource(weak,
+	                                        Queue.lock(),
 	                                        L"Scratch_Buffer",
 	                                        device,
 	                                        D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
@@ -56,20 +57,21 @@ SAccelerationStructureBuffers ORaytracer::CreateBottomLevelAS(vector<pair<ComPtr
 	return buffers;
 }
 
-void ORaytracer::CreateTopLevelAS(const vector<pair<TResourceInfo, DirectX::XMMATRIX>>& Instances)
+void ORaytracer::CreateTopLevelAS(const vector<pair<SAccelerationStructureBuffers, DirectX::XMMATRIX>>& Instances)
 {
 	nv_helpers_dx12::TopLevelASGenerator topLevelASGenerator;
 	auto device = Device.lock()->GetDevice();
 	uint32_t counter = 0;
 	for (const auto& instance : Instances)
 	{
-		topLevelASGenerator.AddInstance(instance.first.get()->Resource.Get(), instance.second, counter, 0);
+		topLevelASGenerator.AddInstance(instance.first.Result.get()->Resource.Get(), instance.second, counter, 0);
 		counter++;
 	}
 	UINT64 scratchSize, resultSize, instanceDescsSize;
 	topLevelASGenerator.ComputeASBufferSizes(device, true, &scratchSize, &resultSize, &instanceDescsSize);
 	auto weak = weak_from_this();
 	TopLevelASBuffers.Scratch = Utils::CreateResource(weak,
+	                                                  Queue.lock(),
 	                                                  L"TLAS_Scratch",
 	                                                  device,
 	                                                  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
@@ -84,6 +86,7 @@ void ORaytracer::CreateTopLevelAS(const vector<pair<TResourceInfo, DirectX::XMMA
 	                                                 SRenderConstants::DefaultHeapProperties,
 	                                                 resultSize);
 	TopLevelASBuffers.InstanceDesc = Utils::CreateResource(weak,
+	                                                       Queue.lock(),
 	                                                       L"TLAS_InstanceDesc",
 	                                                       device,
 	                                                       D3D12_RESOURCE_FLAG_NONE,
@@ -97,34 +100,65 @@ void ORaytracer::CreateTopLevelAS(const vector<pair<TResourceInfo, DirectX::XMMA
 	                             TopLevelASBuffers.InstanceDesc->Resource.Get());
 }
 
+void ORaytracer::CreateBuffers(const unordered_set<shared_ptr<ORenderItem>>& Items)
+{
+	OUploadBuffer<HLSL::VertexData>::Create(VertexBuffer, Device, OEngine::Get()->GetTotalNumberOfVertices(), false, weak_from_this(), L"_Raytracer_VertexBuffer");
+	OUploadBuffer<HLSL::InstanceData>::Create(InstanceBuffer, Device, Items.size(), false, weak_from_this(), L"_Raytracer_InstanceBuffer");
+}
+
 void ORaytracer::CreateAccelerationStructures(const unordered_set<shared_ptr<ORenderItem>>& Items)
 {
-	Queue.lock()->TryResetCommandList();
+	CreateBuffers(Items);
+	auto queue = Queue.lock();
+	queue->TryResetCommandList();
 
-	Instances.clear();
+	BottomLevelASs.clear();
 	PROFILE_BLOCK_START(L"Create BLAS")
+	size_t vertexIndx = 0;
+	unordered_map<shared_ptr<SMeshGeometry>, size_t> geoOffsets;
 	for (const auto& item : Items)
 	{
 		if (const auto mesh = item->Geometry.lock())
 		{
 			auto& vertexBuffer = mesh->VertexBufferGPU;
-			auto [Scratch, Result, InstanceDesc] = CreateBottomLevelAS({ { vertexBuffer, mesh->NumVertices } });
-			Instances.emplace_back(Result, Load(item->GetDefaultInstance()->HlslData.World));
+			auto chosenSubmesh = item->ChosenSubmesh.lock();
+
+			size_t offset = 0;
+			if (geoOffsets.contains(mesh))
+			{
+				offset = geoOffsets[mesh];
+			}
+			auto buffers = CreateBottomLevelAS({ { vertexBuffer, chosenSubmesh->Vertices->size() } }, offset);
+			offset += chosenSubmesh->Vertices->size();
+			geoOffsets[mesh] = offset;
+			auto instanceData = item->GetDefaultInstance()->HlslData;
+			instanceData.StartVertexLocation = vertexIndx;
+
+			for (const auto& geo : *item->ChosenSubmesh.lock()->Vertices)
+			{
+				VertexBuffer->CopyData(vertexIndx, geo);
+				vertexIndx++;
+			}
+
+			InstanceBuffer->CopyData(BottomLevelASs.size(), instanceData);
+			BottomLevelASs.emplace_back(buffers, Load(item->GetDefaultInstance()->HlslData.World));
 		}
 	}
 	PROFILE_BLOCK_END()
 
 	PROFILE_BLOCK_START(L"Create TLAS")
-	CreateTopLevelAS(Instances);
+	CreateTopLevelAS(BottomLevelASs);
 	PROFILE_BLOCK_END()
-	Queue.lock()->ExecuteCommandListAndWait();
+	queue->ExecuteCommandListAndWait();
 }
 
 bool ORaytracer::Init(const shared_ptr<ODevice>& InDevice, const shared_ptr<OCommandQueue>& InQueue)
 {
 	Device = InDevice;
 	Queue = InQueue;
+	InQueue->TryResetCommandList();
 	BuildResource();
+	InQueue->ExecuteCommandListAndWait();
 	return true;
 }
 
@@ -139,7 +173,7 @@ TResourceInfo ORaytracer::GetTLAS() const
 }
 uint32_t ORaytracer::GetNumSRVRequired() const
 {
-	return 2;
+	return 3;
 }
 
 void ORaytracer::BuildDescriptors(IDescriptor* Descriptor)
@@ -148,6 +182,7 @@ void ORaytracer::BuildDescriptors(IDescriptor* Descriptor)
 	{
 		OutputUAV = descriptor->SRVHandle.Offset();
 		OutputSRV = descriptor->SRVHandle.Offset();
+		TLASSRV = descriptor->SRVHandle.Offset();
 		BuildDescriptors();
 	}
 }
@@ -159,9 +194,16 @@ SDispatchPayload ORaytracer::GetDispatchPayload() const
 	return { numGroupsX, numGroupsY, 1 };
 }
 
+SDescriptorPair ORaytracer::GetTLASSRV() const
+{
+	return TLASSRV;
+}
+
 void ORaytracer::BuildResource()
 {
-	OutputTexture = Utils::CreateResource(weak_from_this(), L"Raytracing_Output_Texture", Device.lock()->GetDevice(), D3D12_HEAP_TYPE_DEFAULT, GetResourceDesc(), D3D12_RESOURCE_STATE_GENERIC_READ);
+	auto desc = GetResourceDesc();
+	desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+	OutputTexture = Utils::CreateResource(weak_from_this(), L"Raytracing_Output_Texture", Device.lock()->GetDevice(), D3D12_HEAP_TYPE_DEFAULT, desc, D3D12_RESOURCE_STATE_GENERIC_READ);
 }
 
 void ORaytracer::BuildDescriptors()
@@ -181,6 +223,15 @@ void ORaytracer::BuildDescriptors()
 
 	device->CreateShaderResourceView(OutputTexture, srvDesc, OutputSRV);
 	device->CreateUnorderedAccessView(OutputTexture, uavDesc, OutputUAV);
+
+	srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE;
+
+	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV tlasSrv = {};
+	tlasSrv.Location = TopLevelASBuffers.Result->Resource->GetGPUVirtualAddress();
+	srvDesc.RaytracingAccelerationStructure = tlasSrv;
+
+	device->CreateShaderResourceView(TopLevelASBuffers.Result, srvDesc, TLASSRV, true);
 }
 
 SResourceInfo* ORaytracer::GetResource()

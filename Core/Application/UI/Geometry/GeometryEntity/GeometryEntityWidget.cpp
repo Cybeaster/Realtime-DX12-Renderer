@@ -49,10 +49,10 @@ void OGeometryEntityWidget::DrawSubmeshParameters()
 					for (auto& vertex : *Submesh->Vertices)
 					{
 						string vertexName = "##Vertex: " + std::to_string(counter);
-						DirectX::XMFLOAT3 newVertex = vertex;
+						DirectX::XMFLOAT3 newVertex = vertex.Position;
 						if (ImGui::SliderFloat3(vertexName.c_str(), &newVertex.x, -100.0f, 100.0f))
 						{
-							DirectX::XMStoreFloat3(&vertex, DirectX::XMVectorLerp(DirectX::XMLoadFloat3(&vertex), DirectX::XMLoadFloat3(&newVertex), 0.1f));
+							DirectX::XMStoreFloat3(&vertex.Position, DirectX::XMVectorLerp(DirectX::XMLoadFloat3(&vertex.Position), DirectX::XMLoadFloat3(&newVertex), 0.1f));
 							RebuildRequest();
 						}
 

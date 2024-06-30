@@ -708,7 +708,7 @@ unique_ptr<SMeshGeometry> OGeometryGenerator::CreateSkullGeometry(string PathToM
 	XMVECTOR vMin = XMLoadFloat3(&vMinf3);
 	XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
 
-	std::vector<SVertex> vertices(vcount);
+	std::vector<HLSL::VertexData> vertices(vcount);
 	std::vector<XMFLOAT3> positions(vcount);
 
 	for (UINT i = 0; i < vcount; ++i)
@@ -730,8 +730,6 @@ unique_ptr<SMeshGeometry> OGeometryGenerator::CreateSkullGeometry(string PathToM
 
 		float u = theta / (2.0f * XM_PI);
 		float v = phi / XM_PI;
-
-		vertices[i].TexC = { u, v };
 
 		vMin = XMVectorMin(vMin, P);
 		vMax = XMVectorMax(vMax, P);
@@ -756,7 +754,7 @@ unique_ptr<SMeshGeometry> OGeometryGenerator::CreateSkullGeometry(string PathToM
 	// Pack the indices of all the meshes into one index buffer.
 	//
 
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(SVertex);
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(HLSL::VertexData);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(int32_t);
 
 	auto geometry = std::make_unique<SMeshGeometry>();
@@ -782,7 +780,7 @@ unique_ptr<SMeshGeometry> OGeometryGenerator::CreateSkullGeometry(string PathToM
 	    ibByteSize,
 	    geometry->IndexBufferUploader);
 
-	geometry->VertexByteStride = sizeof(SVertex);
+	geometry->VertexByteStride = sizeof(HLSL::VertexData);
 	geometry->VertexBufferByteSize = vbByteSize;
 	geometry->IndexFormat = DXGI_FORMAT_R32_UINT;
 	geometry->IndexBufferByteSize = ibByteSize;
@@ -793,7 +791,7 @@ unique_ptr<SMeshGeometry> OGeometryGenerator::CreateSkullGeometry(string PathToM
 	submesh->BaseVertexLocation = 0;
 	submesh->Bounds = bounds;
 
-	submesh->Vertices = make_unique<vector<XMFLOAT3>>(std::move(positions));
+	submesh->Vertices = make_unique<vector<HLSL::VertexData>>(std::move(vertices));
 	submesh->Indices = make_unique<vector<uint32_t>>(std::move(indices));
 
 	geometry->SetGeometry(geometry->Name, submesh);
@@ -803,7 +801,7 @@ unique_ptr<SMeshGeometry> OGeometryGenerator::CreateSkullGeometry(string PathToM
 unique_ptr<SMeshGeometry> OGeometryGenerator::CreateWaterGeometry(float Width, float Depth, uint32_t RowCount, uint32_t ColumnCount, ID3D12Device* Device, ID3D12GraphicsCommandList* CommandList, size_t VertexCount)
 {
 	SMeshData grid = CreateGrid(Width, Depth, RowCount, ColumnCount);
-	std::vector<SVertex> vertices(grid.Vertices.size());
+	std::vector<HLSL::VertexData> vertices(grid.Vertices.size());
 	XMFLOAT3 vMinf3(+Infinity, +Infinity, +Infinity);
 	XMFLOAT3 vMaxf3(-Infinity, -Infinity, -Infinity);
 	XMVECTOR vMin = XMLoadFloat3(&vMinf3);
@@ -811,10 +809,6 @@ unique_ptr<SMeshGeometry> OGeometryGenerator::CreateWaterGeometry(float Width, f
 
 	for (size_t i = 0; i < grid.Vertices.size(); ++i)
 	{
-		vertices[i].Position = grid.Vertices[i].Position;
-		vertices[i].Normal = grid.Vertices[i].Normal;
-		vertices[i].TexC = grid.Vertices[i].TexC;
-		vertices[i].TangentU = grid.Vertices[i].TangentU;
 		auto pos = XMLoadFloat3(&vertices[i].Position);
 
 		vMax = XMVectorMax(vMax, pos);
@@ -826,7 +820,7 @@ unique_ptr<SMeshGeometry> OGeometryGenerator::CreateWaterGeometry(float Width, f
 
 	std::vector<std::uint32_t> indices = grid.Indices32;
 
-	UINT vbByteSize = VertexCount * sizeof(SVertex);
+	UINT vbByteSize = VertexCount * sizeof(HLSL::VertexData);
 	UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint32_t);
 
 	auto geo = std::make_unique<SMeshGeometry>();
@@ -850,7 +844,7 @@ unique_ptr<SMeshGeometry> OGeometryGenerator::CreateWaterGeometry(float Width, f
 	                                                 ibByteSize,
 	                                                 geo->IndexBufferUploader);
 
-	geo->VertexByteStride = sizeof(SVertex);
+	geo->VertexByteStride = sizeof(HLSL::VertexData);
 	geo->VertexBufferByteSize = vbByteSize;
 	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
 	geo->IndexBufferByteSize = ibByteSize;

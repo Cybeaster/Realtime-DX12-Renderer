@@ -132,6 +132,7 @@ void SShaderPipelineDesc::SetComputeResourceCBView(const string& Name, D3D12_GPU
 	case D3D12_ROOT_PARAMETER_TYPE_UAV:
 	case D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE:
 		CmdList->SetComputeRootShaderResourceView(idx, Handle);
+		break;
 	case D3D12_ROOT_PARAMETER_TYPE_CBV:
 		CmdList->SetComputeRootConstantBufferView(idx, Handle);
 		break;

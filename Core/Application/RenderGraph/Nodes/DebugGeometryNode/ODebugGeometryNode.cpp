@@ -11,6 +11,7 @@ void ODebugGeometryNode::SetupCommonResources()
 
 	CommandQueue->SetResource(STRINGIFY_MACRO(CB_PASS), resource->CameraBuffer->GetGPUAddress(), pso);
 }
+
 ORenderTargetBase* ODebugGeometryNode::Execute(ORenderTargetBase* RenderTarget)
 {
 	OEngine::Get()->DrawRenderItems(FindPSOInfo(PSO), GetNodeInfo().RenderLayer);

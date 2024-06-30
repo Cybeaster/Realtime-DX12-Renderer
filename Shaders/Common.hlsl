@@ -2,30 +2,28 @@
 #include "LightingUtils.hlsl"
 #include "Samplers.hlsl"
 
-Texture2D gTextureMaps[TEXTURE_MAPS_NUM] : register(t0,space0);
-Texture2D gShadowMaps[MAX_SHADOW_MAPS] : register(t1,space2);
+Texture2D gTextureMaps[TEXTURE_MAPS_NUM] : register(t0, space0);
+Texture2D gShadowMaps[MAX_SHADOW_MAPS] : register(t1, space2);
 
-TextureCube gCubeMap : register(t1,space3);
-Texture2D gSsaoMap   : register(t2,space3);
+TextureCube gCubeMap : register(t1, space3);
+Texture2D gSsaoMap : register(t2, space3);
 
-StructuredBuffer<InstanceData> gInstanceData : register(t0, space4);
-StructuredBuffer<MaterialData> gMaterialData : register(t1, space4);
+StructuredBuffer<InstanceData> INSTANCE_DATA : register(t0, space4);
+StructuredBuffer<MaterialData> MATERIAL_DATA : register(t1, space4);
 
 StructuredBuffer<SpotLight> gSpotLights : register(t2, space4);
 StructuredBuffer<PointLight> gPointLights : register(t3, space4);
 StructuredBuffer<DirectionalLight> gDirectionalLights : register(t4, space4);
-
 
 cbuffer CB_PASS : register(b0)
 {
 	CameraCBuffer cbCamera;
 };
 
-
 bool IsTangentValid(float3 TangentW)
 {
-    float sum = abs(TangentW.x) + abs(TangentW.y) + abs(TangentW.z);
-    return sum > EPSILON;
+	float sum = abs(TangentW.x) + abs(TangentW.y) + abs(TangentW.z);
+	return sum > EPSILON;
 }
 
 float3 NormalSampleToWorldSpace(float3 NormalMapSample, float3 UnitNormalW, float3 TangentW)
@@ -45,44 +43,42 @@ float3 NormalSampleToWorldSpace(float3 NormalMapSample, float3 UnitNormalW, floa
 
 struct BumpedData
 {
-    float4 NormalMapSample;
+	float4 NormalMapSample;
 	float3 BumpedNormalW;
 };
 
-
-float3 ComputeHeightMap(MaterialData matData, float3 NormalW, float3 TangentW, float2 TexC,float Offset )
+float3 ComputeHeightMap(MaterialData matData, float3 NormalW, float3 TangentW, float2 TexC, float Offset)
 {
-	if(matData.HeightMap.bIsEnabled == 0)
+	if (matData.HeightMap.bIsEnabled == 0)
 	{
-		return gTextureMaps[ matData.HeightMap.TextureIndex].SampleLevel(gsamAnisotropicWrap, TexC,Offset).r;
+		return gTextureMaps[matData.HeightMap.TextureIndex].SampleLevel(gsamAnisotropicWrap, TexC, Offset).r;
 	}
-	return float3(0.0f,0.0f,0.0f);
+	return float3(0.0f, 0.0f, 0.0f);
 }
 
 bool IsShadowCoordsWithinRange(float3 ShadowCoords)
 {
-	 return all(ShadowCoords.xy >= SHADOW_EPSILON) && all(ShadowCoords.xy <= 1 - SHADOW_EPSILON);
+	return all(ShadowCoords.xy >= SHADOW_EPSILON) && all(ShadowCoords.xy <= 1 - SHADOW_EPSILON);
 }
 
 float2 GetShadowMapResolution(uint TexID)
 {
 	uint width, height, numMips;
-    gShadowMaps[TexID].GetDimensions(0, width, height, numMips);
-    return float2(width, height);
-
+	gShadowMaps[TexID].GetDimensions(0, width, height, numMips);
+	return float2(width, height);
 }
 bool FindDirLightShadowPosition(float4 PosW, out float3 ShadowPosition, out uint LightIndex)
 {
 	LightIndex = 0;
-	ShadowPosition = float3(0.0f,0.0f,0.0f);
-    if(cbCamera.NumDirLights > 0)
-    {
-        DirectionalLight light = gDirectionalLights[0];
-        for (uint i = 0; i < MAX_CSM_PER_FRAME; ++i)
+	ShadowPosition = float3(0.0f, 0.0f, 0.0f);
+	if (cbCamera.NumDirLights > 0)
+	{
+		DirectionalLight light = gDirectionalLights[0];
+		for (uint i = 0; i < MAX_CSM_PER_FRAME; ++i)
 		{
 			LightIndex = light.ShadowMapData[i].ShadowMapIndex;
 			ShadowPosition = mul(PosW, light.ShadowMapData[i].Transform).xyz;
-			if(IsShadowCoordsWithinRange(ShadowPosition))
+			if (IsShadowCoordsWithinRange(ShadowPosition))
 			{
 				return true;
 			}
@@ -91,82 +87,82 @@ bool FindDirLightShadowPosition(float4 PosW, out float3 ShadowPosition, out uint
 	return false;
 }
 
-
 bool FindSpotLightShadowPosition(float4 PosW, out float3 ShadowPosition, out uint LightIndex)
 {
 	LightIndex = 0;
-	ShadowPosition = float3(0.0f,0.0f,0.0f);
-    if(cbCamera.NumSpotLights > 0)
-    {
-        for (uint i = 0; i < cbCamera.NumSpotLights; ++i)
-        {
-            SpotLight light = gSpotLights[i];
-            LightIndex = i;
-            ShadowPosition = mul(PosW, light.Transform).xyz;
-            if(IsShadowCoordsWithinRange(ShadowPosition))
-            {
-                return true;
-            }
-        }
-    }
-    return false;
+	ShadowPosition = float3(0.0f, 0.0f, 0.0f);
+	if (cbCamera.NumSpotLights > 0)
+	{
+		for (uint i = 0; i < cbCamera.NumSpotLights; ++i)
+		{
+			SpotLight light = gSpotLights[i];
+			LightIndex = i;
+			ShadowPosition = mul(PosW, light.Transform).xyz;
+			if (IsShadowCoordsWithinRange(ShadowPosition))
+			{
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
-
-
-float CalcShadowFactor(float3 ShadowPosH,uint ShadowMapIndex)
+float CalcShadowFactor(float3 ShadowPosH, uint ShadowMapIndex)
 {
+	//depth in NDC space
 
-    //depth in NDC space
-    float depth = ShadowPosH.z;
+	float depth = ShadowPosH.z;
 
-    Texture2D shadowMap = gShadowMaps[ShadowMapIndex];
-    //Get shadow map dimensions
-    uint width, height, numMips;
-    shadowMap.GetDimensions(0, width, height, numMips);
+	Texture2D shadowMap = gShadowMaps[ShadowMapIndex];
+	//Get shadow map dimensions
 
-    //texel size
-    float dx = 1.0f / (float)width;
-    float percentLit = 0.0f;
-    const float2 offsets[9] =
-    {
-        float2(-dx,  -dx), float2(0.0f,  -dx), float2(dx,  -dx),
-        float2(-dx, 0.0f), float2(0.0f, 0.0f), float2(dx, 0.0f),
-        float2(-dx,  +dx), float2(0.0f,  +dx), float2(dx,  +dx)
-    };
+	uint width, height, numMips;
+	shadowMap.GetDimensions(0, width, height, numMips);
 
-    [unroll]
-    for(int i = 0; i < 9; ++i)
-    {
-       percentLit += shadowMap.SampleCmpLevelZero(gsamShadow,
-                  ShadowPosH.xy + offsets[i], depth + 0.005).r;
-    }
-    return percentLit / 9.0f;
+	//texel size
+
+	float dx = 1.0f / (float)width;
+	float percentLit = 0.0f;
+	const float2 offsets[9] = {
+		float2(-dx, -dx), float2(0.0f, -dx), float2(dx, -dx), float2(-dx, 0.0f), float2(0.0f, 0.0f), float2(dx, 0.0f), float2(-dx, +dx), float2(0.0f, +dx), float2(dx, +dx)
+	};
+
+	[unroll] for (int i = 0; i < 9; ++i)
+	{
+		percentLit += shadowMap.SampleCmpLevelZero(gsamShadow,
+		                                           ShadowPosH.xy + offsets[i],
+		                                           depth + 0.005)
+		                  .r;
+	}
+	return percentLit / 9.0f;
 }
 
-void GetShadowFactor(out float ShadowFactors[SHADOW_MAPS_NUM],uint ShadowMapIndices[SHADOW_MAPS_NUM] ,float4 ShadowPositions[SHADOW_MAPS_NUM])
+void GetShadowFactor(out float ShadowFactors[SHADOW_MAPS_NUM], uint ShadowMapIndices[SHADOW_MAPS_NUM], float4 ShadowPositions[SHADOW_MAPS_NUM])
 {
-   // for (uint i = 0; i < SHADOW_MAPS_NUM; ++i)
-    //{
-    //    ShadowFactors[i] = CalcShadowFactor(ShadowPositions[i],ShadowMapIndices[i]);;
-   // }
+	// for (uint i = 0; i < SHADOW_MAPS_NUM; ++i)
+
+	//{
+
+	//    ShadowFactors[i] = CalcShadowFactor(ShadowPositions[i],ShadowMapIndices[i]);;
+
+	// }
 }
 
 bool IsNormalized(float3 vector)
 {
-    float lengthSquared = dot(vector, vector);
-    return abs(lengthSquared - 1.0) < EPSILON;
+	float lengthSquared = dot(vector, vector);
+	return abs(lengthSquared - 1.0) < EPSILON;
 }
 
 bool AreOrthogonal(float3 vec1, float3 vec2)
- {
-    float dotProduct = dot(vec1, vec2);
-    return abs(dotProduct) < EPSILON;
+{
+	float dotProduct = dot(vec1, vec2);
+	return abs(dotProduct) < EPSILON;
 }
 
 float SampleAlphaMap(MaterialData Data, float2 TexC)
 {
-	if(Data.AlphaMap.bIsEnabled == 1)
+	if (Data.AlphaMap.bIsEnabled == 1)
 	{
 		return gTextureMaps[Data.AlphaMap.TextureIndex].Sample(gsamAnisotropicWrap, TexC).r;
 	}
@@ -178,37 +174,37 @@ float SampleAlphaMap(MaterialData Data, float2 TexC)
 
 float4 SampleSpecularMap(MaterialData Data, float2 TexC)
 {
-	if(Data.SpecularMap.bIsEnabled == 1)
+	if (Data.SpecularMap.bIsEnabled == 1)
 	{
 		return gTextureMaps[Data.SpecularMap.TextureIndex].Sample(gsamAnisotropicWrap, TexC);
 	}
 	else
 	{
-		return float4(1.0,1.0,1.0,1.0);
+		return float4(1.0, 1.0, 1.0, 1.0);
 	}
 }
 
 float4 SampleAmbientMap(MaterialData Data, float2 TexC)
 {
-	if(Data.AmbientMap.bIsEnabled == 1)
+	if (Data.AmbientMap.bIsEnabled == 1)
 	{
 		return gTextureMaps[Data.AmbientMap.TextureIndex].Sample(gsamAnisotropicWrap, TexC);
 	}
 	else
 	{
-		return float4(1.0,1.0,1.0,1.0);
+		return float4(1.0, 1.0, 1.0, 1.0);
 	}
 }
 
 float4 SampleDiffuseMap(MaterialData MatData, float2 TexC)
 {
-	if(MatData.DiffuseMap.bIsEnabled == 1)
+	if (MatData.DiffuseMap.bIsEnabled == 1)
 	{
 		return gTextureMaps[MatData.DiffuseMap.TextureIndex].Sample(gsamAnisotropicWrap, TexC);
 	}
 	else
 	{
-		return float4(1.0,1.0,1.0,1.0);
+		return float4(1.0, 1.0, 1.0, 1.0);
 	}
 }
 
@@ -217,22 +213,22 @@ BumpedData SampleNormalMap(float3 NormalW, float3 TangentW, MaterialData MatData
 	BumpedData data = (BumpedData)0.0;
 	data.BumpedNormalW = NormalW;
 	data.NormalMapSample = float4(0.f, 0.f, 0.0f, 1.0f);
-  	if(MatData.NormalMap.bIsEnabled == 1)
-  	{
+	if (MatData.NormalMap.bIsEnabled == 1)
+	{
 		data.NormalMapSample = gTextureMaps[MatData.NormalMap.TextureIndex].Sample(gsamAnisotropicWrap, TexC);
 		data.BumpedNormalW = NormalSampleToWorldSpace(data.NormalMapSample.rgb, NormalW, TangentW);
-  	}
-  	return data;
+	}
+	return data;
 }
 
 float3 GammaCorrect(float3 Color)
 {
-    return pow(Color, 1.0 / 2.2);
+	return pow(Color, 1.0 / 2.2);
 }
 
 float CalcFresnelR0(float Ior)
 {
-    return pow((1.0 - Ior) / (1.0 + Ior), 2.0);
+	return pow((1.0 - Ior) / (1.0 + Ior), 2.0);
 }
 
 float3 ReinhardToneMapping(float3 Color)
@@ -260,7 +256,7 @@ float3 ChangeLuminance(float3 Color, float NewLuminance)
 float3 ReinhardExtendedLuminance(float3 Color, float MaxWhite)
 {
 	float luminance = Luminance(Color);
-	float num = luminance * (1.0  + ( luminance / (MaxWhite * MaxWhite)));
+	float num = luminance * (1.0 + (luminance / (MaxWhite * MaxWhite)));
 	float lNew = num / (1.0 + luminance);
 	return ChangeLuminance(Color, lNew);
 }

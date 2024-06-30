@@ -11,7 +11,7 @@ struct SSubmeshGeometry
 	UINT BaseVertexLocation = 0;
 	DirectX::BoundingBox Bounds;
 	std::string Name;
-	std::unique_ptr<std::vector<DirectX::XMFLOAT3>> Vertices = nullptr;
+	std::unique_ptr<std::vector<HLSL::VertexData>> Vertices = nullptr;
 	std::unique_ptr<std::vector<uint32_t>> Indices = nullptr;
 	SMaterial* Material = nullptr;
 };
@@ -30,8 +30,7 @@ struct SMeshGeometry
 
 	UINT VertexByteStride = 0;
 	UINT VertexBufferByteSize = 0;
-	UINT NumVertices = 0;
-	UINT NumIndices = 0;
+
 	DXGI_FORMAT IndexFormat = DXGI_FORMAT_R16_UINT;
 	UINT IndexBufferByteSize = 0;
 

@@ -11,13 +11,14 @@ public:
 	[[nodiscard]] ID3D12Device5* GetDevice() const;
 	[[nodiscard]] IDXGIFactory4* GetFactory() const;
 
-	void CreateShaderResourceView(const TResourceInfo& Resource, const D3D12_SHADER_RESOURCE_VIEW_DESC& Desc, SDescriptorPair& DescriptorPair) const;
+	void CreateShaderResourceView(const TResourceInfo& Resource, const D3D12_SHADER_RESOURCE_VIEW_DESC& Desc, SDescriptorPair& DescriptorPair, bool EmptyResource = false) const;
 	void CreateUnorderedAccessView(const TResourceInfo& Resource, const D3D12_UNORDERED_ACCESS_VIEW_DESC& Desc, SDescriptorPair& DescriptorPair) const;
 	void CreateRenderTargetView(const TResourceInfo& Resource, const D3D12_RENDER_TARGET_VIEW_DESC& Desc, SDescriptorPair& DescriptorPair) const;
 	void CreateRenderTargetView(const TResourceInfo& Resource, SDescriptorPair& DescriptorPair) const;
 
 	void CreateDepthStencilView(const TResourceInfo& Resource, const D3D12_DEPTH_STENCIL_VIEW_DESC& Desc, SDescriptorPair& DescriptorPair) const;
 	void CreateDepthStencilView(const TResourceInfo& Resource, SDescriptorPair& DescriptorPair) const;
+	HRESULT CheckDeviceRemoveReason() const;
 
 private:
 	ComPtr<ID3D12Device5> CreateDevice(const Microsoft::WRL::ComPtr<IDXGIAdapter4>& Adapter);

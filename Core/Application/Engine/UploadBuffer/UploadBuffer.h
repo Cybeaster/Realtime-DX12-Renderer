@@ -3,6 +3,7 @@
 #include "DirectX/Resource.h"
 #include "DirectXUtils.h"
 #include "Engine/Device/Device.h"
+#include "Logger.h"
 
 class ODevice;
 template<typename Type>
@@ -13,6 +14,18 @@ public:
 	static unique_ptr<OUploadBuffer> Create(const weak_ptr<ODevice>& Device, UINT ElementCount, bool IsConstantBuffer, weak_ptr<IRenderObject> Owner, wstring InName = L"")
 	{
 		return make_unique<OUploadBuffer>(Device, ElementCount, IsConstantBuffer, Owner, InName);
+	}
+
+	static void Create(unique_ptr<OUploadBuffer>& Buffer, const weak_ptr<ODevice>& Device, UINT ElementCount, bool IsConstantBuffer, weak_ptr<IRenderObject> Owner, wstring InName = L"")
+	{
+		if (Buffer.get())
+		{
+			Buffer->RebuildBuffer(ElementCount);
+		}
+		else
+		{
+			Buffer = make_unique<OUploadBuffer>(Device, ElementCount, IsConstantBuffer, Owner, InName);
+		}
 	}
 
 	OUploadBuffer(const OUploadBuffer&) = delete;
@@ -26,8 +39,12 @@ public:
 		return UploadBuffer.get();
 	}
 
-	void CopyData(int ElementIdx, const Type& Data)
+	void CopyData(const size_t ElementIdx, const Type& Data)
 	{
+		if (MaxOffset <= ElementIdx)
+		{
+			WIN_LOG(Render, Critical, "ElementIdx is out of range");
+		}
 		memcpy(&MappedData[ElementIdx * ElementByteSize], &Data, sizeof(Type));
 	}
 

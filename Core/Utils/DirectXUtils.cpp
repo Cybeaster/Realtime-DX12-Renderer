@@ -1,6 +1,7 @@
 #include "DirectXUtils.h"
 
 #include "Engine/RenderTarget/RenderObject/RenderObject.h"
+#include "EngineHelper.h"
 #include "Logger.h"
 
 UINT Utils::CalcBufferByteSize(const UINT ByteSize)
@@ -207,7 +208,7 @@ D3D12_RESOURCE_STATES Utils::ResourceBarrier(ID3D12GraphicsCommandList* List, SR
 	}
 
 	LOG(Debug, Log, "ResourceBarrier: Transitioning resource {}", context->GetName());
-	auto old = Resource->CurrentState;
+	const auto old = Resource->CurrentState;
 	const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(Resource->Resource.Get(), Resource->CurrentState, After);
 	Resource->CurrentState = After;
 	List->ResourceBarrier(1, &barrier);
@@ -295,12 +296,16 @@ TResourceInfo Utils::CreateResource(const weak_ptr<IRenderObject>& Owner, const 
 		.Name = owner->GetName() + L"_" + AppendName
 	};
 	const auto defaultHeap = CD3DX12_HEAP_PROPERTIES(HeapProperties);
-	THROW_IF_FAILED(Device->CreateCommittedResource(&defaultHeap,
-	                                                D3D12_HEAP_FLAG_NONE,
-	                                                &Desc,
-	                                                InitialState,
-	                                                ClearValue,
-	                                                IID_PPV_ARGS(&info.Resource)));
+	if (FAILED(Device->CreateCommittedResource(&defaultHeap,
+	                                           D3D12_HEAP_FLAG_NONE,
+	                                           &Desc,
+	                                           InitialState,
+	                                           ClearValue,
+	                                           IID_PPV_ARGS(&info.Resource))))
+	{
+		WIN_LOG(Default, Error, "Failed to create resource {}", info.Name);
+		CheckDeviceRemoveReason();
+	}
 	info.Resource->SetName(info.Name.c_str());
 	return make_shared<SResourceInfo>(info);
 }
@@ -308,6 +313,13 @@ TResourceInfo Utils::CreateResource(const weak_ptr<IRenderObject>& Owner, const 
 {
 	auto resource = CreateResource(Owner, AppendName, Device, HeapProperties, Desc, D3D12_RESOURCE_STATE_COMMON, ClearValue);
 	ResourceBarrier(CMDList, resource.get(), D3D12_RESOURCE_STATE_COMMON, InitialState);
+	return resource;
+}
+
+TResourceInfo Utils::CreateResource(const weak_ptr<IRenderObject>& Owner, const shared_ptr<OCommandQueue>& Queue, const wstring& AppendName, ID3D12Device* Device, D3D12_RESOURCE_FLAGS Flags, D3D12_RESOURCE_STATES InitialState, const D3D12_HEAP_PROPERTIES& HeapProps, const uint64_t Size)
+{
+	auto resource = CreateResource(Owner, AppendName, Device, Flags, D3D12_RESOURCE_STATE_COMMON, HeapProps, Size);
+	ResourceBarrier(Queue->GetCommandList().Get(), resource.get(), D3D12_RESOURCE_STATE_COMMON, InitialState);
 	return resource;
 }
 

@@ -29,18 +29,21 @@ public:
 };
 
 #ifndef THROW_IF_FAILED
-#define THROW_IF_FAILED(hr)                                                           \
-	{                                                                                 \
-		if (FAILED(hr))                                                               \
-		{                                                                             \
-			auto __exception = SDXException(hr, L#hr, __FILEW__, __LINE__);           \
-			std::cerr << hr << std::endl;                                             \
-			MessageBox(nullptr, __exception.ToString().c_str(), L"HR Failed", MB_OK); \
-			throw __exception;                                                        \
-		}                                                                             \
+#define THROW_IF_FAILED(hr) \
+	{                       \
+		if (FAILED(hr))     \
+		{                   \
+			THROW(hr);      \
+		}                   \
 	}
 
 #endif
+
+#define THROW(hr)                                                             \
+	auto __exception = SDXException(hr, L#hr, __FILEW__, __LINE__);           \
+	std::cerr << hr << std::endl;                                             \
+	MessageBox(nullptr, __exception.ToString().c_str(), L"HR Failed", MB_OK); \
+	throw __exception;
 
 #define CHECK_MSG(condition, Message)      \
 	if (!(condition))                      \

@@ -49,6 +49,7 @@ namespace HLSL
 #define CAMERA_MATRIX cbCameraMatrix
 #define AABBData gAABBData
 #define INSTANCE_DATA gInstanceData
+#define VERTEX_DATA gVertexData
 #define NORMAL_MAP gNormalMap
 #define RANDOM_VEC_MAP gRandomVecMap
 #define DEPTH_MAP gDepthMap
@@ -89,6 +90,15 @@ struct MaterialData
 	TextureData AmbientMap;
 };
 
+struct VertexData
+{
+	float3 Position;
+	float3 Normal;
+	float2 TexC;
+	float3 Tangent;
+	float3 Bitangent;
+};
+
 struct InstanceData
 {
 #ifndef HLSL
@@ -114,16 +124,15 @@ struct InstanceData
 	float4x4 TexTransform;
 	uint MaterialIndex;
 	float3 Position;
-	float pad;
 	float4 Rotation;
+	uint IndexCount;
 	float3 Scale;
-	float pad3;
+	uint StartIndexLocation;
 	float3 BoundingBoxCenter;
-	float pad4;
+	uint StartVertexLocation;
 	float3 BoundingBoxExtents;
 	float pad5;
 	float3 OverrideColor;
-	float pad6;
 	float4x4 InvViewProjection;
 };
 

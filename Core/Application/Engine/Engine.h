@@ -118,7 +118,7 @@ public:
 	void FlushGPU() const;
 	TUUID AddInstanceBuffer(const wstring& Name);
 	int InitScene();
-	void PostTestInit();
+	void PostSceneInit();
 	void DestroyWindow();
 	void OnWindowDestroyed();
 
@@ -390,6 +390,7 @@ public:
 	ORenderGraph* GetRenderGraph() const;
 	weak_ptr<ONormalTangentDebugTarget> GetNormalTangentDebugTarget() const;
 	void ReloadShaders();
+	size_t GetTotalNumberOfVertices() const;
 	OAnimationManager* GetAnimationManager() const;
 	weak_ptr<OShadowMap> CreateShadowMap();
 	unordered_set<shared_ptr<ORenderItem>> PendingRemoveItems;

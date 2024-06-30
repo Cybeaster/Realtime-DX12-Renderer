@@ -67,10 +67,11 @@ IDXGIFactory4* ODevice::GetFactory() const
 	return Factory.Get();
 }
 
-void ODevice::CreateShaderResourceView(const TResourceInfo& Resource, const D3D12_SHADER_RESOURCE_VIEW_DESC& Desc, SDescriptorPair& DescriptorPair) const
+void ODevice::CreateShaderResourceView(const TResourceInfo& Resource, const D3D12_SHADER_RESOURCE_VIEW_DESC& Desc, SDescriptorPair& DescriptorPair, bool EmptyResource) const
 {
 	DescriptorPair.Resource = Resource;
-	Device->CreateShaderResourceView(Resource->Resource.Get(), &Desc, DescriptorPair.CPUHandle);
+	const auto res = EmptyResource ? nullptr : Resource->Resource.Get();
+	Device->CreateShaderResourceView(res, &Desc, DescriptorPair.CPUHandle);
 }
 
 void ODevice::CreateUnorderedAccessView(const TResourceInfo& Resource, const D3D12_UNORDERED_ACCESS_VIEW_DESC& Desc, SDescriptorPair& DescriptorPair) const
@@ -106,6 +107,18 @@ void ODevice::CreateDepthStencilView(const TResourceInfo& Resource, SDescriptorP
 	dsvDesc.Format = SRenderConstants::DepthBufferDSVFormat;
 	dsvDesc.Texture2D.MipSlice = 0;
 	Device->CreateDepthStencilView(Resource->Resource.Get(), &dsvDesc, DescriptorPair.CPUHandle);
+}
+
+HRESULT ODevice::CheckDeviceRemoveReason() const
+{
+	auto removeReason = Device->GetDeviceRemovedReason();
+	if (SUCCEEDED(Device->GetDeviceRemovedReason()))
+	{
+		return S_OK;
+	}
+
+	THROW(removeReason);
+	return E_FAIL;
 }
 
 ComPtr<ID3D12Device5> ODevice::CreateDevice(const ComPtr<IDXGIAdapter4>& Adapter)

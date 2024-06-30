@@ -48,6 +48,14 @@ TResourceInfo CreateResource(const weak_ptr<IRenderObject>& Owner,
                              ID3D12GraphicsCommandList* CMDList, const D3D12_CLEAR_VALUE* ClearValue = nullptr);
 
 TResourceInfo CreateResource(const weak_ptr<IRenderObject>& Owner,
+                             const shared_ptr<OCommandQueue>& Queue,
+                             const wstring& AppendName,
+                             ID3D12Device* Device,
+                             D3D12_RESOURCE_FLAGS Flags,
+                             D3D12_RESOURCE_STATES InitialState,
+                             const D3D12_HEAP_PROPERTIES& HeapProps, const uint64_t Size);
+
+TResourceInfo CreateResource(const weak_ptr<IRenderObject>& Owner,
                              const wstring& AppendName,
                              ID3D12Device* Device,
                              D3D12_RESOURCE_FLAGS Flags,

@@ -41,9 +41,7 @@ struct SFrameResource
 
 	// We cannot update a cbuffer until the GPU is done processing the
 	// commands that reference it. So each frame needs their own cbuffers.
-
 	void SetPass(UINT PassCount);
-	void SetCameraInstances(UINT InstanceCount);
 	void SetMaterials(UINT MaterialCount);
 	void SetDirectionalLight(UINT LightCount);
 	void SetPointLight(UINT LightCount);

@@ -523,8 +523,7 @@ int OEngine::InitScene()
 	GetCommandQueue()->ExecuteCommandListAndWait();
 
 	Raytracer->CreateAccelerationStructures(AllRenderItems);
-
-	PostTestInit();
+	PostSceneInit();
 
 	return 0;
 }
@@ -544,12 +543,11 @@ void OEngine::BuildDescriptorHeaps()
 	build(DefaultGlobalHeap, EResourceHeapType::Default, L"GlobalHeap", UIManager.lock()->GetNumSRVRequired() + TEXTURE_MAPS_NUM + 2);
 }
 
-void OEngine::PostTestInit()
+void OEngine::PostSceneInit()
 {
 	PROFILE_SCOPE()
 	CameraInstanceBufferID = AddInstanceBuffer(L"DefaultInstanceBuffer");
 	TryCreateFrameResources();
-
 	FillExpectedShadowMaps();
 	BuildDescriptorHeaps();
 	Window->InitRenderObject();
@@ -558,6 +556,7 @@ void OEngine::PostTestInit()
 	FillDescriptorHeaps();
 	InitUIManager();
 	GetCommandQueue()->ExecuteCommandListAndWait();
+
 	HasInitializedTests = true;
 	SceneBounds.Center = XMFLOAT3(0.0f, 0.0f, 0.0f);
 }
@@ -737,6 +736,7 @@ void OEngine::CreateRaytracer()
 	params.HeapType = Default;
 	Raytracer = make_shared<ORaytracer>(params);
 	Raytracer->Init(Device, GetCommandQueue());
+	AddRenderObject(RenderTargets, Raytracer);
 }
 IDXGIFactory4* OEngine::GetFactory()
 {
@@ -849,6 +849,7 @@ void OEngine::OnUpdate(UpdateEventArgs& Args)
 	{
 		val->Update(Args);
 	}
+
 	if (ReloadShadersRequested)
 	{
 		RenderGraph->ReloadShaders();
@@ -1068,6 +1069,11 @@ void OEngine::OnResizeRequest(HWND& WindowHandle)
 	if (!SSAORT.expired())
 	{
 		SSAORT.lock()->OnResize(args);
+	}
+
+	if (Raytracer)
+	{
+		Raytracer->OnResize(args);
 	}
 }
 
@@ -1353,9 +1359,9 @@ void OEngine::Pick(int32_t SX, int32_t SY)
 					auto i1 = indices->at(i * 3 + 1);
 					auto i2 = indices->at(i * 3 + 2);
 
-					auto v0 = XMLoadFloat3(&vertices->at(i0));
-					auto v1 = XMLoadFloat3(&vertices->at(i1));
-					auto v2 = XMLoadFloat3(&vertices->at(i2));
+					auto v0 = XMLoadFloat3(&vertices->at(i0).Position);
+					auto v1 = XMLoadFloat3(&vertices->at(i1).Position);
+					auto v2 = XMLoadFloat3(&vertices->at(i2).Position);
 
 					if (float t = 0.0f; TriangleTests::Intersects(origin, dir, v0, v1, v2, t))
 					{
@@ -1444,6 +1450,9 @@ SCulledInstancesInfo OEngine::PerformFrustumCulling(IBoundingGeometry* BoundingG
 	result.BufferId = BufferId;
 	const auto& buffers = GetInstanceBuffersByUUID(BufferId);
 	int32_t counter = 0;
+	size_t vertexCount = 0;
+	size_t indexCount = 0;
+
 	for (auto& e : AllRenderItems)
 	{
 		const auto& instData = e->Instances;
@@ -1480,6 +1489,10 @@ SCulledInstancesInfo OEngine::PerformFrustumCulling(IBoundingGeometry* BoundingG
 				data.HlslData.Scale = instData[i].HlslData.Scale;
 				data.HlslData.Rotation = instData[i].HlslData.Rotation;
 				data.HlslData.MaterialIndex = instData[i].HlslData.MaterialIndex;
+				data.HlslData.IndexCount = instData[i].HlslData.IndexCount;
+
+				data.HlslData.StartVertexLocation = vertexCount;
+				data.HlslData.StartIndexLocation = indexCount;
 
 				result.InstanceCount++;
 				for (auto* buffer : buffers)
@@ -1593,16 +1606,16 @@ void OEngine::RebuildGeometry(string Name)
 	auto mesh = FindSceneGeometry(Name);
 	auto commandList = GetCommandQueue()->GetCommandList();
 
-	vector<XMFLOAT3> vertices;
+	vector<HLSL::VertexData> vertices;
 	vector<std::uint16_t> indices;
 
 	for (auto& submesh : mesh->DrawArgs)
 	{
-		vertices.insert(vertices.end(), submesh.second->Vertices.get()->begin(), submesh.second->Vertices.get()->end());
-		indices.insert(indices.end(), submesh.second->Indices.get()->begin(), submesh.second->Indices.get()->end());
+		vertices.insert(vertices.end(), submesh.second->Vertices->begin(), submesh.second->Vertices->end());
+		indices.insert(indices.end(), submesh.second->Indices->begin(), submesh.second->Indices->end());
 	}
 
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(SVertex);
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(HLSL::VertexData);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &mesh->VertexBufferCPU));
@@ -1680,6 +1693,7 @@ void OEngine::UpdateMainPass(const STimer& Timer)
 	MainPassCB.Aperture = Window->GetCamera().lock()->GetAperture();
 	MainPassCB.FOV = Window->GetCamera().lock()->GetFovY();
 	MainPassCB.FocusDistance = Window->GetCamera().lock()->GetFocusDistance();
+	MainPassCB.AspectRatio = Window->GetAspectRatio();
 
 	GetNumLights(MainPassCB.NumPointLights, MainPassCB.NumSpotLights, MainPassCB.NumDirLights);
 	const auto currPassCB = CurrentFrameResource->CameraBuffer.get();
@@ -1721,6 +1735,16 @@ weak_ptr<ONormalTangentDebugTarget> OEngine::GetNormalTangentDebugTarget() const
 void OEngine::ReloadShaders()
 {
 	ReloadShadersRequested = true;
+}
+
+size_t OEngine::GetTotalNumberOfVertices() const
+{
+	uint32_t totalVertices = 0;
+	for (const auto& e : AllRenderItems)
+	{
+		totalVertices += e->ChosenSubmesh.lock()->Vertices->size();
+	}
+	return totalVertices;
 }
 
 OAnimationManager* OEngine::GetAnimationManager() const

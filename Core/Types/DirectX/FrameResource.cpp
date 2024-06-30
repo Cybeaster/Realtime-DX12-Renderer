@@ -18,7 +18,10 @@ void SFrameResource::SetPass(UINT PassCount)
 	{
 		CameraBuffer->RebuildBuffer(PassCount);
 	}
-	CameraBuffer = make_unique<OUploadBuffer<HLSL::CameraCBuffer>>(Device, PassCount, true, Owner, L"_PassBuffer");
+	else
+	{
+		CameraBuffer = make_unique<OUploadBuffer<HLSL::CameraCBuffer>>(Device, PassCount, true, Owner, L"_PassBuffer");
+	}
 }
 
 void SFrameResource::SetMaterials(UINT MaterialCount)

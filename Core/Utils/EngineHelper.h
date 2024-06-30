@@ -202,3 +202,8 @@ inline auto GetResourcePath(const wstring& Path)
 {
 	return OApplication::Get()->GetResourcePath(Path);
 }
+
+inline auto CheckDeviceRemoveReason()
+{
+	return OEngine::Get()->GetDevice().lock()->CheckDeviceRemoveReason();
+}
